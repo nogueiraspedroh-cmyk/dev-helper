@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gerador de .gitignore — Dev Helper</title>
+  <meta name="description" content="Monte um arquivo .gitignore combinando blocos de linguagens, frameworks e ferramentas (Node, Python, Java, Go, PHP, React, VS Code, JetBrains, macOS, Windows e mais). Copie ou baixe." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../../biblioteca/">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Gerador de .gitignore</h1>
+        <p>Selecione as <strong>linguagens, frameworks e ferramentas</strong> do seu projeto e monte um arquivo <code>.gitignore</code> combinando os blocos correspondentes. Copie ou baixe o resultado. Os padrões ficam embutidos na página — não há chamada a nenhuma API.</p>
+      </header>
+
+      <div class="tool__controls">
+        <fieldset class="tool__fieldset">
+          <legend class="tool__legend">Linguagens, frameworks e ferramentas</legend>
+          <div id="gi-options" class="tool__checkbox-grid"></div>
+        </fieldset>
+
+        <div class="tool__actions tool__actions--mt">
+          <button id="gi-clear" class="button--secondary" type="button">Limpar seleção</button>
+        </div>
+
+        <div class="tool__output">
+          <label class="tool__label" for="gi-output">.gitignore gerado</label>
+          <textarea id="gi-output" class="result" readonly spellcheck="false" aria-label=".gitignore gerado"></textarea>
+          <p id="gi-empty" class="tool__hint">Selecione ao menos uma opção acima para gerar o arquivo.</p>
+          <div class="tool__actions tool__actions--mt">
+            <button id="gi-copy" class="button--secondary" type="button">Copiar</button>
+            <button id="gi-download" class="button--secondary" type="button">Baixar .gitignore</button>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="2525252525"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <section>
+      <h2>O que é um .gitignore?</h2>
+      <p>
+        O arquivo <code>.gitignore</code> diz ao Git quais arquivos e pastas <strong>não</strong> devem
+        ser versionados: dependências instaladas (<code>node_modules/</code>, <code>vendor/</code>),
+        artefatos de build (<code>dist/</code>, <code>target/</code>), arquivos de ambiente
+        (<code>.env</code>), caches e metadados do sistema operacional ou do editor. Mantê-los fora do
+        repositório reduz o tamanho, evita conflitos e previne o vazamento acidental de segredos.
+      </p>
+
+      <h2>Como funciona</h2>
+      <p>
+        Cada opção corresponde a um <strong>bloco de padrões</strong> testados para aquela tecnologia.
+        Ao marcar várias, os blocos são concatenados na ordem, cada um com um comentário de cabeçalho
+        (por exemplo <code># Node</code>) para você saber de onde veio cada regra. Você pode copiar o
+        conteúdo ou baixá-lo já com o nome <code>.gitignore</code>.
+      </p>
+
+      <h2>Conjunto disponível</h2>
+      <p>
+        A ferramenta cobre um conjunto prático: <strong>Node, Python, Java, Go, PHP, Ruby, Rust,
+        .NET</strong>, os frameworks <strong>React</strong> e <strong>Angular</strong>, os editores
+        <strong>VS Code</strong> e <strong>JetBrains</strong>, e os sistemas <strong>macOS, Windows e
+        Linux</strong>. Os padrões são um ponto de partida sólido — ajuste conforme a necessidade do
+        seu projeto.
+      </p>
+
+      <h2>Perguntas frequentes (FAQ)</h2>
+
+      <h3>Os padrões vêm da API do GitHub?</h3>
+      <p>
+        Não. Para manter o site sem backend, o <strong>dataset é estático e embutido no próprio
+        JavaScript</strong> da página. Isso significa que funciona offline e sem depender de serviços
+        externos, ao custo de não ser tão exaustivo quanto os templates oficiais.
+      </p>
+
+      <h3>Posso combinar várias tecnologias?</h3>
+      <p>Sim — marque quantas quiser. Alguns padrões podem se repetir entre blocos (por exemplo
+      <code>node_modules/</code> em Node e React); isso é inofensivo para o Git.</p>
+
+      <h3>Onde coloco o arquivo?</h3>
+      <p>
+        Na raiz do repositório. Regras em um <code>.gitignore</code> valem para a pasta onde ele está e
+        suas subpastas. Arquivos já rastreados pelo Git precisam ser removidos do índice
+        (<code>git rm --cached</code>) para o ignore passar a valer.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/tools/gitignore.js"></script>
+</body>
+</html>

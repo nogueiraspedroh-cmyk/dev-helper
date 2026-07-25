@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bridge — Design Patterns | Biblioteca Dev Helper</title>
+  <meta name="description" content="Aprenda o padrão Bridge (GoF) em profundidade: intenção, problema, solução, estrutura, exemplos em TypeScript e PHP, quando usar, quando evitar e armadilhas comuns." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Bridge</span>
+        </nav>
+        <span class="artigo__categoria">Padrão Estrutural (GoF)</span>
+        <h1 class="artigo__titulo">Bridge</h1>
+        <p class="artigo__subtitulo">
+          Separa uma abstração da sua implementação para que ambas possam variar
+          independentemente — usando composição em vez de herança para evitar a
+          explosão combinatória de subclasses.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Desacoplar abstração de implementação</strong> por meio de
+            composição, de modo que os dois eixos possam variar e evoluir de forma
+            completamente independente. A abstração delega para o implementador
+            em vez de herdar dele — substituindo a hierarquia N×M de subclasses por
+            N + M classes.
+          </p>
+          <p>
+            Catalogado pelo GoF (1994) como padrão estrutural, o Bridge é a resposta
+            planejada ao problema da explosão combinatória de herança: quando uma
+            classe tem dois (ou mais) eixos de variação independentes, criar uma
+            subclasse para cada combinação escala de forma insustentável. O Bridge
+            resolve isso separando os dois eixos em hierarquias distintas e ligando-os
+            por composição.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Imagine um sistema de notificações com dois eixos de variação independentes:
+            o <strong>tipo</strong> (normal, urgente) e o <strong>canal de envio</strong>
+            (e-mail, SMS). Se você modelar isso com herança pura, precisa de uma
+            subclasse para cada combinação:
+          </p>
+          <ul>
+            <li><code>NotificacaoNormalPorEmail</code></li>
+            <li><code>NotificacaoNormalPorSms</code></li>
+            <li><code>NotificacaoUrgentePorEmail</code></li>
+            <li><code>NotificacaoUrgentePorSms</code></li>
+          </ul>
+          <p>
+            Com apenas 2 tipos e 2 canais, já são 4 classes. Adicionar um canal
+            WhatsApp e um tipo Agendada eleva para 3×3 = 9 classes. Com 5 tipos e
+            5 canais: 25 classes. O crescimento é multiplicativo — e qualquer mudança
+            em uma dimensão exige atualizar a outra.
+          </p>
+          <p>
+            O Bridge elimina a explosão: cada eixo tem a sua própria hierarquia.
+            Tipos e canais evoluem de forma completamente independente. Adicionar
+            WhatsApp é criar uma classe <code>WhatsAppSender</code> — sem tocar em
+            nenhum tipo de notificação.
+          </p>
+
+          <h3>Bridge vs Adapter: a distinção crítica</h3>
+          <p>
+            Esta é a confusão mais frequente com o Bridge. A diferença está no
+            <em>momento</em> e na <em>intenção</em>:
+          </p>
+          <ul>
+            <li>
+              O <strong>Adapter</strong> é aplicado <em>depois</em> — você tem duas
+              interfaces incompatíveis que existem de forma independente, e o Adapter
+              as reconcilia. É uma solução corretiva para um problema de integração
+              existente.
+            </li>
+            <li>
+              O <strong>Bridge</strong> é <em>planejado desde o início</em> — você
+              identifica dois eixos de variação independentes no design e os separa
+              intencionalmente para que possam evoluir sem se afetar. É uma decisão
+              de arquitetura preventiva.
+            </li>
+          </ul>
+          <p>
+            Em resumo: Adapter concilia incompatibilidades existentes; Bridge
+            previne o acoplamento entre dimensões de variação desde o design.
+          </p>
+
+          <h3>Bridge vs Strategy</h3>
+          <p>
+            Ambos usam composição para delegar comportamento, e a estrutura de
+            código pode ser idêntica. A diferença é conceitual:
+          </p>
+          <ul>
+            <li>
+              O <strong>Strategy</strong> é um padrão <em>comportamental</em> com
+              um único eixo de variação: o algoritmo. O contexto escolhe qual
+              Strategy usar e pode trocá-lo em runtime. O foco é na intercambialidade
+              de algoritmos.
+            </li>
+            <li>
+              O <strong>Bridge</strong> é um padrão <em>estrutural</em> com dois
+              eixos de variação independentes: abstração e implementação. Ambos
+              podem variar e ter hierarquias próprias. O foco é na separação de
+              dimensões estruturais do design.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. SOLUÇÃO -->
+        <section class="artigo__secao">
+          <h2>Solução</h2>
+          <p>O Bridge organiza o código em quatro participantes:</p>
+          <ol>
+            <li>
+              <strong>Abstraction (Abstração):</strong> define a interface de alto
+              nível e mantém uma referência ao <em>Implementor</em>. Pode ser uma
+              classe abstrata ou concreta. Ex.: classe abstrata <code>Notificacao</code>
+              com referência a <code>CanalEnvio</code>.
+            </li>
+            <li>
+              <strong>RefinedAbstraction (Abstração Refinada):</strong> estende a
+              Abstração, adicionando comportamento específico de cada variante.
+              Ex.: <code>NotificacaoNormal</code>, <code>NotificacaoUrgente</code>.
+            </li>
+            <li>
+              <strong>Implementor (interface):</strong> define o contrato do eixo
+              de implementação — tipicamente operações de baixo nível. Ex.: interface
+              <code>CanalEnvio</code> com <code>enviar(destinatario, mensagem)</code>.
+            </li>
+            <li>
+              <strong>ConcreteImplementor:</strong> realiza o contrato do Implementor.
+              Ex.: <code>EmailSender</code>, <code>SmsSender</code>. Novas implementações
+              não afetam nenhuma classe de abstração.
+            </li>
+          </ol>
+          <p>
+            A "ponte" (bridge) é a referência que a Abstração mantém para o
+            Implementor. Como essa referência é do tipo da interface
+            <code>CanalEnvio</code> (não de uma classe concreta), qualquer
+            ConcreteImplementor pode ser injetado — em tempo de construção ou
+            em runtime.
+          </p>
+        </section>
+
+        <!-- 4. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+          <div class="code-bloco">
+<pre><code>  Eixo da Abstração                     Eixo da Implementação
+
+  Notificacao (abstrata)                «interface» CanalEnvio
+  ┌──────────────────────────────┐      ┌──────────────────────────────────┐
+  │ # canal: CanalEnvio          │─────▶│ + enviar(dest, msg): void        │
+  │ + notificar(dest, msg): void │      └──────────────────────────────────┘
+  └──────────────────────────────┘                   ▲
+               ▲                            ┌────────┴────────┐
+       ┌───────┴────────┐             EmailSender         SmsSender
+  NotificacaoNormal  NotificacaoUrgente
+  (Abstração Refinada)  (Abstração Refinada)
+
+
+Sem Bridge — explosão N×M de subclasses:
+
+  2 tipos × 2 canais = 4 classes
+  NotificacaoNormalPorEmail
+  NotificacaoNormalPorSms
+  NotificacaoUrgentePorEmail
+  NotificacaoUrgentePorSms
+  → com 5 tipos e 5 canais: 25 classes
+
+Com Bridge — N + M classes:
+
+  2 tipos + 2 canais = 4 classes
+  NotificacaoNormal, NotificacaoUrgente
+  EmailSender, SmsSender
+  → com 5 tipos e 5 canais: apenas 10 classes
+
+
+Fluxo de uma chamada:
+
+  urgente.notificar("ops@empresa.com", "Servidor fora do ar!")
+      │
+      ▼ (NotificacaoUrgente.notificar)
+      │  prefixo "[URGENTE]" aplicado
+      │
+      ▼ (delega para this.canal.enviar)
+  EmailSender.enviar("ops@empresa.com", "[URGENTE] Servidor fora do ar!")
+      │
+      ▼
+  [EMAIL para ops@empresa.com] [URGENTE] Servidor fora do ar!
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. EXEMPLOS DE CÓDIGO -->
+        <section class="artigo__secao">
+          <h2>Exemplos de código</h2>
+
+          <h3>Exemplo 1 — Notificações por tipo e canal</h3>
+          <p>
+            A abstração (<code>Notificacao</code>) e o implementador
+            (<code>CanalEnvio</code>) variam de forma completamente independente.
+            Adicionar um novo canal ou um novo tipo de notificação não requer
+            alterar o outro eixo.
+          </p>
+
+          <!-- GRUPO DE ABAS 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 1 — notificações por canal">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Implementador — eixo do canal de envio ────────────────────
+interface CanalEnvio {
+  enviar(destinatario: string, mensagem: string): void;
+}
+
+// ── ConcreteImplementors ──────────────────────────────────────
+class EmailSender implements CanalEnvio {
+  enviar(destinatario: string, mensagem: string): void {
+    console.log(`[EMAIL para ${destinatario}] ${mensagem}`);
+  }
+}
+
+class SmsSender implements CanalEnvio {
+  enviar(destinatario: string, mensagem: string): void {
+    console.log(`[SMS para ${destinatario}] ${mensagem}`);
+  }
+}
+
+// Adicionar WhatsAppSender não afeta nenhuma classe de Notificacao:
+class WhatsAppSender implements CanalEnvio {
+  enviar(destinatario: string, mensagem: string): void {
+    console.log(`[WA para ${destinatario}] ${mensagem}`);
+  }
+}
+
+// ── Abstração — eixo do tipo de notificação ───────────────────
+abstract class Notificacao {
+  // A "ponte": referência ao implementador — injetada no construtor.
+  constructor(protected readonly canal: CanalEnvio) {}
+
+  abstract notificar(destinatario: string, conteudo: string): void;
+}
+
+// ── Abstrações refinadas ──────────────────────────────────────
+class NotificacaoNormal extends Notificacao {
+  notificar(destinatario: string, conteudo: string): void {
+    this.canal.enviar(destinatario, conteudo);
+  }
+}
+
+class NotificacaoUrgente extends Notificacao {
+  notificar(destinatario: string, conteudo: string): void {
+    this.canal.enviar(destinatario, `[URGENTE] ${conteudo}`);
+  }
+}
+
+// Adicionar NotificacaoAgendada não afeta nenhuma classe de CanalEnvio:
+class NotificacaoAgendada extends Notificacao {
+  constructor(canal: CanalEnvio, private readonly agendadaPara: string) {
+    super(canal);
+  }
+  notificar(destinatario: string, conteudo: string): void {
+    this.canal.enviar(
+      destinatario,
+      `[AGENDADA ${this.agendadaPara}] ${conteudo}`
+    );
+  }
+}
+
+// ── Uso — combinações livres sem novas subclasses ─────────────
+const email = new EmailSender();
+const sms   = new SmsSender();
+const wa    = new WhatsAppSender();
+
+new NotificacaoNormal(email).notificar(
+  "ana@exemplo.com", "Seu pedido foi confirmado."
+);
+// [EMAIL para ana@exemplo.com] Seu pedido foi confirmado.
+
+new NotificacaoUrgente(email).notificar(
+  "ops@empresa.com", "Servidor fora do ar!"
+);
+// [EMAIL para ops@empresa.com] [URGENTE] Servidor fora do ar!
+
+new NotificacaoUrgente(sms).notificar(
+  "+55119999-0000", "Servidor fora do ar!"
+);
+// [SMS para +55119999-0000] [URGENTE] Servidor fora do ar!
+
+new NotificacaoAgendada(wa, "2026-07-01 09:00").notificar(
+  "+55119999-0001", "Lembrete de reunião"
+);
+// [WA para +55119999-0001] [AGENDADA 2026-07-01 09:00] Lembrete de reunião</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Implementador — eixo do canal de envio ────────────────────
+interface CanalEnvio
+{
+    public function enviar(string $destinatario, string $mensagem): void;
+}
+
+// ── ConcreteImplementors ──────────────────────────────────────
+class EmailSender implements CanalEnvio
+{
+    public function enviar(string $destinatario, string $mensagem): void
+    {
+        echo "[EMAIL para {$destinatario}] {$mensagem}" . PHP_EOL;
+    }
+}
+
+class SmsSender implements CanalEnvio
+{
+    public function enviar(string $destinatario, string $mensagem): void
+    {
+        echo "[SMS para {$destinatario}] {$mensagem}" . PHP_EOL;
+    }
+}
+
+// Adicionar WhatsAppSender não afeta nenhuma classe de Notificacao:
+class WhatsAppSender implements CanalEnvio
+{
+    public function enviar(string $destinatario, string $mensagem): void
+    {
+        echo "[WA para {$destinatario}] {$mensagem}" . PHP_EOL;
+    }
+}
+
+// ── Abstração — eixo do tipo de notificação ───────────────────
+abstract class Notificacao
+{
+    // A "ponte": referência ao implementador — injetada no construtor.
+    public function __construct(
+        protected readonly CanalEnvio $canal
+    ) {}
+
+    abstract public function notificar(string $destinatario, string $conteudo): void;
+}
+
+// ── Abstrações refinadas ──────────────────────────────────────
+class NotificacaoNormal extends Notificacao
+{
+    public function notificar(string $destinatario, string $conteudo): void
+    {
+        $this-&gt;canal-&gt;enviar($destinatario, $conteudo);
+    }
+}
+
+class NotificacaoUrgente extends Notificacao
+{
+    public function notificar(string $destinatario, string $conteudo): void
+    {
+        $this-&gt;canal-&gt;enviar($destinatario, "[URGENTE] {$conteudo}");
+    }
+}
+
+// Adicionar NotificacaoAgendada não afeta nenhuma classe de CanalEnvio:
+class NotificacaoAgendada extends Notificacao
+{
+    public function __construct(
+        CanalEnvio $canal,
+        private readonly string $agendadaPara
+    ) {
+        parent::__construct($canal);
+    }
+
+    public function notificar(string $destinatario, string $conteudo): void
+    {
+        $this-&gt;canal-&gt;enviar(
+            $destinatario,
+            "[AGENDADA {$this-&gt;agendadaPara}] {$conteudo}"
+        );
+    }
+}
+
+// ── Uso — combinações livres sem novas subclasses ─────────────
+$email = new EmailSender();
+$sms   = new SmsSender();
+$wa    = new WhatsAppSender();
+
+(new NotificacaoNormal($email))-&gt;notificar(
+    'ana@exemplo.com', 'Seu pedido foi confirmado.'
+);
+// [EMAIL para ana@exemplo.com] Seu pedido foi confirmado.
+
+(new NotificacaoUrgente($email))-&gt;notificar(
+    'ops@empresa.com', 'Servidor fora do ar!'
+);
+// [EMAIL para ops@empresa.com] [URGENTE] Servidor fora do ar!
+
+(new NotificacaoUrgente($sms))-&gt;notificar(
+    '+55119999-0000', 'Servidor fora do ar!'
+);
+// [SMS para +55119999-0000] [URGENTE] Servidor fora do ar!
+
+(new NotificacaoAgendada($wa, '2026-07-01 09:00'))-&gt;notificar(
+    '+55119999-0001', 'Lembrete de reunião'
+);
+// [WA para +55119999-0001] [AGENDADA 2026-07-01 09:00] Lembrete de reunião</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 1) -->
+
+          <h3>Exemplo 2 — Formas geométricas com renderizadores intercambiáveis</h3>
+          <p>
+            O exemplo clássico do GoF: formas (abstração) variam independentemente
+            do renderizador (implementação). Um novo tipo de forma não requer nenhum
+            renderizador novo, e um novo renderizador não requer nenhuma forma nova.
+          </p>
+
+          <!-- GRUPO DE ABAS 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 2 — formas e renderizadores">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Implementador — eixo do renderizador ──────────────────────
+interface Renderizador {
+  renderizarForma(tipo: string, params: string): void;
+}
+
+class RenderizadorVetorial implements Renderizador {
+  renderizarForma(tipo: string, params: string): void {
+    console.log(`[SVG]    ${tipo}(${params})`);
+  }
+}
+
+class RenderizadorRaster implements Renderizador {
+  renderizarForma(tipo: string, params: string): void {
+    console.log(`[Canvas] ${tipo}(${params})`);
+  }
+}
+
+// ── Abstração — eixo da forma geométrica ──────────────────────
+abstract class Forma {
+  constructor(protected renderizador: Renderizador) {}
+  abstract desenhar(): void;
+  // O implementador pode ser trocado em runtime:
+  trocarRenderizador(renderizador: Renderizador): void {
+    this.renderizador = renderizador;
+  }
+}
+
+// ── Abstrações refinadas ──────────────────────────────────────
+class Circulo extends Forma {
+  constructor(renderizador: Renderizador, private readonly raio: number) {
+    super(renderizador);
+  }
+  desenhar(): void {
+    this.renderizador.renderizarForma("circulo", `r=${this.raio}`);
+  }
+}
+
+class Retangulo extends Forma {
+  constructor(
+    renderizador: Renderizador,
+    private readonly largura: number,
+    private readonly altura: number
+  ) {
+    super(renderizador);
+  }
+  desenhar(): void {
+    this.renderizador.renderizarForma(
+      "retangulo", `w=${this.largura} h=${this.altura}`
+    );
+  }
+}
+
+// ── Uso ───────────────────────────────────────────────────────
+const vetorial = new RenderizadorVetorial();
+const raster   = new RenderizadorRaster();
+
+const c = new Circulo(vetorial, 50);
+c.desenhar();
+// [SVG]    circulo(r=50)
+
+new Circulo(raster, 50).desenhar();
+// [Canvas] circulo(r=50)
+
+new Retangulo(vetorial, 200, 100).desenhar();
+// [SVG]    retangulo(w=200 h=100)
+
+new Retangulo(raster, 200, 100).desenhar();
+// [Canvas] retangulo(w=200 h=100)
+
+// Troca de renderizador em runtime — sem subclasse nova:
+c.trocarRenderizador(raster);
+c.desenhar();
+// [Canvas] circulo(r=50)</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Implementador — eixo do renderizador ──────────────────────
+interface Renderizador
+{
+    public function renderizarForma(string $tipo, string $params): void;
+}
+
+class RenderizadorVetorial implements Renderizador
+{
+    public function renderizarForma(string $tipo, string $params): void
+    {
+        echo "[SVG]    {$tipo}({$params})" . PHP_EOL;
+    }
+}
+
+class RenderizadorRaster implements Renderizador
+{
+    public function renderizarForma(string $tipo, string $params): void
+    {
+        echo "[Canvas] {$tipo}({$params})" . PHP_EOL;
+    }
+}
+
+// ── Abstração — eixo da forma geométrica ──────────────────────
+abstract class Forma
+{
+    public function __construct(
+        protected Renderizador $renderizador
+    ) {}
+
+    abstract public function desenhar(): void;
+
+    // O implementador pode ser trocado em runtime:
+    public function trocarRenderizador(Renderizador $renderizador): void
+    {
+        $this-&gt;renderizador = $renderizador;
+    }
+}
+
+// ── Abstrações refinadas ──────────────────────────────────────
+class Circulo extends Forma
+{
+    public function __construct(
+        Renderizador $renderizador,
+        private readonly int $raio
+    ) {
+        parent::__construct($renderizador);
+    }
+
+    public function desenhar(): void
+    {
+        $this-&gt;renderizador-&gt;renderizarForma('circulo', "r={$this-&gt;raio}");
+    }
+}
+
+class Retangulo extends Forma
+{
+    public function __construct(
+        Renderizador $renderizador,
+        private readonly int $largura,
+        private readonly int $altura
+    ) {
+        parent::__construct($renderizador);
+    }
+
+    public function desenhar(): void
+    {
+        $this-&gt;renderizador-&gt;renderizarForma(
+            'retangulo',
+            "w={$this-&gt;largura} h={$this-&gt;altura}"
+        );
+    }
+}
+
+// ── Uso ───────────────────────────────────────────────────────
+$vetorial = new RenderizadorVetorial();
+$raster   = new RenderizadorRaster();
+
+$c = new Circulo($vetorial, 50);
+$c-&gt;desenhar();
+// [SVG]    circulo(r=50)
+
+(new Circulo($raster, 50))-&gt;desenhar();
+// [Canvas] circulo(r=50)
+
+(new Retangulo($vetorial, 200, 100))-&gt;desenhar();
+// [SVG]    retangulo(w=200 h=100)
+
+(new Retangulo($raster, 200, 100))-&gt;desenhar();
+// [Canvas] retangulo(w=200 h=100)
+
+// Troca de renderizador em runtime — sem subclasse nova:
+$c-&gt;trocarRenderizador($raster);
+$c-&gt;desenhar();
+// [Canvas] circulo(r=50)</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 2) -->
+
+        </section><!-- /.artigo__secao (exemplos) -->
+
+        <!-- 6. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Quando você identifica dois eixos independentes de variação:</strong>
+              qualquer estrutura onde "tipo de X" e "implementação de Y" variam
+              separadamente e você não quer criar uma subclasse para cada combinação.
+            </li>
+            <li>
+              <strong>Quando abstração e implementação devem ser extensíveis de forma
+              independente:</strong> equipes diferentes mantêm cada eixo; novas
+              implementações não devem afetar as abstrações e vice-versa.
+            </li>
+            <li>
+              <strong>Quando você quer trocar a implementação em runtime:</strong>
+              como o implementador é injetado por composição, ele pode ser substituído
+              sem recriar a abstração.
+            </li>
+            <li>
+              <strong>Para ocultar detalhes de implementação do código cliente:</strong>
+              o cliente só conhece a interface da abstração; os ConcreteImplementors
+              ficam completamente encapsulados.
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>Quando há apenas um eixo de variação:</strong> se só a
+              implementação varia (e não a abstração), um simples Strategy já
+              resolve sem a estrutura adicional do Bridge.
+            </li>
+            <li>
+              <strong>Quando o design ainda não está claro:</strong> o Bridge exige
+              identificar os dois eixos de variação antecipadamente. Aplicá-lo cedo
+              demais a um design instável gera abstração prematura que dificulta
+              mudanças subsequentes.
+            </li>
+            <li>
+              <strong>Quando a hierarquia é pequena e estável:</strong> se você tem
+              2 tipos e 2 implementações que raramente mudam, 4 subclasses diretas
+              podem ser mais simples e legíveis do que a estrutura formal de Bridge.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Elimina a explosão combinatória de subclasses — N + M classes no lugar de N × M.</li>
+            <li>Princípio Aberto/Fechado: novos tipos de abstração ou implementação podem ser adicionados sem alterar o outro eixo.</li>
+            <li>Princípio da Responsabilidade Única: cada classe tem um único eixo de variação.</li>
+            <li>Permite trocar a implementação em runtime por injeção de dependência.</li>
+            <li>Oculta detalhes de implementação do código cliente — apenas a abstração é exposta.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Adiciona complexidade estrutural — mais classes, mais indireção, maior curva de aprendizado para quem lê o código pela primeira vez.</li>
+            <li>Exige identificar os dois eixos de variação no design inicial — pode ser difícil em sistemas que ainda estão evoluindo.</li>
+            <li>A relação entre abstração e implementação pode ser contraintuitiva para desenvolvedores não familiarizados com o padrão.</li>
+          </ul>
+        </section>
+
+        <!-- 8. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Usar Bridge quando Strategy bastaria</h3>
+          <p>
+            Se apenas a implementação varia (e não há uma hierarquia de abstrações),
+            o Bridge é desnecessariamente complexo. A regra prática: se você tem uma
+            única classe de abstração e vários implementadores, use Strategy. Se você
+            tem hierarquias em ambos os lados, use Bridge.
+          </p>
+
+          <h3>2. Confundir Bridge com Adapter</h3>
+          <p class="artigo__aviso">
+            <strong>Atenção:</strong> a tentação de usar Bridge como Adapter é
+            frequente. Lembre-se: o Adapter reconcilia duas interfaces incompatíveis
+            que existem de forma independente — é uma solução <em>retroativa</em>.
+            O Bridge é projetado desde o início para separar dois eixos de variação —
+            é uma decisão <em>prospectiva</em>. Se você está "adaptando" uma interface
+            existente, use Adapter. Se está projetando dois eixos independentes,
+            use Bridge.
+          </p>
+
+          <h3>3. Acoplamento acidental entre os dois eixos</h3>
+          <p>
+            O objetivo do Bridge é que abstração e implementação variem de forma
+            independente. Se a abstração começa a chamar métodos específicos de um
+            ConcreteImplementor (fazendo downcast ou chamando métodos além da
+            interface <code>Implementor</code>), o desacoplamento foi quebrado. O
+            Implementor deve expor apenas o que é necessário para todas as abstrações.
+            Se diferentes abstrações precisam de contratos diferentes do implementador,
+            avalie se Bridge ainda é o padrão correto.
+          </p>
+
+          <h3>4. Não injetar o implementador — instanciar dentro da abstração</h3>
+          <p>
+            Um erro sutil é a abstração instanciar o implementador concretamente
+            dentro de si mesma (<code>this.canal = new EmailSender()</code>). Isso
+            restaura o acoplamento que o Bridge visa eliminar. O implementador deve
+            sempre ser injetado de fora — via construtor, setter ou Abstract Factory
+            — para que os dois eixos permaneçam independentes e testáveis.
+          </p>
+        </section>
+
+        <!-- 9. PADRÕES RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Padrões relacionados</h2>
+          <p>
+            O Bridge é frequentemente comparado a outros padrões que também usam
+            composição para delegar comportamento:
+          </p>
+          <!--
+            Disciplina de links: só linka artigos já publicados.
+            Adapter, Strategy e Proxy existem → links reais.
+            Abstract Factory existe → link real.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../adapter/">Adapter</a></li>
+            <li><a href="../strategy/">Strategy</a></li>
+            <li><a href="../abstract-factory/">Abstract Factory</a></li>
+            <li><a href="../proxy/">Proxy</a></li>
+          </ul>
+          <p class="mt-1">
+            O <strong>Adapter</strong> é o padrão mais confundido com Bridge: Adapter
+            reconcilia interfaces incompatíveis existentes (solução retroativa);
+            Bridge separa dois eixos independentes desde o design (solução prospectiva).
+            O <strong>Strategy</strong> também usa composição para delegar, mas tem um
+            único eixo de variação (o algoritmo); Bridge tem dois eixos com hierarquias
+            próprias. O <strong>Abstract Factory</strong> pode ser combinado com Bridge
+            para criar o par abstração + implementador de forma consistente — a factory
+            instancia a implementação correta e a injeta na abstração. O
+            <strong>Proxy</strong> também usa composição, mas representa um único objeto
+            e controla o acesso a ele; Bridge separa estruturalmente dois eixos de
+            variação independentes.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="9898989898"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

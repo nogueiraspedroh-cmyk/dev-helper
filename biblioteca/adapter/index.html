@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Adapter — Design Patterns | Biblioteca Dev Helper</title>
+  <meta name="description" content="Aprenda o padrão Adapter (GoF) em profundidade: intenção, problema, solução, estrutura, exemplos em TypeScript e PHP, quando usar, quando evitar e armadilhas comuns." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Adapter</span>
+        </nav>
+        <span class="artigo__categoria">Padrão Estrutural (GoF)</span>
+        <h1 class="artigo__titulo">Adapter</h1>
+        <p class="artigo__subtitulo">
+          Converte a interface de uma classe na interface que o cliente espera,
+          permitindo que classes com interfaces incompatíveis colaborem sem modificar
+          seu código-fonte.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Fazer com que interfaces incompatíveis trabalhem juntas</strong>,
+            envolvendo uma classe existente (o <em>adaptee</em>) em um wrapper que expõe
+            a interface esperada pelo cliente — sem alterar o adaptee nem o cliente.
+          </p>
+          <p>
+            O Adapter pertence à categoria de <strong>padrões estruturais</strong> no
+            catálogo do GoF (1994) e é um dos mais usados na integração de sistemas:
+            sempre que você consome uma biblioteca de terceiros, um SDK externo ou uma
+            API legada cujas interfaces não se encaixam no contrato que seu domínio define,
+            o Adapter é a ferramenta correta.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Imagine que sua aplicação define uma interface <code>Logger</code> com o método
+            <code>log(nivel, mensagem)</code>. Você decide adotar uma biblioteca de logging
+            de terceiros — digamos, <code>ExternalLogger</code> — que expõe um contrato
+            completamente diferente: métodos separados <code>writeInfo(msg)</code>,
+            <code>writeWarning(msg)</code> e <code>writeError(msg)</code>.
+          </p>
+          <p>
+            Você não pode modificar <code>ExternalLogger</code> (é código de terceiro,
+            atualizado por outra equipe). Também não quer modificar toda a sua aplicação
+            para chamar a nova API diretamente — isso cria acoplamento com o fornecedor
+            e torna uma futura troca de biblioteca uma refatoração massiva.
+          </p>
+          <p>
+            A solução ingênua seria espalhar condicionais ou chamadas diretas à biblioteca
+            por todo o código. O Adapter resolve isso de forma limpa: um único objeto
+            intermediário traduz as chamadas.
+          </p>
+
+          <h3>Object Adapter vs Class Adapter</h3>
+          <p>
+            O GoF descreve duas variantes:
+          </p>
+          <ul>
+            <li>
+              <strong>Object Adapter (composição):</strong> o adapter mantém uma referência
+              ao adaptee e delega as chamadas a ele. É a forma idiomática em TypeScript e
+              PHP — não depende de herança múltipla, funciona com subclasses do adaptee e
+              é mais flexível.
+            </li>
+            <li>
+              <strong>Class Adapter (herança múltipla):</strong> o adapter herda tanto da
+              interface-alvo quanto do adaptee. Em TypeScript e PHP, herança múltipla de
+              classes não existe — logo, esta variante não se aplica diretamente. Em PHP,
+              pode-se simular parcialmente com <em>traits</em>, mas o resultado costuma
+              ser mais complexo sem ganho real. Prefira sempre o Object Adapter.
+            </li>
+          </ul>
+          <p>
+            Nos exemplos abaixo, usamos exclusivamente o Object Adapter.
+          </p>
+        </section>
+
+        <!-- 3. SOLUÇÃO -->
+        <section class="artigo__secao">
+          <h2>Solução</h2>
+          <p>O Adapter organiza o código em quatro participantes:</p>
+          <ol>
+            <li>
+              <strong>Target (interface-alvo):</strong> o contrato que o cliente espera.
+              Ex.: interface <code>Logger</code> com <code>log(nivel, mensagem)</code>.
+            </li>
+            <li>
+              <strong>Adaptee (classe existente/incompatível):</strong> a classe cuja
+              interface precisa ser adaptada. Ex.: <code>ExternalLogger</code> com
+              <code>writeInfo()</code>, <code>writeWarning()</code>, <code>writeError()</code>.
+            </li>
+            <li>
+              <strong>Adapter:</strong> implementa a interface Target e mantém uma
+              referência ao Adaptee. Traduz cada chamada do Target para a API do Adaptee.
+              Ex.: <code>ExternalLoggerAdapter implements Logger</code>.
+            </li>
+            <li>
+              <strong>Client:</strong> usa apenas a interface Target — nunca conhece o
+              Adaptee diretamente.
+            </li>
+          </ol>
+          <p>
+            Com o Adapter no lugar, trocar de biblioteca de logging é uma mudança de
+            uma única classe — o resto do sistema permanece intocado.
+          </p>
+        </section>
+
+        <!-- 4. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+          <div class="code-bloco">
+<pre><code>   «interface» Target
+  ┌───────────────────────────────┐
+  │ + log(nivel, mensagem): void  │
+  └───────────────────────────────┘
+          ▲               ▲
+          │               │ implementa
+   Código cliente   ExternalLoggerAdapter
+   usa o Target          (Adapter)
+                    ┌──────────────────────────────┐
+                    │ - adaptee: ExternalLogger     │
+                    │ + log(nivel, mensagem): void  │
+                    └──────────────────────────────┘
+                                │ delega para
+                                ▼
+                        ExternalLogger
+                           (Adaptee)
+                    ┌──────────────────────────────┐
+                    │ + writeInfo(msg): void        │
+                    │ + writeWarning(msg): void     │
+                    │ + writeError(msg): void       │
+                    └──────────────────────────────┘
+
+
+Fluxo de uma chamada:
+
+  cliente.log("error", "Falha na conexão")
+      │
+      ▼ (via interface Logger)
+  ExternalLoggerAdapter.log("error", "Falha na conexão")
+      │
+      │  switch(nivel) → chama writeError()
+      ▼
+  ExternalLogger.writeError("Falha na conexão")
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. EXEMPLOS DE CÓDIGO -->
+        <section class="artigo__secao">
+          <h2>Exemplos de código</h2>
+
+          <h3>Exemplo 1 — Adapter de logger de terceiros</h3>
+          <p>
+            O cliente conhece apenas a interface <code>Logger</code>. O Adapter traduz
+            as chamadas para a API incompatível da biblioteca externa.
+          </p>
+
+          <!-- GRUPO DE ABAS 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 1 — adapter de logger">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Target — interface que o código da aplicação conhece ─────
+type NivelLog = "info" | "warning" | "error";
+
+interface Logger {
+  log(nivel: NivelLog, mensagem: string): void;
+}
+
+// ── Adaptee — biblioteca de terceiro com API incompatível ─────
+// (código que NÃO podemos modificar)
+class ExternalLogger {
+  writeInfo(msg: string): void {
+    console.log(`[INFO]    ${msg}`);
+  }
+  writeWarning(msg: string): void {
+    console.warn(`[WARNING] ${msg}`);
+  }
+  writeError(msg: string): void {
+    console.error(`[ERROR]   ${msg}`);
+  }
+}
+
+// ── Adapter (Object Adapter via composição) ───────────────────
+class ExternalLoggerAdapter implements Logger {
+  // Mantém referência ao adaptee — sem herdar dele.
+  constructor(private readonly adaptee: ExternalLogger) {}
+
+  log(nivel: NivelLog, mensagem: string): void {
+    switch (nivel) {
+      case "info":    this.adaptee.writeInfo(mensagem);    break;
+      case "warning": this.adaptee.writeWarning(mensagem); break;
+      case "error":   this.adaptee.writeError(mensagem);   break;
+    }
+  }
+}
+
+// ── Código cliente — usa apenas a interface Logger ────────────
+function processarPedido(logger: Logger, pedidoId: string): void {
+  logger.log("info",    `Iniciando processamento do pedido ${pedidoId}`);
+  logger.log("warning", `Estoque baixo para o pedido ${pedidoId}`);
+  logger.log("error",   `Falha no pagamento do pedido ${pedidoId}`);
+}
+
+// Montagem — o cliente nunca sabe que existe um ExternalLogger:
+const logger = new ExternalLoggerAdapter(new ExternalLogger());
+processarPedido(logger, "PED-001");
+// [INFO]    Iniciando processamento do pedido PED-001
+// [WARNING] Estoque baixo para o pedido PED-001
+// [ERROR]   Falha no pagamento do pedido PED-001</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Target — interface que o código da aplicação conhece ─────
+interface Logger
+{
+    public function log(string $nivel, string $mensagem): void;
+}
+
+// ── Adaptee — biblioteca de terceiro com API incompatível ─────
+// (código que NÃO podemos modificar)
+class ExternalLogger
+{
+    public function writeInfo(string $msg): void
+    {
+        echo "[INFO]    {$msg}" . PHP_EOL;
+    }
+
+    public function writeWarning(string $msg): void
+    {
+        echo "[WARNING] {$msg}" . PHP_EOL;
+    }
+
+    public function writeError(string $msg): void
+    {
+        echo "[ERROR]   {$msg}" . PHP_EOL;
+    }
+}
+
+// ── Adapter (Object Adapter via composição) ───────────────────
+class ExternalLoggerAdapter implements Logger
+{
+    // Mantém referência ao adaptee — sem herdar dele.
+    public function __construct(
+        private readonly ExternalLogger $adaptee
+    ) {}
+
+    public function log(string $nivel, string $mensagem): void
+    {
+        match ($nivel) {
+            'info'    =&gt; $this-&gt;adaptee-&gt;writeInfo($mensagem),
+            'warning' =&gt; $this-&gt;adaptee-&gt;writeWarning($mensagem),
+            'error'   =&gt; $this-&gt;adaptee-&gt;writeError($mensagem),
+            default   =&gt; $this-&gt;adaptee-&gt;writeInfo($mensagem),
+        };
+    }
+}
+
+// ── Código cliente — usa apenas a interface Logger ────────────
+function processarPedido(Logger $logger, string $pedidoId): void
+{
+    $logger-&gt;log('info',    "Iniciando processamento do pedido {$pedidoId}");
+    $logger-&gt;log('warning', "Estoque baixo para o pedido {$pedidoId}");
+    $logger-&gt;log('error',   "Falha no pagamento do pedido {$pedidoId}");
+}
+
+// Montagem — o cliente nunca sabe que existe um ExternalLogger:
+$logger = new ExternalLoggerAdapter(new ExternalLogger());
+processarPedido($logger, 'PED-001');
+// [INFO]    Iniciando processamento do pedido PED-001
+// [WARNING] Estoque baixo para o pedido PED-001
+// [ERROR]   Falha no pagamento do pedido PED-001</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 1) -->
+
+          <h3>Exemplo 2 — Adapter de gateway de pagamento</h3>
+          <p>
+            Um caso muito comum na prática: sua aplicação define um contrato de pagamento
+            próprio, e cada provider (Stripe, PagSeguro, Mercado Pago) tem sua própria SDK
+            com API diferente. Um Adapter por provider mantém o domínio isolado.
+          </p>
+
+          <!-- GRUPO DE ABAS 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 2 — adapter de gateway">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Target — contrato de pagamento do domínio da aplicação ───
+interface GatewayPagamento {
+  cobrar(valorCentavos: number, descricao: string): Promise&lt;string&gt;;
+}
+
+// ── Adaptee A — SDK do Stripe (interface incompatível) ───────
+class StripeSdk {
+  async createCharge(amount: number, currency: string, desc: string): Promise&lt;{ id: string }&gt; {
+    // Simulação da chamada real ao Stripe
+    return { id: `stripe_ch_${Date.now()}` };
+  }
+}
+
+// ── Adaptee B — SDK do PagSeguro (interface diferente) ───────
+class PagSeguroSdk {
+  async realizarCobranca(params: {
+    valor: number;
+    moeda: string;
+    referencia: string;
+  }): Promise&lt;{ transacaoId: string }&gt; {
+    return { transacaoId: `pag_${Date.now()}` };
+  }
+}
+
+// ── Adapter A ─────────────────────────────────────────────────
+class StripeAdapter implements GatewayPagamento {
+  constructor(private readonly sdk: StripeSdk) {}
+
+  async cobrar(valorCentavos: number, descricao: string): Promise&lt;string&gt; {
+    const resultado = await this.sdk.createCharge(
+      valorCentavos,
+      "BRL",
+      descricao
+    );
+    return resultado.id;
+  }
+}
+
+// ── Adapter B ─────────────────────────────────────────────────
+class PagSeguroAdapter implements GatewayPagamento {
+  constructor(private readonly sdk: PagSeguroSdk) {}
+
+  async cobrar(valorCentavos: number, descricao: string): Promise&lt;string&gt; {
+    const resultado = await this.sdk.realizarCobranca({
+      valor: valorCentavos / 100, // PagSeguro usa reais, não centavos
+      moeda: "BRL",
+      referencia: descricao,
+    });
+    return resultado.transacaoId;
+  }
+}
+
+// ── Código cliente — desacoplado do provider ──────────────────
+async function processarPagamento(
+  gateway: GatewayPagamento,
+  valorCentavos: number
+): Promise&lt;void&gt; {
+  const transacaoId = await gateway.cobrar(valorCentavos, "Assinatura mensal");
+  console.log(`Pagamento aprovado. Transação: ${transacaoId}`);
+}
+
+// Troca de provider = trocar apenas a linha de montagem:
+const gateway = new StripeAdapter(new StripeSdk());
+await processarPagamento(gateway, 4990); // R$49,90</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Target — contrato de pagamento do domínio da aplicação ───
+interface GatewayPagamento
+{
+    public function cobrar(int $valorCentavos, string $descricao): string;
+}
+
+// ── Adaptee A — SDK do Stripe (interface incompatível) ───────
+class StripeSdk
+{
+    public function createCharge(
+        int $amount,
+        string $currency,
+        string $desc
+    ): array {
+        // Simulação da chamada real ao Stripe
+        return ['id' =&gt; 'stripe_ch_' . time()];
+    }
+}
+
+// ── Adaptee B — SDK do PagSeguro (interface diferente) ───────
+class PagSeguroSdk
+{
+    public function realizarCobranca(array $params): array
+    {
+        return ['transacaoId' =&gt; 'pag_' . time()];
+    }
+}
+
+// ── Adapter A ─────────────────────────────────────────────────
+class StripeAdapter implements GatewayPagamento
+{
+    public function __construct(private readonly StripeSdk $sdk) {}
+
+    public function cobrar(int $valorCentavos, string $descricao): string
+    {
+        $resultado = $this-&gt;sdk-&gt;createCharge($valorCentavos, 'BRL', $descricao);
+        return $resultado['id'];
+    }
+}
+
+// ── Adapter B ─────────────────────────────────────────────────
+class PagSeguroAdapter implements GatewayPagamento
+{
+    public function __construct(private readonly PagSeguroSdk $sdk) {}
+
+    public function cobrar(int $valorCentavos, string $descricao): string
+    {
+        // PagSeguro usa reais, não centavos
+        $resultado = $this-&gt;sdk-&gt;realizarCobranca([
+            'valor'      =&gt; $valorCentavos / 100,
+            'moeda'      =&gt; 'BRL',
+            'referencia' =&gt; $descricao,
+        ]);
+        return $resultado['transacaoId'];
+    }
+}
+
+// ── Código cliente — desacoplado do provider ──────────────────
+function processarPagamento(GatewayPagamento $gateway, int $valorCentavos): void
+{
+    $transacaoId = $gateway-&gt;cobrar($valorCentavos, 'Assinatura mensal');
+    echo "Pagamento aprovado. Transação: {$transacaoId}" . PHP_EOL;
+}
+
+// Troca de provider = trocar apenas a linha de montagem:
+$gateway = new StripeAdapter(new StripeSdk());
+processarPagamento($gateway, 4990); // R$49,90</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 2) -->
+
+        </section><!-- /.artigo__secao (exemplos) -->
+
+        <!-- 6. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Integrar uma biblioteca ou SDK de terceiros</strong> cuja interface
+              não corresponde ao contrato do seu domínio — e você não pode modificar a
+              biblioteca.
+            </li>
+            <li>
+              <strong>Isolar o domínio de providers externos:</strong> gateways de pagamento,
+              serviços de e-mail, provedores de SMS, APIs de geolocalização. O Adapter cria
+              uma barreira anti-corrupção: o domínio evolui sem acoplamento ao provider.
+            </li>
+            <li>
+              <strong>Reutilizar classes legadas</strong> com interfaces incompatíveis com
+              o código novo — sem reescrevê-las.
+            </li>
+            <li>
+              <strong>Suportar múltiplas implementações de um serviço</strong> de forma
+              transparente para o cliente (vide o exemplo com Stripe e PagSeguro).
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>Quando você controla ambas as interfaces:</strong> se você pode
+              modificar o adaptee para que ele implemente diretamente a interface-alvo,
+              não há necessidade de um Adapter — modifique a fonte.
+            </li>
+            <li>
+              <strong>Quando a diferença de interface é trivial:</strong> renomear um
+              parâmetro não justifica criar uma camada de indireção inteira.
+            </li>
+            <li>
+              <strong>Como substituto para refatoração:</strong> Adapters sobre código
+              interno ruim são um paliativo. Em código próprio mal estruturado, a solução
+              é refatorar, não adaptar.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Princípio da Responsabilidade Única: a conversão de interface fica em uma classe dedicada.</li>
+            <li>Princípio Aberto/Fechado: novos providers exigem apenas um novo Adapter, sem tocar no código existente.</li>
+            <li>Isola o código de negócio de SDKs e APIs de terceiros — facilita testes (basta injetar um fake que implementa a interface-alvo).</li>
+            <li>Permite trocar a implementação subjacente sem alterar o cliente.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Adiciona uma camada de indireção — aumenta o número de classes e pode tornar o fluxo menos óbvio na primeira leitura.</li>
+            <li>Se a diferença entre as interfaces for muito grande (paradigmas completamente distintos), o Adapter pode tornar-se complexo e difícil de manter.</li>
+            <li>Adapters sobre Adapters (cadeia longa) são um sinal de que o design precisa ser revisado.</li>
+          </ul>
+        </section>
+
+        <!-- 8. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Confundir Adapter com Facade</h3>
+          <p>
+            Adapter e Facade são superficialmente parecidos — ambos envolvem código
+            existente. A diferença-chave: o <strong>Adapter</strong> converte uma interface
+            incompatível em outra esperada pelo cliente (foco em compatibilidade de
+            interface). A <strong>Facade</strong> simplifica e unifica um subsistema complexo
+            em uma interface de alto nível (foco em simplificação de uso). Um Adapter pode
+            adaptar uma única classe; uma Facade costuma orquestrar múltiplas classes.
+          </p>
+
+          <h3>2. Vazar a interface do adaptee para o cliente</h3>
+          <p class="artigo__aviso">
+            <strong>Atenção:</strong> o objetivo do Adapter é que o cliente nunca
+            referencie o adaptee diretamente. Se o código cliente importa ou conhece
+            <code>ExternalLogger</code>, o isolamento foi comprometido. O Adapter deve
+            ser a única fronteira — injete-o via interface no cliente e mantenha o
+            adaptee encapsulado.
+          </p>
+
+          <h3>3. Adapter com lógica de negócio</h3>
+          <p>
+            O Adapter deve apenas traduzir chamadas — não deve conter lógica de negócio.
+            Se você se vê adicionando regras de validação ou transformações complexas de
+            dados dentro do Adapter, extraia essas responsabilidades para um serviço
+            separado. O Adapter que faz demais viola o Princípio da Responsabilidade Única
+            e se torna difícil de testar.
+          </p>
+
+          <h3>4. Não criar testes com o adaptee real</h3>
+          <p>
+            Testes unitários do Adapter devem usar um mock do adaptee (para isolar a lógica
+            de tradução). Testes de integração com o adaptee real (ex.: chamada de fato ao
+            Stripe em modo sandbox) são necessários, mas separados. Não misture os dois
+            níveis no mesmo conjunto de testes.
+          </p>
+        </section>
+
+        <!-- 9. PADRÕES RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Padrões relacionados</h2>
+          <p>
+            O Adapter é frequentemente comparado e combinado com outros padrões estruturais:
+          </p>
+          <!--
+            Disciplina de links: só linka artigos já publicados.
+            Ao publicar um artigo novo, troque o <span> pelo <a href="../slug/">.
+            Decorator e Facade existem nesta leva → links reais.
+            Proxy e Bridge — pendentes.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../decorator/">Decorator</a></li>
+            <li><a href="../facade/">Facade</a></li>
+            <li><a href="../proxy/">Proxy</a></li>
+            <li><a href="../bridge/">Bridge</a></li>
+          </ul>
+          <p class="mt-1">
+            O <strong>Decorator</strong> mantém a mesma interface que o objeto decorado —
+            seu objetivo é adicionar responsabilidades, não mudar o contrato. O Adapter,
+            ao contrário, tem exatamente o objetivo de <em>mudar</em> a interface.
+            A <strong>Facade</strong> simplifica um subsistema; não adapta uma interface
+            incompatível — mas ambas criam um ponto de entrada único para código externo.
+            O <strong>Proxy</strong> também envolve o objeto original, mas mantém a mesma
+            interface e adiciona controle de acesso, cache ou lazy initialization — não
+            muda o contrato. O <strong>Bridge</strong> separa uma abstração de sua
+            implementação desde o design; o Adapter reconcilia interfaces incompatíveis
+            que existem de forma independente.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="8181818181"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

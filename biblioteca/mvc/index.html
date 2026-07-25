@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MVC — Arquiteturas | Biblioteca Dev Helper</title>
+  <meta name="description" content="Entenda a arquitetura MVC (Model-View-Controller): intenção, fluxo de requisição, diferença entre MVC clássico e web/server-side, quando usar, armadilhas e padrões relacionados." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>MVC</span>
+        </nav>
+        <span class="artigo__categoria">Arquitetura</span>
+        <h1 class="artigo__titulo">MVC</h1>
+        <p class="artigo__subtitulo">
+          Separa uma aplicação em três responsabilidades distintas — Model (dados e
+          regras de negócio), View (apresentação) e Controller (entrada e fluxo) —
+          permitindo que cada camada evolua de forma independente.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Separar as preocupações de dados, apresentação e controle de
+            fluxo</strong> em três componentes distintos, de modo que alterações em um
+            não forcem modificações nos outros. O Model não sabe como a View exibe os
+            dados; a View não sabe de onde os dados vêm; o Controller coordena os dois
+            sem conter lógica de negócio.
+          </p>
+          <p>
+            MVC foi criado por Trygve Reenskaug no Xerox PARC, no final dos anos 1970
+            (no contexto do Smalltalk), como uma solução para construir interfaces gráficas
+            interativas. Desde então
+            migrou para aplicações desktop, depois para a web server-side (Rails, Django,
+            Laravel, ASP.NET MVC) e, mais recentemente, influenciou variantes como MVP e
+            MVVM usadas em desenvolvimento mobile e front-end.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Sem separação de responsabilidades, código de apresentação (HTML, formatação),
+            regras de negócio (validação, cálculos) e lógica de controle (roteamento,
+            autenticação) ficam misturados — o que se conhece como <em>spaghetti code</em>
+            ou, no extremo web, o problema do "controlador gordo" ou da "view com SQL".
+            As consequências práticas são:
+          </p>
+          <ul>
+            <li>Dificuldade de testar: não é possível testar regras de negócio sem renderizar HTML ou sem fazer requisições HTTP.</li>
+            <li>Reaproveitamento zero: a mesma lógica de negócio não pode ser reutilizada por uma API JSON e por uma interface web.</li>
+            <li>Alta fragilidade: uma mudança no banco de dados quebra o template; uma mudança no layout quebra a query.</li>
+          </ul>
+          <p>
+            MVC ataca exatamente esse problema ao definir fronteiras claras: o Model
+            encapsula o estado e as regras; a View sabe apenas como renderizar; o
+            Controller apenas traduz a intenção do usuário em chamadas ao Model e em
+            seleção de View.
+          </p>
+        </section>
+
+        <!-- 3. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+
+          <h3>MVC clássico (Smalltalk / desktop)</h3>
+          <p>
+            No MVC original, a View observa diretamente o Model e se atualiza quando o
+            Model muda — uma aplicação do padrão
+            <a href="../observer/">Observer</a>. O Controller traduz a
+            entrada do usuário (teclado, mouse) em comandos ao Model.
+          </p>
+          <div class="code-bloco">
+<pre><code>  ┌─────────────────────────────────────────────────────┐
+  │                    Usuário                          │
+  │              (interage com a View)                  │
+  └──────────────────────┬──────────────────────────────┘
+                         │ entrada (clique, tecla)
+                         ▼
+                   ┌───────────┐
+                   │Controller │ ←── interpreta a ação
+                   └─────┬─────┘
+                         │ atualiza
+                         ▼
+                   ┌───────────┐
+                   │  Model    │ ←── dados + regras de negócio
+                   └─────┬─────┘
+                         │ notifica (Observer)
+                         ▼
+                   ┌───────────┐
+                   │   View    │ ←── lê o Model e re-renderiza
+                   └───────────┘
+
+  Dependências:
+    Controller → Model  (atualiza estado)
+    View → Model        (lê estado para renderizar)
+    Model → View        (notifica via Observer — sem conhecer a View concreta)
+</code></pre>
+          </div>
+
+          <h3>MVC web / server-side</h3>
+          <p>
+            Na web, o protocolo HTTP é stateless: não há um canal de notificação
+            persistente do Model para a View. A relação Observer desaparece. O fluxo
+            é sempre request-response e unidirecional: o Controller processa a requisição,
+            consulta ou modifica o Model, seleciona uma View e a renderiza com os dados.
+          </p>
+          <div class="code-bloco">
+<pre><code>  Requisição HTTP
+       │
+       ▼
+  ┌────────────────────────────────────────────────────────┐
+  │                    Controller                          │
+  │  - recebe e valida a requisição                        │
+  │  - chama o(s) Model(s) necessário(s)                   │
+  │  - seleciona a View apropriada                         │
+  │  - repassa os dados para a View renderizar             │
+  └────────┬───────────────────────────┬───────────────────┘
+           │ usa                       │ passa dados para
+           ▼                           ▼
+     ┌───────────┐               ┌───────────┐
+     │  Model    │               │   View    │
+     │           │               │           │
+     │ - estado  │               │ - template│
+     │ - regras  │               │ - HTML    │
+     │ - queries │               │ - JSON    │
+     └───────────┘               └─────┬─────┘
+                                       │
+                                       ▼
+                               Resposta HTTP
+
+  Dependências no MVC web:
+    Controller → Model  (lê/escreve dados)
+    Controller → View   (seleciona e alimenta)
+    View → Model        (apenas dados passados pelo Controller — sem referência direta)
+    Model               (não conhece Controller nem View)
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 4. COMO FUNCIONA -->
+        <section class="artigo__secao">
+          <h2>Como funciona</h2>
+
+          <h3>Model</h3>
+          <p>
+            O Model representa o estado da aplicação e contém as regras de negócio.
+            Ele não sabe nada sobre como os dados serão exibidos nem de onde veio a
+            requisição. Em aplicações web, o Model costuma envolver entidades de domínio,
+            repositórios de acesso a dados e serviços de domínio.
+          </p>
+          <p>
+            Um Model bem projetado é testável de forma independente — sem HTTP, sem
+            template, sem framework web. Sua interface pública expõe comportamentos
+            (<code>pedido.calcularTotal()</code>, <code>usuario.podePublicar()</code>),
+            não apenas dados nus.
+          </p>
+
+          <h3>View</h3>
+          <p>
+            A View transforma os dados fornecidos pelo Controller em uma representação
+            consumível pelo usuário: HTML, JSON, XML, PDF. Ela não contém lógica de
+            negócio — no máximo, lógica de apresentação (formatação de datas, pluralização,
+            condicionais de exibição baseadas em flags passadas pelo Controller).
+          </p>
+          <p>
+            Em frameworks modernos, a View é um template (Blade, Twig, ERB, Razor) ou
+            um componente de UI. O princípio é o mesmo: a View é passiva — recebe dados
+            e os renderiza.
+          </p>
+
+          <h3>Controller</h3>
+          <p>
+            O Controller é o mediador. Ele recebe a entrada (requisição HTTP, evento de
+            UI), valida superficialmente os parâmetros, delega o trabalho real ao Model
+            e seleciona qual View usar com quais dados. O Controller deve ser fino:
+            se há lógica de negócio no Controller, ela está no lugar errado.
+          </p>
+        </section>
+
+        <!-- 5. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Aplicações web server-side com renderização de templates:</strong>
+              é o padrão dominante em frameworks como Laravel, Rails, Django, ASP.NET MVC
+              e Spring MVC. A separação Model/View/Controller é nativa na estrutura do
+              framework.
+            </li>
+            <li>
+              <strong>Quando o mesmo Model precisa ser exposto por múltiplas Views:</strong>
+              uma API JSON e uma interface HTML podem compartilhar o mesmo Model — apenas
+              o Controller e a View mudam.
+            </li>
+            <li>
+              <strong>Para equipes que dividem responsabilidades:</strong> back-end cuida
+              do Model, front-end cuida dos templates (View), e o Controller define o
+              contrato entre os dois.
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>Aplicações com lógica de domínio complexa:</strong> MVC por si só
+              não define onde fica a lógica de aplicação, os casos de uso, as regras de
+              autorização por caso de uso. Para sistemas complexos, MVC costuma ser o
+              ponto de partida, mas precisa ser complementado com
+              <a href="../arquitetura-em-camadas/">Arquitetura em Camadas</a> ou
+              <a href="../arquitetura-hexagonal/">Arquitetura Hexagonal</a> para que o
+              domínio não vaze para o Controller.
+            </li>
+            <li>
+              <strong>SPAs (Single Page Applications):</strong> quando o front-end é
+              gerenciado por React, Vue ou Angular, o MVC server-side perde relevância
+              para a camada de apresentação. O servidor passa a ser uma API REST/GraphQL
+              — o padrão relevante fica no cliente (MVVM com reatividade, Flux, etc.).
+            </li>
+            <li>
+              <strong>Quando a "View" é uma API JSON simples sem estado de UI:</strong>
+              o conceito de View como template não se aplica. Uma API pura é melhor
+              modelada com uma camada de Application Service + serialização explícita.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 6. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Separação clara de responsabilidades: Model, View e Controller evoluem de forma independente.</li>
+            <li>Model totalmente testável sem infraestrutura de apresentação.</li>
+            <li>Facilita o trabalho paralelo: desenvolvedores de back-end e front-end podem atuar em paralelo com um contrato definido.</li>
+            <li>Suporte nativo em praticamente todos os frameworks web modernos — a curva de aprendizado é baixa para quem já conhece o framework.</li>
+            <li>Múltiplas Views para o mesmo Model sem duplicação de lógica.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Não define onde fica a lógica de aplicação (casos de uso, orquestração) — essa lacuna costuma ser preenchida mal, engordando o Controller.</li>
+            <li>Em aplicações grandes, a separação MVC é insuficiente: é preciso combinar com Arquitetura em Camadas ou Hexagonal para isolar o domínio da infraestrutura.</li>
+            <li>O conceito de "View" é ambíguo em APIs REST puras — o padrão se aplica com adaptações.</li>
+            <li>Pode dar uma falsa sensação de organização: ter pastas <code>models/</code>, <code>views/</code> e <code>controllers/</code> não garante que a lógica esteja nos lugares certos.</li>
+          </ul>
+        </section>
+
+        <!-- 7. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Fat Controller (Controlador gordo)</h3>
+          <p>
+            A armadilha mais comum: toda a lógica de negócio e de orquestração vai parar
+            no Controller porque é o lugar "mais fácil" de adicionar código. O Controller
+            passa a ter centenas de linhas com validações, cálculos, chamadas ao banco,
+            envio de e-mails e formatação de resposta. O resultado é um Controller que é
+            impossível de testar unitariamente e impossível de reutilizar.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Regra prática:</strong> se o Controller faz mais do que (1) validar
+            parâmetros de entrada, (2) chamar um serviço/caso de uso e (3) selecionar a
+            resposta, a lógica excedente pertence ao Model ou a um serviço de aplicação.
+            Controllers devem ser finos o suficiente para serem dispensáveis nos testes
+            de regra de negócio.
+          </p>
+
+          <h3>2. Lógica de negócio na View</h3>
+          <p>
+            Templates com condicionais complexas, cálculos de totais, aplicação de
+            descontos e validações de permissão indicam que a View foi sobrecarregada.
+            A View deve receber dados já prontos para exibição — ou, no máximo, dados
+            com flags de apresentação (<code>podeEditar: true</code>) calculadas pelo
+            Controller ou pelo Model.
+          </p>
+
+          <h3>3. Anemic Model (Model anêmico)</h3>
+          <p>
+            O oposto do fat controller: o Model se torna apenas um recipiente de dados
+            (getters e setters), sem nenhum comportamento. Toda a lógica vai para o
+            Controller ou para classes de serviço. O resultado é que o "Model" não
+            modela nada — é apenas um DTO. Prefira modelos ricos que encapsulam
+            invariantes e comportamentos relevantes ao domínio.
+          </p>
+
+          <h3>4. Acoplamento direto entre View e banco de dados</h3>
+          <p>
+            Queries SQL ou chamadas a ORM dentro de templates (o clássico problema N+1
+            nas views de PHP legado) são o sinal mais claro de que as responsabilidades
+            colapsaram. Toda consulta deve passar pelo Model; a View recebe apenas
+            coleções já resolvidas.
+          </p>
+        </section>
+
+        <!-- 8. PADRÕES E ARQUITETURAS RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Arquiteturas e padrões relacionados</h2>
+          <!--
+            Disciplina de links: só linka artigos já publicados.
+            Observer, Arquitetura em Camadas, Hexagonal, MVP e MVVM existem → links reais.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../observer/">Observer</a></li>
+            <li><a href="../arquitetura-em-camadas/">Arquitetura em Camadas</a></li>
+            <li><a href="../arquitetura-hexagonal/">Arquitetura Hexagonal (Ports &amp; Adapters)</a></li>
+            <li><a href="../mvp/">MVP (Model-View-Presenter)</a></li>
+            <li><a href="../mvvm/">MVVM (Model-View-ViewModel)</a></li>
+          </ul>
+          <p class="mt-1">
+            O <strong>Observer</strong> é o mecanismo que permite ao Model notificar as
+            Views no MVC clássico sem depender delas concretamente — o Model dispara
+            eventos; as Views, registradas como observadoras, se atualizam. Na web
+            server-side essa relação desaparece, pois não há canal persistente.
+          </p>
+          <p>
+            A <strong>Arquitetura em Camadas</strong> complementa o MVC ao definir como
+            o Model se estrutura internamente: Apresentação (Controller + View), Aplicação
+            (casos de uso), Domínio (entidades e regras) e Infraestrutura (banco, APIs
+            externas). MVC sem camadas claras no Model costuma resultar em fat controllers.
+          </p>
+          <p>
+            A <strong>Arquitetura Hexagonal</strong> vai além e inverte as dependências:
+            o domínio define portas (interfaces), e os adaptadores (Controllers HTTP,
+            adaptadores de banco) implementam essas portas. O Controller MVC se torna um
+            adaptador primário — e o domínio permanece completamente isolado da web.
+          </p>
+          <p>
+            <strong>MVP</strong> (Model-View-Presenter) e <strong>MVVM</strong>
+            (Model-View-ViewModel) são evoluções do MVC para contextos de UI reativos
+            (Android, iOS, front-end com frameworks declarativos). O Presenter e o
+            ViewModel assumem o papel de mediar a View de forma mais bidirecional do
+            que o Controller MVC clássico permite.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="8787878787"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

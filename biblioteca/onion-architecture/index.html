@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Onion Architecture — Arquiteturas | Biblioteca Dev Helper</title>
+  <meta name="description" content="Entenda a Onion Architecture: domínio rico no centro, dependências apontando para dentro, serviços de aplicação e infraestrutura na casca externa." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Onion Architecture</span>
+        </nav>
+        <span class="artigo__categoria">Arquitetura</span>
+        <h1 class="artigo__titulo">Onion Architecture</h1>
+        <p class="artigo__subtitulo">
+          Coloca o <em>domain model rico</em> no núcleo absoluto do sistema,
+          com dependências que apontam exclusivamente para dentro — a
+          infraestrutura fica na casca mais externa e nunca é conhecida
+          pelas camadas internas.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Posicionar o domain model — entidades com comportamento real e
+            serviços de domínio — no centro absoluto do sistema</strong>, de forma que
+            nenhuma camada interna precise saber que existe um banco de dados, um
+            framework web ou qualquer tecnologia externa. A infraestrutura é tratada
+            como detalhe substituível na casca mais externa.
+          </p>
+          <p>
+            A Onion Architecture foi descrita por Jeffrey Palermo em 2008 e representa
+            uma evolução direta da
+            <a href="../arquitetura-em-camadas/">Arquitetura em Camadas</a> com inversão
+            explícita das dependências. Enquanto a Arquitetura em Camadas clássica posiciona
+            a infraestrutura "abaixo" do domínio como sua dependência natural, a Onion
+            inverte essa relação: a infraestrutura fica "fora" e implementa interfaces
+            definidas pelo domínio.
+          </p>
+          <p>
+            A ênfase central da Onion Architecture é o <strong>domain model rico</strong>:
+            entidades que encapsulam comportamento e invariantes, serviços de domínio que
+            expressam operações que não pertencem a nenhuma entidade individual, e
+            interfaces de repositório definidas dentro do domínio — não na infraestrutura.
+            Um domínio anêmico (entidades como meros repositórios de dados) anula o
+            benefício principal da arquitetura.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            A Onion Architecture resolve os mesmos problemas da
+            <a href="../arquitetura-em-camadas/">Arquitetura em Camadas</a> clássica, com
+            ênfase especial em dois deles:
+          </p>
+          <ul>
+            <li>
+              <strong>Dependência do domínio para a infraestrutura:</strong> em sistemas
+              com Arquitetura em Camadas sem inversão de dependência, entidades importam
+              classes ORM, serviços de domínio injetam conexões de banco de dados, e
+              trocar de tecnologia de persistência exige modificar o domínio. A Onion
+              inverte essa relação: o domínio define a interface; a infraestrutura a
+              implementa.
+            </li>
+            <li>
+              <strong>Domínio anêmico:</strong> quando as regras de negócio migram para
+              serviços de aplicação porque as entidades são tratadas como estruturas de
+              dados passivas, o domínio perde expressividade. A Onion Architecture
+              incentiva explicitamente que as entidades tenham comportamento — métodos
+              que aplicam regras, lançam eventos, validam invariantes.
+            </li>
+            <li>
+              <strong>Dificuldade de testar o domínio isoladamente:</strong> quando o
+              domínio depende de infraestrutura concreta, testar uma regra de negócio
+              exige subir toda a stack. Com o domínio no centro e interfaces definidas
+              por ele, qualquer camada pode ser substituída por um dublê de teste simples.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+          <p>
+            A estrutura é visualizada como camadas concêntricas de uma cebola. O
+            centro contém as políticas mais estáveis; a casca externa contém os
+            detalhes mais voláteis.
+          </p>
+          <div class="code-bloco">
+<pre><code>  ╔═══════════════════════════════════════════════════════════════════╗
+  ║  INFRAESTRUTURA (casca mais externa)                              ║
+  ║  Banco de dados, frameworks, UI, serviços externos, filas         ║
+  ║  Implementa interfaces definidas pelas camadas internas           ║
+  ║  ┌─────────────────────────────────────────────────────────────┐  ║
+  ║  │  SERVIÇOS DE APLICAÇÃO                                      │  ║
+  ║  │  Casos de uso, orquestração, autorização, transações        │  ║
+  ║  │  Conhece o domínio; não conhece infraestrutura concreta     │  ║
+  ║  │  ┌───────────────────────────────────────────────────────┐  │  ║
+  ║  │  │  SERVIÇOS DE DOMÍNIO                                  │  │  ║
+  ║  │  │  Operações de domínio que envolvem múltiplas          │  │  ║
+  ║  │  │  entidades; interfaces de repositório                 │  │  ║
+  ║  │  │  ┌─────────────────────────────────────────────────┐  │  │  ║
+  ║  │  │  │  DOMAIN MODEL (núcleo)                          │  │  │  ║
+  ║  │  │  │  Entidades com comportamento, Value Objects      │  │  │  ║
+  ║  │  │  │  Invariantes, eventos de domínio                 │  │  │  ║
+  ║  │  │  │  Sem nenhuma dependência externa                 │  │  │  ║
+  ║  │  │  └─────────────────────────────────────────────────┘  │  │  ║
+  ║  │  └───────────────────────────────────────────────────────┘  │  ║
+  ║  └─────────────────────────────────────────────────────────────┘  ║
+  ╚═══════════════════════════════════════════════════════════════════╝
+
+  Regra de dependência: todas as setas apontam para o centro.
+  A infraestrutura implementa interfaces do domínio — nunca o contrário.
+  O domínio não tem nenhum import de nenhuma camada externa.
+</code></pre>
+          </div>
+
+          <h3>As camadas da Onion</h3>
+          <ul>
+            <li>
+              <strong>Domain Model (núcleo):</strong> entidades com comportamento real,
+              Value Objects imutáveis, invariantes de domínio e eventos de domínio. Não
+              tem nenhuma dependência de nada externo. É o código mais estável do sistema.
+            </li>
+            <li>
+              <strong>Serviços de Domínio:</strong> operações de domínio que envolvem
+              múltiplas entidades ou que não pertencem naturalmente a nenhuma delas.
+              Também é aqui que vivem as interfaces de repositório — definidas pelo domínio,
+              implementadas pela infraestrutura.
+            </li>
+            <li>
+              <strong>Serviços de Aplicação:</strong> casos de uso da aplicação.
+              Orquestram entidades e serviços de domínio, aplicam autorização por caso
+              de uso, gerenciam transações e convertem DTOs de entrada/saída. Conhecem
+              o domínio, mas não conhecem infraestrutura concreta.
+            </li>
+            <li>
+              <strong>Infraestrutura (casca):</strong> implementações concretas de
+              repositórios, controllers HTTP, adaptadores de serviços externos, filas.
+              A camada mais volátil — trocável sem impacto no domínio.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 4. COMO FUNCIONA -->
+        <section class="artigo__secao">
+          <h2>Como funciona — domínio sem imports de infraestrutura</h2>
+          <p>
+            O trecho abaixo ilustra o princípio central: o domínio define suas próprias
+            interfaces de repositório e não importa nada de infraestrutura. A casca
+            externa implementa essas interfaces e aponta para dentro.
+          </p>
+          <div class="code-bloco">
+<pre><code>// ── DOMAIN MODEL (núcleo — zero imports externos) ────────────
+class Conta {
+  private saldo: number;
+
+  constructor(
+    readonly id: string,
+    saldoInicial: number,
+  ) {
+    if (saldoInicial &lt; 0) throw new Error('Saldo inicial não pode ser negativo');
+    this.saldo = saldoInicial;
+  }
+
+  debitar(valor: number): void {
+    if (valor &lt;= 0) throw new Error('Valor de débito deve ser positivo');
+    if (valor &gt; this.saldo) throw new Error('Saldo insuficiente');
+    this.saldo -= valor;
+  }
+
+  creditar(valor: number): void {
+    if (valor &lt;= 0) throw new Error('Valor de crédito deve ser positivo');
+    this.saldo += valor;
+  }
+
+  get saldoAtual(): number { return this.saldo; }
+}
+
+// ── SERVIÇO DE DOMÍNIO — define a interface do repositório ───
+// A interface vive DENTRO do domínio; a infra a implementa.
+interface ContaRepository {
+  buscarPorId(id: string): Promise&lt;Conta | null&gt;;
+  salvar(conta: Conta): Promise&lt;void&gt;;
+}
+
+class TransferenciaService {
+  constructor(private readonly contas: ContaRepository) {}
+
+  async transferir(origemId: string, destinoId: string, valor: number): Promise&lt;void&gt; {
+    const origem = await this.contas.buscarPorId(origemId);
+    const destino = await this.contas.buscarPorId(destinoId);
+    if (!origem || !destino) throw new Error('Conta não encontrada');
+    origem.debitar(valor);
+    destino.creditar(valor);
+    await this.contas.salvar(origem);
+    await this.contas.salvar(destino);
+  }
+}
+
+// ── INFRAESTRUTURA (casca) — implementa a interface do domínio ──
+// Depende do domínio; o domínio nunca depende dela.
+class PostgresContaRepository implements ContaRepository {
+  async buscarPorId(id: string): Promise&lt;Conta | null&gt; {
+    // lê do banco; mapeia para a entidade de domínio
+    return null; // placeholder
+  }
+  async salvar(conta: Conta): Promise&lt;void&gt; {
+    // persiste no banco
+  }
+}</code></pre>
+          </div>
+          <p>
+            O que torna este código Onion: <code>Conta</code> e
+            <code>TransferenciaService</code> não importam nada de fora do domínio.
+            <code>ContaRepository</code> é uma interface declarada dentro do domínio.
+            <code>PostgresContaRepository</code> fica na infraestrutura e importa o
+            domínio — nunca o contrário. Trocar o banco de dados é criar uma nova
+            implementação de <code>ContaRepository</code>; o domínio não muda.
+          </p>
+        </section>
+
+        <!-- 5. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Domínios ricos com comportamento complexo:</strong> a Onion brilha
+              quando há regras de negócio substanciais a modelar — validações de
+              invariante, cálculos de domínio, estados de ciclo de vida de entidades.
+              Quanto mais rico o domínio, mais o investimento nas camadas internas se paga.
+            </li>
+            <li>
+              <strong>Quando a testabilidade do domínio é crítica:</strong> com o domínio
+              no núcleo e interfaces de repositório definidas por ele, é possível testar
+              toda a lógica de negócio com implementações in-memory simples, sem banco
+              real, sem framework, com execução instantânea.
+            </li>
+            <li>
+              <strong>Projetos com alta probabilidade de troca de infraestrutura:</strong>
+              quando há planos de migrar de banco de dados, de provider de e-mail ou de
+              sistema de pagamento, a separação entre domínio e infraestrutura permite
+              que essa troca aconteça sem impacto nas regras de negócio.
+            </li>
+            <li>
+              <strong>Sistemas de longa vida com equipe crescente:</strong> as fronteiras
+              explícitas entre camadas reduzem o acoplamento acidental e facilitam o
+              onboarding — o domínio é o vocabulário compartilhado da equipe, e a
+              arquitetura garante que ele permaneça limpo.
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>Domínios anêmicos ou CRUDs puros:</strong> quando o sistema é
+              essencialmente um formulário de persistência sem regras de negócio complexas,
+              as camadas internas da Onion ficam vazias e o resultado é burocracia
+              arquitetural sem benefício. O principal ganho da Onion é o domain model
+              rico — sem ele, não há o que proteger.
+            </li>
+            <li>
+              <strong>Equipes sem familiaridade com DDD ou inversão de dependência:</strong>
+              sem o entendimento de que a interface de repositório deve ficar no domínio
+              (não na infraestrutura), a Onion costuma ser implementada como Arquitetura
+              em Camadas com dependências invertidas no sentido errado.
+            </li>
+            <li>
+              <strong>Protótipos e MVPs:</strong> o custo de estruturar bem as camadas
+              internas é real. Em fases de descoberta, comece simples e refatore quando
+              o domínio mostrar sua complexidade real.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 6. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Domain model completamente isolado de frameworks, banco de dados e qualquer tecnologia externa.</li>
+            <li>Testabilidade total do domínio sem infraestrutura: repositórios in-memory, serviços mockados, execução rápida.</li>
+            <li>Substituição de infraestrutura sem impacto no domínio — trocar o banco é trocar apenas a implementação na casca externa.</li>
+            <li>Ênfase no domain model rico incentiva entidades com comportamento real, aumentando a expressividade e a manutenibilidade.</li>
+            <li>Compatível e convergente com Clean Architecture e Arquitetura Hexagonal — equipes familiarizadas com qualquer das três transitam facilmente.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Overhead para domínios simples: as camadas concêntricas têm custo de organização e configuração de injeção de dependência.</li>
+            <li>Domínio anêmico anula o benefício central: se as entidades não têm comportamento, o investimento nas camadas internas não se paga.</li>
+            <li>A distinção entre serviço de domínio e serviço de aplicação não é sempre óbvia e pode gerar debates sobre onde colocar cada peça de lógica.</li>
+            <li>Injeção de dependência obrigatória para compor as camadas — frameworks DI ajudam, mas adicionam complexidade de configuração.</li>
+          </ul>
+        </section>
+
+        <!-- 7. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Domínio anêmico — a armadilha central</h3>
+          <p>
+            O erro mais comum e mais destrutivo na Onion Architecture é construir um
+            domínio onde as entidades são apenas classes de dados com getters e setters,
+            e toda a lógica fica nos serviços de aplicação. Um domínio assim derrota
+            o propósito da arquitetura: as camadas internas ficam vazias de valor, e
+            o benefício de isolá-las é zero.
+          </p>
+          <p>
+            Entidades de domínio devem ter métodos que aplicam regras de negócio,
+            lançam exceções quando invariantes são violadas e encapsulam o comportamento
+            que seria natural perguntar para esse objeto. Se a resposta para "quem
+            valida isso?" é sempre "o serviço de aplicação", o domínio está anêmico.
+          </p>
+
+          <h3>2. Interface de repositório fora do domínio</h3>
+          <p>
+            A interface de repositório deve ser declarada dentro do domínio (ou dos
+            serviços de domínio), não na infraestrutura. Se <code>ContaRepository</code>
+            está no pacote de infraestrutura e o domínio importa esse pacote para usar
+            a interface, a dependência foi invertida no sentido errado — o domínio
+            voltou a depender da infraestrutura. A interface vive dentro; a implementação
+            concreta fica fora e implementa a interface.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Regra prática:</strong> se você copiar apenas as pastas de domínio
+            e serviços de domínio para outro projeto, o código deve compilar sem erros.
+            Qualquer import que impeça isso revela uma dependência que não deveria existir.
+          </p>
+
+          <h3>3. Confundir serviço de domínio com serviço de aplicação</h3>
+          <p>
+            Serviços de domínio encapsulam operações que envolvem múltiplas entidades
+            e expressam conceitos do vocabulário do domínio (ex.: <code>TransferenciaService</code>,
+            <code>PrecificacaoService</code>). Serviços de aplicação orquestram esses
+            serviços de domínio para realizar casos de uso específicos da aplicação,
+            gerenciam transações e convertem DTOs. Colocar lógica de domínio no serviço
+            de aplicação é o mesmo que criar um domínio anêmico — a lógica fica acessível,
+            mas no lugar errado.
+          </p>
+
+          <h3>4. Infraestrutura dentro do domínio</h3>
+          <p>
+            Entidades que herdam de classes ORM (Eloquent Model, JPA Entity com anotações),
+            ou serviços de domínio que recebem conexões de banco de dados por injeção,
+            violam a fronteira mais importante da Onion. Esse acoplamento destrói a
+            testabilidade e cria dependências de ciclo de vida que dificultam a evolução
+            do domínio independentemente da tecnologia escolhida.
+          </p>
+        </section>
+
+        <!-- 8. ARQUITETURAS E PADRÕES RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Arquiteturas e padrões relacionados</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../clean-architecture/">Clean Architecture</a></li>
+            <li><a href="../arquitetura-hexagonal/">Arquitetura Hexagonal (Ports &amp; Adapters)</a></li>
+            <li><a href="../arquitetura-em-camadas/">Arquitetura em Camadas</a></li>
+            <li><a href="../mvc/">MVC</a></li>
+            <li><a href="../adapter/">Adapter (GoF)</a></li>
+          </ul>
+          <p class="mt-1">
+            A <strong>Clean Architecture</strong> é a evolução mais próxima da Onion
+            Architecture. Ambas colocam o domínio no centro, invertem as dependências
+            e tratam a infraestrutura como detalhe substituível. A Clean Architecture
+            adiciona uma distinção mais formal entre entidades (regras de negócio
+            empresariais) e casos de uso (regras de negócio da aplicação), e formaliza
+            os <em>boundaries</em> explícitos entre camadas. Na prática, uma implementação
+            Onion bem estruturada respeita os mesmos princípios da Clean Architecture.
+          </p>
+          <p>
+            A <strong>Arquitetura Hexagonal</strong> compartilha o mesmo princípio de
+            inversão de dependência — o domínio define interfaces (portas), a
+            infraestrutura implementa (adaptadores). A diferença de vocabulário é maior
+            do que a diferença conceitual: Hexagonal fala em portas primárias (driving)
+            e secundárias (driven); Onion fala em camadas concêntricas. Ambas são
+            compatíveis e frequentemente implementadas juntas.
+          </p>
+          <p>
+            A <strong>Arquitetura em Camadas</strong> é a precursora direta da Onion.
+            A Onion resolve o problema central da Arquitetura em Camadas clássica —
+            a dependência natural do domínio para a infraestrutura — ao inverter
+            explicitamente essa relação. A Onion pode ser vista como uma Arquitetura
+            em Camadas com inversão de dependência aplicada sistematicamente na
+            fronteira entre domínio e infraestrutura.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="9595959595"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

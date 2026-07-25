@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gerador de PIX Copia e Cola e QR Code — Dev Helper</title>
+  <meta name="description" content="Gere o código PIX Copia e Cola (BR Code / EMV) e o QR Code de um PIX estático, com cálculo de CRC16." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="en" href="../../en/tools/pix/" />
+
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../../biblioteca/">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Gerador de PIX Copia e Cola / QR Code</h1>
+        <p>Gere o <strong>código PIX Copia e Cola</strong> (padrão BR Code / EMV) e o <strong>QR Code</strong> de um PIX estático — sem bibliotecas externas. O CRC16 é calculado localmente.</p>
+      </header>
+
+      <div class="tool__controls">
+        <label class="tool__label" for="pix-key">Chave PIX</label>
+        <input type="text" id="pix-key" class="tool__input-inline" spellcheck="false" autocomplete="off" placeholder="CPF/CNPJ, e-mail, telefone (+55...) ou chave aleatória" />
+
+        <label class="tool__label" for="pix-name">Nome do recebedor <span class="regex-flag-hint">(máx. 25, sem acento)</span></label>
+        <input type="text" id="pix-name" class="tool__input-inline" spellcheck="false" autocomplete="off" maxlength="40" placeholder="Fulano de Tal" />
+
+        <label class="tool__label" for="pix-city">Cidade <span class="regex-flag-hint">(máx. 15)</span></label>
+        <input type="text" id="pix-city" class="tool__input-inline" spellcheck="false" autocomplete="off" maxlength="30" placeholder="Sao Paulo" />
+
+        <label class="tool__label" for="pix-amount">Valor <span class="regex-flag-hint">(opcional, ex.: 10.50)</span></label>
+        <input type="text" id="pix-amount" class="tool__input-inline" spellcheck="false" autocomplete="off" inputmode="decimal" placeholder="Deixe vazio para o pagador digitar" />
+
+        <label class="tool__label" for="pix-txid">Identificador / txid <span class="regex-flag-hint">(opcional, alfanumérico, máx. 25)</span></label>
+        <input type="text" id="pix-txid" class="tool__input-inline" spellcheck="false" autocomplete="off" placeholder="*** (padrão quando vazio)" />
+
+        <label class="tool__label" for="pix-desc">Descrição <span class="regex-flag-hint">(opcional)</span></label>
+        <input type="text" id="pix-desc" class="tool__input-inline" spellcheck="false" autocomplete="off" maxlength="40" placeholder="Ex.: Pagamento pedido 123" />
+
+        <div class="tool__actions tool__actions--mt">
+          <button id="pix-generate" class="button" type="button">Gerar PIX</button>
+        </div>
+      </div>
+
+      <p id="pix-error" class="error-msg" role="alert" hidden></p>
+
+      <section id="pix-output" class="tool__output" hidden>
+        <label class="tool__label" for="pix-payload">PIX Copia e Cola</label>
+        <textarea id="pix-payload" class="tool__input" readonly spellcheck="false" rows="4"></textarea>
+        <div class="tool__actions">
+          <button id="pix-copy" class="button--secondary" type="button">Copiar código</button>
+        </div>
+        <div class="qr-result">
+          <canvas id="pix-canvas" class="qr-canvas" aria-label="QR Code do PIX gerado" role="img"></canvas>
+          <div class="tool__actions">
+            <button id="pix-download" class="button" type="button" disabled>Baixar QR (PNG)</button>
+          </div>
+        </div>
+      </section>
+    </article>
+
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="3131313131"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <section>
+      <h2>O que é o PIX Copia e Cola?</h2>
+      <p>
+        O <strong>PIX Copia e Cola</strong> é uma cadeia de texto no padrão <strong>BR Code</strong>,
+        que segue a especificação <strong>EMV® QR Code</strong> do Banco Central. Ela contém, em
+        campos numerados (ID + tamanho + valor), os dados necessários para um pagamento: a chave PIX
+        do recebedor, o nome, a cidade, o valor (opcional) e um identificador da transação. O mesmo
+        texto pode ser transformado em um <strong>QR Code</strong> para leitura pelo app do banco.
+      </p>
+
+      <h2>Como este gerador funciona</h2>
+      <p>
+        Tudo é montado no seu navegador. Os campos são organizados no formato EMV, o valor é
+        formatado com duas casas decimais, o nome e a cidade são normalizados (maiúsculas, sem
+        acento) e, no fim, é calculado o <strong>CRC16-CCITT</strong> (polinômio <code>0x1021</code>,
+        valor inicial <code>0xFFFF</code>, sem reflexão) sobre todo o payload já com <code>6304</code>
+        anexado. O QR reaproveita o mesmo motor de geração da ferramenta de QR Code do site
+        (Reed-Solomon, sem CDN).
+      </p>
+
+      <h2>Perguntas frequentes (FAQ)</h2>
+
+      <h3>É um PIX estático ou dinâmico?</h3>
+      <p>
+        <strong>Estático</strong>: os dados ficam embutidos no próprio código. Não há URL para uma
+        cobrança (payload dinâmico), nem geração de <em>location</em> — apenas os campos do recebedor.
+      </p>
+
+      <h3>Por que o nome e a cidade perdem os acentos?</h3>
+      <p>
+        O padrão BR Code recomenda caracteres simples nesses campos. Por isso o nome (máx. 25) e a
+        cidade (máx. 15) são convertidos para maiúsculas sem acentuação, evitando problemas de leitura
+        em alguns aplicativos.
+      </p>
+
+      <h3>O que é o campo txid?</h3>
+      <p>
+        É um identificador da transação (campo 62, subcampo 05). Quando você não informa nada, o
+        padrão adotado é <code>***</code>, aceito para PIX estático. Se preferir, use um identificador
+        alfanumérico de até 25 caracteres.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/lib/qrcode-core.js"></script>
+  <script src="../../js/tools/pix.js"></script>
+</body>
+</html>

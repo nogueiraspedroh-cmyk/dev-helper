@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Proxy — Design Patterns | Biblioteca Dev Helper</title>
+  <meta name="description" content="Aprenda o padrão Proxy (GoF) em profundidade: intenção, problema, solução, estrutura, exemplos em TypeScript e PHP, quando usar, quando evitar e armadilhas comuns." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Proxy</span>
+        </nav>
+        <span class="artigo__categoria">Padrão Estrutural (GoF)</span>
+        <h1 class="artigo__titulo">Proxy</h1>
+        <p class="artigo__subtitulo">
+          Fornece um substituto ou placeholder para outro objeto, controlando o acesso
+          a ele — sem alterar a interface que o cliente já conhece.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Controlar o acesso a um objeto</strong> interpondo um substituto
+            (o proxy) que implementa exatamente a mesma interface do objeto real.
+            O cliente não percebe diferença — ele programa para o contrato e o proxy
+            decide quando, como e se delega a chamada ao objeto real.
+          </p>
+          <p>
+            Catalogado pelo GoF (1994) como padrão estrutural, o Proxy é a escolha
+            natural sempre que o acesso direto ao objeto real precisa ser mediado:
+            o objeto é caro de criar, está em outro processo ou máquina, requer
+            autorização, ou merece ter suas chamadas registradas ou cacheadas.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Imagine um objeto <code>RelatorioCompleto</code> que carrega e processa
+            centenas de megabytes de dados assim que é instanciado. Sua aplicação
+            cria esse objeto na inicialização, mas o usuário raramente abre o relatório
+            completo — na maioria das sessões, ele só consulta o resumo.
+          </p>
+          <p>
+            O acesso direto ao objeto real cria problemas concretos:
+          </p>
+          <ul>
+            <li>
+              <strong>Custo desnecessário:</strong> o objeto é criado e todo o
+              processamento é executado mesmo que o resultado nunca seja usado na sessão.
+            </li>
+            <li>
+              <strong>Sem ponto de controle:</strong> não há onde checar permissões,
+              registrar acessos ou retornar um resultado cacheado sem modificar o
+              objeto original ou o cliente.
+            </li>
+            <li>
+              <strong>Acoplamento ao ciclo de vida:</strong> o cliente precisa saber
+              exatamente quando criar, destruir e cachear o objeto real.
+            </li>
+          </ul>
+          <p>
+            A solução ingênua seria adicionar condicionais no cliente, criando
+            acoplamento e misturando responsabilidades. O Proxy resolve isso de forma
+            transparente: substitui o objeto real por um intermediário que o cliente
+            usa exatamente da mesma forma.
+          </p>
+
+          <h3>Proxy vs Decorator: a diferença-chave</h3>
+          <p>
+            Tanto o Proxy quanto o <a href="../decorator/">Decorator</a> envolvem um
+            objeto mantendo a mesma interface. A distinção está na <em>intenção</em>:
+          </p>
+          <ul>
+            <li>
+              O <strong>Decorator</strong> adiciona responsabilidades de negócio ao
+              objeto — timestamp, log de operação, criptografia de conteúdo. O foco
+              é enriquecer o que o objeto faz.
+            </li>
+            <li>
+              O <strong>Proxy</strong> controla o acesso ao objeto — lazy loading,
+              cache, verificação de permissão, comunicação remota. O foco é <em>quando</em>
+              e <em>se</em> o objeto real é acessado, não o que ele faz.
+            </li>
+          </ul>
+          <p>
+            Na prática, o Proxy frequentemente gerencia o ciclo de vida do objeto real
+            (cria-o sob demanda ou o mantém em cache), enquanto o Decorator assume que
+            o objeto já existe e apenas acrescenta comportamento ao redor das chamadas.
+          </p>
+
+          <h3>Proxy vs Adapter</h3>
+          <p>
+            O <a href="../adapter/">Adapter</a> muda a interface do objeto — converte
+            um contrato incompatível no contrato que o cliente espera. O Proxy mantém
+            exatamente a mesma interface do objeto real: o cliente não sabe que está
+            falando com um intermediário.
+          </p>
+        </section>
+
+        <!-- 3. SOLUÇÃO -->
+        <section class="artigo__secao">
+          <h2>Solução</h2>
+          <p>O Proxy organiza o código em três participantes:</p>
+          <ol>
+            <li>
+              <strong>Subject (interface):</strong> o contrato compartilhado pelo
+              objeto real e pelo proxy. Define as operações que o cliente pode chamar.
+              Ex.: interface <code>Relatorio</code> com o método <code>gerar(): string</code>.
+            </li>
+            <li>
+              <strong>RealSubject:</strong> o objeto real que realiza o trabalho.
+              Ex.: <code>RelatorioCompleto</code> — carrega dados, processa e retorna
+              o relatório. Pode ser caro de criar ou exigir acesso privilegiado.
+            </li>
+            <li>
+              <strong>Proxy:</strong> implementa Subject e mantém uma referência ao
+              RealSubject (criada sob demanda ou injetada). Intercepta as chamadas do
+              cliente, executa sua lógica de controle (lazy init, verificação de
+              permissão, cache, log) e, quando apropriado, delega ao RealSubject.
+            </li>
+          </ol>
+
+          <h3>Tipos principais de Proxy</h3>
+          <ul>
+            <li>
+              <strong>Virtual (lazy-loading):</strong> adia a criação do objeto real
+              até o primeiro uso. Ideal para objetos caros de inicializar.
+            </li>
+            <li>
+              <strong>De proteção:</strong> verifica permissões antes de delegar.
+              O cliente com acesso insuficiente recebe uma negação sem chegar ao
+              objeto real.
+            </li>
+            <li>
+              <strong>Remoto:</strong> representa um objeto que reside em outro processo
+              ou máquina. O proxy cuida da serialização e da comunicação em rede.
+            </li>
+            <li>
+              <strong>De cache/logging:</strong> armazena o resultado da primeira
+              chamada e o retorna nas seguintes, ou registra cada acesso para auditoria.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 4. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+          <div class="code-bloco">
+<pre><code>       «interface» Subject
+  ┌────────────────────────────────┐
+  │ + gerar(): string              │
+  └────────────────────────────────┘
+          ▲                   ▲
+          │ implementa         │ implementa
+   RelatorioCompleto      RelatorioProxy
+     (RealSubject)           (Proxy)
+  ┌──────────────────┐   ┌──────────────────────────────────┐
+  │ + gerar(): string│   │ - real: RelatorioCompleto | null  │
+  │   (operação cara)│   │ - cache: string | null            │
+  └──────────────────┘   │ + gerar(): string                 │
+                         │   1. retorna cache, se existir    │
+                         │   2. cria RelatorioCompleto (lazy) │
+                         │   3. delega e armazena resultado  │
+                         └──────────────────────────────────┘
+                                        │ delega (sob demanda)
+                                        ▼
+                              RelatorioCompleto
+
+
+Fluxo — primeira chamada (objeto ainda não existe):
+
+  cliente.gerar()
+      │
+      ▼ (via interface Subject)
+  RelatorioProxy.gerar()
+      │ cache == null → cria RelatorioCompleto
+      │ delega para real.gerar()
+      │ armazena resultado em cache
+      ▼
+  retorna string para o cliente
+
+
+Fluxo — chamada subsequente (cache preenchido):
+
+  cliente.gerar()
+      │
+      ▼
+  RelatorioProxy.gerar()
+      │ cache != null → retorna imediatamente
+      ▼
+  retorna string (sem criar nem chamar RealSubject)
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. EXEMPLOS DE CÓDIGO -->
+        <section class="artigo__secao">
+          <h2>Exemplos de código</h2>
+
+          <h3>Exemplo 1 — Proxy virtual com lazy loading e cache</h3>
+          <p>
+            O proxy cria o objeto real somente no primeiro acesso e cacheia o resultado,
+            eliminando o custo de inicialização e reprocessamento. O cliente usa
+            exatamente a mesma interface do objeto real.
+          </p>
+
+          <!-- GRUPO DE ABAS 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 1 — proxy virtual com cache">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Subject — interface compartilhada por real e proxy ────────
+interface Relatorio {
+  gerar(): string;
+}
+
+// ── RealSubject — objeto caro de criar e executar ─────────────
+class RelatorioCompleto implements Relatorio {
+  constructor() {
+    // Simula inicialização custosa (leitura de banco, processamento...)
+    console.log("[RelatorioCompleto] Inicializando e carregando dados...");
+  }
+
+  gerar(): string {
+    console.log("[RelatorioCompleto] Gerando relatório...");
+    return "=== RELATÓRIO COMPLETO ===\nVendas: R$1.234.567\nClientes: 4.892";
+  }
+}
+
+// ── Proxy virtual com lazy loading e cache ────────────────────
+class RelatorioProxy implements Relatorio {
+  private real: RelatorioCompleto | null = null;
+  private cache: string | null = null;
+
+  gerar(): string {
+    if (this.cache !== null) {
+      console.log("[Proxy] Retornando resultado em cache.");
+      return this.cache;
+    }
+    // Cria o objeto real apenas quando necessário (lazy)
+    if (this.real === null) {
+      this.real = new RelatorioCompleto();
+    }
+    this.cache = this.real.gerar();
+    return this.cache;
+  }
+}
+
+// ── Código cliente — só conhece a interface Relatorio ─────────
+function exibirRelatorio(relatorio: Relatorio): void {
+  console.log(relatorio.gerar());
+}
+
+const proxy = new RelatorioProxy();
+// Nada foi criado ainda — o objeto real não existe.
+
+console.log("--- Primeira chamada ---");
+exibirRelatorio(proxy);
+// [RelatorioCompleto] Inicializando e carregando dados...
+// [RelatorioCompleto] Gerando relatório...
+// === RELATÓRIO COMPLETO ===
+
+console.log("--- Segunda chamada ---");
+exibirRelatorio(proxy);
+// [Proxy] Retornando resultado em cache.
+// === RELATÓRIO COMPLETO ===</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Subject — interface compartilhada por real e proxy ────────
+interface Relatorio
+{
+    public function gerar(): string;
+}
+
+// ── RealSubject — objeto caro de criar e executar ─────────────
+class RelatorioCompleto implements Relatorio
+{
+    public function __construct()
+    {
+        // Simula inicialização custosa (leitura de banco, processamento...)
+        echo "[RelatorioCompleto] Inicializando e carregando dados..." . PHP_EOL;
+    }
+
+    public function gerar(): string
+    {
+        echo "[RelatorioCompleto] Gerando relatório..." . PHP_EOL;
+        return "=== RELATÓRIO COMPLETO ===\nVendas: R\$1.234.567\nClientes: 4.892";
+    }
+}
+
+// ── Proxy virtual com lazy loading e cache ────────────────────
+class RelatorioProxy implements Relatorio
+{
+    private ?RelatorioCompleto $real = null;
+    private ?string $cache = null;
+
+    public function gerar(): string
+    {
+        if ($this-&gt;cache !== null) {
+            echo "[Proxy] Retornando resultado em cache." . PHP_EOL;
+            return $this-&gt;cache;
+        }
+        // Cria o objeto real apenas quando necessário (lazy)
+        if ($this-&gt;real === null) {
+            $this-&gt;real = new RelatorioCompleto();
+        }
+        $this-&gt;cache = $this-&gt;real-&gt;gerar();
+        return $this-&gt;cache;
+    }
+}
+
+// ── Código cliente — só conhece a interface Relatorio ─────────
+function exibirRelatorio(Relatorio $relatorio): void
+{
+    echo $relatorio-&gt;gerar() . PHP_EOL;
+}
+
+$proxy = new RelatorioProxy();
+// Nada foi criado ainda — o objeto real não existe.
+
+echo "--- Primeira chamada ---" . PHP_EOL;
+exibirRelatorio($proxy);
+// [RelatorioCompleto] Inicializando e carregando dados...
+// [RelatorioCompleto] Gerando relatório...
+// === RELATÓRIO COMPLETO ===
+
+echo "--- Segunda chamada ---" . PHP_EOL;
+exibirRelatorio($proxy);
+// [Proxy] Retornando resultado em cache.
+// === RELATÓRIO COMPLETO ===</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 1) -->
+
+          <h3>Exemplo 2 — Proxy de proteção com verificação de permissão</h3>
+          <p>
+            O proxy intercepta a chamada e verifica se o usuário tem a permissão
+            necessária antes de delegar ao objeto real. O cliente não precisa
+            implementar essa lógica — e o objeto real tampouco precisa saber que
+            existe um controle de acesso ao redor dele.
+          </p>
+
+          <!-- GRUPO DE ABAS 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 2 — proxy de proteção">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Subject ───────────────────────────────────────────────────
+interface ServicoArquivo {
+  ler(caminho: string): string;
+  escrever(caminho: string, conteudo: string): void;
+}
+
+// ── RealSubject ───────────────────────────────────────────────
+class ServicoArquivoReal implements ServicoArquivo {
+  ler(caminho: string): string {
+    return `[conteúdo de ${caminho}]`;
+  }
+  escrever(caminho: string, conteudo: string): void {
+    console.log(`[Disco] Escrevendo em ${caminho}: ${conteudo}`);
+  }
+}
+
+// ── Tipos de suporte ──────────────────────────────────────────
+type Role = "leitura" | "escrita" | "admin";
+
+interface Usuario {
+  nome: string;
+  roles: Role[];
+}
+
+// ── Proxy de proteção ─────────────────────────────────────────
+class ServicoArquivoProtegido implements ServicoArquivo {
+  constructor(
+    private readonly real: ServicoArquivoReal,
+    private readonly usuario: Usuario
+  ) {}
+
+  private temPermissao(role: Role): boolean {
+    return this.usuario.roles.includes(role) ||
+           this.usuario.roles.includes("admin");
+  }
+
+  ler(caminho: string): string {
+    if (!this.temPermissao("leitura")) {
+      throw new Error(`Usuário "${this.usuario.nome}" não tem permissão de leitura.`);
+    }
+    console.log(`[Proxy] Acesso de leitura autorizado para ${this.usuario.nome}.`);
+    return this.real.ler(caminho);
+  }
+
+  escrever(caminho: string, conteudo: string): void {
+    if (!this.temPermissao("escrita")) {
+      throw new Error(`Usuário "${this.usuario.nome}" não tem permissão de escrita.`);
+    }
+    console.log(`[Proxy] Acesso de escrita autorizado para ${this.usuario.nome}.`);
+    this.real.escrever(caminho, conteudo);
+  }
+}
+
+// ── Uso ───────────────────────────────────────────────────────
+const real = new ServicoArquivoReal();
+
+const leitor: Usuario = { nome: "Ana", roles: ["leitura"] };
+const proxyLeitura = new ServicoArquivoProtegido(real, leitor);
+
+console.log(proxyLeitura.ler("/dados/vendas.csv"));
+// [Proxy] Acesso de leitura autorizado para Ana.
+// [conteúdo de /dados/vendas.csv]
+
+try {
+  proxyLeitura.escrever("/dados/vendas.csv", "novo dado");
+} catch (e) {
+  console.error((e as Error).message);
+  // Usuário "Ana" não tem permissão de escrita.
+}
+
+const admin: Usuario = { nome: "Carlos", roles: ["admin"] };
+const proxyAdmin = new ServicoArquivoProtegido(real, admin);
+proxyAdmin.escrever("/dados/vendas.csv", "dado atualizado");
+// [Proxy] Acesso de escrita autorizado para Carlos.
+// [Disco] Escrevendo em /dados/vendas.csv: dado atualizado</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Subject ───────────────────────────────────────────────────
+interface ServicoArquivo
+{
+    public function ler(string $caminho): string;
+    public function escrever(string $caminho, string $conteudo): void;
+}
+
+// ── RealSubject ───────────────────────────────────────────────
+class ServicoArquivoReal implements ServicoArquivo
+{
+    public function ler(string $caminho): string
+    {
+        return "[conteúdo de {$caminho}]";
+    }
+
+    public function escrever(string $caminho, string $conteudo): void
+    {
+        echo "[Disco] Escrevendo em {$caminho}: {$conteudo}" . PHP_EOL;
+    }
+}
+
+// ── Value object de usuário ───────────────────────────────────
+class Usuario
+{
+    /** @param string[] $roles */
+    public function __construct(
+        public readonly string $nome,
+        public readonly array $roles
+    ) {}
+
+    public function temPermissao(string $role): bool
+    {
+        return in_array($role, $this-&gt;roles, true)
+            || in_array('admin', $this-&gt;roles, true);
+    }
+}
+
+// ── Proxy de proteção ─────────────────────────────────────────
+class ServicoArquivoProtegido implements ServicoArquivo
+{
+    public function __construct(
+        private readonly ServicoArquivoReal $real,
+        private readonly Usuario $usuario
+    ) {}
+
+    public function ler(string $caminho): string
+    {
+        if (!$this-&gt;usuario-&gt;temPermissao('leitura')) {
+            throw new \RuntimeException(
+                "Usuário \"{$this-&gt;usuario-&gt;nome}\" não tem permissão de leitura."
+            );
+        }
+        echo "[Proxy] Acesso de leitura autorizado para {$this-&gt;usuario-&gt;nome}." . PHP_EOL;
+        return $this-&gt;real-&gt;ler($caminho);
+    }
+
+    public function escrever(string $caminho, string $conteudo): void
+    {
+        if (!$this-&gt;usuario-&gt;temPermissao('escrita')) {
+            throw new \RuntimeException(
+                "Usuário \"{$this-&gt;usuario-&gt;nome}\" não tem permissão de escrita."
+            );
+        }
+        echo "[Proxy] Acesso de escrita autorizado para {$this-&gt;usuario-&gt;nome}." . PHP_EOL;
+        $this-&gt;real-&gt;escrever($caminho, $conteudo);
+    }
+}
+
+// ── Uso ───────────────────────────────────────────────────────
+$real = new ServicoArquivoReal();
+
+$leitor = new Usuario('Ana', ['leitura']);
+$proxyLeitura = new ServicoArquivoProtegido($real, $leitor);
+
+echo $proxyLeitura-&gt;ler('/dados/vendas.csv') . PHP_EOL;
+// [Proxy] Acesso de leitura autorizado para Ana.
+// [conteúdo de /dados/vendas.csv]
+
+try {
+    $proxyLeitura-&gt;escrever('/dados/vendas.csv', 'novo dado');
+} catch (\RuntimeException $e) {
+    echo $e-&gt;getMessage() . PHP_EOL;
+    // Usuário "Ana" não tem permissão de escrita.
+}
+
+$admin = new Usuario('Carlos', ['admin']);
+$proxyAdmin = new ServicoArquivoProtegido($real, $admin);
+$proxyAdmin-&gt;escrever('/dados/vendas.csv', 'dado atualizado');
+// [Proxy] Acesso de escrita autorizado para Carlos.
+// [Disco] Escrevendo em /dados/vendas.csv: dado atualizado</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 2) -->
+
+        </section><!-- /.artigo__secao (exemplos) -->
+
+        <!-- 6. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Lazy initialization (Proxy virtual):</strong> quando criar o
+              objeto real é caro (em tempo, memória ou I/O) e ele pode não ser
+              necessário na sessão atual — adie a criação até o primeiro acesso.
+            </li>
+            <li>
+              <strong>Controle de acesso (Proxy de proteção):</strong> quando diferentes
+              clientes devem ter permissões diferentes sobre o mesmo objeto. O proxy
+              centraliza a verificação sem poluir o objeto real nem o cliente.
+            </li>
+            <li>
+              <strong>Cache de resultados:</strong> quando o resultado de uma operação
+              cara pode ser reutilizado em chamadas subsequentes com os mesmos
+              parâmetros — o proxy armazena e retorna sem delegar novamente.
+            </li>
+            <li>
+              <strong>Logging e auditoria:</strong> quando você precisa registrar toda
+              chamada a um objeto sem modificar sua classe.
+            </li>
+            <li>
+              <strong>Proxy remoto:</strong> quando o objeto real está em outro processo
+              ou servidor. O proxy local cuida da serialização e comunicação.
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>Quando a latência importa criticamente:</strong> cada chamada
+              passa por uma camada extra. Em loops de alta performance, a indireção
+              pode ser perceptível.
+            </li>
+            <li>
+              <strong>Quando a interface do objeto real muda com frequência:</strong>
+              o proxy precisa acompanhar cada mudança de contrato — se o Subject é
+              instável, o custo de manutenção pode superar o benefício.
+            </li>
+            <li>
+              <strong>Como substituto para injeção de dependência:</strong> um Proxy
+              de proteção que lida com autenticação global pode ser um sinal de que
+              o design de autorização precisa ser revisado em nível arquitetural.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Controla o ciclo de vida do objeto real sem que o cliente saiba — lazy creation, cache, destruição sob demanda.</li>
+            <li>Adiciona comportamento transversal (log, segurança, cache) sem modificar o objeto real nem o cliente.</li>
+            <li>Princípio Aberto/Fechado: novos tipos de controle exigem apenas novos proxies, sem tocar no RealSubject.</li>
+            <li>Facilita testes: em contextos de teste, um proxy pode simular o comportamento do objeto real sem depender de recursos externos.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Adiciona uma camada de indireção que pode tornar o fluxo de execução menos óbvio na leitura do código.</li>
+            <li>O proxy precisa implementar toda a interface do Subject — interfaces grandes geram muito boilerplate de delegação.</li>
+            <li>O comportamento do sistema muda silenciosamente dependendo de qual implementação do Subject foi injetada — pode dificultar a depuração.</li>
+          </ul>
+        </section>
+
+        <!-- 8. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Confundir Proxy com Decorator</h3>
+          <p>
+            A armadilha mais frequente é implementar um Proxy quando a intenção é
+            Decorator — ou vice-versa. A pergunta decisiva: <em>você está controlando
+            acesso ao objeto (Proxy) ou adicionando comportamento de negócio a ele
+            (Decorator)?</em> Um proxy de cache retorna o resultado sem chamar o real
+            na segunda vez — isso é controle de acesso. Um decorator de log registra
+            a chamada e sempre delega — isso é enriquecimento de comportamento. A
+            estrutura é a mesma; a intenção é diferente.
+          </p>
+
+          <h3>2. Estado compartilhado no cache</h3>
+          <p class="artigo__aviso">
+            <strong>Atenção:</strong> um proxy com cache precisa de uma política de
+            invalidação clara. Se o objeto real pode mudar o estado subjacente (ex.:
+            dados do banco atualizados por outra parte do sistema), o cache do proxy
+            ficará desatualizado. Defina explicitamente: o cache é permanente na
+            sessão, tem TTL, ou é invalidado por evento?
+          </p>
+
+          <h3>3. Proxy não é autorização de domínio</h3>
+          <p>
+            Um Proxy de proteção é adequado para controles simples e transversais
+            (ex.: verificar se o usuário logado tem a role necessária). Não use Proxy
+            para regras de negócio de autorização complexas que dependem do estado dos
+            dados — nesse caso, a lógica pertence ao domínio ou a um serviço de
+            autorização dedicado.
+          </p>
+
+          <h3>4. Esquecer de delegar todos os métodos</h3>
+          <p>
+            Se o Subject tem cinco métodos e o Proxy só intercepta um, os outros
+            quatro ainda precisam ser implementados — geralmente delegando diretamente
+            ao objeto real. É fácil esquecer um método e introduzir um bug silencioso
+            onde a chamada "some" sem fazer nada (ou lança uma exceção inesperada em
+            tempo de execução em linguagens dinâmicas).
+          </p>
+        </section>
+
+        <!-- 9. PADRÕES RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Padrões relacionados</h2>
+          <p>
+            O Proxy compartilha estrutura com outros padrões e é frequentemente
+            comparado ou combinado com eles:
+          </p>
+          <!--
+            Disciplina de links: só linka artigos já publicados.
+            Decorator, Adapter já existem → links reais.
+            Composite e Bridge são publicados neste mesmo lote → links reais.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../decorator/">Decorator</a></li>
+            <li><a href="../adapter/">Adapter</a></li>
+            <li><a href="../composite/">Composite</a></li>
+            <li><a href="../bridge/">Bridge</a></li>
+          </ul>
+          <p class="mt-1">
+            O <strong>Decorator</strong> é o padrão com maior semelhança estrutural:
+            ambos envolvem o objeto real implementando a mesma interface. A diferença
+            está na intenção — Proxy controla acesso, Decorator adiciona comportamento.
+            O <strong>Adapter</strong> também envolve o objeto, mas muda sua interface;
+            o Proxy nunca muda a interface. O <strong>Composite</strong> compõe
+            múltiplos objetos em uma árvore — o Proxy sempre representa exatamente um
+            objeto real. O <strong>Bridge</strong> separa dois eixos de variação
+            independentes em hierarquias próprias — é uma decisão de design
+            prospectiva. O Proxy não separa eixos: representa exatamente um objeto
+            real, mantém a mesma interface e controla o acesso a ele; Bridge e Proxy
+            têm intenções e estruturas fundamentalmente distintas.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="9696969696"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

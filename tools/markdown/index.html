@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Editor e Preview de Markdown ao vivo — Dev Helper</title>
+  <meta name="description" content="Escreva Markdown e veja o preview ao vivo, com renderização segura (sem risco de XSS) direto no navegador. Suporta títulos, negrito, itálico, código, listas, links, citações e mais." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../../biblioteca/">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Editor / Preview de Markdown</h1>
+        <p>Escreva <strong>Markdown</strong> e veja o resultado ao vivo. A renderização é feita de forma <strong>segura</strong>, construindo os elementos via DOM (sem <code>innerHTML</code>), então textos e links do seu conteúdo nunca viram HTML executável.</p>
+      </header>
+
+      <div class="tool__controls">
+        <label class="tool__label" for="md-input">Markdown</label>
+        <textarea id="md-input" class="tool__input" spellcheck="false" autocorrect="off" autocapitalize="off" rows="14"># Olá, Markdown
+
+Este é um **editor** com *preview ao vivo* e `código inline`.
+
+- item de lista
+- outro item
+
+1. primeiro
+2. segundo
+
+> Uma citação de exemplo.
+
+[Link para o Dev Helper](https://github.com)
+
+```
+bloco de código
+```
+
+---
+</textarea>
+      </div>
+
+      <section class="tool__output">
+        <label class="tool__label" for="md-preview">Preview</label>
+        <div id="md-preview" class="md-preview" aria-live="polite"></div>
+      </section>
+    </article>
+
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="3636363636"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <section>
+      <h2>O que é Markdown?</h2>
+      <p>
+        <strong>Markdown</strong> é uma linguagem de marcação leve, criada para escrever texto
+        formatado usando uma sintaxe simples de ler e escrever. É amplamente usada em READMEs,
+        documentação, issues do GitHub, fóruns e anotações. Este editor converte o Markdown em
+        HTML e mostra o resultado imediatamente ao lado.
+      </p>
+
+      <h2>Sintaxe suportada</h2>
+      <ul>
+        <li><strong>Títulos</strong> — de <code>#</code> a <code>######</code> (h1 a h6).</li>
+        <li><strong>Negrito</strong> — <code>**texto**</code>.</li>
+        <li><strong>Itálico</strong> — <code>*texto*</code>.</li>
+        <li><strong>Código inline</strong> — <code>`código`</code>.</li>
+        <li><strong>Blocos de código</strong> — delimitados por três crases.</li>
+        <li><strong>Listas</strong> — com <code>-</code>/<code>*</code> ou numeradas (<code>1.</code>).</li>
+        <li><strong>Links</strong> — <code>[texto](url)</code>.</li>
+        <li><strong>Citações</strong> — linhas iniciadas por <code>&gt;</code>.</li>
+        <li><strong>Linha horizontal</strong> — <code>---</code>.</li>
+        <li><strong>Parágrafos</strong> — blocos de texto separados por linha em branco.</li>
+      </ul>
+
+      <h2>Segurança do preview</h2>
+      <p>
+        Como o preview é HTML renderizado de verdade, ele foi construído com atenção especial a
+        <strong>XSS</strong>. Todo o conteúdo é montado com <code>document.createElement</code> e
+        <code>textContent</code> — nunca <code>innerHTML</code>. A URL de cada link é validada: apenas
+        <code>http:</code>, <code>https:</code>, <code>mailto:</code> e caminhos relativos são aceitos;
+        esquemas como <code>javascript:</code> são recusados e o link vira texto simples.
+      </p>
+
+      <h2>Perguntas frequentes (FAQ)</h2>
+
+      <h3>Qual subconjunto de Markdown é suportado?</h3>
+      <p>
+        O descrito acima. Fora de escopo (por ora): tabelas, imagens, HTML embutido, listas
+        aninhadas, listas de tarefas, notas de rodapé, ênfase com <code>_</code>/<code>__</code> e
+        realce de sintaxe nos blocos de código.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/tools/markdown.js"></script>
+</body>
+</html>

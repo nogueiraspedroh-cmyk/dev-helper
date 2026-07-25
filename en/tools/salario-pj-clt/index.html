@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Salary Calculator: Contractor (PJ) vs Employee (CLT) — Dev Helper</title>
+  <meta name="description" content="Compare Brazilian CLT (employee) and PJ (contractor) pay side by side: estimated total annual net income with INSS, IRRF, 13th salary, vacation, FGTS, Simples taxes and custom benefits." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../tools/salario-pj-clt/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!--
+    AdSense — biblioteca carregada UMA vez por página.
+    Substitua ca-pub-0000000000000000 pelo seu pub-ID real antes do deploy.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../../../biblioteca/">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Salary Calculator: Contractor (PJ) vs Employee (CLT)</h1>
+        <p>Compare the estimated total annual pay of a Brazilian <strong>CLT</strong> (employee) role and a <strong>PJ</strong> (contractor) role, including deductions, 13th salary, vacation, FGTS, taxes and benefits.</p>
+      </header>
+
+      <!-- COMPLIANCE NOTICE — visible and highlighted -->
+      <div class="conta-aviso" role="note" aria-label="Important notice">
+        <strong>Notice:</strong> the results are <strong>rough estimates</strong> for comparison and learning purposes. The INSS, IRRF, FGTS and Simples Nacional tables used are <strong>illustrative and may be outdated</strong>. This tool <strong>does not replace labor, tax or accounting advice</strong>. Do not use it as the sole basis for career, hiring or taxation decisions.
+      </div>
+
+      <!-- ── SECTION: MODE ────────────────────────────────────────────────────── -->
+      <section class="tool__section">
+        <fieldset class="tool__fieldset">
+          <legend class="tool__legend">What to display</legend>
+          <label class="tool__radio-label">
+            <input type="radio" name="salario-modo" value="comparativo" checked />
+            Comparison (CLT and PJ side by side)
+          </label>
+          <label class="tool__radio-label">
+            <input type="radio" name="salario-modo" value="clt" />
+            CLT only
+          </label>
+          <label class="tool__radio-label">
+            <input type="radio" name="salario-modo" value="pj" />
+            PJ only
+          </label>
+        </fieldset>
+      </section>
+
+      <!-- ── SECTION: CLT / PJ INPUTS ───────────────────────────────────────── -->
+      <section class="tool__section">
+        <h2 class="tool__section-title">Pay data</h2>
+
+        <div class="salario-entradas">
+          <!-- CLT -->
+          <div class="salario-entrada-grupo">
+            <h3 class="salario-entrada-grupo__titulo">CLT</h3>
+            <div class="tool__actions">
+              <label class="tool__label" for="clt-salario">Gross monthly salary (R$):</label>
+              <input id="clt-salario" class="tool__input-inline salario-input" type="number" min="0" step="any" placeholder="E.g.: 8000" autocomplete="off" spellcheck="false" />
+            </div>
+          </div>
+
+          <!-- PJ -->
+          <div class="salario-entrada-grupo">
+            <h3 class="salario-entrada-grupo__titulo">PJ</h3>
+            <div class="tool__actions">
+              <label class="tool__label" for="pj-faturamento">Monthly billing / invoice (R$):</label>
+              <input id="pj-faturamento" class="tool__input-inline salario-input" type="number" min="0" step="any" placeholder="E.g.: 11000" autocomplete="off" spellcheck="false" />
+            </div>
+            <div class="tool__actions tool__actions--mt">
+              <label class="tool__label" for="pj-pro-labore">Monthly pró-labore / owner's pay (R$):</label>
+              <input id="pj-pro-labore" class="tool__input-inline salario-input salario-input--curto" type="number" min="0" step="any" placeholder="E.g.: 2500 (default: minimum wage if empty)" autocomplete="off" spellcheck="false" />
+            </div>
+            <div class="tool__actions tool__actions--mt">
+              <label class="tool__label" for="pj-aliquota">Tax rate (%):</label>
+              <input id="pj-aliquota" class="tool__input-inline salario-input salario-input--curto" type="number" min="0" max="100" step="any" value="6" autocomplete="off" spellcheck="false" />
+            </div>
+            <div class="tool__actions tool__actions--mt">
+              <label class="tool__label" for="pj-custos">Monthly fixed costs (R$, optional):</label>
+              <input id="pj-custos" class="tool__input-inline salario-input salario-input--curto" type="number" min="0" step="any" placeholder="E.g.: 200 (accountant)" autocomplete="off" spellcheck="false" />
+            </div>
+          </div>
+        </div>
+
+        <p class="conta-validar-aviso">
+          Every PJ owner ("sócio") must declare a monthly <strong>pró-labore</strong> (owner's pay), on which INSS (social security) is charged — if you don't enter a value, we assume the <strong>minimum wage</strong> as the default and calculate INSS (11%) automatically. The PJ tax rate is <strong>editable</strong> — by default we use <strong>6%</strong>, close to the initial bracket of the Simples Nacional (Annex III, services). Adjust it to reflect your actual annex/bracket. Use "fixed costs" for accountant, coworking and similar expenses.
+        </p>
+      </section>
+
+      <!-- ── SECTION: BENEFITS ──────────────────────────────────────────────── -->
+      <section class="tool__section">
+        <h2 class="tool__section-title">Benefits (optional)</h2>
+        <p class="conta-validar-aviso">
+          Add benefits with a monthly value and choose whether each one applies to <strong>CLT</strong>, <strong>PJ</strong> or <strong>both</strong>. They are added to the annual total of the corresponding regime(s). E.g.: meal voucher, food voucher, health plan, dental plan, childcare assistance, profit sharing.
+        </p>
+        <div id="salario-beneficios" class="salario-beneficios"></div>
+        <button type="button" id="btn-add-beneficio" class="button--secondary">+ Add benefit</button>
+      </section>
+
+      <!-- Action buttons -->
+      <div class="tool__actions">
+        <button id="btn-calcular-salario" class="button" type="button">Calculate</button>
+        <button id="btn-limpar-salario" class="button--secondary" type="button">Clear</button>
+      </div>
+
+      <!-- Input error message -->
+      <p id="salario-erro" class="error-msg" role="alert" hidden></p>
+
+      <!-- ── SECTION: RESULT ───────────────────────────────────────────────── -->
+      <section class="tool__section tool__output" id="salario-resultado" hidden>
+        <h2 class="tool__section-title">Estimated result (annual)</h2>
+        <div id="salario-resultado-corpo"></div>
+      </section>
+
+    </article>
+
+    <!-- Ad block — below the tool's result area -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="1010101010"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Real content — required by AdSense -->
+    <section>
+      <h2>CLT vs PJ: which regime pays more?</h2>
+      <p>
+        One of the most common questions in a tech career in Brazil is comparing a
+        <strong>CLT</strong> (Consolidação das Leis do Trabalho — formal employment) offer with
+        a <strong>PJ</strong> (Pessoa Jurídica — contractor) offer. The comparison cannot be made
+        based only on the "full" monthly value: the CLT regime embeds a series of rights and
+        deductions (INSS, income tax, 13th salary, vacation with a 1/3 bonus and FGTS) that
+        significantly change the amount that actually reaches your pocket over a year. PJ, on
+        the other hand, usually has a higher gross value, but pays its own taxes and does not
+        automatically receive a 13th salary, vacation or FGTS.
+      </p>
+      <p>
+        This calculator estimates the <strong>total annual</strong> amount for each regime so the
+        comparison is made on the same basis — the whole year, not just a single month.
+      </p>
+
+      <h2>How the CLT calculation is estimated</h2>
+      <p>The CLT annual total is built from the informed gross monthly salary:</p>
+      <ul>
+        <li><strong>INSS:</strong> social security deduction calculated using the employee's progressive table, with rates by bracket (7.5% to 14%) and a contribution ceiling.</li>
+        <li><strong>IRRF:</strong> income tax withheld at source, calculated on the base (salary minus INSS) using the monthly table with the deductible portion of each bracket.</li>
+        <li><strong>13th salary:</strong> one extra salary per year; in this estimate, the net value of the 13th is considered equivalent to that of a normal month.</li>
+        <li><strong>Vacation + 1/3 bonus:</strong> in addition to the salary for the vacation month, the worker receives a 1/3 bonus. The tool estimates the net value of that bonus.</li>
+        <li><strong>FGTS:</strong> 8% deposited by the employer over 13 salaries (12 months + 13th). It is not a deduction — it is the worker's money, so it is included in the annual package.</li>
+      </ul>
+
+      <h2>How the PJ calculation is estimated</h2>
+      <p>The PJ annual total starts from the monthly billing (invoice value):</p>
+      <ul>
+        <li><strong>Pró-labore and INSS:</strong> every PJ owner must declare a monthly pró-labore. If you don't enter a value, the tool assumes the <strong>minimum wage (R$ 1,412.00, 2024 reference)</strong> as the default. INSS of <strong>11%</strong> is charged on the pró-labore, capped at the same contribution ceiling used in the CLT calculation — the amount is deducted from the monthly PJ net income.</li>
+        <li><strong>Taxes:</strong> an editable rate (default 6%, close to the initial bracket of the Simples Nacional — Annex III for services) is applied to the billing. Adjust it according to your actual annex and bracket.</li>
+        <li><strong>Fixed costs:</strong> monthly expenses such as accountant, coworking or tools can be entered to be deducted from the net income.</li>
+        <li><strong>No automatic 13th salary, vacation or FGTS:</strong> PJ does not receive these rights by default. To match them, many professionals set aside part of their billing on their own.</li>
+      </ul>
+
+      <h2>Benefits are part of the comparison</h2>
+      <p>
+        Meal vouchers, food vouchers, health plans, dental plans, childcare assistance, profit
+        sharing and other benefits carry real weight in the comparison. The tool lets you add
+        them with a monthly value and mark whether they apply to CLT, PJ or both — each one is
+        added (× 12) to the annual total of the corresponding regime. Many benefits are typical
+        of the CLT relationship, but you can replicate them under PJ (for example, by getting a
+        health plan on your own) by marking them as "both" or "PJ only".
+      </p>
+
+      <h2>Frequently Asked Questions (FAQ)</h2>
+
+      <h3>Are the calculated values exact?</h3>
+      <p>
+        <strong>No.</strong> They are rough estimates for comparison purposes. The INSS, IRRF,
+        FGTS and Simples Nacional tables are illustrative and may be outdated relative to current
+        legislation. Several real-world factors are not modeled (dependents in the IRRF,
+        deductions, pró-labore, Simples Nacional annexes/brackets and the "R factor", benefits
+        with copayment, etc.). For precise figures, consult an accountant.
+      </p>
+
+      <h3>Does the tool consider dependents for income tax?</h3>
+      <p>
+        Not in this version. The IRRF base is calculated only as salary minus INSS, without any
+        deduction for dependents or the simplified discount. This makes the estimated IRRF
+        slightly higher than for someone who has dependents to deduct.
+      </p>
+
+      <h3>Why is the PJ tax rate editable and starts at 6%?</h3>
+      <p>
+        Because a PJ's real taxation depends on the regime (Simples Nacional, Lucro Presumido),
+        the annex, the billing bracket and the "R factor". 6% is the initial rate of Annex III of
+        the Simples (services), used as a starting point. Adjust the field to reflect your
+        situation. INSS on the pró-labore is calculated separately (11%, its own field), so it
+        does not need to be embedded in this rate.
+      </p>
+
+      <h3>The PJ's 13th salary and vacation don't show up. Why?</h3>
+      <p>
+        Because, by default, PJ has no 13th salary, paid vacation or FGTS — those are rights of
+        the CLT employment relationship. A PJ professional who wants the equivalent needs to set
+        aside those amounts from their own billing. You can simulate this by adjusting the
+        billing or using the benefits fields.
+      </p>
+
+      <h3>Are the entered values saved?</h3>
+      <p>
+        Only during the current page session. When you reload, the values are discarded — note
+        down or copy the comparison result before leaving, if you need it later.
+      </p>
+
+      <h3>What does the "average/month" in the result mean?</h3>
+      <p>
+        It is the estimated annual total divided by 12. It's useful to compare, in a single
+        monthly number, regimes that distribute pay differently over the year (CLT concentrates
+        part of it in the 13th salary and vacation; PJ is more linear).
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/tools-en/salario-pj-clt.js"></script>
+</body>
+</html>

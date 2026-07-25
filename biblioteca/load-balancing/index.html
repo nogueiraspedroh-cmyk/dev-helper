@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Load Balancing — Dev Helper Biblioteca</title>
+  <meta name="description" content="Entenda Load Balancing: como distribui requisições entre múltiplas instâncias, os principais algoritmos (Round Robin, Least Connections, IP Hash), a diferença entre L4 e L7, health checks e as armadilhas de sticky session e single point of failure." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Load Balancing</span>
+        </nav>
+        <span class="artigo__categoria">System Design</span>
+        <h1 class="artigo__titulo">Load Balancing</h1>
+        <p class="artigo__subtitulo">
+          Distribui requisições entre múltiplas instâncias de um serviço para maximizar
+          throughput, minimizar latência e garantir disponibilidade. Entender os algoritmos
+          de distribuição, as camadas de operação e o comportamento em falhas é essencial para
+          qualquer sistema que precise de escala horizontal.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Um load balancer distribui requisições entre múltiplas instâncias de um
+            serviço, impedindo que qualquer instância individual fique sobrecarregada enquanto
+            outras ficam ociosas.</strong> Ele é o elemento central que torna o scale out
+            possível na prática: sem um ponto de entrada único que distribua a carga, escalar
+            horizontalmente é apenas ter múltiplas instâncias inacessíveis de forma unificada.
+          </p>
+          <p>
+            Além de distribuir carga, o load balancer cumpre funções adicionais: detecta
+            instâncias não saudáveis e para de enviar tráfego para elas, drena conexões de
+            instâncias sendo removidas sem interromper requisições em voo, e pode rotear
+            tráfego com base em atributos da requisição — path, headers, cookies — no caso
+            de load balancers operando na camada de aplicação.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Sem um mecanismo de distribuição de carga, o crescimento horizontal de um serviço
+            cria problemas que vão além da capacidade:
+          </p>
+          <ul>
+            <li>
+              <strong>Distribuição desigual:</strong> sem coordenação, clientes tendem a se
+              conectar sempre às mesmas instâncias — seja por DNS cacheado, por conexões
+              persistentes ou por configuração manual. Algumas instâncias ficam saturadas
+              enquanto outras estão ociosas.
+            </li>
+            <li>
+              <strong>Ausência de failover automático:</strong> se uma instância cai, o tráfego
+              que chegava a ela precisa ser redirecionado automaticamente. Sem um load balancer,
+              o cliente recebe erro e precisa de lógica própria de retry e descoberta de serviço.
+            </li>
+            <li>
+              <strong>Zero-downtime deploy impossível:</strong> para atualizar instâncias sem
+              interrupção (rolling update, blue-green), é necessário um componente que possa
+              remover instâncias antigas do pool enquanto adiciona as novas — função natural
+              de um load balancer.
+            </li>
+            <li>
+              <strong>Ponto de entrada único sem gargalo:</strong> clientes precisam de um
+              endereço único e estável para o serviço, independentemente de quantas instâncias
+              existem por trás. O load balancer provê esse endereço virtual e esconde a
+              topologia interna.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. COMO FUNCIONA -->
+        <section class="artigo__secao">
+          <h2>Como funciona</h2>
+          <div class="code-bloco">
+<pre><code>  Cliente A ──┐
+              │
+  Cliente B ──┼──▶ ┌───────────────────────┐      ┌───────────────┐
+              │    │     Load Balancer       │─────▶│  Instância 1  │ (CPU: 30%)
+  Cliente C ──┘    │                        │      └───────────────┘
+                   │  algoritmo de          │      ┌───────────────┐
+                   │  distribuição          │─────▶│  Instância 2  │ (CPU: 28%)
+                   │                        │      └───────────────┘
+                   │  health checks ──────▶ │      ┌───────────────┐
+                   │  (ativa instâncias     │─────▶│  Instância 3  │ (CPU: 32%)
+                   │   saudáveis no pool)   │      └───────────────┘
+                   └───────────────────────┘
+                        ▲ endereço único
+                        │ e estável para
+                        │ os clientes
+</code></pre>
+          </div>
+
+          <h3>Algoritmos de distribuição</h3>
+          <p>
+            O algoritmo determina qual instância recebe cada nova requisição. A escolha impacta
+            diretamente a distribuição de carga e o comportamento em falhas:
+          </p>
+          <ul>
+            <li>
+              <strong>Round Robin:</strong> distribui em sequência cíclica — requisição 1 vai
+              para a instância 1, requisição 2 para a instância 2, e assim por diante, voltando
+              ao início. Simples e eficaz quando os servidores são homogêneos e as requisições
+              têm custo semelhante. Não leva em conta a carga real de cada instância.
+            </li>
+            <li>
+              <strong>Weighted Round Robin:</strong> igual ao Round Robin, mas com pesos
+              configuráveis por instância. Uma instância com peso 3 recebe o triplo de
+              requisições de uma com peso 1. Útil quando as instâncias têm capacidades
+              diferentes (ex.: durante um rolling update onde a nova instância ainda está
+              aquecendo).
+            </li>
+            <li>
+              <strong>Least Connections:</strong> roteia para a instância com o menor número
+              de conexões ativas no momento. É melhor do que Round Robin para requisições de
+              duração variável — evita sobrecarregar uma instância que ainda está processando
+              requisições longas enquanto as outras estão ociosas.
+            </li>
+            <li>
+              <strong>IP Hash:</strong> aplica uma função hash sobre o IP do cliente para
+              determinar a instância. O mesmo cliente sempre chega à mesma instância enquanto
+              o pool não muda. Garante afinidade de sessão sem necessidade de cookie, mas
+              quebra a distribuição quando uma instância entra ou sai do pool — e toda
+              redistribuição pode enviar um cliente para uma instância diferente.
+            </li>
+            <li>
+              <strong>Random:</strong> escolhe uma instância aleatoriamente. Surpreendentemente
+              eficaz em escala suficiente — a lei dos grandes números produz distribuição
+              aproximadamente uniforme. Não requer estado no load balancer.
+            </li>
+          </ul>
+
+          <h3>Camadas de operação: L4 vs L7</h3>
+          <p>
+            Load balancers podem operar em diferentes camadas do modelo OSI, com trade-offs
+            distintos entre performance e funcionalidade:
+          </p>
+          <div class="code-bloco">
+<pre><code>  L4 — Camada de Transporte (TCP/UDP)
+  ─────────────────────────────────────────────────────────────────
+  Opera sobre conexões TCP/UDP, sem inspecionar o conteúdo.
+  Roteamento baseado em: IP de origem/destino + porta.
+  Mais rápido: menor overhead de processamento.
+  Limitação: não enxerga path, headers, cookies ou corpo HTTP.
+
+  Exemplo: AWS NLB, HAProxy em modo TCP.
+
+  L7 — Camada de Aplicação (HTTP/HTTPS)
+  ─────────────────────────────────────────────────────────────────
+  Inspeciona e compreende o protocolo HTTP.
+  Roteamento baseado em: path (/api/* → serviço A, /static/* → CDN),
+                         headers (Host, Authorization, Accept-Language),
+                         cookies (para sticky session via cookie),
+                         método HTTP, query string.
+  Mais poderoso: permite roteamento inteligente e terminação TLS.
+  Overhead maior: precisa fazer parsing do protocolo HTTP.
+
+  Exemplo: AWS ALB, nginx, Traefik, HAProxy em modo HTTP.
+</code></pre>
+          </div>
+
+          <h3>Health checks</h3>
+          <p>
+            O load balancer precisa saber quais instâncias estão saudáveis para não enviar
+            tráfego a instâncias com falha. Há duas estratégias complementares:
+          </p>
+          <ul>
+            <li>
+              <strong>Ativo (probing periódico):</strong> o load balancer envia requisições
+              periódicas a um endpoint de saúde de cada instância (ex.: <code>GET /health</code>)
+              e aguarda resposta. Se a instância não responde ou retorna erro dentro do timeout
+              configurado por N tentativas consecutivas, ela é removida do pool. Quando volta a
+              responder com sucesso, é reinserida.
+            </li>
+            <li>
+              <strong>Passivo (detecção por erros reais):</strong> o load balancer monitora
+              as respostas às requisições reais dos clientes. Se uma instância retorna erros
+              5xx repetidamente, ela é marcada como não saudável e temporariamente removida.
+              Complementa o health check ativo sem adicionar tráfego sintético.
+            </li>
+          </ul>
+
+          <h3>Sticky sessions (session affinity)</h3>
+          <p>
+            Sticky sessions garantem que todas as requisições de um mesmo cliente sempre cheguem
+            à mesma instância. O mecanismo mais comum é um cookie inserido pelo load balancer na
+            primeira resposta, identificando a instância que serviu aquela sessão. Em L7, o load
+            balancer lê esse cookie nas requisições subsequentes e roteia para a mesma instância.
+          </p>
+          <p>
+            Sticky sessions são necessárias para aplicações stateful que mantêm estado em memória
+            local. No entanto, criam dois problemas: quebram o balanceamento (uma instância
+            popular acumula mais conexões do que as outras) e criam ponto de falha (se a
+            instância "stickada" cai, o cliente perde sua sessão de qualquer forma). A solução
+            correta para aplicações stateful é externalizar o estado — não usar sticky session
+            como muleta.
+          </p>
+        </section>
+
+        <!-- 4. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Múltiplas instâncias de um serviço:</strong> sempre que houver mais de uma
+              instância da mesma aplicação atendendo tráfego, um load balancer é necessário para
+              distribuir a carga e prover um ponto de entrada único.
+            </li>
+            <li>
+              <strong>Alta disponibilidade:</strong> o load balancer detecta falhas via health
+              check e para de enviar tráfego para instâncias com problema, sem intervenção
+              manual e sem downtime perceptível para o usuário.
+            </li>
+            <li>
+              <strong>Zero-downtime deploy:</strong> rolling updates, blue-green deployments e
+              canary releases dependem do load balancer para adicionar gradualmente as novas
+              instâncias ao pool e remover as antigas após draining das conexões em voo.
+            </li>
+            <li>
+              <strong>Roteamento por contexto (L7):</strong> quando diferentes paths ou
+              subdomínios precisam ser roteados para serviços distintos, um load balancer L7
+              elimina a necessidade de um API gateway separado para tarefas simples de roteamento.
+            </li>
+          </ul>
+
+          <h2>Quando evitar ou adaptar</h2>
+          <ul>
+            <li>
+              <strong>Aplicações stateful sem plano de externalização de estado:</strong>
+              adicionar um load balancer sem tornar a aplicação stateless (ou sem configurar
+              sticky session conscientemente) produz comportamento incorreto. O load balancer
+              não é a solução — é a exposição do problema.
+            </li>
+            <li>
+              <strong>Volume tão baixo que o LB vira overhead desnecessário:</strong> para
+              serviços internos com pouquíssima carga e tolerância a downtime, o overhead
+              operacional de manter um load balancer pode não se justificar. Um DNS simples
+              com múltiplos registros A pode ser suficiente para descoberta de serviço sem
+              disponibilidade garantida.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 5. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Distribui carga de forma automática, sem intervenção manual por instância.</li>
+            <li>Failover automático via health checks: instâncias com falha são removidas do pool sem downtime perceptível.</li>
+            <li>Habilita zero-downtime deploy com rolling update e blue-green.</li>
+            <li>Load balancer L7 permite roteamento sofisticado por path, header e cookie.</li>
+            <li>Centraliza terminação TLS, simplificando certificados para o serviço de aplicação.</li>
+            <li>Esconde a topologia interna dos clientes: adicionar ou remover instâncias é transparente para quem consume o serviço.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Ponto único de falha se não houver redundância no próprio LB.</li>
+            <li>Overhead adicional de latência (geralmente milissegundos, mas relevante em chamadas de alta frequência).</li>
+            <li>Sticky session degrada o balanceamento e cria dependência de instância específica.</li>
+            <li>Health checks superficiais podem deixar instâncias "vivas" no pool mesmo com defeito lógico.</li>
+            <li>Configuração de timeouts, draining e retry requer atenção — erros de config causam falhas sutis em produção.</li>
+          </ul>
+        </section>
+
+        <!-- 6. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Sticky session mascarando estado local</h3>
+          <p>
+            Usar sticky session para "resolver" o problema de uma aplicação stateful é uma
+            solução temporária que cria dois problemas novos: a distribuição de carga deixa
+            de ser uniforme (instâncias populares acumulam mais sessões) e a tolerância a
+            falhas desaparece (se a instância "stickada" cai, o usuário perde a sessão de
+            qualquer forma). Sticky session é aceitável como solução transitória, mas a
+            solução correta é externalizar o estado — Redis para sessão, object storage para
+            arquivos — tornando a aplicação genuinamente stateless.
+          </p>
+
+          <h3>2. Health check superficial que não detecta falhas reais</h3>
+          <p>
+            Um health check que apenas verifica se a porta TCP está aberta pode declarar uma
+            instância saudável mesmo quando ela está em estado de erro: banco de dados
+            desconectado, pool de conexões esgotado, dependência externa com timeout. O
+            endpoint de health check deve verificar as dependências críticas da instância —
+            conectividade com o banco, espaço em disco, status de filas — e retornar erro
+            quando a instância não está apta a servir requisições reais.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Regra prática:</strong> separe o health check de liveness (a instância
+            está viva?) do readiness (a instância está pronta para receber tráfego?). O load
+            balancer deve usar readiness para decidir se coloca a instância no pool.
+          </p>
+
+          <h3>3. Esquecer connection draining ao remover instâncias</h3>
+          <p>
+            Remover uma instância do pool imediatamente, sem draining, corta todas as
+            requisições em voo — usuários recebem erros 502/504 sem motivo aparente. O
+            draining (ou deregistration delay) instrui o load balancer a parar de enviar
+            novas requisições para a instância, mas aguardar as conexões existentes
+            terminarem antes de removê-la definitivamente. O tempo de draining deve ser
+            maior do que o timeout máximo das requisições do serviço.
+          </p>
+
+          <h3>4. Single point of failure no próprio load balancer</h3>
+          <p>
+            Ter um único load balancer elimina o ponto único de falha nas instâncias de
+            aplicação, mas cria um novo ponto único de falha no próprio LB. A solução
+            é usar um par ativo/passivo com failover automático via VRRP, ou delegar para
+            um load balancer gerenciado que já provê redundância internamente — como AWS ALB
+            ou NLB, que são distribuídos por natureza e escalam automaticamente.
+          </p>
+        </section>
+
+        <!-- 7. RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Arquiteturas e padrões relacionados</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../escalabilidade-horizontal-vertical/">Escalabilidade Horizontal vs Vertical</a></li>
+            <li><a href="../event-driven/">Event-Driven Architecture</a></li>
+            <li><a href="../caching/">Caching</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Escalabilidade Horizontal vs Vertical</strong> é o contexto arquitetural
+            onde load balancing se encaixa: o load balancer é o mecanismo operacional que torna
+            o scale out possível. Sem ele, adicionar instâncias horizontalmente cria capacidade
+            sem um ponto de acesso unificado.
+          </p>
+          <p>
+            <strong>Event-Driven Architecture</strong> complementa load balancing em sistemas
+            assíncronos: enquanto o load balancer distribui requisições síncronas HTTP, uma EDA
+            com filas de mensagens distribui trabalho assíncrono entre workers consumidores —
+            e esses workers podem ser escalados horizontalmente por trás de um load balancer
+            ou gerenciados diretamente pelo broker de mensagens.
+          </p>
+          <p>
+            <strong>Caching</strong> e load balancing interagem diretamente: cache local por
+            instância é problemático porque diferentes instâncias podem ter caches com estados
+            diferentes. A solução é um cache distribuído centralizado (Redis, Memcached) que
+            todas as instâncias por trás do load balancer acessam de forma compartilhada.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="5454545454"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

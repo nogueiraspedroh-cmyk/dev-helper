@@ -1,0 +1,11 @@
+services:
+  web:
+    image: nginx:alpine
+    ports:
+      - "8000:80"
+    volumes:
+      # Site estático (somente leitura dentro do container).
+      - ./:/usr/share/nginx/html:ro
+      # Config para tratar 404 como o S3 (usa error.html).
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    restart: unless-stopped

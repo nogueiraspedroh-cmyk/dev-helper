@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Identador e Formatador de SQL — Dev Helper</title>
+  <meta name="description" content="Formate e identifique queries SQL diretamente no navegador. Coloca cláusulas em novas linhas, padroniza palavras-chave em maiúsculas e suporta indentação configurável." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!--
+    AdSense — biblioteca carregada UMA vez por página.
+    Substitua ca-pub-0000000000000000 pelo seu pub-ID real antes do deploy.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../../biblioteca/">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Identador e Formatador de SQL</h1>
+        <p>Cole sua query SQL abaixo para formatar com indentação, padronizar palavras-chave ou minificar.</p>
+      </header>
+
+      <div class="tool__controls">
+        <!-- Textarea de entrada -->
+        <textarea
+          id="sql-input"
+          class="tool__input"
+          placeholder="Cole sua query SQL aqui, por exemplo: select id, nome from usuarios where ativo = 1 order by nome"
+          spellcheck="false"
+          autocorrect="off"
+          autocapitalize="off"
+        ></textarea>
+
+        <!-- Linha de ações -->
+        <div class="tool__actions">
+          <button id="btn-format" class="button" type="button">Formatar</button>
+          <button id="btn-minify" class="button--secondary" type="button">Minificar</button>
+          <button id="btn-clear" class="button--secondary" type="button">Limpar</button>
+          <button id="btn-copy" class="button--secondary" type="button">Copiar</button>
+        </div>
+
+        <!-- Opções de formatação -->
+        <div class="tool__actions">
+          <label class="tool__label" for="indent-select">Indentação:</label>
+          <select id="indent-select" class="tool__select">
+            <option value="2" selected>2 espaços</option>
+            <option value="4">4 espaços</option>
+            <option value="tab">Tab</option>
+          </select>
+
+          <label class="tool__checkbox-label">
+            <input type="checkbox" id="chk-uppercase" checked />
+            Palavras-chave em maiúsculas
+          </label>
+        </div>
+      </div>
+
+      <!-- Área de saída -->
+      <div class="tool__output">
+        <textarea
+          id="sql-output"
+          class="result"
+          placeholder="O resultado aparecerá aqui..."
+          readonly
+          spellcheck="false"
+          autocorrect="off"
+          autocapitalize="off"
+        ></textarea>
+      </div>
+    </article>
+
+    <!-- Bloco de anúncio — abaixo do resultado da ferramenta -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="3333333333"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Conteúdo real — exigido pelo AdSense -->
+    <section>
+      <h2>O que é formatação de SQL e para que serve esta ferramenta?</h2>
+      <p>
+        <strong>SQL</strong> (Structured Query Language) é a linguagem padrão para consultar e
+        manipular bancos de dados relacionais como PostgreSQL, MySQL, SQLite, SQL Server e Oracle.
+        Queries SQL escritas de forma compacta — em uma única linha ou sem indentação consistente —
+        são difíceis de ler, revisar e depurar, especialmente quando envolvem múltiplos JOINs,
+        subconsultas ou cláusulas condicionais longas.
+      </p>
+      <p>
+        Esta ferramenta realiza uma <strong>formatação heurística</strong> da query SQL diretamente
+        no navegador. As operações disponíveis são:
+      </p>
+      <ul>
+        <li>
+          <strong>Formatar:</strong> coloca cada cláusula principal (SELECT, FROM, WHERE, JOIN,
+          GROUP BY, ORDER BY etc.) em uma nova linha com indentação configurável; itens da lista
+          do SELECT separados por vírgula são colocados em linhas próprias; palavras-chave são
+          opcionalmente padronizadas em maiúsculas.
+        </li>
+        <li>
+          <strong>Minificar:</strong> colapsa a query em uma única linha com espaços normalizados
+          — útil para reduzir o tamanho de queries embutidas em código ou logs.
+        </li>
+        <li>
+          <strong>Indentação configurável:</strong> escolha entre 2 espaços, 4 espaços ou tab
+          para atender ao padrão da sua equipe.
+        </li>
+      </ul>
+      <p>
+        A ferramenta é útil para desenvolvedores que precisam inspecionar queries geradas por
+        ORMs, revisar SQL de migração ou documentar consultas complexas de forma legível.
+      </p>
+
+      <h2>Perguntas frequentes (FAQ)</h2>
+
+      <h3>A ferramenta suporta todos os dialetos SQL?</h3>
+      <p>
+        Esta é uma formatação <strong>heurística baseada em palavras-chave</strong>, não um
+        parser SQL completo. Ela reconhece as cláusulas mais comuns (SELECT, FROM, WHERE, JOIN,
+        GROUP BY, ORDER BY, HAVING, LIMIT, OFFSET, INSERT INTO, VALUES, UPDATE, SET,
+        DELETE FROM, UNION e variantes de JOIN). Sintaxes específicas de dialeto muito incomuns
+        ou extensões proprietárias podem não ser formatadas de forma ideal.
+      </p>
+
+      <h3>Strings e comentários são preservados?</h3>
+      <p>
+        A ferramenta faz um esforço razoável para não quebrar literais entre aspas simples
+        (ex.: <code>'valor'</code>). No entanto, como não é um parser completo, strings que
+        contenham palavras-chave SQL (ex.: <code>'select from'</code>) ou comentários
+        (<code>-- comentário</code>, <code>/* bloco */</code>) podem não ser 100% preservados
+        em todos os casos. Para queries com strings ou comentários complexos, verifique
+        sempre o resultado antes de usar.
+      </p>
+
+      <h3>A query formatada é executável sem modificações?</h3>
+      <p>
+        Em geral sim — a formatação não altera a semântica da query, apenas reorganiza espaços
+        em branco e quebras de linha. Porém, por tratar-se de uma formatação heurística, é
+        sempre recomendável testar a query formatada no seu banco de dados antes de usar em
+        produção.
+      </p>
+
+      <h3>Qual a diferença entre formatar e minificar?</h3>
+      <p>
+        Formatar expande a query com indentação e quebras de linha para facilitar a leitura
+        humana. Minificar faz o oposto: produz uma única linha com espaços normalizados, ideal
+        para uso em código ou comparação de queries.
+      </p>
+
+      <h3>Posso usar tab como indentação?</h3>
+      <p>
+        Sim. Selecione a opção <em>Tab</em> no seletor de indentação antes de clicar em
+        <em>Formatar</em>. A escolha entre espaços e tab é uma preferência de equipe ou
+        convenção do projeto.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/tools/sql.js"></script>
+</body>
+</html>

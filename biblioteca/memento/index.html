@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Memento — Design Patterns | Biblioteca Dev Helper</title>
+  <meta name="description" content="Aprenda o padrão Memento (GoF) em profundidade: intenção, problema, solução, estrutura, exemplos em TypeScript e PHP, quando usar, quando evitar e armadilhas comuns." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Memento</span>
+        </nav>
+        <span class="artigo__categoria">Padrão Comportamental (GoF)</span>
+        <h1 class="artigo__titulo">Memento</h1>
+        <p class="artigo__subtitulo">
+          Captura e externaliza o estado interno de um objeto sem violar seu
+          encapsulamento, permitindo restaurá-lo a esse estado posteriormente —
+          a base do mecanismo de undo por snapshot completo.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Capturar o estado interno de um objeto num objeto separado
+            (Memento)</strong>, sem expor os detalhes de implementação desse estado ao
+            mundo externo. O Memento pode ser armazenado e posteriormente usado para
+            restaurar o objeto ao estado capturado — implementando undo, checkpoints,
+            transações e histórico de estados.
+          </p>
+          <p>
+            Catalogado pelo GoF (1994) como padrão comportamental, o Memento preserva
+            o encapsulamento do Originator: quem armazena o Memento (o Caretaker)
+            não sabe o que há dentro dele — apenas guarda e devolve. Apenas o
+            Originator conhece o formato do estado e sabe como criar e restaurar um
+            Memento. Isso distingue o padrão de uma simples serialização pública do
+            estado: a interface do Memento é opaca para qualquer objeto que não seja
+            o Originator que o criou.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Continuando o domínio do editor de texto do padrão Command: queremos
+            implementar undo. A abordagem ingênua é expor o estado do editor
+            publicamente para que um objeto externo possa salvá-lo:
+          </p>
+          <div class="code-bloco">
+<pre><code>// Abordagem ingênua — viola encapsulamento:
+class Editor {
+  conteudo: string = '';  // público para o Caretaker salvar
+  cursorPos: number = 0;  // público para o Caretaker salvar
+  selecao: [number, number] | null = null; // público
+}
+
+// O Caretaker acessa e conhece os internos do Editor — forte acoplamento.
+// Se o Editor mudar seus campos, o Caretaker quebra.
+const estadoSalvo = {
+  conteudo: editor.conteudo,
+  cursorPos: editor.cursorPos,
+  selecao: editor.selecao,
+};</code></pre>
+          </div>
+          <p>
+            O problema é duplo: o Caretaker (quem armazena o estado) precisa conhecer
+            os detalhes internos do Editor (quem tem o estado), criando acoplamento
+            forte. Qualquer refatoração interna do Editor — renomear um campo, mudar
+            a estrutura da seleção — quebra o Caretaker. O Memento elimina isso:
+            o Editor produz um objeto opaco com seu estado, e o Caretaker apenas
+            o armazena — sem inspecioná-lo.
+          </p>
+
+          <h3>Distinção crítica: Memento vs Command com undo</h3>
+          <p>
+            Ambos os padrões implementam undo, mas com filosofias diferentes:
+          </p>
+          <ul>
+            <li>
+              <strong>Command com undo:</strong> cada Command encapsula uma ação
+              específica e sabe como revertê-la incrementalmente. Um
+              <code>InserirTextoCommand</code> sabe deletar exatamente o trecho
+              que inseriu. O undo é preciso mas exige que cada Command capture o
+              estado suficiente para sua própria reversão.
+            </li>
+            <li>
+              <strong>Memento:</strong> captura o estado <em>completo</em> do
+              Originator num snapshot. O undo restaura o estado inteiro — não
+              desfaz uma ação específica, mas retorna o objeto a um ponto anterior
+              no tempo. Mais simples de implementar para objetos com estado rico e
+              interdependente, mas mais custoso em memória (um snapshot por ponto
+              de restauração).
+            </li>
+          </ul>
+          <p>
+            Os dois padrões são complementares: Command pode usar Memento como
+            mecanismo de captura de estado em seu <code>execute()</code>, delegando
+            a responsabilidade de "como salvar o estado" ao próprio Originator.
+          </p>
+        </section>
+
+        <!-- 3. SOLUÇÃO -->
+        <section class="artigo__secao">
+          <h2>Solução</h2>
+          <p>O Memento organiza o código em três participantes:</p>
+          <ol>
+            <li>
+              <strong>Originator:</strong> o objeto cujo estado queremos capturar.
+              Cria Mementos via <code>salvarEstado()</code> e restaura seu estado
+              a partir de um Memento via <code>restaurarEstado(memento)</code>.
+              É o único que conhece o conteúdo interno do Memento. Ex.:
+              <code>Editor</code> com conteúdo, posição do cursor e seleção.
+            </li>
+            <li>
+              <strong>Memento:</strong> objeto que armazena o snapshot do estado
+              do Originator. Sua interface para o Caretaker é opaca — não expõe
+              getters do estado interno. Apenas o Originator acessa o conteúdo.
+              Em TypeScript, isso pode ser modelado com uma classe interna ou
+              com campos privados e um método de acesso restrito via tipo nominal.
+            </li>
+            <li>
+              <strong>Caretaker:</strong> gerencia o histórico de Mementos. Não
+              inspeciona nem modifica o conteúdo dos Mementos — apenas os armazena
+              em ordem e os devolve ao Originator quando o undo é solicitado.
+              Ex.: <code>Historico</code> com pilha de Mementos e métodos
+              <code>salvar()</code> e <code>desfazer()</code>.
+            </li>
+          </ol>
+        </section>
+
+        <!-- 4. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+          <div class="code-bloco">
+<pre><code>       Editor (Originator)
+  ┌──────────────────────────────────────────────┐
+  │ - conteudo: string                           │
+  │ - cursorPos: number                          │
+  │ - selecao: [number,number] | null            │
+  │                                              │
+  │ + salvarEstado(): EditorSnapshot             │
+  │   → cria Memento com cópia do estado atual   │
+  │ + restaurarEstado(s: EditorSnapshot): void   │
+  │   → recupera estado do Memento              │
+  │ + (operações de edição)                     │
+  └──────────────────────────────────────────────┘
+       cria e restaura ▲            ▼ armazenado por
+                        │            │
+       EditorSnapshot (Memento) — interface opaca para o Caretaker
+  ┌──────────────────────────────────────────────┐
+  │ (campos privados — só o Editor acessa)       │
+  │ - conteudo: string                           │
+  │ - cursorPos: number                          │
+  │ - selecao: [number,number] | null            │
+  │                                              │
+  │ (sem getters públicos — opaco ao Caretaker)  │
+  └──────────────────────────────────────────────┘
+                            ▲ guarda e devolve
+                            │
+         Historico (Caretaker)
+  ┌──────────────────────────────────────────────┐
+  │ - pilha: EditorSnapshot[]                    │
+  │                                              │
+  │ + salvar(originator: Editor): void           │
+  │   → pilha.push(editor.salvarEstado())        │
+  │ + desfazer(originator: Editor): void         │
+  │   → editor.restaurarEstado(pilha.pop())      │
+  │                                              │
+  │ !! Nunca inspeciona o conteúdo do Memento !! │
+  └──────────────────────────────────────────────┘
+
+
+Comparação de abordagens para undo:
+
+  Command + undo incremental          Memento + snapshot
+  ─────────────────────────────       ──────────────────────────────
+  Cada Command conhece seu undo       Originator conhece seu estado
+  Memória: proporcional à ação        Memória: proporcional ao estado
+  Preciso para ações atômicas         Simples para estado complexo
+  Mais boilerplate por tipo de ação   Menos código, mais memória
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. EXEMPLOS DE CÓDIGO -->
+        <section class="artigo__secao">
+          <h2>Exemplos de código</h2>
+
+          <h3>Exemplo 1 — Editor de texto com undo por snapshot (Memento)</h3>
+          <p>
+            O mesmo domínio do Command, mas agora o undo captura o estado completo
+            do editor num snapshot. Note como o <code>Historico</code> (Caretaker)
+            não acessa nenhum dado interno do <code>EditorSnapshot</code> — apenas
+            o armazena e o devolve. A comparação com Command fica explícita nos
+            comentários.
+          </p>
+
+          <!-- GRUPO DE ABAS 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 1 — editor com undo por snapshot">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Memento — snapshot opaco do Editor ────────────────────────
+// A interface exposta ao Caretaker é opaca: sem getters públicos.
+// Somente o Editor acessa os campos via método de pacote (friend pattern).
+class EditorSnapshot {
+  // Campos readonly — imutáveis após a criação do snapshot.
+  constructor(
+    private readonly conteudo: string,
+    private readonly cursorPos: number,
+    private readonly selecao: readonly [number, number] | null
+  ) {}
+
+  // Método restrito: na prática o Editor é o único que o chama.
+  // Em linguagens com friend/package-private, isso seria inacessível ao Caretaker.
+  _recuperar(): {
+    conteudo: string;
+    cursorPos: number;
+    selecao: readonly [number, number] | null;
+  } {
+    return {
+      conteudo: this.conteudo,
+      cursorPos: this.cursorPos,
+      selecao: this.selecao ? [...this.selecao] : null,
+    };
+  }
+}
+
+// ── Originator — cria e restaura Mementos ────────────────────
+class Editor {
+  private conteudo: string = '';
+  private cursorPos: number = 0;
+  private selecao: [number, number] | null = null;
+
+  // Operações de edição
+  inserir(texto: string): void {
+    this.conteudo =
+      this.conteudo.slice(0, this.cursorPos) +
+      texto +
+      this.conteudo.slice(this.cursorPos);
+    this.cursorPos += texto.length;
+  }
+
+  deletarAnterior(): void {
+    if (this.cursorPos === 0) return;
+    this.conteudo =
+      this.conteudo.slice(0, this.cursorPos - 1) +
+      this.conteudo.slice(this.cursorPos);
+    this.cursorPos--;
+  }
+
+  moverCursor(pos: number): void {
+    this.cursorPos = Math.max(0, Math.min(pos, this.conteudo.length));
+  }
+
+  selecionarIntervalo(inicio: number, fim: number): void {
+    this.selecao = [inicio, fim];
+  }
+
+  // Cria snapshot do estado COMPLETO
+  salvarEstado(): EditorSnapshot {
+    return new EditorSnapshot(
+      this.conteudo,
+      this.cursorPos,
+      this.selecao ? [...this.selecao] : null
+    );
+  }
+
+  // Restaura a partir de um snapshot
+  restaurarEstado(snapshot: EditorSnapshot): void {
+    const estado = snapshot._recuperar();
+    this.conteudo  = estado.conteudo;
+    this.cursorPos = estado.cursorPos;
+    this.selecao   = estado.selecao ? [...estado.selecao] : null;
+  }
+
+  toString(): string {
+    const sel = this.selecao
+      ? ` [sel ${this.selecao[0]}-${this.selecao[1]}]`
+      : '';
+    return `"${this.conteudo}" cursor=${this.cursorPos}${sel}`;
+  }
+}
+
+// ── Caretaker — armazena histórico de snapshots ───────────────
+class Historico {
+  private readonly pilha: EditorSnapshot[] = [];
+
+  // Salva o estado atual do editor na pilha
+  salvar(editor: Editor): void {
+    this.pilha.push(editor.salvarEstado());
+  }
+
+  // Restaura o último estado salvo
+  desfazer(editor: Editor): boolean {
+    const snapshot = this.pilha.pop();
+    if (!snapshot) return false;
+    // O Caretaker devolve o Memento ao Originator — nunca o inspeciona.
+    editor.restaurarEstado(snapshot);
+    return true;
+  }
+
+  tamanho(): number { return this.pilha.length; }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+const editor   = new Editor();
+const historico = new Historico();
+
+// Estado 1: vazio
+historico.salvar(editor);
+console.log(`[0] ${editor}`);   // "" cursor=0
+
+editor.inserir('Olá');
+historico.salvar(editor);
+console.log(`[1] ${editor}`);   // "Olá" cursor=3
+
+editor.inserir(', mundo');
+historico.salvar(editor);
+console.log(`[2] ${editor}`);   // "Olá, mundo" cursor=10
+
+editor.selecionarIntervalo(4, 9);
+historico.salvar(editor);
+console.log(`[3] ${editor}`);   // "Olá, mundo" cursor=10 [sel 4-9]
+
+// Undo: volta ao estado 3 (antes da seleção)
+historico.desfazer(editor);
+console.log(`Undo → ${editor}`); // "Olá, mundo" cursor=10
+
+// Undo: volta ao estado 2 (antes de ", mundo")
+historico.desfazer(editor);
+console.log(`Undo → ${editor}`); // "Olá" cursor=3
+
+// Undo: volta ao estado 1 (vazio)
+historico.desfazer(editor);
+console.log(`Undo → ${editor}`); // "" cursor=0
+
+console.log(`Snapshots restantes: ${historico.tamanho()}`); // 0</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Memento — snapshot opaco do Editor ────────────────────────
+class EditorSnapshot
+{
+    public function __construct(
+        private readonly string $conteudo,
+        private readonly int $cursorPos,
+        private readonly ?array $selecao  // [int, int] | null
+    ) {}
+
+    /**
+     * Recupera o estado — apenas o Editor deve chamar este método.
+     * @return array{conteudo: string, cursorPos: int, selecao: ?array}
+     */
+    public function _recuperar(): array
+    {
+        return [
+            'conteudo'  =&gt; $this-&gt;conteudo,
+            'cursorPos' =&gt; $this-&gt;cursorPos,
+            'selecao'   =&gt; $this-&gt;selecao,
+        ];
+    }
+}
+
+// ── Originator — cria e restaura Mementos ────────────────────
+class Editor
+{
+    private string $conteudo  = '';
+    private int $cursorPos    = 0;
+    private ?array $selecao   = null; // [int, int] | null
+
+    public function inserir(string $texto): void
+    {
+        $this-&gt;conteudo =
+            substr($this-&gt;conteudo, 0, $this-&gt;cursorPos)
+            . $texto
+            . substr($this-&gt;conteudo, $this-&gt;cursorPos);
+        $this-&gt;cursorPos += strlen($texto);
+    }
+
+    public function deletarAnterior(): void
+    {
+        if ($this-&gt;cursorPos === 0) return;
+        $this-&gt;conteudo =
+            substr($this-&gt;conteudo, 0, $this-&gt;cursorPos - 1)
+            . substr($this-&gt;conteudo, $this-&gt;cursorPos);
+        $this-&gt;cursorPos--;
+    }
+
+    public function moverCursor(int $pos): void
+    {
+        $this-&gt;cursorPos = max(0, min($pos, strlen($this-&gt;conteudo)));
+    }
+
+    public function selecionarIntervalo(int $inicio, int $fim): void
+    {
+        $this-&gt;selecao = [$inicio, $fim];
+    }
+
+    // Cria snapshot do estado COMPLETO
+    public function salvarEstado(): EditorSnapshot
+    {
+        return new EditorSnapshot(
+            $this-&gt;conteudo,
+            $this-&gt;cursorPos,
+            $this-&gt;selecao
+        );
+    }
+
+    // Restaura a partir de um snapshot
+    public function restaurarEstado(EditorSnapshot $snapshot): void
+    {
+        $estado = $snapshot-&gt;_recuperar();
+        $this-&gt;conteudo  = $estado['conteudo'];
+        $this-&gt;cursorPos = $estado['cursorPos'];
+        $this-&gt;selecao   = $estado['selecao'];
+    }
+
+    public function __toString(): string
+    {
+        $sel = $this-&gt;selecao
+            ? " [sel {$this-&gt;selecao[0]}-{$this-&gt;selecao[1]}]"
+            : '';
+        return "\"{$this-&gt;conteudo}\" cursor={$this-&gt;cursorPos}{$sel}";
+    }
+}
+
+// ── Caretaker — armazena histórico de snapshots ───────────────
+class Historico
+{
+    /** @var EditorSnapshot[] */
+    private array $pilha = [];
+
+    public function salvar(Editor $editor): void
+    {
+        $this-&gt;pilha[] = $editor-&gt;salvarEstado();
+    }
+
+    public function desfazer(Editor $editor): bool
+    {
+        $snapshot = array_pop($this-&gt;pilha);
+        if ($snapshot === null) return false;
+        // O Caretaker devolve o Memento ao Originator — nunca o inspeciona.
+        $editor-&gt;restaurarEstado($snapshot);
+        return true;
+    }
+
+    public function tamanho(): int
+    {
+        return count($this-&gt;pilha);
+    }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+$editor    = new Editor();
+$historico = new Historico();
+
+$historico-&gt;salvar($editor);
+echo "[0] {$editor}\n";   // "" cursor=0
+
+$editor-&gt;inserir('Olá');
+$historico-&gt;salvar($editor);
+echo "[1] {$editor}\n";   // "Olá" cursor=3
+
+$editor-&gt;inserir(', mundo');
+$historico-&gt;salvar($editor);
+echo "[2] {$editor}\n";   // "Olá, mundo" cursor=10
+
+$editor-&gt;selecionarIntervalo(4, 9);
+$historico-&gt;salvar($editor);
+echo "[3] {$editor}\n";   // "Olá, mundo" cursor=10 [sel 4-9]
+
+$historico-&gt;desfazer($editor);
+echo "Undo → {$editor}\n"; // "Olá, mundo" cursor=10
+
+$historico-&gt;desfazer($editor);
+echo "Undo → {$editor}\n"; // "Olá" cursor=3
+
+$historico-&gt;desfazer($editor);
+echo "Undo → {$editor}\n"; // "" cursor=0
+
+echo "Snapshots restantes: " . $historico-&gt;tamanho() . "\n"; // 0</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 1) -->
+
+          <h3>Exemplo 2 — Configuração de aplicação com checkpoints nomeados</h3>
+          <p>
+            O Memento não se limita a editores. Um Caretaker com suporte a checkpoints
+            nomeados (em vez de uma pilha anônima) permite salvar e restaurar estados
+            com semântica clara — como "configuração de fábrica" vs "configuração do
+            usuário" — sem expor os campos internos do objeto de configuração.
+          </p>
+
+          <!-- GRUPO DE ABAS 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 2 — checkpoints de configuração">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Memento de configuração ───────────────────────────────────
+class ConfigSnapshot {
+  constructor(
+    private readonly dados: Readonly&lt;Record&lt;string, unknown&gt;&gt;
+  ) {}
+
+  _recuperar(): Record&lt;string, unknown&gt; {
+    return { ...this.dados }; // cópia defensiva
+  }
+}
+
+// ── Originator ────────────────────────────────────────────────
+class ConfiguracaoApp {
+  private dados: Record&lt;string, unknown&gt; = {
+    tema: 'claro',
+    idioma: 'pt-BR',
+    fontSize: 14,
+    notificacoes: true,
+  };
+
+  set(chave: string, valor: unknown): void {
+    this.dados[chave] = valor;
+  }
+
+  get(chave: string): unknown {
+    return this.dados[chave];
+  }
+
+  salvarEstado(): ConfigSnapshot {
+    return new ConfigSnapshot({ ...this.dados });
+  }
+
+  restaurarEstado(snapshot: ConfigSnapshot): void {
+    this.dados = snapshot._recuperar();
+  }
+
+  exibir(): void {
+    console.log(JSON.stringify(this.dados, null, 2));
+  }
+}
+
+// ── Caretaker com checkpoints nomeados ────────────────────────
+class GerenciadorCheckpoints {
+  private readonly checkpoints = new Map&lt;string, ConfigSnapshot&gt;();
+
+  salvar(nome: string, config: ConfiguracaoApp): void {
+    this.checkpoints.set(nome, config.salvarEstado());
+    console.log(`Checkpoint "${nome}" salvo.`);
+  }
+
+  restaurar(nome: string, config: ConfiguracaoApp): boolean {
+    const snapshot = this.checkpoints.get(nome);
+    if (!snapshot) {
+      console.warn(`Checkpoint "${nome}" não encontrado.`);
+      return false;
+    }
+    config.restaurarEstado(snapshot);
+    console.log(`Checkpoint "${nome}" restaurado.`);
+    return true;
+  }
+
+  listar(): string[] {
+    return [...this.checkpoints.keys()];
+  }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+const config = new ConfiguracaoApp();
+const gerenciador = new GerenciadorCheckpoints();
+
+// Salva o estado de fábrica
+gerenciador.salvar('fabrica', config);
+
+// Usuário personaliza
+config.set('tema', 'escuro');
+config.set('fontSize', 18);
+config.set('idioma', 'en-US');
+gerenciador.salvar('usuario', config);
+
+// Mais ajustes — sem salvar
+config.set('notificacoes', false);
+config.set('fontSize', 22);
+console.log('\nEstado atual:');
+config.exibir();
+// { tema: 'escuro', idioma: 'en-US', fontSize: 22, notificacoes: false }
+
+// Restaura configuração do usuário
+gerenciador.restaurar('usuario', config);
+config.exibir();
+// { tema: 'escuro', idioma: 'en-US', fontSize: 18, notificacoes: true }
+
+// Restaura fábrica
+gerenciador.restaurar('fabrica', config);
+config.exibir();
+// { tema: 'claro', idioma: 'pt-BR', fontSize: 14, notificacoes: true }
+
+console.log('Checkpoints disponíveis:', gerenciador.listar());
+// ['fabrica', 'usuario']</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Memento de configuração ───────────────────────────────────
+class ConfigSnapshot
+{
+    public function __construct(
+        private readonly array $dados
+    ) {}
+
+    /** @return array&lt;string, mixed&gt; */
+    public function _recuperar(): array
+    {
+        return $this-&gt;dados; // arrays PHP são copiados por valor
+    }
+}
+
+// ── Originator ────────────────────────────────────────────────
+class ConfiguracaoApp
+{
+    /** @var array&lt;string, mixed&gt; */
+    private array $dados = [
+        'tema'           =&gt; 'claro',
+        'idioma'         =&gt; 'pt-BR',
+        'fontSize'       =&gt; 14,
+        'notificacoes'   =&gt; true,
+    ];
+
+    public function set(string $chave, mixed $valor): void
+    {
+        $this-&gt;dados[$chave] = $valor;
+    }
+
+    public function get(string $chave): mixed
+    {
+        return $this-&gt;dados[$chave] ?? null;
+    }
+
+    public function salvarEstado(): ConfigSnapshot
+    {
+        return new ConfigSnapshot($this-&gt;dados);
+    }
+
+    public function restaurarEstado(ConfigSnapshot $snapshot): void
+    {
+        $this-&gt;dados = $snapshot-&gt;_recuperar();
+    }
+
+    public function exibir(): void
+    {
+        echo json_encode($this-&gt;dados, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
+    }
+}
+
+// ── Caretaker com checkpoints nomeados ────────────────────────
+class GerenciadorCheckpoints
+{
+    /** @var array&lt;string, ConfigSnapshot&gt; */
+    private array $checkpoints = [];
+
+    public function salvar(string $nome, ConfiguracaoApp $config): void
+    {
+        $this-&gt;checkpoints[$nome] = $config-&gt;salvarEstado();
+        echo "Checkpoint \"{$nome}\" salvo.\n";
+    }
+
+    public function restaurar(string $nome, ConfiguracaoApp $config): bool
+    {
+        if (!isset($this-&gt;checkpoints[$nome])) {
+            echo "Checkpoint \"{$nome}\" não encontrado.\n";
+            return false;
+        }
+        $config-&gt;restaurarEstado($this-&gt;checkpoints[$nome]);
+        echo "Checkpoint \"{$nome}\" restaurado.\n";
+        return true;
+    }
+
+    /** @return string[] */
+    public function listar(): array
+    {
+        return array_keys($this-&gt;checkpoints);
+    }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+$config      = new ConfiguracaoApp();
+$gerenciador = new GerenciadorCheckpoints();
+
+$gerenciador-&gt;salvar('fabrica', $config);
+
+$config-&gt;set('tema', 'escuro');
+$config-&gt;set('fontSize', 18);
+$config-&gt;set('idioma', 'en-US');
+$gerenciador-&gt;salvar('usuario', $config);
+
+$config-&gt;set('notificacoes', false);
+$config-&gt;set('fontSize', 22);
+echo "\nEstado atual:\n";
+$config-&gt;exibir();
+
+$gerenciador-&gt;restaurar('usuario', $config);
+$config-&gt;exibir();
+
+$gerenciador-&gt;restaurar('fabrica', $config);
+$config-&gt;exibir();
+
+echo "Checkpoints: " . implode(', ', $gerenciador-&gt;listar()) . "\n";
+// fabrica, usuario</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 2) -->
+
+        </section><!-- /.artigo__secao (exemplos) -->
+
+        <!-- 6. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Quando você precisa de undo/redo por snapshot:</strong> o caso
+              central do padrão. Se o estado do Originator é suficientemente compacto
+              ou a profundidade de undo é limitada, Memento é mais simples de implementar
+              do que Command com undo incremental para cada tipo de operação.
+            </li>
+            <li>
+              <strong>Quando o estado do objeto é rico e interdependente:</strong>
+              se múltiplos campos precisam ser restaurados em conjunto para garantir
+              consistência (ex.: conteúdo + cursor + seleção no editor), um snapshot
+              completo é mais seguro do que reverter campo por campo.
+            </li>
+            <li>
+              <strong>Quando você precisa de checkpoints ou transações:</strong>
+              salvar o estado antes de uma operação potencialmente destrutiva e
+              restaurar em caso de falha — sem expor os internos do objeto a quem
+              faz o gerenciamento.
+            </li>
+            <li>
+              <strong>Quando o encapsulamento do Originator deve ser preservado:</strong>
+              o Caretaker precisa guardar o estado mas não deve conhecer sua estrutura
+              interna. O Memento cria a barreira de abstração necessária.
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>Quando o estado do Originator é grande:</strong> cada snapshot
+              é uma cópia do estado completo. Para objetos com megabytes de dados,
+              manter um histórico de snapshots pode esgotar a memória. Considere
+              snapshots incrementais, compressão ou Command com undo incremental.
+            </li>
+            <li>
+              <strong>Quando a profundidade de undo é ilimitada e o objeto é grande:</strong>
+              a combinação de estado grande + muitos níveis de undo torna o Memento
+              proibitivo em memória. Defina um limite máximo de snapshots no Caretaker.
+            </li>
+            <li>
+              <strong>Quando linguagens dinâmicas tornam o encapsulamento trivial de
+              violar:</strong> em PHP e JavaScript, o encapsulamento do Memento é
+              convencional, não aplicado pelo compilador. Se o Caretaker pode acessar
+              os campos do Memento via reflexão, a barreira conceitual do padrão perde
+              força.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Preserva o encapsulamento do Originator — o Caretaker não conhece a estrutura interna do estado.</li>
+            <li>Simplifica o Originator: a lógica de undo não fica espalhada em cada operação — é centralizada em salvarEstado/restaurarEstado.</li>
+            <li>Permite undo de múltiplos níveis e checkpoints nomeados com o mesmo mecanismo.</li>
+            <li>O Caretaker pode limitar a profundidade do histórico descartando Mementos antigos — sem alterar o Originator.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Alto consumo de memória para Originators com estado grande — cada snapshot é uma cópia completa.</li>
+            <li>O encapsulamento do Memento é difícil de aplicar em linguagens sem suporte a classes internas ou pacotes (como TypeScript e PHP) — é convencional, não forçado pelo compilador.</li>
+            <li>Se o Originator muda sua estrutura interna, o formato dos Mementos existentes pode se tornar incompatível (problema de versionamento).</li>
+            <li>Requer cópia defensiva do estado para evitar que o Memento compartilhe referências mutáveis com o Originator.</li>
+          </ul>
+        </section>
+
+        <!-- 8. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Caretaker que inspeciona o Memento (viola encapsulamento)</h3>
+          <p>
+            O erro fundamental do padrão: o Caretaker chama getters do Memento para
+            ler campos, exibir informações ou tomar decisões. Isso cria acoplamento
+            entre o Caretaker e a estrutura interna do Originator — exatamente o que
+            o padrão visa evitar. O Caretaker deve tratar o Memento como uma caixa
+            preta: recebe, armazena, devolve. Nada mais.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Sinal de alerta:</strong> se o Caretaker tem um
+            <code>if (snapshot.getConteudo().length &gt; 0)</code> em algum lugar,
+            o encapsulamento foi violado.
+          </p>
+
+          <h3>2. Referências mutáveis compartilhadas (snapshot raso)</h3>
+          <p>
+            A armadilha técnica mais crítica: o <code>salvarEstado()</code> copia
+            referências em vez de valores. Se o estado do Originator contém objetos
+            ou arrays mutáveis e o Memento guarda a referência (não uma cópia
+            profunda), o snapshot refletirá mudanças posteriores — tornando-o inútil
+            para restauração. A regra de ouro: o Memento deve ser imutável e conter
+            apenas cópias dos dados, nunca as referências originais.
+          </p>
+          <div class="code-bloco">
+<pre><code>// ERRADO: referência compartilhada — o snapshot muda com o Originator
+class EditorSnapshot {
+  constructor(readonly dados: string[]) {} // referência!
+}
+const snap = new EditorSnapshot(editor.linhas); // editor.linhas e snap.dados apontam para o mesmo array
+editor.linhas.push('nova linha'); // corrompeu o snapshot!
+
+// CORRETO: cópia defensiva
+class EditorSnapshot {
+  constructor(readonly dados: readonly string[]) {}
+}
+const snap = new EditorSnapshot([...editor.linhas]); // cópia — independente</code></pre>
+          </div>
+
+          <h3>3. Mementos incompatíveis após refatoração (versionamento)</h3>
+          <p>
+            Se o Originator é serializado para persistência (arquivos de save de
+            jogo, sessões de usuário) e o formato do Memento muda com uma
+            refatoração, snapshots antigos podem se tornar irrestauráveis. Considere
+            incluir um número de versão no Memento e implementar migração quando
+            o formato muda — especialmente se Mementos são persistidos além da
+            sessão atual.
+          </p>
+
+          <h3>4. Histórico sem limite de tamanho</h3>
+          <p>
+            Um Caretaker que aceita Mementos ilimitadamente pode esgotar memória
+            gradualmente. Defina um limite máximo (ex.: 50 snapshots) no Caretaker
+            e descarte os mais antigos quando o limite for atingido. Isso é uma
+            decisão do Caretaker — o Originator e o Memento não precisam saber.
+          </p>
+        </section>
+
+        <!-- 9. PADRÕES RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Padrões relacionados</h2>
+          <p>
+            O Memento interage com padrões de comportamento que também lidam com
+            histórico de ações e gerenciamento de estado:
+          </p>
+          <!--
+            Disciplina de links: só linka artigos já publicados.
+            Command e State existem → links reais.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../command/">Command</a></li>
+            <li><a href="../state/">State</a></li>
+          </ul>
+          <p class="mt-1">
+            O <strong>Command</strong> é o complemento natural e mais frequente do
+            Memento. A distinção crítica: Command desfaz uma ação específica de forma
+            incremental — cada Command sabe exatamente como reverter o que fez.
+            Memento restaura um snapshot completo do estado — não desfaz uma ação,
+            retorna o objeto a um ponto anterior no tempo. Os dois são complementares:
+            um Command pode usar <code>originator.salvarEstado()</code> em seu
+            <code>execute()</code> e <code>originator.restaurarEstado(snapshot)</code>
+            em seu <code>undo()</code>, delegando ao próprio Originator a
+            responsabilidade de se serializar — sem que o Command precise conhecer
+            os campos internos do Receiver. O <strong>State</strong> também gerencia
+            o estado de um objeto, mas seu foco é representar estados discretos com
+            transições explícitas, não capturar e restaurar estados arbitrários.
+            Memento pode complementar o State quando é necessário retornar a um estado
+            anterior após uma transição — o Memento guarda o snapshot do StateContext
+            antes da transição.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="4343434343"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

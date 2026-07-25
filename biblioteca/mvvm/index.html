@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MVVM (Model-View-ViewModel) — Arquiteturas | Biblioteca Dev Helper</title>
+  <meta name="description" content="Entenda a arquitetura MVVM (Model-View-ViewModel): data binding declarativo, ViewModel com estado observável, origem no WPF/Silverlight, uso em Vue e Angular, diferença com MVP e armadilhas do ViewModel gordo." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>MVVM</span>
+        </nav>
+        <span class="artigo__categoria">Arquitetura</span>
+        <h1 class="artigo__titulo">MVVM</h1>
+        <p class="artigo__subtitulo">
+          Arquitetura onde a View se liga ao <strong>ViewModel</strong> por
+          <em>data binding</em> declarativo — o ViewModel expõe estado observável
+          e comandos, a View os observa automaticamente, e o ViewModel nunca
+          referencia a View.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Eliminar o acoplamento imperativo entre lógica de apresentação
+            e View</strong> por meio de data binding declarativo: a View declara
+            "meu texto exibe <code>viewModel.nomeUsuario</code>" e o runtime de
+            binding sincroniza automaticamente quando o ViewModel muda de estado.
+            O ViewModel nunca chama a View; ele não a conhece.
+          </p>
+          <p>
+            MVVM foi descrito por John Gossman em 2005, no contexto do WPF
+            (Windows Presentation Foundation) e depois do Silverlight — ambos da
+            Microsoft. O objetivo original era explorar ao máximo o sistema de
+            binding do XAML: designers poderiam trabalhar na View em XAML enquanto
+            desenvolvedores trabalhavam no ViewModel em C#, sem dependência direta
+            entre os dois.
+          </p>
+          <p>
+            O padrão migrou para o mundo web com Knockout.js (2010), Angular.js
+            (2010), Vue.js (2014) e Angular (2016). Em todas essas plataformas o
+            mecanismo subjacente é o mesmo: o ViewModel expõe propriedades
+            reativas (observáveis), a View as consome por binding declarativo, e
+            qualquer mudança no ViewModel propaga automaticamente para a View.
+            O padrão <a href="../observer/">Observer</a> é o fundamento de todo
+            sistema de binding.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            O MVP (com Presenter) resolve a testabilidade da lógica de UI, mas
+            mantém um problema de manutenção: para cada dado que precisa aparecer
+            na tela, o Presenter precisa chamar explicitamente um método da IView
+            (<code>view.exibirNome(nome)</code>). Conforme a tela cresce, esse
+            código de "empurrar dados" cresce proporcionalmente, e qualquer nova
+            propriedade visual exige atualizar a interface, a View e o Presenter.
+          </p>
+          <ul>
+            <li>
+              <strong>Sincronização imperativa e frágil:</strong> o Presenter
+              precisa lembrar de chamar todos os métodos de atualização na ordem
+              correta. Se um estado do Presenter muda e o método de atualização
+              correspondente não é chamado, a View fica desatualizada
+              silenciosamente.
+            </li>
+            <li>
+              <strong>Two-way binding custoso no MVP:</strong> quando o usuário
+              edita um campo e o dado deve voltar ao Presenter, é necessário um
+              listener explícito para cada campo. O MVVM resolve isso com
+              two-way binding: a View atualiza o ViewModel automaticamente quando
+              o usuário digita, e o ViewModel atualiza a View quando o estado
+              muda.
+            </li>
+            <li>
+              <strong>Acoplamento da View à interface IView:</strong> no MVP,
+              adicionar uma nova propriedade visual requer atualizar a IView, a
+              View e o Presenter. No MVVM, basta adicionar a propriedade ao
+              ViewModel e fazer o binding na View — sem alterar nenhum contrato
+              de interface.
+            </li>
+          </ul>
+          <p>
+            O MVVM resolve esses problemas ao substituir o protocolo imperativo
+            (Presenter chama métodos) por um protocolo declarativo (View observa
+            o ViewModel). A sincronização deixa de ser responsabilidade de código
+            manual e passa a ser responsabilidade do runtime de binding.
+          </p>
+        </section>
+
+        <!-- 3. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+          <div class="code-bloco">
+<pre><code>  ┌────────────────────────────────────────────────────────────────┐
+  │                          Usuário                               │
+  │                    (interage com a View)                       │
+  └──────────────────────────┬─────────────────────────────────────┘
+                             │ eventos (clique, input)
+                             ▼
+  ┌─────────────────────────────────────────────────────────────────┐
+  │                          VIEW                                   │
+  │  - declarativa: define o binding com o ViewModel                │
+  │  - NÃO contém lógica de apresentação                           │
+  │  - NÃO conhece o Model                                         │
+  │  - observa o ViewModel via data binding (reativo)              │
+  │  - delega ações ao ViewModel por meio de comandos/eventos       │
+  └──────────────────┬──────────────────────────────────────────────┘
+                     │ binding bidirecional (two-way)
+                     │ View observa ViewModel (Observer por baixo)
+                     ▼
+  ┌─────────────────────────────────────────────────────────────────┐
+  │                       VIEWMODEL                                 │
+  │  - expõe estado observável (propriedades reativas)             │
+  │  - expõe comandos (ações que a View pode invocar)              │
+  │  - NÃO conhece a View (sem referência, sem interface IView)    │
+  │  - consulta e atualiza o Model                                  │
+  │  - transformações de dados para exibição ficam aqui            │
+  └──────────────────┬──────────────────────────────────────────────┘
+                     │ usa
+                     ▼
+  ┌─────────────────────────────────────────────────────────────────┐
+  │                        MODEL                                    │
+  │  - dados + regras de negócio                                    │
+  │  - ignorante da View e do ViewModel                            │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Dependências:
+    View       → ViewModel      (via binding declarativo — observa estado)
+    ViewModel  → Model          (lê e atualiza dados)
+    ViewModel  → (ninguém)      (não conhece a View concreta)
+    Model      → (ninguém)      (não conhece ViewModel nem View)
+
+  Diferença crítica em relação ao MVP:
+    MVP:  Presenter chama view.exibirNome(nome) — imperativo
+    MVVM: View observa viewModel.nome — declarativo e automático
+</code></pre>
+          </div>
+
+          <h3>Two-way binding</h3>
+          <p>
+            No <strong>two-way binding</strong>, a sincronização é bidirecional:
+            quando o ViewModel muda uma propriedade, a View atualiza; quando o
+            usuário edita um campo na View, o ViewModel recebe o novo valor
+            automaticamente. Em Vue.js isso é a diretiva <code>v-model</code>;
+            em Angular é <code>[(ngModel)]</code>; em WPF é o
+            <code>Mode=TwoWay</code> no binding XAML. O two-way binding é
+            especialmente útil em formulários.
+          </p>
+        </section>
+
+        <!-- 4. COMO FUNCIONA -->
+        <section class="artigo__secao">
+          <h2>Como funciona</h2>
+
+          <h3>Estado observável</h3>
+          <p>
+            O coração do MVVM é a propriedade observável: uma propriedade do
+            ViewModel que, quando muda de valor, notifica todos os observadores
+            registrados. O mecanismo subjacente é o padrão
+            <a href="../observer/">Observer</a>: o ViewModel é o sujeito (Subject)
+            e as Views são os observadores. Em frameworks modernos esse mecanismo
+            é chamado de reatividade, signals, refs ou observables — mas o
+            princípio é o mesmo.
+          </p>
+
+          <h3>Comandos</h3>
+          <p>
+            Além de estado, o ViewModel expõe <em>comandos</em>: ações que a View
+            pode invocar quando o usuário age (clica em um botão, submete um
+            formulário). O comando encapsula a lógica de resposta ao evento — sem
+            que a View saiba o que o comando faz internamente. O ViewModel também
+            pode expor propriedades que indicam se um comando está habilitado,
+            eliminando a necessidade de a View decidir isso por conta própria.
+          </p>
+
+          <h3>Exemplo de código</h3>
+          <div class="code-tabs" role="tablist" aria-label="MVVM — ViewModel observável e binding">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript (Vue 3)</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="ts-vanilla"
+                      type="button">TypeScript (genérico)</button>
+            </div>
+
+            <!-- Painel Vue 3 -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── MODEL — dados e regras de negócio ────────────────────────
+// Completamente ignorante de Vue, do ViewModel e da View.
+class UsuarioService {
+  async buscarPorId(id: string): Promise&lt;{ nome: string; email: string }&gt; {
+    // acessa API ou repositório
+    return { nome: 'Ana', email: 'ana@exemplo.com' };
+  }
+}
+
+// ── VIEWMODEL — Vue 3 Composition API ────────────────────────
+// Expõe estado reativo e comandos. Nunca referencia a View.
+// Em Vue 3, este bloco vai dentro de &lt;script setup&gt; ou em usePerfilViewModel().
+import { ref, computed } from 'vue';
+
+function usePerfilViewModel(service: UsuarioService) {
+  // Estado observável — quando muda, a View atualiza automaticamente
+  const nome      = ref('');
+  const email     = ref('');
+  const carregando = ref(false);
+  const erro      = ref('');
+
+  // Computed — derivado do estado; recalcula automaticamente
+  const resumo = computed(() =&gt; nome.value ? `Olá, ${nome.value}` : '');
+
+  // Comando — ação que a View invoca; não retorna nada para a View
+  async function carregarPerfil(id: string): Promise&lt;void&gt; {
+    carregando.value = true;
+    erro.value = '';
+    try {
+      const usuario = await service.buscarPorId(id);
+      nome.value  = usuario.nome;
+      email.value = usuario.email;
+    } catch {
+      erro.value = 'Não foi possível carregar o perfil.';
+    } finally {
+      carregando.value = false;
+    }
+  }
+
+  return { nome, email, carregando, erro, resumo, carregarPerfil };
+}
+
+// ── VIEW — template declarativo (Vue SFC) ─────────────────────
+// &lt;template&gt; abaixo (não é código executável — apenas ilustrativo)
+//
+// &lt;p v-if="carregando"&gt;Carregando...&lt;/p&gt;
+// &lt;p v-if="erro"&gt;{{ erro }}&lt;/p&gt;
+// &lt;p&gt;{{ resumo }}&lt;/p&gt;
+// &lt;input v-model="email" /&gt;          &lt;!-- two-way binding --&gt;
+// &lt;button @click="carregarPerfil('1')"&gt;Carregar&lt;/button&gt;
+//
+// A View não contém nenhuma lógica — apenas binding e eventos.</code></pre>
+            </div>
+
+            <!-- Painel TypeScript genérico -->
+            <div class="code-tabs__panel" data-lang="ts-vanilla" hidden>
+<pre><code>// ── VIEWMODEL genérico (sem framework) ───────────────────────
+// Mostra o mecanismo de Observable puro — o que frameworks fazem internamente.
+
+type Listener&lt;T&gt; = (valor: T) =&gt; void;
+
+class Observable&lt;T&gt; {
+  private valor: T;
+  private listeners: Listener&lt;T&gt;[] = [];
+
+  constructor(inicial: T) {
+    this.valor = inicial;
+  }
+
+  get(): T { return this.valor; }
+
+  set(novoValor: T): void {
+    this.valor = novoValor;
+    this.listeners.forEach(fn =&gt; fn(novoValor));
+  }
+
+  subscribe(fn: Listener&lt;T&gt;): void {
+    this.listeners.push(fn);
+  }
+}
+
+// ── MODEL ─────────────────────────────────────────────────────
+class UsuarioService {
+  buscarPorId(id: string): { nome: string; email: string } {
+    return { nome: 'Ana', email: 'ana@exemplo.com' };
+  }
+}
+
+// ── VIEWMODEL ─────────────────────────────────────────────────
+// Expõe Observables. A View se registra como observadora.
+// O ViewModel nunca sabe quantas Views estão observando.
+class PerfilViewModel {
+  readonly nome  = new Observable('');
+  readonly erro  = new Observable('');
+  readonly ocupado = new Observable(false);
+
+  constructor(private readonly service: UsuarioService) {}
+
+  // Comando: a View chama; o ViewModel atualiza o estado observável
+  carregarPerfil(id: string): void {
+    this.ocupado.set(true);
+    this.erro.set('');
+    try {
+      const usuario = this.service.buscarPorId(id);
+      this.nome.set(usuario.nome);
+    } catch {
+      this.erro.set('Erro ao carregar perfil.');
+    } finally {
+      this.ocupado.set(false);
+    }
+  }
+}
+
+// ── BINDING manual (o que o framework faria automaticamente) ──
+const vm = new PerfilViewModel(new UsuarioService());
+const elNome  = document.getElementById('nome')!;
+const elErro  = document.getElementById('erro')!;
+
+// View "observa" o ViewModel — substitui o view.exibirNome() do MVP
+vm.nome.subscribe(v  =&gt; { elNome.textContent  = v; });
+vm.erro.subscribe(v  =&gt; { elErro.textContent  = v; });
+
+// Comando disparado pela View
+document.getElementById('btn-carregar')!
+  .addEventListener('click', () =&gt; vm.carregarPerfil('1'));</code></pre>
+            </div>
+          </div><!-- /.code-tabs -->
+
+          <p>
+            O ponto central: o ViewModel nunca chama métodos na View. Ele apenas
+            muda suas propriedades observáveis e qualquer View registrada como
+            observadora sincroniza automaticamente. Isso é o inverso do MVP, onde
+            o Presenter chama <code>view.exibirNome(nome)</code> explicitamente.
+          </p>
+        </section>
+
+        <!-- 5. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Frameworks com suporte nativo a data binding:</strong> Vue,
+              Angular, SwiftUI, Jetpack Compose, WPF, Knockout. Nesses ambientes
+              o MVVM é o padrão natural — o framework já fornece o mecanismo de
+              binding e o ViewModel se encaixa sem atrito.
+            </li>
+            <li>
+              <strong>UIs com estado complexo e múltiplas atualizações
+              simultâneas:</strong> quando muitas propriedades visuais derivam do
+              mesmo estado, o binding declarativo é mais seguro do que chamadas
+              imperativas: você não precisa lembrar de chamar
+              <code>view.atualizarX()</code> para cada peça — o binding cuida
+              disso.
+            </li>
+            <li>
+              <strong>Formulários com two-way binding:</strong> aplicações de
+              entrada de dados onde o usuário edita campos e o ViewModel precisa
+              refletir essas edições imediatamente se beneficiam muito do
+              two-way binding.
+            </li>
+            <li>
+              <strong>Quando múltiplas Views precisam observar o mesmo
+              ViewModel:</strong> por exemplo, um painel de resumo e um formulário
+              de edição observando o mesmo ViewModel de produto. O ViewModel não
+              muda; as Views se registram de forma independente.
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>Sem suporte a binding no ambiente:</strong> implementar um
+              sistema de binding manualmente (Observables, listeners em cada
+              propriedade) para adotar MVVM em código vanilla sem framework é
+              raramente justificável. O resultado costuma ser o padrão Observer
+              manual com sobrecarga de infraestrutura.
+            </li>
+            <li>
+              <strong>Views simples e estáticas:</strong> se a tela exibe dados
+              sem interatividade complexa, um MVC simples é mais direto. Criar
+              ViewModel com propriedades reativas para uma página de apenas leitura
+              é overengineering.
+            </li>
+            <li>
+              <strong>Quando o binding mágico dificulta a depuração:</strong> em
+              interfaces com binding bidireccional extenso e ViewModels com muitas
+              propriedades derivadas (computed), rastrear a origem de uma mudança
+              inesperada na UI pode ser trabalhoso. Se a equipe não tem experiência
+              com o modelo reativo, considere começar com MVP ou um MVC simples.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 6. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>ViewModel testável sem instanciar a View — apenas verifique o estado das propriedades observáveis após invocar os comandos.</li>
+            <li>Separação limpa: ViewModel não conhece a View; a View não conhece o Model.</li>
+            <li>Two-way binding simplifica formulários e sincronização bidirecional.</li>
+            <li>Múltiplas Views podem observar o mesmo ViewModel sem modificação no ViewModel.</li>
+            <li>Integração natural com frameworks reativos modernos (Vue, Angular, SwiftUI, Compose).</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Requer suporte do ambiente: sem framework com binding nativo, a implementação manual de Observables é pesada.</li>
+            <li>Risco de ViewModel gordo: sem disciplina, o ViewModel acumula lógica de negócio, orquestração de casos de uso e transformações que pertencem ao Model — os mesmos problemas do Presenter gordo no MVP.</li>
+            <li>Binding mágico dificulta debugging: rastrear por que um dado na View mudou exige entender o grafo de dependências reativas, que pode ser não óbvio em aplicações grandes.</li>
+            <li>Curva de aprendizado do modelo reativo: desenvolvedores acostumados com programação imperativa levam tempo para pensar em termos de estado observável e derivações automáticas.</li>
+          </ul>
+        </section>
+
+        <!-- 7. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. ViewModel gordo</h3>
+          <p>
+            A mesma armadilha do Presenter gordo no MVP, agora no ViewModel:
+            regras de validação de negócio, chamadas diretas a APIs externas,
+            orquestração de múltiplos casos de uso e cálculos de domínio acabam
+            no ViewModel porque é "o lugar mais conveniente". O ViewModel deve
+            conter apenas lógica de apresentação — transformar dados do Model para
+            exibição, agregar estado para a View, expor comandos que delegam ao
+            Model. Lógica de negócio pertence ao Model (ou a serviços de
+            aplicação).
+          </p>
+          <p class="artigo__aviso">
+            <strong>Regra prática:</strong> o ViewModel deve ser testável com um
+            mock simples do Model. Se os testes do ViewModel precisam de mocks
+            de cinco serviços diferentes, o ViewModel está fazendo coisas demais.
+          </p>
+
+          <h3>2. Lógica de domínio no ViewModel</h3>
+          <p>
+            Validações de negócio ("o desconto máximo é 30%"), cálculos de preço,
+            regras de elegibilidade — nada disso pertence ao ViewModel. O ViewModel
+            pode expor se um campo é válido para fins de exibição (por exemplo,
+            <code>emailValido: boolean</code>), mas a regra que define o que é
+            válido deve residir no Model. Se você deletar o ViewModel, as regras
+            de negócio não devem desaparecer com ele.
+          </p>
+
+          <h3>3. Two-way binding gerando ciclos</h3>
+          <p>
+            Com two-way binding, é possível criar ciclos acidentais: a View
+            atualiza o ViewModel, o ViewModel deriva uma propriedade, que atualiza
+            a View, que atualiza o ViewModel novamente. Frameworks modernos têm
+            mecanismos para quebrar esses ciclos (detecção de mudança batch,
+            glitch-free propagation), mas o desenvolvedor precisa conhecer esses
+            mecanismos para evitar comportamento inesperado em formulários
+            complexos.
+          </p>
+
+          <h3>4. Confundir MVVM com MVP</h3>
+          <p>
+            A distinção é precisa e importa: no MVP, o Presenter <em>chama</em>
+            métodos na View (<code>view.exibirNome(nome)</code>) — o fluxo é
+            imperativo e o Presenter conhece a View via interface. No MVVM, o
+            ViewModel <em>expõe</em> propriedades observáveis e não sabe que a
+            View existe — a View se registra como observadora e o binding cuida
+            da sincronização. Se o seu "ViewModel" tem um método
+            <code>atualizarView()</code> ou guarda uma referência à View, você
+            tem MVP com o nome trocado.
+          </p>
+        </section>
+
+        <!-- 8. PADRÕES E ARQUITETURAS RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Arquiteturas e padrões relacionados</h2>
+          <!--
+            Disciplina de links: só linka artigos já publicados.
+            MVC, MVP (deste lote), Observer existem → links reais.
+            Command publicado → link real.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../mvc/">MVC</a></li>
+            <li><a href="../mvp/">MVP (Model-View-Presenter)</a></li>
+            <li><a href="../observer/">Observer</a></li>
+            <li><a href="../command/">Command</a></li>
+          </ul>
+          <p class="mt-1">
+            O <strong>MVC</strong> é o ancestral do MVVM. No MVC clássico, a View
+            pode observar o Model diretamente via Observer; no MVVM a View não
+            conhece o Model — ela observa exclusivamente o ViewModel. O ViewModel
+            assume o papel de mediador e tradutor de dados, um papel que no MVC
+            clássico era exercido parcialmente pelo Controller e parcialmente pelo
+            Observer direto View-Model.
+          </p>
+          <p>
+            O <strong>MVP</strong> é o irmão mais próximo do MVVM — ambos separam
+            a lógica de apresentação em um componente dedicado (Presenter ou
+            ViewModel) e isolam o Model da View. A diferença fundamental: no MVP
+            o Presenter empurra dados para a View de forma imperativa, chamando
+            métodos de uma interface IView; no MVVM o ViewModel expõe estado
+            observável e a View se sincroniza automaticamente via binding. Em
+            ambientes sem suporte a binding, MVP é mais simples de implementar
+            manualmente; em ambientes com binding nativo, MVVM é mais natural.
+          </p>
+          <p>
+            O <strong>Observer</strong> é o mecanismo que torna o MVVM possível.
+            Toda propriedade observável do ViewModel é um Subject Observer: quando
+            seu valor muda, todos os bindings registrados como observadores são
+            notificados e atualizam os elementos correspondentes na View. Frameworks
+            como Vue implementam isso com proxies reativos; Angular com Signals ou
+            Zone.js; Knockout com <code>ko.observable()</code>. A abstração muda,
+            mas o padrão Observer está sempre por baixo.
+          </p>
+          <p>
+            O padrão <strong>Command</strong> é frequentemente usado para modelar
+            as ações expostas pelo ViewModel: cada botão na View é vinculado a
+            um Command no ViewModel que encapsula a ação e opcionalmente uma
+            condição de habilitação (<code>podeExecutar(): boolean</code>). Isso
+            mantém a View completamente declarativa — ela não sabe o que o comando
+            faz, apenas se pode executá-lo.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="7070707072"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

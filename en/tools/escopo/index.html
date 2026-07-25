@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Software Project Scope Generator — Dev Helper</title>
+  <meta name="description" content="Build a software project scope document in Markdown by answering a guided form. Functional and non-functional requirements, deliverables, risks and more." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../tools/escopo/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!--
+    AdSense — biblioteca carregada UMA vez por página.
+    Substitua ca-pub-0000000000000000 pelo seu pub-ID real antes do deploy.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../../../biblioteca/">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Software Project Scope Generator</h1>
+        <p>Fill out the form and generate a complete scope document in Markdown, ready to copy or download.</p>
+      </header>
+
+      <!-- ── SEÇÃO: FORMULÁRIO ──────────────────────────────────────────────── -->
+      <section class="tool__section">
+        <h2 class="tool__section-title">Fill in the scope</h2>
+
+        <div class="tool__controls">
+
+          <!-- Nome do projeto -->
+          <div class="escopo-campo">
+            <label class="escopo-campo__label" for="escopo-nome">Project name</label>
+            <input
+              id="escopo-nome"
+              class="tool__input-inline escopo-input-nome"
+              type="text"
+              placeholder="E.g.: Online Booking Portal"
+              spellcheck="false"
+              autocorrect="off"
+            />
+          </div>
+
+          <!-- Prazo estimado -->
+          <div class="escopo-campo">
+            <label class="escopo-campo__label" for="escopo-prazo">Estimated timeline</label>
+            <input
+              id="escopo-prazo"
+              class="tool__input-inline escopo-input-prazo"
+              type="text"
+              placeholder="E.g.: 3 months, 12 sprints, Q2 2025"
+              spellcheck="false"
+              autocorrect="off"
+            />
+          </div>
+
+          <!-- Stack / Tecnologias -->
+          <div class="escopo-campo">
+            <label class="escopo-campo__label" for="escopo-stack">Stack / Technologies</label>
+            <input
+              id="escopo-stack"
+              class="tool__input-inline escopo-input-nome"
+              type="text"
+              placeholder="E.g.: React, Node.js, PostgreSQL, AWS"
+              spellcheck="false"
+              autocorrect="off"
+            />
+          </div>
+
+          <!-- Objetivo / Visão -->
+          <div class="escopo-campo">
+            <label class="escopo-campo__label" for="escopo-objetivo">Objective / Vision</label>
+            <textarea
+              id="escopo-objetivo"
+              class="tool__input escopo-textarea"
+              placeholder="Describe the problem the project solves and the expected outcome. E.g.: Allow customers to book hotel rooms on their own, reducing support time by 60%."
+              spellcheck="true"
+            ></textarea>
+          </div>
+
+          <!-- Requisitos funcionais -->
+          <div class="escopo-campo">
+            <label class="escopo-campo__label">Functional requirements</label>
+            <div id="lista-funcionais" class="escopo-lista"></div>
+            <button type="button" class="button--secondary escopo-btn-adicionar" data-lista="lista-funcionais">+ Add item</button>
+          </div>
+
+          <!-- Requisitos não funcionais -->
+          <div class="escopo-campo">
+            <label class="escopo-campo__label">Non-functional requirements</label>
+            <div id="lista-nao-funcionais" class="escopo-lista"></div>
+            <button type="button" class="button--secondary escopo-btn-adicionar" data-lista="lista-nao-funcionais">+ Add item</button>
+          </div>
+
+          <!-- Entregáveis -->
+          <div class="escopo-campo">
+            <label class="escopo-campo__label">Deliverables</label>
+            <div id="lista-entregaveis" class="escopo-lista"></div>
+            <button type="button" class="button--secondary escopo-btn-adicionar" data-lista="lista-entregaveis">+ Add item</button>
+          </div>
+
+          <!-- Fora de escopo -->
+          <div class="escopo-campo">
+            <label class="escopo-campo__label">Out of scope</label>
+            <div id="lista-fora-escopo" class="escopo-lista"></div>
+            <button type="button" class="button--secondary escopo-btn-adicionar" data-lista="lista-fora-escopo">+ Add item</button>
+          </div>
+
+          <!-- Premissas -->
+          <div class="escopo-campo">
+            <label class="escopo-campo__label">Assumptions</label>
+            <div id="lista-premissas" class="escopo-lista"></div>
+            <button type="button" class="button--secondary escopo-btn-adicionar" data-lista="lista-premissas">+ Add item</button>
+          </div>
+
+          <!-- Riscos -->
+          <div class="escopo-campo">
+            <label class="escopo-campo__label">Risks</label>
+            <div id="lista-riscos" class="escopo-lista"></div>
+            <button type="button" class="button--secondary escopo-btn-adicionar" data-lista="lista-riscos">+ Add item</button>
+          </div>
+
+          <!-- Critérios de aceite -->
+          <div class="escopo-campo">
+            <label class="escopo-campo__label">Acceptance criteria</label>
+            <div id="lista-criterios" class="escopo-lista"></div>
+            <button type="button" class="button--secondary escopo-btn-adicionar" data-lista="lista-criterios">+ Add item</button>
+          </div>
+
+        </div>
+
+        <!-- Botões de ação do formulário -->
+        <div class="tool__actions">
+          <button id="btn-gerar-escopo" class="button" type="button">Generate document</button>
+          <button id="btn-limpar-escopo" class="button--secondary" type="button">Clear</button>
+        </div>
+      </section>
+
+      <!-- ── SEÇÃO: SAÍDA ────────────────────────────────────────────────────── -->
+      <section class="tool__section" id="escopo-saida-section" hidden>
+        <h2 class="tool__section-title">Generated document</h2>
+
+        <p id="escopo-aviso-vazio" class="escopo-aviso-vazio" hidden>
+          Fill in at least the project name or the objective to generate the document.
+        </p>
+
+        <div class="tool__output">
+          <textarea
+            id="escopo-saida"
+            class="tool__input escopo-saida"
+            readonly
+            spellcheck="false"
+            aria-label="Scope document in Markdown"
+          ></textarea>
+        </div>
+
+        <div class="tool__actions tool__actions--mt">
+          <button id="btn-copiar-escopo" class="button--secondary" type="button">Copy Markdown</button>
+          <button id="btn-baixar-escopo" class="button--secondary" type="button">Download .md</button>
+        </div>
+      </section>
+    </article>
+
+    <!-- Bloco de anúncio — abaixo da área de resultado da ferramenta -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="1212121212"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Conteúdo real — exigido pelo AdSense -->
+    <section>
+      <h2>What is a software project scope document?</h2>
+      <p>
+        A <strong>scope document</strong> (also called a <em>scope statement</em>) is the internal
+        contract that defines <strong>what will be done</strong> and, just as importantly,
+        <strong>what will not be done</strong> in a software project.
+        It answers essential questions before the first commit even happens:
+      </p>
+      <ul>
+        <li>What problem does the system solve?</li>
+        <li>Which features are part of the delivery?</li>
+        <li>Which features are explicitly excluded from this version?</li>
+        <li>What assumptions is the team making about resources, integrations and environment?</li>
+        <li>What risks could affect timeline or quality?</li>
+        <li>How will the client or sponsor know the project is done?</li>
+      </ul>
+      <p>
+        Answering these questions in writing, before coding, is the most economical way to avoid
+        rework: changing text costs nothing; changing code in production costs a lot.
+      </p>
+
+      <h2>Why does defining "out of scope" prevent scope creep?</h2>
+      <p>
+        <em>Scope creep</em> is the unplanned, incremental growth of scope during a project —
+        small additions that, individually, seem reasonable, but that collectively delay deliveries,
+        inflate costs and exhaust the team. The root of the problem is usually <strong>ambiguity</strong>:
+        if the scope doesn't say something is out, any stakeholder can argue it's in.
+      </p>
+      <p>
+        The <strong>Out of scope</strong> section solves this by explicitly naming what
+        <em>won't</em> be done in this version or contract. Typical examples: integration with legacy
+        system X, support for language Y, advanced reports, mobile app. By documenting the exclusion,
+        you create an objective reference to respond to expansion requests: "As agreed in the
+        scope, advanced reports are out of this phase — we can open a new cycle for that."
+      </p>
+
+      <h2>Tips for filling out each section</h2>
+
+      <h3>Project name</h3>
+      <p>
+        Use a short, memorable and unambiguous name. Avoid generic names like "New System" or
+        "Platform". Prefer: "Booking Portal — v1", "Recurring Payments API", "Fleet
+        Monitoring Dashboard".
+      </p>
+
+      <h3>Objective / Vision</h3>
+      <p>
+        Write 2–5 sentences about the problem the project solves and the expected outcome for the
+        business. A good formula: <em>"[Actor] needs to [do something] to [achieve a result]. Today,
+        [current problem]. This project delivers [solution] which results in [measurable
+        benefit]."</em>
+      </p>
+
+      <h3>Functional requirements</h3>
+      <p>
+        List what the system must do — behaviors and features observable by the user.
+        Use action language: "Allow the user to...", "Display a report of...", "Send a
+        notification when...". Avoid implementation details (database, framework) — those
+        go in the Stack section.
+      </p>
+
+      <h3>Non-functional requirements</h3>
+      <p>
+        Quality and constraints of the system that are not features themselves: performance
+        ("response within 500 ms for 95% of requests"), availability ("99.5% monthly"),
+        security ("data at rest encrypted with AES-256"), scalability, accessibility
+        (WCAG 2.1 AA), browser compatibility, compliance (GDPR, PCI-DSS).
+      </p>
+
+      <h3>Deliverables</h3>
+      <p>
+        What will actually be delivered at the end: "Source code in the Git repository",
+        "Deployment to AWS production environment", "API documentation (OpenAPI 3.0)", "User
+        manual", "Automated test suite with at least 80% coverage".
+      </p>
+
+      <h3>Out of scope</h3>
+      <p>
+        Items that were discussed but deliberately excluded from this version. Be specific:
+        "Mobile app (only responsive web in this phase)", "Integration with legacy ERP
+        system", "Custom user-defined reports", "English language support".
+      </p>
+
+      <h3>Assumptions</h3>
+      <p>
+        Conditions the team assumes to be true for the scope to be feasible. If an assumption
+        turns out to be false, the scope needs to be renegotiated. Examples: "The client will
+        provide access to the staging environment by week 2", "The partner's API will be
+        available and documented before integration begins", "The QA team will have two
+        dedicated members".
+      </p>
+
+      <h3>Risks</h3>
+      <p>
+        Uncertain events that, if they occur, impact timeline, cost or quality. For each risk,
+        indicate the perceived probability and impact. Examples: "Requirement changes during the
+        integration phase (high probability, high impact)", "Unavailability of a third-party
+        API provider (low probability, high impact)".
+      </p>
+
+      <h3>Acceptance criteria</h3>
+      <p>
+        Objective and verifiable conditions that define a "completed project". Each criterion should
+        be testable without ambiguity: "All high-priority user stories pass acceptance tests",
+        "API response time is under 300 ms at 100 req/s load (staging environment)", "Zero
+        critical vulnerabilities in the SAST report".
+      </p>
+
+      <h3>Stack / Technologies</h3>
+      <p>
+        List the main technologies chosen: language(s), frameworks, database,
+        infrastructure, third-party services. This aligns expectations about what the team needs
+        to know and about any license or cost constraints.
+      </p>
+
+      <h3>Estimated timeline</h3>
+      <p>
+        This can be a date ("September 30, 2025"), a duration ("12 weeks"), cycles ("4 sprints of
+        2 weeks") or a business milestone ("by the product launch — Q3 2025"). Include the
+        start date if it's already defined.
+      </p>
+
+      <h2>How to use the generated Markdown</h2>
+      <p>
+        The document generated by the tool uses standard Markdown syntax (CommonMark), compatible
+        with GitHub, GitLab, Notion, Confluence (via plugin), Obsidian, VS Code and most
+        modern documentation tools.
+      </p>
+      <ul>
+        <li><strong>GitHub / GitLab:</strong> paste the content into a <code>SCOPE.md</code> or <code>docs/scope.md</code> file in the repository.</li>
+        <li><strong>Notion / Confluence:</strong> use the Markdown import option or paste directly — most of them render it automatically.</li>
+        <li><strong>Word / Google Docs:</strong> tools like Pandoc convert Markdown to .docx with a single command.</li>
+        <li><strong>Commercial proposal:</strong> copy the relevant sections and adapt the tone for the client.</li>
+      </ul>
+
+      <h2>Frequently Asked Questions (FAQ)</h2>
+
+      <h3>Is my data saved?</h3>
+      <p>
+        No. When you close the tab or refresh the page, the typed content is lost — copy or
+        download the document before leaving.
+      </p>
+
+      <h3>Can I edit the generated Markdown?</h3>
+      <p>
+        Yes. The document is generated as plain text. After copying or downloading the <code>.md</code>
+        file, edit it in any text editor — VS Code, Notepad, Obsidian, Typora or directly on
+        GitHub. The generated Markdown follows standard syntax and doesn't use proprietary extensions.
+      </p>
+
+      <h3>Does it work for a commercial proposal?</h3>
+      <p>
+        With adaptations, yes. The generated structure covers the core elements of a technical
+        scope. For a full commercial proposal, you'll likely need to add sections for
+        pricing, a detailed timeline, client responsibilities and contractual clauses.
+        Use the document as a starting point and adapt the tone to the context (internal or external).
+      </p>
+
+      <h3>Is there a limit of items per section?</h3>
+      <p>
+        There is no limit imposed by the tool. Add as many items as needed in each
+        dynamic list. Items left blank are automatically ignored when generating the document.
+      </p>
+
+      <h3>Can I generate the document multiple times without losing what I filled in?</h3>
+      <p>
+        Yes. The form is not cleared when you generate the document — you can adjust fields and
+        generate it again as many times as you want. Use the "Clear" button only when you want to
+        start a brand new scope from scratch.
+      </p>
+
+      <h3>Does the generated document follow any specific methodology?</h3>
+      <p>
+        The sections were inspired by established practices from the PMBOK (Project Management
+        Body of Knowledge) and agile frameworks like Scrum and SAFe, adapted for the
+        context of software projects. The structure is intentionally methodology-agnostic —
+        it works for teams working with sprints as well as for waterfall projects or fixed-
+        scope contracts.
+      </p>
+
+      <h3>Can I use it for personal or open source projects?</h3>
+      <p>
+        Absolutely. A scope document is useful even for individual projects: it forces
+        you to articulate the objective, the features and the boundaries before coding, reducing
+        the risk of infinite scope (the famous "let me just add one more feature").
+      </p>
+
+      <h3>What is the assumptions section and why does it matter?</h3>
+      <p>
+        Assumptions are conditions the team assumes to be true without formal confirmation. Documenting them
+        serves two purposes: (1) alerting stakeholders about external dependencies
+        that could invalidate the scope if they don't materialize; (2) creating an objective basis for
+        renegotiation if an assumption turns out to be false during the project.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/tools-en/escopo.js"></script>
+</body>
+</html>

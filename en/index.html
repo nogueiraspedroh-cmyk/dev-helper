@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dev Helper</title>
+  <meta name="description" content="A collection of small tools for developers — CPF/CNPJ, JSON, SQL, passwords, addresses and more, generated and validated instantly in your browser." />
+  <link rel="stylesheet" href="../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../index.html" />
+  <link rel="alternate" hreflang="en" href="index.html" />
+
+  <!--
+    AdSense — carrega a biblioteca UMA vez por página (no <head>).
+    Troque "ca-pub-0000000000000000" pelo SEU código de editor (pub-ID),
+    que aparece no painel do AdSense. O atributo `async` evita travar o
+    carregamento da página enquanto o script do Google baixa.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="../biblioteca/">Library</a></li>
+        <li><a href="pages/about.html">About</a></li>
+        <li><a href="pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <noscript>
+    <p class="noscript-note">JavaScript is disabled — the sidebar menu will not appear, but you can navigate directly through the <a href="../biblioteca/">Library</a> or the tools listed below.</p>
+  </noscript>
+
+  <main class="container container--home">
+    <!-- Hero "search-first": mesmo princípio de biblioteca-search (campo de
+         busca como elemento dominante do topo), adaptado ao painel escuro
+         --ink que é a identidade "terminal" do site — ver comentário
+         ".home-hero" em css/styles.css. O <h1>/prompt/subtítulo mantêm a
+         identidade visual, só ficam mais compactos; os 5 chips viram um
+         atalho secundário abaixo da busca, sem competir com ela. -->
+    <section class="hero home-hero">
+      <p class="hero__prompt">~/dev-helper — tools for devs</p>
+      <h1 class="hero__title home-hero__title">Open and use.<br>Nothing to install.</h1>
+      <p class="hero__sub home-hero__sub">CPF, CNPJ, JSON, SQL, passwords, addresses and more — generated and validated on the spot, ready to copy.</p>
+      <div class="home-hero__field">
+        <svg class="home-hero__icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+        <input type="search" id="home-busca" class="hero__search-input" placeholder="Search a tool or article…" aria-label="Search a tool or library article" autocomplete="off" />
+      </div>
+      <div class="hero__chips">
+        <a class="hero__chip" href="../en/tools/cpf-cnpj/">CPF / CNPJ</a>
+        <a class="hero__chip" href="../en/tools/json/">JSON</a>
+        <a class="hero__chip" href="../tools/jwt/">JWT</a>
+        <a class="hero__chip" href="../tools/uuid/">UUID</a>
+        <a class="hero__chip" href="../en/tools/pix/">PIX</a>
+      </div>
+    </section>
+
+    <p class="home-busca__vazio" id="home-busca-vazio" role="status" aria-live="polite" hidden>
+      No tools or articles found.
+    </p>
+
+    <!-- Resultados de artigos da Biblioteca para a busca da home (js/main.js,
+         bloco `if (buscaHomeInput)`). Vazio/hidden por padrão para não
+         empurrar o catálogo para baixo nem duplicar os 55 artigos na home —
+         só aparece quando a busca encontra pelo menos 1 artigo. -->
+    <section class="home-biblioteca-resultados" id="home-biblioteca-resultados" hidden>
+      <h2 class="home-biblioteca-resultados__title">Library Articles</h2>
+      <div class="tool-grid" id="home-biblioteca-resultados-grid"></div>
+    </section>
+
+    <!-- Catálogo de ferramentas agrupado por categoria — espelha index.html
+         pt-BR. Ver comentário original em /index.html para as regras de
+         categorização; esta página só traduz o texto visível, os hrefs
+         apontam para as ferramentas em tools/ (ainda só em pt-BR), exceto
+         tools/json/ que já tem versão em inglês (en/tools/json/). -->
+    <section class="catalog">
+      <h2 class="catalog__title">Available tools</h2>
+
+      <!-- CATEGORIA: Documentos & Localização -->
+      <div class="catalog__category">
+        <h3 class="catalog__category-title">Documents &amp; Location</h3>
+        <div class="tool-grid">
+          <a href="../en/tools/cpf-cnpj/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="2.5" y="5" width="19" height="14" rx="2"/><circle cx="8" cy="12" r="2"/><line x1="13" y1="9.5" x2="18.5" y2="9.5"/><line x1="13" y1="13" x2="18.5" y2="13"/><line x1="13" y1="16" x2="16.5" y2="16"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">CPF / CNPJ</span>
+              <span class="tool-row__desc">Generates and validates CPF and CNPJ, with check digit</span>
+            </span>
+          </a>
+          <a href="../en/tools/cep/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.3"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">CEP (ZIP Code)</span>
+              <span class="tool-row__desc">Generates plausible Brazilian ZIP codes and validates the format</span>
+            </span>
+          </a>
+          <a href="../en/tools/endereco/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10.5V20h12v-9.5"/><path d="M10 20v-5h4v5"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Address</span>
+              <span class="tool-row__desc">Generates fictitious addresses from several countries</span>
+            </span>
+          </a>
+        </div>
+      </div>
+
+      <!-- CATEGORIA: Financeiro -->
+      <div class="catalog__category">
+        <h3 class="catalog__category-title">Finance</h3>
+        <div class="tool-grid">
+          <a href="../en/tools/cartao/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="2.5" y="5.5" width="19" height="13" rx="2"/><line x1="2.5" y1="10" x2="21.5" y2="10"/><line x1="5.5" y1="14.5" x2="9.5" y2="14.5"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Card</span>
+              <span class="tool-row__desc">Generates and validates card numbers (Luhn)</span>
+            </span>
+          </a>
+          <a href="../en/tools/conta-bancaria/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 10 12 4l9 6"/><line x1="4" y1="10" x2="20" y2="10"/><line x1="5.5" y1="10" x2="5.5" y2="18"/><line x1="9.5" y1="10" x2="9.5" y2="18"/><line x1="14.5" y1="10" x2="14.5" y2="18"/><line x1="18.5" y1="10" x2="18.5" y2="18"/><line x1="3" y1="20" x2="21" y2="20"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Bank Account</span>
+              <span class="tool-row__desc">Generates fictitious bank account data</span>
+            </span>
+          </a>
+          <a href="../en/tools/conversor-moeda/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 8h13"/><path d="M14 4l3 4-3 4"/><path d="M20 16H7"/><path d="M10 12l-3 4 3 4"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Currency Converter</span>
+              <span class="tool-row__desc">Converts currencies using rates you define</span>
+            </span>
+          </a>
+          <a href="../en/tools/salario-pj-clt/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4v16"/><path d="M7 20h10"/><path d="M5 7h14"/><path d="M5 7l-2.5 5a2.5 2.5 0 0 0 5 0z"/><path d="M19 7l-2.5 5a2.5 2.5 0 0 0 5 0z"/><path d="M5 7l7-2 7 2"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Contractor vs Employee Salary</span>
+              <span class="tool-row__desc">Compares total annual pay between contractor and employee</span>
+            </span>
+          </a>
+          <a href="../en/tools/pix/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 2l3.5 3.5L12 9 8.5 5.5z"/><path d="M2 12l3.5-3.5L9 12l-3.5 3.5z"/><path d="M22 12l-3.5-3.5L15 12l3.5 3.5z"/><path d="M12 22l3.5-3.5L12 15l-3.5 3.5z"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">PIX Copy and Paste</span>
+              <span class="tool-row__desc">Generates PIX code (BR Code) and QR Code</span>
+            </span>
+          </a>
+        </div>
+      </div>
+
+      <!-- CATEGORIA: Texto & Dados -->
+      <div class="catalog__category">
+        <h3 class="catalog__category-title">Text &amp; Data</h3>
+        <div class="tool-grid">
+          <a href="../en/tools/json/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 4c-2 0-3 1-3 3v3c0 1-.6 2-2 2 1.4 0 2 1 2 2v3c0 2 1 3 3 3"/><path d="M15 4c2 0 3 1 3 3v3c0 1 .6 2 2 2-1.4 0-2 1-2 2v3c0 2-1 3-3 3"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">JSON</span>
+              <span class="tool-row__desc">Formats, minifies and validates JSON</span>
+            </span>
+          </a>
+          <a href="../tools/sql/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">SQL</span>
+              <span class="tool-row__desc">Indents and formats SQL queries</span>
+            </span>
+          </a>
+          <a href="../tools/csv-json/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="9.5" x2="21" y2="9.5"/><line x1="9.5" y1="9.5" x2="9.5" y2="20"/><line x1="6" y1="14.5" x2="7.5" y2="14.5"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">CSV ↔ JSON</span>
+              <span class="tool-row__desc">Converts CSV to JSON and JSON to CSV</span>
+            </span>
+          </a>
+          <a href="../tools/yaml-json/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/><line x1="8" y1="13" x2="15" y2="13"/><line x1="8" y1="16.5" x2="12.5" y2="16.5"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">YAML ↔ JSON</span>
+              <span class="tool-row__desc">Converts YAML to JSON and JSON to YAML</span>
+            </span>
+          </a>
+          <a href="../tools/json-para-typescript/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 4c-2 0-3 1-3 3v2c0 1-.6 2-2 2 1.4 0 2 1 2 2v2c0 2 1 3 3 3"/><path d="M12 9h8"/><path d="M16 9v8"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">JSON to TypeScript</span>
+              <span class="tool-row__desc">Generates TypeScript interfaces from a JSON</span>
+            </span>
+          </a>
+          <a href="../tools/diff/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="4" width="8" height="16" rx="1.5"/><rect x="13" y="4" width="8" height="16" rx="1.5"/><line x1="5" y1="9" x2="9" y2="9"/><line x1="15" y1="9" x2="19" y2="9"/><line x1="17" y1="7" x2="17" y2="11"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Text Diff</span>
+              <span class="tool-row__desc">Compares two texts and highlights differences</span>
+            </span>
+          </a>
+          <a href="../tools/markdown/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M6 15V9l3 3 3-3v6"/><path d="M16 9v3"/><path d="M14.5 12l1.5 2 1.5-2"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Markdown Editor</span>
+              <span class="tool-row__desc">Write Markdown with live preview</span>
+            </span>
+          </a>
+          <a href="../tools/regex/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 5H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h2"/><path d="M17 5h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-2"/><circle cx="8.5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="15.5" cy="12" r="1.2"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Regex Tester</span>
+              <span class="tool-row__desc">Tests regex and highlights matches and groups</span>
+            </span>
+          </a>
+          <a href="../tools/contador-caracteres/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 6h14"/><path d="M5 10h14"/><path d="M5 14h9"/><path d="M5 18h6"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Character Counter</span>
+              <span class="tool-row__desc">Counts characters, words, lines and paragraphs</span>
+            </span>
+          </a>
+          <a href="../tools/mock-data/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="8.5" cy="8.5" r="1.1"/><circle cx="15.5" cy="8.5" r="1.1"/><circle cx="12" cy="12" r="1.1"/><circle cx="8.5" cy="15.5" r="1.1"/><circle cx="15.5" cy="15.5" r="1.1"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Fake Data / Mock JSON</span>
+              <span class="tool-row__desc">Generates a JSON array of mock objects</span>
+            </span>
+          </a>
+          <a href="../tools/escopo/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="6" y="4.5" width="12" height="16" rx="2"/><rect x="9" y="3" width="6" height="3" rx="1"/><line x1="8.5" y1="10" x2="15.5" y2="10"/><line x1="8.5" y1="13.5" x2="15.5" y2="13.5"/><line x1="8.5" y1="17" x2="13" y2="17"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Project Scope</span>
+              <span class="tool-row__desc">Generates a project scope document in Markdown</span>
+            </span>
+          </a>
+          <a href="../tools/xml/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 4 3 12l5 8"/><path d="M16 4l5 8-5 8"/><line x1="14" y1="3" x2="10" y2="21"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">XML</span>
+              <span class="tool-row__desc">Formats, minifies and validates XML syntax</span>
+            </span>
+          </a>
+        </div>
+      </div>
+
+      <!-- CATEGORIA: Segurança & Codificação -->
+      <div class="catalog__category">
+        <h3 class="catalog__category-title">Security &amp; Encoding</h3>
+        <div class="tool-grid">
+          <a href="../tools/senha/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Password</span>
+              <span class="tool-row__desc">Generates secure passwords in the browser</span>
+            </span>
+          </a>
+          <a href="../tools/hash/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="9" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="15" y2="20"/><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Hash Generator</span>
+              <span class="tool-row__desc">Generates MD5, SHA-1, SHA-256, SHA-384 and SHA-512</span>
+            </span>
+          </a>
+          <a href="../tools/jwt/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="7.5" cy="12" r="3.5"/><path d="M11 12h9.5"/><path d="M18 12v3"/><path d="M20.5 12v2.5"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">JWT Decoder</span>
+              <span class="tool-row__desc">Decodes header and payload of JWT tokens</span>
+            </span>
+          </a>
+          <a href="../tools/uuid/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 9h16"/><path d="M4 15h16"/><path d="M10 4l-2 16"/><path d="M16 4l-2 16"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">UUID Generator</span>
+              <span class="tool-row__desc">Generates random v4 UUIDs in the browser</span>
+            </span>
+          </a>
+          <a href="../tools/base64/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 6l-4 6 4 6"/><path d="M16 6l4 6-4 6"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Base64 / URL</span>
+              <span class="tool-row__desc">Encodes and decodes Base64 and URL</span>
+            </span>
+          </a>
+        </div>
+      </div>
+
+      <!-- CATEGORIA: Web, Rede & Automação -->
+      <div class="catalog__category">
+        <h3 class="catalog__category-title">Web, Network &amp; Automation</h3>
+        <div class="tool-grid">
+          <a href="../tools/cidr/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4"/><path d="M6 16v-2h12v2"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">CIDR Calculator</span>
+              <span class="tool-row__desc">Calculates network, broadcast, hosts and mask</span>
+            </span>
+          </a>
+          <a href="../tools/cron/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M8 3v4"/><path d="M16 3v4"/><path d="M12 12v3l2 1"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Cron Builder</span>
+              <span class="tool-row__desc">Explains cron expressions and shows next run times</span>
+            </span>
+          </a>
+          <a href="../tools/timestamp/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Unix Timestamp</span>
+              <span class="tool-row__desc">Converts date and Unix timestamp both ways</span>
+            </span>
+          </a>
+          <a href="../tools/fuso-horario/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17"/><path d="M12 3.5c2.5 2.4 2.5 14.6 0 17"/><path d="M12 3.5c-2.5 2.4-2.5 14.6 0 17"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Timezone Converter</span>
+              <span class="tool-row__desc">Converts times between timezones around the world</span>
+            </span>
+          </a>
+          <a href="../tools/qrcode/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><path d="M20 14v3"/><path d="M14 20h3"/><path d="M20 20h1"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">QR Code Generator</span>
+              <span class="tool-row__desc">Generates a QR Code from text or URL and downloads as PNG</span>
+            </span>
+          </a>
+          <a href="../tools/meta-tags/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 12l8-8h8v8l-8 8z"/><circle cx="15.5" cy="8.5" r="1.3"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Meta Tags Generator</span>
+              <span class="tool-row__desc">Generates Open Graph and Twitter Card with preview</span>
+            </span>
+          </a>
+          <a href="../tools/gitignore/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">.gitignore Generator</span>
+              <span class="tool-row__desc">Builds a .gitignore combining languages and tools</span>
+            </span>
+          </a>
+          <a href="../tools/horas-trabalhadas/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 1.5"/><path d="M9 3h6"/><path d="M12 3v2"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Hours Worked</span>
+              <span class="tool-row__desc">Calculates hours worked, lunch break and shift balance</span>
+            </span>
+          </a>
+        </div>
+      </div>
+
+      <!-- CATEGORIA: Conversores & Design -->
+      <div class="catalog__category">
+        <h3 class="catalog__category-title">Converters &amp; Design</h3>
+        <div class="tool-grid">
+          <a href="../tools/conversor-case/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 7V5h16v2"/><path d="M12 5v14"/><path d="M9 19h6"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Case Converter</span>
+              <span class="tool-row__desc">Converts text between camelCase, snake_case…</span>
+            </span>
+          </a>
+          <a href="../tools/base-numerica/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 7h3v10"/><path d="M5 17h5"/><rect x="14" y="7" width="5" height="10" rx="2.5"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Numeral System Converter</span>
+              <span class="tool-row__desc">Converts between binary, octal, decimal and hexadecimal</span>
+            </span>
+          </a>
+          <a href="../tools/cor/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3.5a8.5 8.5 0 1 0 0 17c1.4 0 2-1 2-2s-.6-1.4-.6-2.4 1-1.6 2.1-1.6H17a3.5 3.5 0 0 0 3.5-3.5A8.5 8.5 0 0 0 12 3.5Z"/><circle cx="8" cy="10" r="1"/><circle cx="12" cy="8" r="1"/><circle cx="16" cy="10.5" r="1"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Color + WCAG Contrast</span>
+              <span class="tool-row__desc">Converts HEX/RGB/HSL and checks WCAG contrast</span>
+            </span>
+          </a>
+          <a href="../tools/css-gradient/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M3.5 15l17-7"/><path d="M3.5 19l17-11"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">CSS Gradient Generator</span>
+              <span class="tool-row__desc">Creates linear and radial CSS gradients with preview</span>
+            </span>
+          </a>
+        </div>
+      </div>
+
+    </section>
+
+    <!--
+      BLOCO DE ANÚNCIO (display responsivo).
+      - data-ad-client: o mesmo pub-ID do <head>.
+      - data-ad-slot:   o ID do "bloco de anúncio" que você cria no painel
+                        do AdSense (cada bloco tem o seu número).
+      - data-ad-format="auto" + full-width-responsive: o Google escolhe o
+        melhor tamanho conforme a largura disponível.
+      O <script> logo abaixo "ativa" este bloco. Repita o par <ins> + <script>
+      para cada anúncio extra na página.
+    -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="1234567890"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

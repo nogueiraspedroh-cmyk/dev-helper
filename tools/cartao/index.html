@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gerador e Validador de Cartão de Crédito/Débito — Dev Helper</title>
+  <meta name="description" content="Gere e valide números de cartão de crédito e débito fictícios para testes de software. Suporte a Visa, Mastercard, Amex, Elo e Hipercard com algoritmo de Luhn." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="en" href="../../en/tools/cartao/" />
+
+  <!--
+    AdSense — biblioteca carregada UMA vez por página.
+    Substitua ca-pub-0000000000000000 pelo seu pub-ID real antes do deploy.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../../biblioteca/">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Gerador e Validador de Cartão de Crédito/Débito</h1>
+        <p>Gere e valide números de cartão fictícios para testes de software.</p>
+      </header>
+
+      <!-- AVISO DE COMPLIANCE — visível e destacado -->
+      <div class="cartao-aviso" role="note" aria-label="Aviso importante">
+        <strong>Aviso:</strong> os números gerados por esta ferramenta são <strong>fictícios e destinados exclusivamente a testes de software</strong>. Eles satisfazem o algoritmo de Luhn (matematicamente válidos), mas não correspondem a nenhum cartão emitido por qualquer instituição financeira, e não podem ser usados para transações reais.
+      </div>
+
+      <!-- ── SEÇÃO: GERAR ────────────────────────────────────────────── -->
+      <section class="tool__section">
+        <h2 class="tool__section-title">Gerar cartão</h2>
+
+        <div class="tool__controls">
+          <!-- Seletor de bandeira -->
+          <div class="tool__actions">
+            <label class="tool__label" for="bandeira-select">Bandeira:</label>
+            <select id="bandeira-select" class="tool__select">
+              <option value="aleatoria">Aleatória</option>
+              <option value="visa">Visa</option>
+              <option value="mastercard">Mastercard</option>
+              <option value="amex">American Express (Amex)</option>
+              <option value="elo">Elo</option>
+              <option value="hipercard">Hipercard</option>
+            </select>
+
+            <label class="tool__checkbox-label">
+              <input type="checkbox" id="chk-formatar-cartao" checked />
+              Formatar (espaços a cada 4 dígitos)
+            </label>
+          </div>
+
+          <div class="tool__actions">
+            <button id="btn-gerar-cartao" class="button" type="button">Gerar cartão</button>
+          </div>
+        </div>
+
+        <!-- Área de resultado do gerador -->
+        <div class="tool__output" id="cartao-resultado" hidden>
+          <div class="cartao-resultado-grid">
+            <div class="cartao-campo">
+              <span class="cartao-campo__label">Bandeira</span>
+              <span id="out-bandeira" class="cartao-campo__valor"></span>
+            </div>
+            <div class="cartao-campo">
+              <span class="cartao-campo__label">Número</span>
+              <span id="out-numero" class="cartao-campo__valor cartao-campo__valor--mono"></span>
+            </div>
+            <div class="cartao-campo">
+              <span class="cartao-campo__label">Validade</span>
+              <span id="out-validade" class="cartao-campo__valor cartao-campo__valor--mono"></span>
+            </div>
+            <div class="cartao-campo">
+              <span class="cartao-campo__label">CVV</span>
+              <span id="out-cvv" class="cartao-campo__valor cartao-campo__valor--mono"></span>
+            </div>
+          </div>
+
+          <div class="tool__actions tool__actions--mt">
+            <button id="btn-copiar-numero" class="button--secondary" type="button">Copiar número</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── SEÇÃO: VALIDAR ─────────────────────────────────────────── -->
+      <section class="tool__section">
+        <h2 class="tool__section-title">Validar número</h2>
+
+        <div class="tool__controls">
+          <div class="tool__actions">
+            <input
+              id="input-validar-cartao"
+              class="tool__input-inline"
+              type="text"
+              placeholder="Cole um número de cartão (com ou sem espaços/hífens)"
+              maxlength="24"
+              spellcheck="false"
+              autocorrect="off"
+              autocapitalize="off"
+            />
+            <button id="btn-validar-cartao" class="button" type="button">Validar</button>
+            <button id="btn-limpar-validar-cartao" class="button--secondary" type="button">Limpar</button>
+          </div>
+        </div>
+
+        <div class="tool__output">
+          <p id="result-validar-cartao" class="result-validar"></p>
+        </div>
+      </section>
+    </article>
+
+    <!-- Bloco de anúncio — abaixo da área de resultado da ferramenta -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="4444444444"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Conteúdo real — exigido pelo AdSense -->
+    <section>
+      <h2>O que é o algoritmo de Luhn?</h2>
+      <p>
+        O <strong>algoritmo de Luhn</strong> (também chamado de "fórmula de Luhn" ou "mod 10") é um
+        método de soma de verificação criado por Hans Peter Luhn, da IBM, em 1954. Ele é amplamente
+        utilizado para validar números de identificação, sendo o padrão adotado pela indústria de
+        cartões de crédito e débito (Visa, Mastercard, American Express e outros) para detectar
+        erros simples de digitação.
+      </p>
+      <p>O cálculo funciona da seguinte forma:</p>
+      <ol>
+        <li>Percorra os dígitos da direita para a esquerda.</li>
+        <li>Dobre o valor de cada segundo dígito (posições 2, 4, 6…).</li>
+        <li>Se o dobro de um dígito for maior que 9, subtraia 9 do resultado.</li>
+        <li>Some todos os dígitos (originais e os dobrados/ajustados).</li>
+        <li>O número é válido se o total for divisível por 10 (soma % 10 === 0).</li>
+      </ol>
+
+      <h2>Para que serve gerar números de cartão fictícios?</h2>
+      <p>
+        Durante o desenvolvimento e os testes de sistemas que processam pagamentos, é necessário
+        trabalhar com números de cartão que passem na validação de formato sem, no entanto, usar
+        dados reais de clientes. Esta ferramenta gera números que satisfazem matematicamente o
+        algoritmo de Luhn e utilizam os prefixos corretos de cada bandeira — o que os torna
+        adequados para:
+      </p>
+      <ul>
+        <li>Testar formulários de checkout e sistemas de e-commerce em ambiente de desenvolvimento.</li>
+        <li>Simular validações client-side antes de integrar com gateways de pagamento.</li>
+        <li>Preencher dados fictícios em testes automatizados (unit tests, testes de integração).</li>
+        <li>Demonstrar interfaces sem expor dados sensíveis de clientes reais.</li>
+      </ul>
+      <p>
+        <strong>Importante:</strong> os números gerados são <em>fictícios</em>. Eles não estão
+        associados a nenhuma conta, portador ou instituição financeira, e não podem ser usados para
+        realizar transações. Gateways de pagamento em modo de produção recusam esses números, pois
+        verificam, além do Luhn, se o número existe em sua base de dados de cartões emitidos.
+      </p>
+
+      <h2>Bandeiras suportadas e seus prefixos</h2>
+      <ul>
+        <li><strong>Visa:</strong> prefixo 4; 16 dígitos.</li>
+        <li><strong>Mastercard:</strong> prefixos 51–55 e faixa 2221–2720; 16 dígitos.</li>
+        <li><strong>American Express (Amex):</strong> prefixos 34 e 37; 15 dígitos; CVV de 4 dígitos.</li>
+        <li><strong>Elo:</strong> prefixos 4011, 4312, 4389, 5041, 5066, 5067, 6277, 6362, 6363, 650x, 651x, 655x; 16 dígitos.</li>
+        <li><strong>Hipercard:</strong> prefixo 6062; 16 dígitos.</li>
+      </ul>
+
+      <h2>Perguntas frequentes (FAQ)</h2>
+
+      <h3>Os cartões gerados podem ser usados para compras?</h3>
+      <p>
+        Não. Os números são fictícios e gerados exclusivamente para testes de software. Eles
+        passam na validação matemática do algoritmo de Luhn, mas não correspondem a cartões
+        emitidos por nenhuma instituição financeira. Qualquer tentativa de usá-los em transações
+        reais resultará em recusa imediata.
+      </p>
+
+      <h3>O que é CVV?</h3>
+      <p>
+        O <strong>CVV</strong> (Card Verification Value) é um código de segurança impresso no
+        cartão. Para Visa, Mastercard, Elo e Hipercard, são 3 dígitos. Para American Express
+        (Amex), são 4 dígitos. Esta ferramenta gera CVVs aleatórios — apenas para fins de teste.
+      </p>
+
+      <h3>A ferramenta detecta automaticamente a bandeira na validação?</h3>
+      <p>
+        Sim. Na seção de validação, o sistema analisa o prefixo e o comprimento do número
+        digitado para identificar a bandeira provável (Visa, Mastercard, Amex, Elo, Hipercard)
+        e, em seguida, aplica o algoritmo de Luhn para determinar se o número é matematicamente
+        válido.
+      </p>
+
+      <h3>Por que o número pode ser válido por Luhn mas inválido em gateways?</h3>
+      <p>
+        O Luhn é apenas o primeiro nível de verificação. Gateways de pagamento em produção também
+        verificam se o número existe na base de cartões emitidos pelas bandeiras, se não está
+        expirado, se o CVV bate e se a conta tem saldo. Nenhuma dessas verificações pode ser
+        feita com números fictícios.
+      </p>
+
+      <h3>A formatação com espaços altera o número?</h3>
+      <p>
+        Não. O checkbox "Formatar" apenas adiciona espaços a cada 4 dígitos para facilitar a
+        leitura (ex.: <code>4111 1111 1111 1111</code>). O botão "Copiar número" copia o número
+        sem espaços ou máscara, pronto para uso em campos de formulário.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/tools/cartao.js"></script>
+</body>
+</html>

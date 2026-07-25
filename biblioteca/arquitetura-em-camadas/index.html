@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arquitetura em Camadas — Arquiteturas | Biblioteca Dev Helper</title>
+  <meta name="description" content="Entenda a Arquitetura em Camadas (Layered / N-tier): regra de dependência, strict vs relaxed layering, quando usar, armadilhas e relação com MVC e Hexagonal." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Arquitetura em Camadas</span>
+        </nav>
+        <span class="artigo__categoria">Arquitetura</span>
+        <h1 class="artigo__titulo">Arquitetura em Camadas</h1>
+        <p class="artigo__subtitulo">
+          Organiza o software em camadas horizontais com responsabilidades bem definidas,
+          onde cada camada depende apenas das camadas abaixo dela — criando um sentido
+          único de dependência e isolando a lógica de negócio da infraestrutura.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Dividir o sistema em camadas horizontais coesas</strong>, onde cada
+            camada tem uma responsabilidade clara e conhece apenas as camadas imediatamente
+            abaixo dela. Isso cria uma <em>regra de dependência</em> unidirecional: camadas
+            superiores dependem de camadas inferiores, nunca o contrário.
+          </p>
+          <p>
+            A Arquitetura em Camadas (também chamada de <em>Layered Architecture</em> ou
+            <em>N-tier Architecture</em>) é um dos padrões arquiteturais mais antigos e
+            difundidos. É a base sobre a qual frameworks como Laravel, Spring, Django e
+            ASP.NET constroem suas convenções de organização de código. Não é um padrão
+            GoF — é um padrão arquitetural de granularidade maior, que organiza como
+            grupos de classes se relacionam entre si.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Em aplicações sem separação de camadas, é comum encontrar:
+          </p>
+          <ul>
+            <li>Controllers que fazem queries diretamente no banco de dados.</li>
+            <li>Entidades de domínio que conhecem detalhes de serialização HTTP ou de persistência.</li>
+            <li>Regras de negócio espalhadas entre controllers, models e até views.</li>
+            <li>Testes que precisam de banco de dados real para verificar uma regra de negócio simples.</li>
+          </ul>
+          <p>
+            O resultado é alta fragilidade: uma mudança no banco quebra o controller; uma
+            mudança no contrato HTTP quebra o domínio. A Arquitetura em Camadas resolve isso
+            ao tornar explícito onde cada tipo de código vive e de quem ele pode depender.
+          </p>
+        </section>
+
+        <!-- 3. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+
+          <h3>As quatro camadas típicas</h3>
+          <div class="code-bloco">
+<pre><code>  ┌──────────────────────────────────────────────────────────┐
+  │              Camada de Apresentação                      │
+  │   Controllers HTTP, CLI handlers, serialização JSON,     │
+  │   templates, validação de entrada (formato/tipo)         │
+  └──────────────────────────┬───────────────────────────────┘
+                             │ depende de
+                             ▼
+  ┌──────────────────────────────────────────────────────────┐
+  │            Camada de Aplicação (Serviço)                 │
+  │   Casos de uso, orquestração de domínio, transações,     │
+  │   autorização por caso de uso, DTOs de entrada/saída     │
+  └──────────────────────────┬───────────────────────────────┘
+                             │ depende de
+                             ▼
+  ┌──────────────────────────────────────────────────────────┐
+  │                  Camada de Domínio                       │
+  │   Entidades, Value Objects, regras de negócio,           │
+  │   interfaces de repositório, eventos de domínio          │
+  │   (núcleo puro — não importa nada das camadas externas)  │
+  └──────────────────────────┬───────────────────────────────┘
+                             │
+                  ┌──────────┴────────────────────────────────────────────┐
+                  │  SEM DIP (layered clássica pura):                     │
+                  │  Domínio → Infraestrutura                             │
+                  │  (depende diretamente da implementação concreta)      │
+                  │                                                       │
+                  │  COM DIP + Repository (prática recomendada):          │
+                  │  Infraestrutura → Domínio                             │
+                  │  (Infra implementa a interface definida no Domínio;   │
+                  │   o Domínio NÃO conhece a Infraestrutura concreta)    │
+                  └───────────────────────────────────────────────────────┘
+                             │
+                             ▼
+  ┌──────────────────────────────────────────────────────────┐
+  │           Camada de Infraestrutura / Persistência        │
+  │   Implementações de repositório (SQL, NoSQL, API),       │
+  │   gateways externos, filas, cache, envio de e-mail       │
+  └──────────────────────────────────────────────────────────┘
+
+  Sentido das setas: quem aponta depende de quem é apontado.
+  Com DIP, a Infraestrutura aponta para o Domínio (implementa suas interfaces);
+  o Domínio permanece sem dependências externas — a forma mais estável.
+</code></pre>
+          </div>
+
+          <h3>Strict vs Relaxed Layering</h3>
+          <p>
+            Em <strong>strict layering</strong>, cada camada só pode chamar a camada
+            imediatamente abaixo dela. A Camada de Apresentação não pode chamar a Camada
+            de Domínio diretamente — tem de passar pela Camada de Aplicação. Isso garante
+            o máximo de isolamento, mas pode adicionar código de passagem (pass-through)
+            desnecessário em casos simples.
+          </p>
+          <p>
+            Em <strong>relaxed layering</strong>, uma camada pode chamar qualquer camada
+            abaixo dela, não apenas a imediata. A Camada de Apresentação pode chamar
+            diretamente a Camada de Domínio para operações de leitura simples. Mais
+            pragmático, mas requer disciplina para não criar atalhos que deteriorem o
+            isolamento.
+          </p>
+          <div class="code-bloco">
+<pre><code>  Strict layering:
+    Apresentação → Aplicação → Domínio → Infraestrutura
+    (cada camada só vê a imediatamente abaixo)
+
+  Relaxed layering:
+    Apresentação → Aplicação
+    Apresentação → Domínio        (permitido para leituras simples)
+    Aplicação    → Domínio
+    Aplicação    → Infraestrutura (via interfaces do Domínio)
+    Domínio      → (nada externo)
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 4. COMO FUNCIONA -->
+        <section class="artigo__secao">
+          <h2>Como funciona — fluxo de uma requisição</h2>
+          <p>
+            Seguindo o sentido das dependências, uma requisição típica flui de cima
+            para baixo, e a resposta sobe de volta:
+          </p>
+          <ol>
+            <li>
+              <strong>Apresentação:</strong> o Controller recebe a requisição HTTP,
+              valida o formato dos parâmetros (tipos, campos obrigatórios) e constrói
+              um DTO de comando/query para a camada de Aplicação.
+            </li>
+            <li>
+              <strong>Aplicação:</strong> o Application Service (ou Use Case) recebe o
+              DTO, aplica regras de autorização por caso de uso, coordena as operações
+              de domínio necessárias e delega persistência às interfaces de repositório.
+            </li>
+            <li>
+              <strong>Domínio:</strong> entidades e serviços de domínio aplicam as regras
+              de negócio. Aqui ficam as invariantes — coisas que devem ser sempre
+              verdadeiras, independentemente de qualquer framework ou banco.
+            </li>
+            <li>
+              <strong>Infraestrutura:</strong> implementações concretas de repositórios
+              executam queries; adaptadores de serviços externos fazem chamadas HTTP;
+              o resultado sobe de volta pela cadeia.
+            </li>
+          </ol>
+          <p>
+            A regra de ouro: <strong>as dependências só apontam para baixo</strong>.
+            O Domínio nunca importa nada da Aplicação ou da Apresentação. A Infraestrutura
+            implementa interfaces definidas pelo Domínio — mas o Domínio não conhece a
+            Infraestrutura.
+          </p>
+        </section>
+
+        <!-- 5. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Aplicações de negócio com lógica de domínio não trivial:</strong>
+              sistemas com regras complexas de autorização, workflows, cálculos de negócio.
+              A separação de camadas garante que a lógica de domínio permaneça testável
+              e isolada.
+            </li>
+            <li>
+              <strong>Equipes maiores com responsabilidades divididas:</strong> a
+              separação em camadas cria fronteiras naturais — uma equipe cuida da camada
+              de domínio, outra da infraestrutura, outra da apresentação — com contratos
+              claros entre elas.
+            </li>
+            <li>
+              <strong>Quando há múltiplos pontos de entrada:</strong> uma API REST, uma
+              interface CLI e um worker de fila podem compartilhar as mesmas camadas de
+              Aplicação e Domínio — apenas a Apresentação muda.
+            </li>
+            <li>
+              <strong>Para facilitar a substituição de infraestrutura:</strong> trocar de
+              banco de dados, de provedor de e-mail ou de sistema de filas deve impactar
+              apenas a camada de Infraestrutura, sem tocar no Domínio.
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>CRUDs simples sem lógica de domínio real:</strong> aplicações que
+              são essencialmente formulários de criação, leitura, atualização e deleção
+              de dados sem regras complexas não justificam quatro camadas. Uma estrutura
+              mais simples — ou mesmo MVC direto — é mais adequada.
+            </li>
+            <li>
+              <strong>Microsserviços muito pequenos e focados:</strong> um serviço que
+              faz apenas uma coisa (ex.: envio de notificações) raramente precisa de
+              camadas de domínio separadas. O overhead arquitetural não se paga.
+            </li>
+            <li>
+              <strong>Prototipagem e MVPs:</strong> a estrutura em camadas tem um custo
+              inicial de organização. Em fases de descoberta, o foco deve ser na validação
+              da ideia — a arquitetura pode evoluir depois.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 6. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Separação de responsabilidades clara e verificável — é possível auditar se a regra de dependência está sendo respeitada.</li>
+            <li>Domínio completamente testável sem banco de dados, sem HTTP, sem framework.</li>
+            <li>Facilita a substituição de infraestrutura sem impacto no domínio.</li>
+            <li>Bem compreendida pela maioria das equipes — tem ampla documentação e exemplos em todas as linguagens principais.</li>
+            <li>Compatível com múltiplos pontos de entrada (HTTP, CLI, workers) compartilhando o mesmo núcleo.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Overhead de estruturação para sistemas simples — muitas camadas para um CRUD básico.</li>
+            <li>Risco de "efeito lasanha": proliferação de camadas sem propósito claro (camada de "helpers", camada de "utilities", subcamadas de subcamadas).</li>
+            <li>A regra de dependência não é imposta pelo compilador — requer disciplina da equipe ou ferramentas de análise estática (ex.: ArchUnit, Deptrac).</li>
+            <li>Código de passagem (pass-through): objetos que só existem para transportar dados entre camadas sem transformação real aumentam o volume de código sem valor.</li>
+          </ul>
+        </section>
+
+        <!-- 7. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Efeito lasanha — camadas demais sem propósito</h3>
+          <p>
+            Cada nova camada adicionada deve ter uma justificativa clara: que tipo de
+            responsabilidade ela encapsula que não pertence às camadas adjacentes?
+            Camadas como "Utils", "Helpers", "Common" ou "Shared" que acumulam tudo que
+            não sabe onde colocar são um sinal de que a estrutura não está sendo pensada
+            com cuidado. Prefira poucas camadas com fronteiras nítidas a muitas camadas
+            com fronteiras vagas.
+          </p>
+
+          <h3>2. Vazamento entre camadas</h3>
+          <p>
+            O tipo de violação mais comum: entidades do Domínio com anotações de banco de
+            dados (JPA, Doctrine, Eloquent com cast que conhecem o schema), Controllers
+            que manipulam diretamente objetos de banco (ActiveRecord no Controller), ou
+            a camada de Domínio importando tipos de um framework HTTP. Esses vazamentos
+            destroem o isolamento gradualmente — a violação inicial parece inofensiva,
+            mas cria a precedência para as seguintes.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Atenção ao Active Record:</strong> ORMs com padrão Active Record
+            (Eloquent no Laravel, ActiveRecord no Rails) fundem a entidade de domínio
+            com a infraestrutura de persistência. São extremamente produtivos, mas tornam
+            a separação estrita entre Domínio e Infraestrutura mais difícil. Em projetos
+            onde essa separação é crítica, prefira o padrão Repository com mapeamento
+            explícito.
+          </p>
+
+          <h3>3. Domínio anêmico</h3>
+          <p>
+            Quando as regras de negócio que deveriam ficar no Domínio migram para os
+            Application Services, o Domínio se torna apenas um conjunto de classes de
+            dados sem comportamento — o <em>Anemic Domain Model</em> descrito por Martin
+            Fowler. O resultado é que toda regra fica em serviços, que passam a ser
+            difíceis de compor e testar de forma isolada. Mantenha as invariantes e
+            comportamentos centrais nas entidades e Value Objects do Domínio.
+          </p>
+
+          <h3>4. Não verificar a regra de dependência automaticamente</h3>
+          <p>
+            Em equipes grandes, a regra "camadas superiores não podem ser importadas por
+            camadas inferiores" é violada aos poucos, especialmente por desenvolvedores
+            menos experientes ou em situações de pressão. Use ferramentas de análise de
+            dependências (ArchUnit para Java, Deptrac para PHP, módulos com restrições
+            de importação em TypeScript/NestJS) para tornar a violação um erro de build,
+            não apenas uma prática ruim.
+          </p>
+        </section>
+
+        <!-- 8. ARQUITETURAS E PADRÕES RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Arquiteturas e padrões relacionados</h2>
+          <!--
+            Disciplina de links: só linka artigos já publicados.
+            MVC e Arquitetura Hexagonal existem → links reais.
+            Clean Architecture e Onion — pendentes.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../mvc/">MVC</a></li>
+            <li><a href="../arquitetura-hexagonal/">Arquitetura Hexagonal (Ports &amp; Adapters)</a></li>
+            <li><a href="../clean-architecture/">Clean Architecture</a></li>
+            <li><a href="../onion-architecture/">Onion Architecture</a></li>
+          </ul>
+          <p class="mt-1">
+            O <strong>MVC</strong> pode ser visto como uma especialização da Arquitetura
+            em Camadas focada na separação entre a camada de apresentação (View +
+            Controller) e a camada de dados/negócio (Model). A Arquitetura em Camadas
+            define o que acontece <em>dentro</em> do Model — como ele se subdivide em
+            Aplicação, Domínio e Infraestrutura.
+          </p>
+          <p>
+            A <strong>Arquitetura Hexagonal</strong> compartilha a mesma preocupação de
+            isolar o domínio da infraestrutura, mas inverte explicitamente as dependências:
+            em vez de "infraestrutura fica abaixo do domínio", ela diz "infraestrutura
+            implementa interfaces definidas pelo domínio". O resultado é o mesmo isolamento,
+            mas com uma visualização diferente — o domínio no centro, adaptadores nas bordas.
+          </p>
+          <p>
+            <strong>Clean Architecture</strong> e <strong>Onion Architecture</strong> são
+            evoluções da Arquitetura em Camadas com ênfase explícita na Inversão de
+            Dependência: as camadas internas (domínio) definem interfaces; as camadas
+            externas (infraestrutura) implementam essas interfaces. A direção da
+            dependência é explicitamente invertida em relação à Arquitetura em Camadas
+            clássica, onde a Infraestrutura fica "abaixo" e é naturalmente dependência
+            das camadas superiores.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="8989898989"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

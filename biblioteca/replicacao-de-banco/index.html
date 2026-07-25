@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Replicação de Banco de Dados — Dev Helper Biblioteca</title>
+  <meta name="description" content="Entenda replicação de banco de dados: primary/replica, replicação síncrona vs assíncrona, replication lag, failover e multi-primary. Aprenda as armadilhas de read-your-writes, replica lag silencioso e split-brain." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Replicação de Banco de Dados</span>
+        </nav>
+        <span class="artigo__categoria">System Design</span>
+        <h1 class="artigo__titulo">Replicação de Banco de Dados</h1>
+        <p class="artigo__subtitulo">
+          Manter cópias sincronizadas dos dados em múltiplos nós para aumentar
+          disponibilidade, tolerância a falhas e capacidade de leitura — com trade-offs
+          claros entre durabilidade, latência de escrita e consistência de leitura.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Replicação mantém cópias sincronizadas dos dados em múltiplos nós
+            para que, se um nó falhar, os dados não sejam perdidos e o sistema continue
+            operando — e, como benefício adicional, para distribuir a carga de leitura
+            entre as cópias.</strong>
+          </p>
+          <p>
+            Um banco de dados em nó único é um ponto único de falha: se o servidor cair,
+            o sistema inteiro fica indisponível. Se o disco falhar sem backup recente,
+            os dados são perdidos. Replicação resolve os dois problemas mantendo cópias
+            dos dados em outros servidores — as <em>replicas</em> — que podem assumir
+            o serviço se o nó principal falhar, e que podem servir leituras enquanto o
+            principal processa escritas.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Sistemas em produção têm dois requisitos fundamentais que um único nó de
+            banco não consegue garantir ao mesmo tempo:
+          </p>
+          <ul>
+            <li>
+              <strong>Alta disponibilidade:</strong> o banco deve estar acessível mesmo
+              durante falhas de hardware, manutenção ou atualizações. Com um único nó,
+              qualquer falha implica downtime.
+            </li>
+            <li>
+              <strong>Durabilidade dos dados:</strong> dados confirmados para o cliente
+              não devem ser perdidos em caso de falha. Um único disco, por mais confiável
+              que seja, tem probabilidade não-nula de falhar.
+            </li>
+            <li>
+              <strong>Capacidade de leitura insuficiente:</strong> em workloads
+              read-heavy (típicos de aplicações web), um único nó pode não ter throughput
+              suficiente para servir todas as leituras com a latência esperada.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. COMO FUNCIONA -->
+        <section class="artigo__secao">
+          <h2>Como funciona</h2>
+
+          <h3>Primary/Replica (Master/Slave)</h3>
+          <p>
+            O modelo mais comum de replicação: um nó é designado <strong>primary</strong>
+            (ou master) e recebe todas as escritas. As alterações são propagadas às
+            <strong>replicas</strong> via replication log (WAL no PostgreSQL, binlog no
+            MySQL). As replicas servem leituras.
+          </p>
+          <div class="code-bloco">
+<pre><code>  Aplicação
+  │                  │
+  │ Escritas         │ Leituras
+  ▼                  ▼
+  ┌─────────┐      ┌──────────┐  ┌──────────┐
+  │ Primary │─────►│ Replica 1│  │ Replica 2│
+  └─────────┘      └──────────┘  └──────────┘
+       │ replication log
+       └──────────────────────────────────────►
+                                          Aplicação [Leituras]
+
+  Toda escrita: Primary
+  Toda leitura: Replica 1 ou Replica 2 (ou Primary se necessário)
+</code></pre>
+          </div>
+          <p>
+            A separação de leituras e escritas em diferentes nós é uma das formas mais
+            simples de aumentar o throughput de leitura sem sharding. Um primary com
+            duas replicas triplica a capacidade de leitura do sistema.
+          </p>
+
+          <h3>Replicação síncrona vs assíncrona</h3>
+          <p>
+            A diferença entre os dois modos define o trade-off entre durabilidade
+            e latência:
+          </p>
+          <div class="code-bloco">
+<pre><code>  REPLICAÇÃO SÍNCRONA
+
+  1. Cliente envia escrita ao Primary
+  2. Primary replica para ao menos uma Replica
+  3. Replica confirma recebimento
+  4. Primary confirma a escrita ao cliente
+
+  ┌────────┐ ──write──► ┌─────────┐ ──replicate──► ┌─────────┐
+  │ Client │            │ Primary │                 │ Replica │
+  └────────┘ ◄──ack──── └─────────┘ ◄──────ack───── └─────────┘
+
+  RPO = 0 (zero perda de dados confirmados)
+  Custo: latência de escrita inclui a ida-e-volta até a replica
+
+
+  REPLICAÇÃO ASSÍNCRONA
+
+  1. Cliente envia escrita ao Primary
+  2. Primary confirma a escrita ao cliente imediatamente
+  3. Primary replica para as Replicas em background
+
+  ┌────────┐ ──write──► ┌─────────┐
+  │ Client │            │ Primary │ ──replicate (async)──► ┌─────────┐
+  └────────┘ ◄──ack──── └─────────┘                        │ Replica │
+                                                            └─────────┘
+
+  RPO > 0 (dados replicados com atraso podem ser perdidos se Primary cair)
+  Benefício: latência de escrita mínima (não espera a replica)
+</code></pre>
+          </div>
+          <p>
+            A maioria dos sistemas usa replicação assíncrona como padrão (MySQL, PostgreSQL
+            por padrão) por questões de latência. Replicação síncrona — ou semi-síncrona,
+            que aguarda confirmação de ao menos uma replica — é usada onde durabilidade
+            é crítica, como em sistemas financeiros.
+          </p>
+
+          <h3>Replication lag</h3>
+          <p>
+            Em replicação assíncrona, há sempre um atraso entre a escrita confirmada no
+            primary e o dado estar disponível nas replicas. Esse atraso é o
+            <strong>replication lag</strong>.
+          </p>
+          <p>
+            Em condições normais, o lag é de milissegundos. Mas sob carga alta, durante
+            operações de manutenção ou com replicas em zonas de disponibilidade distantes,
+            o lag pode crescer para segundos ou minutos — e a aplicação não sabe, a menos
+            que monitore explicitamente.
+          </p>
+
+          <h3>Failover</h3>
+          <p>
+            Quando o primary cai, uma replica precisa ser promovida a primary. O failover
+            pode ser:
+          </p>
+          <ul>
+            <li>
+              <strong>Manual:</strong> um operador decide qual replica promover e atualiza
+              a configuração. Mais seguro, mas mais lento — downtime de minutos.
+            </li>
+            <li>
+              <strong>Automático:</strong> um processo de orquestração (ex.: Patroni para
+              PostgreSQL, MHA para MySQL, ou o mecanismo nativo do RDS/Cloud SQL) detecta
+              a falha e promove a replica mais atualizada. Downtime de segundos, mas risco
+              de split-brain se a detecção de falha for um falso positivo.
+            </li>
+          </ul>
+
+          <h3>Multi-primary (Multi-master)</h3>
+          <p>
+            Múltiplos nós aceitam escritas simultaneamente. Aumenta a disponibilidade
+            para escritas — se um primary cair, os outros continuam operando — mas
+            introduz o problema de <strong>conflitos de escrita</strong>: dois nós
+            recebem escritas diferentes para o mesmo registro ao mesmo tempo.
+          </p>
+          <p>
+            A resolução de conflitos é inerentemente complexa: timestamp-based (a escrita
+            mais recente vence, com risco de perder a outra), application-defined (a
+            aplicação define a lógica de merge) ou last-write-wins (simples, mas
+            potencialmente destrutivo). Multi-primary deve ser evitado salvo necessidade
+            real — como replicação geográfica onde cada região precisa aceitar escritas
+            localmente.
+          </p>
+        </section>
+
+        <!-- 4. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Alta disponibilidade e failover:</strong> qualquer sistema de
+              produção que não pode tolerar downtime prolongado durante falhas de hardware
+              deve usar replicação. É o requisito mínimo para um SLA de disponibilidade
+              significativo.
+            </li>
+            <li>
+              <strong>Workloads read-heavy:</strong> quando a proporção de leituras para
+              escritas é alta (típico em aplicações web), distribuir as leituras entre
+              replicas aumenta o throughput sem a complexidade do sharding.
+            </li>
+            <li>
+              <strong>Backup online sem impactar o primary:</strong> rodar backups
+              pesados diretamente na replica evita que o processo de backup consuma
+              recursos do primary e afete a latência de produção.
+            </li>
+            <li>
+              <strong>Relatórios e analytics:</strong> queries analíticas longas podem
+              ser direcionadas a uma replica dedicada, isolando o workload OLAP do OLTP
+              no primary.
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>Multi-primary, salvo necessidade específica:</strong> a resolução
+              de conflitos de escrita simultânea é custosa de implementar corretamente.
+              Sistemas que parecem precisar de multi-primary frequentemente podem ser
+              redesenhados com sharding ou com Primary/Replica e aceitar consistência
+              eventual.
+            </li>
+            <li>
+              <strong>Como substituto para sharding:</strong> replicação aumenta a
+              capacidade de leitura, mas não a capacidade de escrita — todas as escritas
+              ainda passam pelo primary. Se o gargalo é escrita, replicação não resolve.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 5. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Alta disponibilidade: falha do primary não implica perda de dados nem downtime prolongado — uma replica assume.</li>
+            <li>Escalabilidade de leitura: throughput de leitura cresce linearmente com o número de replicas.</li>
+            <li>Durabilidade: dados existem em múltiplos nós e geografias, reduzindo drasticamente o risco de perda permanente.</li>
+            <li>Isolamento de workload: replicas dedicadas para analytics ou backups protegem o primary das queries mais pesadas.</li>
+            <li>Latência geográfica: replicas em regiões próximas aos usuários reduzem a latência de leitura.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Consistência eventual: leituras de replicas podem retornar dados desatualizados se o replication lag for alto.</li>
+            <li>Gargalo de escrita persiste: todas as escritas passam pelo primary — replicação não resolve sobrecarga de escrita.</li>
+            <li>Complexidade operacional: monitorar lag de replicação, gerenciar failover e manter múltiplos nós adicionam overhead operacional.</li>
+            <li>Risco de split-brain no failover automático: uma detecção incorreta de falha pode levar dois nós a se considerarem primary simultaneamente.</li>
+            <li>Custo de infraestrutura: cada replica é um servidor adicional com custo proporcional ao primary.</li>
+          </ul>
+        </section>
+
+        <!-- 6. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Read-your-writes: ler da replica logo após escrever</h3>
+          <p>
+            Um usuário atualiza seu perfil. A escrita vai ao primary e é confirmada. O
+            usuário é redirecionado para a página de perfil — que lê de uma replica. Se
+            o replication lag for de 200 ms, a página exibe o perfil antigo. O usuário
+            pensa que a atualização falhou, tenta novamente, e agora a escrita é
+            duplicada.
+          </p>
+          <p>
+            Soluções: <strong>sticky reads</strong> (direcionar leituras ao primary por
+            um período curto após uma escrita do mesmo usuário), <strong>ler do primary
+            para operações sensíveis</strong> (perfil do usuário logado, saldos), ou
+            <strong>transmitir o timestamp da escrita</strong> e só ler de replicas que
+            já alcançaram aquele ponto (técnica suportada nativamente por alguns bancos).
+          </p>
+
+          <h3>2. Replica lag silencioso</h3>
+          <p>
+            O lag de replicação cresceu para minutos, mas a aplicação continua servindo
+            leituras das replicas sem saber. Dashboards mostram dados de horas atrás,
+            validações de unicidade passam em registros que já foram criados no primary,
+            e relatórios de estoque mostram quantidades que já foram vendidas.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Monitorar o replication lag é obrigatório.</strong> Configure alertas
+            para lag acima de um threshold aceitável para o negócio (ex.: 5 segundos).
+            Em situações de lag alto, considere direcionar leituras ao primary
+            temporariamente mesmo que isso aumente a carga.
+          </p>
+
+          <h3>3. Split-brain no failover automático</h3>
+          <p>
+            O primary sofre uma falha de rede que o torna inacessível ao orquestrador
+            mas não ao banco de dados. O orquestrador detecta a falha e promove uma
+            replica. Agora dois nós se consideram primary: o original (que continua
+            recebendo escritas de clientes que ainda têm conexão com ele) e o novo (que
+            também aceita escritas). As duas versões dos dados divergem e a reconciliação
+            manual pode ser destrutiva.
+          </p>
+          <p>
+            A solução é <strong>fencing</strong>: antes de promover a replica, o
+            orquestrador garante que o primary antigo não pode mais aceitar escritas —
+            seja revogando suas credenciais, bloqueando sua rede ou usando STONITH (Shoot
+            The Other Node In The Head). Nunca confie apenas na detecção de falha para
+            evitar split-brain.
+          </p>
+
+          <h3>4. Queries pesadas em replicas bloqueando a replicação</h3>
+          <p>
+            Em alguns bancos (notavelmente versões antigas do MySQL com MyISAM, ou
+            configurações específicas do PostgreSQL), queries analíticas longas numa
+            replica podem bloquear a aplicação dos eventos de replicação vindos do
+            primary. O lag aumenta durante a execução da query pesada. Quando a query
+            termina, a replica precisa processar o backlog acumulado.
+          </p>
+          <p>
+            Solução: usar réplicas dedicadas para analytics com configurações específicas
+            (ex.: transaction_timeout, ou isolamento via logical replication em
+            PostgreSQL) que evitam que queries longas bloqueiem o processo de replicação.
+          </p>
+        </section>
+
+        <!-- 7. RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Arquiteturas e padrões relacionados</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../sharding/">Sharding e Particionamento</a></li>
+            <li><a href="../sql-vs-nosql/">SQL vs NoSQL</a></li>
+            <li><a href="../escalabilidade-horizontal-vertical/">Escalabilidade Horizontal vs Vertical</a></li>
+            <li><a href="../caching/">Caching</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Sharding</strong> e replicação são técnicas complementares: replicação
+            aumenta a disponibilidade e a capacidade de leitura dentro de cada shard,
+            enquanto sharding distribui as escritas entre múltiplos primaries. Sistemas
+            de grande escala frequentemente combinam os dois — cada shard tem seu próprio
+            conjunto de primary e replicas.
+          </p>
+          <p>
+            A distinção com <strong>escalabilidade horizontal</strong> é importante:
+            replicação é escala horizontal de leitura, mas não de escrita. Para escalar
+            escritas horizontalmente, sharding é necessário. Os dois conceitos são
+            frequentemente confundidos porque ambos envolvem múltiplos nós de banco
+            de dados.
+          </p>
+          <p>
+            <strong>Caching</strong> e read replicas são frequentemente usados juntos:
+            o cache absorve as leituras mais frequentes (hit rate alto), e as replicas
+            atendem as leituras que passam pelo cache (miss). A combinação maximiza o
+            throughput de leitura sem sobrecarregar nenhum componente individual — e
+            reduz os requisitos de número de replicas, diminuindo o custo de
+            infraestrutura.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="6464646464"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

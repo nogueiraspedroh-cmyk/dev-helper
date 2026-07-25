@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monorepo vs Multi-repo — Estruturas de Projeto | Biblioteca Dev Helper</title>
+  <meta name="description" content="Entenda a diferença entre monorepo e multi-repo: quando usar cada estratégia, variantes com workspaces (Turborepo, Nx, pnpm), armadilhas comuns e a confusão com monolito." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Monorepo vs Multi-repo</span>
+        </nav>
+        <span class="artigo__categoria">Estruturas de Projeto</span>
+        <h1 class="artigo__titulo">Monorepo vs Multi-repo</h1>
+        <p class="artigo__subtitulo">
+          Decisão sobre <em>onde</em> o código vive: num único repositório Git que
+          abriga múltiplos projetos e pacotes (monorepo), ou em repositórios
+          separados, cada um com seu ciclo de vida independente (multi-repo).
+          São estratégias ortogonais à arquitetura do software — e confundi-las
+          com monolito é a armadilha mais comum.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Definir a estratégia de organização de repositórios Git</strong>
+            para múltiplos projetos, pacotes ou serviços de uma organização, equilibrando
+            visibilidade e compartilhamento de código (monorepo) com isolamento e
+            autonomia de ciclo de vida (multi-repo).
+          </p>
+          <p>
+            A escolha não é sobre arquitetura do sistema — é sobre <em>onde o código
+            fica versionado</em>. Empresas como Google, Meta e Microsoft mantêm
+            virtualmente todo o seu código num único repositório gigante. Outras
+            preferem um repositório por serviço ou produto. Ambas as abordagens
+            funcionam em escala; os trade-offs são diferentes.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            À medida que um time cresce e o número de projetos ou pacotes aumenta,
+            surgem tensões que qualquer estratégia de repositório precisa resolver:
+          </p>
+          <ul>
+            <li>
+              <strong>Compartilhamento de código:</strong> como reutilizar um utilitário
+              ou uma biblioteca interna sem duplicar ou publicar um pacote externo a
+              cada mudança?
+            </li>
+            <li>
+              <strong>Coordenação de mudanças:</strong> quando uma alteração numa
+              dependência compartilhada precisa refletir em múltiplos projetos ao mesmo
+              tempo, como garantir consistência?
+            </li>
+            <li>
+              <strong>Autonomia de equipes:</strong> como permitir que times diferentes
+              evoluam seus projetos em ritmos distintos sem travar uns aos outros?
+            </li>
+            <li>
+              <strong>Visibilidade:</strong> como descobrir o que já existe para não
+              reinventar a roda?
+            </li>
+          </ul>
+          <p>
+            Monorepo e multi-repo são respostas diferentes a essas tensões, e cada
+            um as resolve melhor em contextos distintos.
+          </p>
+        </section>
+
+        <!-- 3. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+
+          <h3>Multi-repo</h3>
+          <p>
+            Cada projeto, serviço ou biblioteca vive num repositório Git separado.
+            É o modelo padrão do GitHub open-source: cada projeto tem seu próprio
+            ciclo de releases, CI/CD, permissões e histórico.
+          </p>
+          <div class="code-bloco">
+<pre><code>  GitHub / GitLab / Bitbucket
+  │
+  ├── org/api-gateway          ← repositório independente
+  │     ├── src/
+  │     ├── package.json       (version: "2.1.0")
+  │     └── .github/workflows/
+  │
+  ├── org/user-service         ← repositório independente
+  │     ├── src/
+  │     ├── package.json       (version: "1.5.3")
+  │     └── .github/workflows/
+  │
+  ├── org/shared-utils         ← biblioteca publicada no npm/registry
+  │     ├── src/
+  │     └── package.json       (version: "0.9.0", name: "@org/shared-utils")
+  │
+  └── org/frontend-app         ← repositório independente
+        ├── src/
+        │     └── package.json  (depends on "@org/shared-utils": "^0.9.0")
+        └── .github/workflows/
+</code></pre>
+          </div>
+
+          <h3>Monorepo</h3>
+          <p>
+            Todos os projetos e pacotes convivem num único repositório Git. O histórico
+            é compartilhado; mudanças que afetam múltiplos pacotes aparecem num único
+            commit ou PR.
+          </p>
+          <div class="code-bloco">
+<pre><code>  org/monorepo                 ← único repositório Git
+  │
+  ├── apps/
+  │     ├── api-gateway/       ← projeto: app Node/Express
+  │     │     └── src/
+  │     └── frontend/          ← projeto: app React/Vue
+  │           └── src/
+  │
+  ├── packages/
+  │     ├── shared-utils/      ← pacote interno compartilhado
+  │     │     └── src/
+  │     └── ui-components/     ← biblioteca de componentes
+  │           └── src/
+  │
+  ├── package.json             ← workspace root (pnpm/yarn/npm workspaces)
+  └── turbo.json               ← pipeline de build (Turborepo)
+</code></pre>
+          </div>
+
+          <h3>Variantes do monorepo</h3>
+          <p>
+            Três variantes principais se diferenciam pelo nível de tooling:
+          </p>
+          <ul>
+            <li>
+              <strong>Monorepo puro (estilo Google/Meta):</strong> um repositório
+              único para literalmente todo o código da empresa. Requer ferramentas
+              proprietárias (Bazel, Pants, Buck) para que o CI só recompile e reteste
+              o que mudou. A escala exige investimento pesado em tooling.
+            </li>
+            <li>
+              <strong>Monorepo com workspaces:</strong> o modelo mais comum fora do
+              mundo das big techs. Ferramentas como <strong>Turborepo</strong>,
+              <strong>Nx</strong> ou <strong>pnpm workspaces</strong> gerenciam as
+              dependências entre pacotes internos, proveem cache incremental de build
+              e permitem rodar tarefas apenas nos pacotes afetados por uma mudança.
+            </li>
+            <li>
+              <strong>Multi-repo com pacotes publicados:</strong> variante do multi-repo
+              onde as bibliotecas compartilhadas são publicadas num registry privado
+              (npm private, Verdaccio, GitHub Packages) e consumidas como dependências
+              versionadas. Mantém o isolamento de repositórios mas adiciona o custo
+              de ciclos de publicação para propagação de mudanças.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 4. COMO FUNCIONA -->
+        <section class="artigo__secao">
+          <h2>Como funciona</h2>
+
+          <h3>Compartilhamento de código no monorepo</h3>
+          <p>
+            Com workspaces, um pacote interno é referenciado diretamente pelo caminho
+            local — sem precisar publicar no npm a cada mudança:
+          </p>
+          <div class="code-bloco">
+<pre><code>  // apps/api-gateway/package.json
+  {
+    "dependencies": {
+      "@org/shared-utils": "workspace:*"
+    }
+  }
+
+  // A ferramenta de workspace (pnpm, Turborepo, Nx) resolve
+  // "@org/shared-utils" para packages/shared-utils/ localmente.
+  // Nenhuma publicação é necessária para testar a mudança.
+</code></pre>
+          </div>
+
+          <h3>Cache incremental no monorepo</h3>
+          <p>
+            Ferramentas como Turborepo mantêm um grafo de dependências entre pacotes
+            e um hash do conteúdo de cada um. Quando apenas <code>shared-utils</code>
+            muda, somente os pacotes que dependem dele são recompilados e retestados.
+            Sem essa camada de cache, o CI de um monorepo grande retesta tudo a cada
+            push — tornando-o mais lento que o multi-repo equivalente.
+          </p>
+
+          <h3>Propagação de mudanças no multi-repo</h3>
+          <p>
+            No multi-repo, uma mudança numa biblioteca compartilhada requer: (1) commit
+            e push na biblioteca, (2) publicação de uma nova versão no registry, (3)
+            atualização do <code>package.json</code> em cada consumidor, (4) PR + CI em
+            cada repositório consumidor. Para uma mudança de breaking change que afeta
+            10 serviços, isso gera 10 PRs separados que precisam ser coordenados
+            manualmente.
+          </p>
+        </section>
+
+        <!-- 5. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar cada estratégia</h2>
+
+          <h3>Prefira monorepo quando:</h3>
+          <ul>
+            <li>
+              <strong>O código é fortemente interdependente:</strong> mudanças frequentes
+              cruzam múltiplos projetos ou pacotes. Um monorepo permite PR único, revisão
+              unificada e CI que valida tudo de uma vez.
+            </li>
+            <li>
+              <strong>O time é pequeno a médio e trabalha nos mesmos projetos:</strong>
+              a visibilidade total do código reduz silos e facilita refatorações
+              transversais sem coordenação de repositórios.
+            </li>
+            <li>
+              <strong>Padronização é prioritária:</strong> configuração de linter, formatter,
+              TypeScript e CI pode ser centralizada uma vez e aplicada a todos os projetos
+              automaticamente.
+            </li>
+            <li>
+              <strong>Há muitas bibliotecas internas compartilhadas:</strong> o ciclo de
+              desenvolvimento de libs internas sem a necessidade de publicação acelera
+              dramaticamente a iteração.
+            </li>
+          </ul>
+
+          <h3>Prefira multi-repo quando:</h3>
+          <ul>
+            <li>
+              <strong>Equipes têm autonomia total e ciclos de release independentes:</strong>
+              times que nunca ou raramente compartilham código e que precisam de permissões
+              de acesso diferentes se beneficiam do isolamento do multi-repo.
+            </li>
+            <li>
+              <strong>Os projetos têm tecnologias muito distintas:</strong> um serviço
+              em Rust, outro em Python e um frontend em TypeScript têm pouquíssimo a
+              ganhar de um monorepo — o tooling compartilhado não se aplica.
+            </li>
+            <li>
+              <strong>Há pacotes que serão publicados como open-source:</strong>
+              bibliotecas destinadas à comunidade são mais naturalmente gerenciadas em
+              repositórios próprios, com seus próprios issues, releases e mantenedores.
+            </li>
+            <li>
+              <strong>O time não quer investir em tooling de monorepo:</strong> sem
+              cache incremental, um monorepo grande punirá o CI com builds lentos. Se
+              não há disposição para manter Turborepo, Nx ou similar, o multi-repo
+              é mais simples de operar.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 6. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+
+          <h3>Monorepo — Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Mudanças atômicas: uma alteração que afeta múltiplos pacotes aparece num único commit e PR.</li>
+            <li>Sem necessidade de publicação para iterar em bibliotecas internas — o workspace resolve localmente.</li>
+            <li>Padronização de tooling, linting e CI centralizada num único lugar.</li>
+            <li>Visibilidade total do código — qualquer desenvolvedor pode descobrir e reutilizar o que existe.</li>
+            <li>Refatorações transversais (rename, assinatura de interface) são feitas em um único PR.</li>
+          </ul>
+
+          <h3>Monorepo — Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>CI mais lento sem cache incremental — sem tooling adequado, tudo é retestado a cada push.</li>
+            <li>Repositório cresce indefinidamente; git clone e operações de histórico ficam pesados sem ferramentas como git sparse-checkout.</li>
+            <li>Permissões de acesso são por repositório no Git — controle granular de quem acessa o quê exige workarounds (CODEOWNERS, branch protection).</li>
+            <li>Acoplamento acidental é mais fácil: a barreira de fazer um import entre projetos é zero.</li>
+          </ul>
+
+          <h3>Multi-repo — Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Isolamento total: um repositório não pode afetar outro por acidente.</li>
+            <li>Permissões de acesso nativas por repositório.</li>
+            <li>CI de cada repositório é simples e rápido — testa apenas o que está naquele repo.</li>
+            <li>Ciclos de release completamente independentes.</li>
+          </ul>
+
+          <h3>Multi-repo — Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Propagação de mudanças em libs compartilhadas exige múltiplos PRs coordenados manualmente.</li>
+            <li>Duplicação de configuração (linter, CI, tsconfig) em cada repositório — divergências surgem com o tempo.</li>
+            <li>Dificuldade de descoberta: o que já existe e pode ser reutilizado?</li>
+            <li>Versioning hell: dependências internas com versões defasadas coexistindo em serviços diferentes.</li>
+          </ul>
+        </section>
+
+        <!-- 7. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Confundir monorepo com monolito</h3>
+          <p>
+            Esta é a confusão mais frequente — e mais custosa. <strong>Monorepo e
+            monolito são eixos ortogonais.</strong> Monorepo é uma estratégia de
+            versionamento de código; monolito é uma decisão de arquitetura de
+            deployment.
+          </p>
+          <p>
+            As quatro combinações são completamente válidas:
+          </p>
+          <ul>
+            <li><strong>Monolito em monorepo:</strong> uma única aplicação deployada como um bloco, com todo o código num único repositório.</li>
+            <li><strong>Microsserviços em monorepo:</strong> múltiplos serviços independentemente deployáveis, todos versionados juntos (o modelo do Google).</li>
+            <li><strong>Monolito em multi-repo:</strong> uma única aplicação deployada como bloco, com seu código em repositório próprio.</li>
+            <li><strong>Microsserviços em multi-repo:</strong> cada serviço tem seu repositório independente (o modelo mais comum em adoções iniciais de microsserviços).</li>
+          </ul>
+          <p class="artigo__aviso">
+            <strong>Atenção:</strong> mover de multi-repo para monorepo não
+            distribui automaticamente um sistema monolítico. E adotar microsserviços
+            não obriga multi-repo. São decisões independentes.
+          </p>
+
+          <h3>2. Monorepo sem cache incremental</h3>
+          <p>
+            Montar um monorepo juntando os projetos num único repositório sem
+            configurar cache incremental de build e teste é a receita para um CI
+            que cresce linearmente com o tamanho do repositório. Antes de migrar
+            para monorepo, defina qual ferramenta de orquestração será usada
+            (Turborepo, Nx, Bazel) e configure o pipeline incremental desde o início.
+          </p>
+
+          <h3>3. Acoplamento acidental via imports internos</h3>
+          <p>
+            No monorepo, a barreira técnica para importar de outro pacote é zero —
+            basta o caminho relativo funcionar. Sem enforcement de boundaries
+            (regras de lint como <code>eslint-plugin-boundaries</code> ou as
+            restrições de projeto do Nx), equipes inadvertidamente criam dependências
+            entre pacotes que deveriam ser independentes. O resultado é um monorepo
+            onde nada pode ser deployado isoladamente — o pior dos dois mundos.
+          </p>
+
+          <h3>4. Histórico gigante sem sparse-checkout</h3>
+          <p>
+            Em monorepos com anos de histórico e muitos arquivos binários, o
+            <code>git clone</code> pode levar minutos. A solução é usar
+            <code>git clone --filter=blob:none --depth=1</code> (shallow + partial
+            clone) ou configurar sparse-checkout para que cada desenvolvedor obtenha
+            apenas os diretórios que precisa.
+          </p>
+        </section>
+
+        <!-- 8. PADRÕES E ARQUITETURAS RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Tópicos relacionados</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../feature-vs-layer/">Organização por Feature vs Camada</a></li>
+            <li><a href="../monolito-vs-microsservicos/">Monolito vs Microsserviços</a></li>
+          </ul>
+          <p class="mt-1">
+            A decisão de <strong>monorepo vs multi-repo</strong> influencia como as
+            equipes organizam o código internamente, mas não determina essa organização.
+            Um monorepo com múltiplos projetos pode ter cada projeto organizado por
+            <a href="../feature-vs-layer/">feature ou por camada técnica</a> — são
+            decisões independentes que se complementam.
+          </p>
+          <p>
+            A distinção entre <strong>monolito e microsserviços</strong> é ortogonal
+            à estratégia de repositório: a arquitetura de deployment define como os
+            componentes rodam em produção, enquanto a estratégia de repositório define
+            como o código é versionado e desenvolvido. Organizações que adotam
+            microsserviços frequentemente migram para monorepo justamente para
+            recuperar a visibilidade e a coordenação de mudanças que o multi-repo
+            por serviço dificulta.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="4747474747"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

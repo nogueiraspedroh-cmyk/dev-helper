@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Event-Driven Architecture — Arquiteturas | Biblioteca Dev Helper</title>
+  <meta name="description" content="Entenda a Event-Driven Architecture (EDA): Event Notification, Event-Carried State Transfer, Event Sourcing, padrões de broker, diferença com Observer e armadilhas comuns." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Event-Driven Architecture</span>
+        </nav>
+        <span class="artigo__categoria">Arquitetura</span>
+        <h1 class="artigo__titulo">Event-Driven Architecture</h1>
+        <p class="artigo__subtitulo">
+          Componentes se comunicam publicando e consumindo <em>eventos</em>, sem
+          chamadas diretas entre si. Produtores não conhecem consumidores — e
+          consumidores não conhecem produtores — tornando o sistema altamente
+          desacoplado e extensível por adição, não por modificação.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Substituir chamadas diretas entre componentes por mensagens
+            assíncronas que descrevem o que aconteceu no sistema.</strong> Na
+            Event-Driven Architecture (EDA), um componente que faz algo relevante
+            publica um evento; qualquer componente interessado o consome e age de
+            forma independente. Nenhum dos dois precisa saber da existência do outro.
+          </p>
+          <p>
+            Esse desacoplamento é a propriedade fundamental da EDA. Adicionar um novo
+            comportamento ao sistema — enviar um e-mail quando um pedido é confirmado,
+            atualizar um cache, incrementar uma métrica — significa adicionar um novo
+            consumidor do evento existente, sem modificar o produtor. O princípio
+            Open/Closed se manifesta aqui de forma natural.
+          </p>
+          <p>
+            EDA pode ser implementada dentro de um único processo (in-process, usando
+            um event bus leve) ou entre serviços distribuídos (via brokers como Kafka,
+            RabbitMQ, AWS SNS/SQS). A arquitetura é a mesma; a topologia e as garantias
+            de entrega diferem. O termo mais preciso para o caso inter-processo é
+            <em>messaging</em> ou <em>message-driven architecture</em>, mas EDA é o
+            mais comum na literatura.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Em sistemas onde os componentes se chamam diretamente, o crescimento
+            produz um conjunto de problemas que se intensificam com o tempo:
+          </p>
+          <ul>
+            <li>
+              <strong>Acoplamento temporal:</strong> o chamador precisa que o receptor
+              esteja disponível no exato momento da chamada. Uma falha do receptor
+              falha o chamador. Em sistemas distribuídos, isso cria cascatas de falha.
+            </li>
+            <li>
+              <strong>Acoplamento de conhecimento:</strong> o componente que confirma
+              um pedido precisa conhecer e chamar explicitamente o serviço de e-mail,
+              o serviço de estoque, o serviço de fidelidade e o serviço de analytics.
+              Cada novo requisito de negócio modifica o mesmo componente central.
+            </li>
+            <li>
+              <strong>Dificuldade de extensão:</strong> adicionar um novo comportamento
+              (ex.: notificar o parceiro logístico após a confirmação do pedido) exige
+              modificar o código existente, com risco de regressão em funcionalidades
+              não relacionadas.
+            </li>
+            <li>
+              <strong>Escalabilidade síncrona:</strong> operações que poderiam ocorrer
+              em paralelo (enviar e-mail e atualizar estoque são independentes entre si)
+              são executadas sequencialmente porque o chamador espera a resposta de cada
+              uma antes de prosseguir.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+          <p>
+            Na EDA, produtores publicam eventos em um broker (ou bus), e consumidores
+            se registram para receber os tipos de evento que lhes interessam. O broker
+            é o único ponto de conhecimento compartilhado — produtores e consumidores
+            se conhecem apenas por meio do contrato do evento (seu schema).
+          </p>
+          <div class="code-bloco">
+<pre><code>   PRODUTORES                  BROKER / BUS                CONSUMIDORES
+  ┌─────────────┐             ┌──────────────┐            ┌────────────────────┐
+  │ Serviço de  │ ──publica──▶│              │──entrega──▶│ Serviço de E-mail  │
+  │  Pedidos    │  PedidoConf │  event bus   │            └────────────────────┘
+  └─────────────┘             │   /  broker  │──entrega──▶┌────────────────────┐
+                              │              │            │ Serviço de Estoque │
+  ┌─────────────┐ ──publica──▶│              │            └────────────────────┘
+  │ Serviço de  │  PagtoAprov └──────────────┘──entrega──▶┌────────────────────┐
+  │ Pagamentos  │                                          │ Serviço Fidelidade │
+  └─────────────┘                                         └────────────────────┘
+
+  Contrato: apenas o schema do evento é compartilhado.
+  Produtores não conhecem consumidores.
+  Consumidores não conhecem produtores.
+  Consumidores não se conhecem entre si.
+</code></pre>
+          </div>
+
+          <h3>Os três padrões dentro de EDA</h3>
+          <p>
+            Martin Fowler distingue três variantes que diferem no que o evento carrega
+            e no que o consumidor precisa fazer com ele. A maioria dos erros de projeto
+            em EDA vem de confundir os três.
+          </p>
+          <ul>
+            <li>
+              <strong>Event Notification:</strong> o evento sinaliza que <em>algo
+              aconteceu</em>. Ele carrega o mínimo necessário para identificar o fato
+              — tipicamente o ID do agregado e o tipo de evento. O consumidor, se
+              precisar de mais detalhes, precisa fazer uma chamada de volta ao produtor
+              para buscá-los. É o padrão mais simples e o mais desacoplado em termos
+              de payload — mas introduz uma chamada síncrona adicional quando o
+              consumidor precisa dos dados.
+            </li>
+            <li>
+              <strong>Event-Carried State Transfer (ECST):</strong> o evento carrega
+              estado suficiente para que o consumidor possa agir sem precisar chamar
+              o produtor de volta. O consumidor mantém uma cópia local dos dados que
+              precisa — essencialmente um cache atualizado via eventos. Elimina a
+              chamada síncrona adicional, mas aumenta o tamanho do payload e cria
+              dependência no schema do evento: mudanças na estrutura do evento afetam
+              todos os consumidores.
+            </li>
+            <li>
+              <strong>Event Sourcing (ES):</strong> os eventos não são apenas notificação
+              — são <em>a fonte da verdade</em>. O estado atual do sistema não é
+              armazenado diretamente; ele é derivado aplicando a sequência de eventos
+              em ordem. O banco de dados é substituído por um log imutável de eventos.
+              ES é o mais poderoso e o mais complexo: auditoria perfeita, reconstrução
+              de estado em qualquer ponto do tempo, mas exige lidar com versionamento
+              de eventos, rehydration e projeções.
+            </li>
+          </ul>
+          <p class="artigo__aviso">
+            <strong>Onde a maioria erra:</strong> Event Notification e ECST são
+            estratégias de comunicação — o estado do sistema ainda existe em algum
+            banco. Event Sourcing é uma estratégia de persistência — o estado é
+            derivado dos eventos. Usar "Event Sourcing" quando se quer dizer
+            "Event Notification" é o equívoco terminológico mais comum em EDA.
+          </p>
+        </section>
+
+        <!-- 4. COMO FUNCIONA -->
+        <section class="artigo__secao">
+          <h2>Como funciona</h2>
+          <p>
+            O trecho abaixo mostra os três padrões side-by-side para o mesmo evento
+            de domínio, ilustrando as diferenças no payload e no que o consumidor
+            precisa fazer.
+          </p>
+          <div class="code-bloco">
+<pre><code>// ── Event Notification: payload mínimo ──────────────────────
+interface PedidoConfirmadoNotification {
+  readonly tipo: 'PedidoConfirmado';
+  readonly pedidoId: string;       // consumidor busca o resto se precisar
+  readonly ocorridoEm: string;
+}
+
+// ── Event-Carried State Transfer: payload suficiente ─────────
+interface PedidoConfirmadoECST {
+  readonly tipo: 'PedidoConfirmado';
+  readonly pedidoId: string;
+  readonly clienteEmail: string;   // consumidor não precisa buscar
+  readonly total: number;
+  readonly itens: { produtoId: string; quantidade: number }[];
+  readonly ocorridoEm: string;
+}
+
+// ── Event Sourcing: evento É o estado ────────────────────────
+// O agregado é reconstruído aplicando eventos em ordem
+class PedidoAggregate {
+  private id = '';
+  private status = 'novo';
+  private itens: Item[] = [];
+
+  apply(event: DomainEvent): void {
+    if (event.tipo === 'PedidoConfirmado') {
+      this.status = 'confirmado';
+    }
+    // cada evento muta o estado do agregado
+  }
+}
+
+// ── Publicação (produtores não conhecem consumidores) ─────────
+class ServiçoPedidos {
+  confirmar(pedidoId: string): void {
+    // ... lógica de negócio ...
+    this.eventBus.publish({ tipo: 'PedidoConfirmado', pedidoId, ocorridoEm: new Date().toISOString() });
+    // não chama ServiçoEmail diretamente
+  }
+}</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Integração entre serviços independentes:</strong> quando múltiplos
+              serviços precisam reagir ao mesmo fato de negócio sem que nenhum deles
+              seja o orquestrador central, EDA é a forma mais natural de integração.
+              Cada serviço reage de forma autônoma, com seu próprio ritmo e suas
+              próprias garantias.
+            </li>
+            <li>
+              <strong>Extensibilidade por adição:</strong> quando o requisito de negócio
+              é "adicionar mais reações ao mesmo fato" com frequência, EDA é mais
+              sustentável do que chamadas diretas. Adicionar um consumidor não modifica
+              o produtor nem os consumidores existentes.
+            </li>
+            <li>
+              <strong>Desacoplamento de disponibilidade:</strong> quando o produtor não
+              pode esperar que todos os consumidores estejam disponíveis no momento da
+              publicação — filas garantem que o evento será processado quando o
+              consumidor estiver pronto.
+            </li>
+            <li>
+              <strong>Auditoria e rastreabilidade:</strong> o log de eventos é uma
+              trilha de auditoria natural de tudo o que aconteceu no sistema, com
+              timestamp e payload completo de cada ocorrência.
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>Fluxos que exigem resposta imediata e síncrona:</strong> se a
+              requisição do usuário precisa de uma resposta calculada com dados de
+              múltiplos serviços, uma chamada síncrona (RPC, HTTP) é mais simples e
+              direta. Tentar simular sincronia com EDA (correlation ID, reply queue)
+              adiciona complexidade sem benefício equivalente.
+            </li>
+            <li>
+              <strong>Lógica de negócio simples em um único serviço:</strong> dentro
+              de um monolito com lógica de negócio simples, um event bus interno
+              adiciona indireção desnecessária. Chamadas diretas entre classes ou
+              módulos são mais legíveis e depuráveis.
+            </li>
+            <li>
+              <strong>Equipes sem experiência com sistemas assíncronos:</strong>
+              debugar falhas em sistemas event-driven — rastrear por que um evento
+              não foi processado, investigar ordering, tratar duplicatas — exige
+              ferramentas e experiência específicas. A curva de aprendizado operacional
+              é significativa.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 6. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Desacoplamento estrutural: produtores e consumidores evoluem de forma independente — adicionar um novo consumidor não toca no produtor.</li>
+            <li>Extensibilidade por adição: novos comportamentos surgem de novos consumidores, sem modificar código existente.</li>
+            <li>Resiliência: filas de mensagens absorvem picos e permitem que consumidores lentos ou temporariamente indisponíveis processem eventos no seu ritmo.</li>
+            <li>Rastreabilidade: o log de eventos é uma auditoria nativa de todas as mudanças do sistema.</li>
+            <li>Escalabilidade independente: produtores e consumidores escalam separadamente, ajustando ao volume de cada um.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Debugging difícil: rastrear o fluxo causal de uma operação exige correlacionar eventos através de múltiplos serviços, logs e timestamps — ferramentas de observabilidade (distributed tracing) são essenciais.</li>
+            <li>Consistência eventual: o sistema fica consistente com o tempo, não instantaneamente. Fluxos que exigem consistência imediata precisam de workarounds.</li>
+            <li>Complexidade operacional: brokers de mensagem (Kafka, RabbitMQ) adicionam infraestrutura que precisa ser configurada, monitorada e operada.</li>
+            <li>Ordering e idempotência: garantir que eventos sejam processados na ordem correta e exatamente uma vez (ou que o consumidor seja idempotente) é não-trivial em sistemas distribuídos.</li>
+            <li>Schema acoplado: consumidores dependem do schema dos eventos. Mudanças quebram consumidores — exigindo versionamento de schema, compatibilidade backward/forward ou um registro de schema central.</li>
+          </ul>
+        </section>
+
+        <!-- 7. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Confundir EDA com o padrão Observer</h3>
+          <p>
+            Observer (GoF) e EDA compartilham a ideia de publicar e consumir
+            notificações, mas diferem em escopo, sincronia e topologia. Observer é
+            <em>in-process</em>: o sujeito chama diretamente os métodos dos observadores
+            registrados, no mesmo processo, tipicamente de forma síncrona. EDA é
+            <em>inter-process</em>: produtores publicam mensagens em um broker externo,
+            e consumidores as processam de forma assíncrona, possivelmente em processos
+            distintos, em máquinas distintas. No Observer, o sujeito conhece a interface
+            dos observadores; em EDA, o produtor não conhece nenhum consumidor.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Resumo prático:</strong> Observer = mesmo processo, chamada direta,
+            possivelmente síncrona. EDA = entre processos/serviços, mediado por broker,
+            assíncrono por design.
+          </p>
+
+          <h3>2. Debugging sem observabilidade</h3>
+          <p>
+            Em um sistema síncrono, um stack trace conta a história completa de uma
+            falha. Em EDA, um evento publicado pelo serviço A é consumido pelo serviço
+            B, que publica outro evento consumido pelo serviço C. Se C falha, a causa
+            pode estar em A. Sem distributed tracing (OpenTelemetry, Jaeger, Zipkin)
+            e sem um campo de <em>correlation ID</em> propagado em todos os eventos,
+            investigar uma falha se torna uma tarefa de arqueologia em múltiplos logs.
+            Observabilidade não é opcional em EDA — é parte da arquitetura.
+          </p>
+
+          <h3>3. Ignorar ordering e idempotência</h3>
+          <p>
+            Brokers de mensagem geralmente garantem entrega pelo menos uma vez
+            (<em>at-least-once delivery</em>), não exatamente uma vez. Eventos podem
+            ser entregues em ordem diferente da publicação e podem ser entregues mais
+            de uma vez. Consumidores que não são idempotentes produzem efeitos colaterais
+            duplicados. Consumidores que assumem ordering podem processar um
+            <em>PedidoCancelado</em> antes do <em>PedidoConfirmado</em>. Projete
+            consumidores idempotentes desde o início — não como otimização posterior.
+          </p>
+
+          <h3>4. Acoplamento via schema de evento sem versionamento</h3>
+          <p>
+            O schema do evento é o contrato entre produtor e consumidores. Mudanças
+            retrocompatíveis (adicionar um campo opcional) são seguras. Mudanças
+            incompatíveis (remover um campo, renomear um tipo) quebram todos os
+            consumidores simultaneamente. Em sistemas em produção, isso exige estratégias
+            de versionamento: campos opcionais com valor default, eventos versionados
+            (<code>PedidoConfirmadoV2</code>), transformadores de versão ou um schema
+            registry com validação de compatibilidade.
+          </p>
+
+          <h3>5. Event sprawl: eventos sem governança</h3>
+          <p>
+            Sem governança, o catálogo de eventos cresce de forma descontrolada:
+            eventos com nomes inconsistentes, payloads sobrepostos, duplicatas semânticas
+            e responsabilidades ambíguas. Com o tempo, ninguém sabe quais eventos existem,
+            quem os produz e quem os consome. Um registro de eventos (event catalog)
+            com owner explícito, schema documentado e histórico de versões é parte
+            essencial da governança de EDA em escala.
+          </p>
+        </section>
+
+        <!-- 8. ARQUITETURAS E PADRÕES RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Arquiteturas e padrões relacionados</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../observer/">Observer (GoF) — distinção com EDA</a></li>
+            <li><a href="../cqrs/">CQRS</a></li>
+            <li><a href="../monolito-vs-microsservicos/">Monolito vs Microsserviços</a></li>
+          </ul>
+          <p class="mt-1">
+            O <strong>Observer</strong> (GoF) é o ancestral conceitual da EDA, mas opera
+            em um escopo radicalmente diferente. No Observer, o sujeito mantém uma lista
+            de observadores e os notifica chamando diretamente seus métodos no mesmo
+            processo. Em EDA, a comunicação é mediada por um broker externo, assíncrona
+            e sem referência direta. Um event bus in-process (como o EventEmitter do
+            Node.js ou um SimpleEventBus) é tecnicamente um Observer — EDA começa quando
+            a comunicação cruza a fronteira do processo.
+          </p>
+          <p>
+            <strong>CQRS</strong> e EDA se combinam com frequência: o CommandHandler
+            do lado de escrita publica um evento de domínio após persistir uma mudança;
+            esse evento alimenta o Read Model do lado de leitura. CQRS resolve o problema
+            de modelos distintos para leitura e escrita; EDA resolve o problema de como
+            propagar essas mudanças de forma desacoplada. Nenhum implica o outro.
+          </p>
+          <p>
+            Em <strong>Microsserviços</strong>, EDA é frequentemente a cola que mantém
+            os serviços desacoplados temporalmente e de disponibilidade. Cada serviço
+            publica eventos de domínio que outros serviços consomem para manter seus
+            próprios dados locais atualizados — eliminando chamadas síncronas entre
+            serviços para leituras frequentes.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="4949494949"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

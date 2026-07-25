@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JWT Decoder — Dev Helper</title>
+  <meta name="description" content="Decodifique tokens JWT (JSON Web Token) direto no navegador: veja header e payload formatados e converta exp, iat e nbf para datas legíveis. Não verifica a assinatura — apenas decodifica." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!--
+    AdSense — biblioteca carregada UMA vez por página.
+    Substitua ca-pub-0000000000000000 pelo seu pub-ID real antes do deploy.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../../biblioteca/">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>JWT Decoder</h1>
+        <p>Cole um token JWT para decodificar o <strong>header</strong> e o <strong>payload</strong> e ver as datas de <code>exp</code>, <code>iat</code> e <code>nbf</code> em formato legível.</p>
+      </header>
+
+      <!-- AVISO — a ferramenta NÃO verifica assinatura -->
+      <div class="conta-aviso" role="note" aria-label="Aviso importante">
+        <strong>Atenção:</strong> esta ferramenta apenas <strong>decodifica</strong> o token (Base64URL → JSON). Ela <strong>não verifica a assinatura</strong> — não confirma se o token é autêntico ou se foi adulterado. A verificação de assinatura exige a chave/segredo e um ambiente confiável (servidor). Um token decodificado aqui <strong>não deve</strong> ser considerado válido só por ter sido lido.
+      </div>
+
+      <div class="tool__controls">
+        <!-- Textarea de entrada -->
+        <textarea
+          id="jwt-input"
+          class="tool__input"
+          placeholder="Cole seu token JWT aqui (ex.: eyJhbGciOiJIUzI1Ni...)"
+          spellcheck="false"
+          autocorrect="off"
+          autocapitalize="off"
+        ></textarea>
+
+        <div class="tool__actions">
+          <button id="btn-jwt-decode" class="button" type="button">Decodificar</button>
+          <button id="btn-jwt-clear" class="button--secondary" type="button">Limpar</button>
+        </div>
+      </div>
+
+      <!-- Mensagem de erro (token malformado) -->
+      <p id="jwt-error" class="error-msg" role="alert" hidden></p>
+
+      <!-- Resultado -->
+      <section class="tool__output" id="jwt-resultado" hidden>
+        <div class="tool__section">
+          <h2 class="tool__section-title">Header</h2>
+          <div class="tool__actions">
+            <button id="btn-jwt-copy-header" class="button--secondary" type="button">Copiar header</button>
+          </div>
+          <textarea id="jwt-header-output" class="result" readonly spellcheck="false" aria-label="Header decodificado"></textarea>
+        </div>
+
+        <div class="tool__section">
+          <h2 class="tool__section-title">Payload</h2>
+          <div class="tool__actions">
+            <button id="btn-jwt-copy-payload" class="button--secondary" type="button">Copiar payload</button>
+          </div>
+          <textarea id="jwt-payload-output" class="result" readonly spellcheck="false" aria-label="Payload decodificado"></textarea>
+        </div>
+
+        <!-- Claims temporais (exp/iat/nbf) -->
+        <div class="tool__section" id="jwt-claims-wrapper" hidden>
+          <h2 class="tool__section-title">Datas do token</h2>
+          <p id="jwt-exp-badge" class="result-validar result-validar--neutro"></p>
+          <table class="info-table">
+            <thead>
+              <tr>
+                <th>Claim</th>
+                <th>Valor (epoch)</th>
+                <th>Data legível</th>
+              </tr>
+            </thead>
+            <tbody id="jwt-claims-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </article>
+
+    <!-- Bloco de anúncio — abaixo do resultado da ferramenta -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="1313131313"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Conteúdo real — exigido pelo AdSense -->
+    <section>
+      <h2>O que é um JWT?</h2>
+      <p>
+        <strong>JWT</strong> (JSON Web Token) é um padrão aberto (RFC 7519) para transmitir
+        informações entre partes como um objeto JSON compacto e assinado. É amplamente usado em
+        autenticação e autorização de APIs — depois de fazer login, o servidor devolve um JWT que
+        o cliente envia a cada requisição para provar sua identidade.
+      </p>
+      <p>
+        Um JWT tem três partes separadas por ponto: <code>header.payload.signature</code>.
+        O <strong>header</strong> descreve o algoritmo de assinatura; o <strong>payload</strong>
+        carrega as <em>claims</em> (dados como usuário, permissões e datas); a
+        <strong>assinatura</strong> garante que o conteúdo não foi alterado. Header e payload são
+        apenas <strong>codificados em Base64URL</strong> — não criptografados —, por isso qualquer
+        pessoa pode lê-los. Nunca coloque segredos no payload de um JWT.
+      </p>
+
+      <h2>O que esta ferramenta faz (e o que NÃO faz)</h2>
+      <ul>
+        <li><strong>Faz:</strong> separa o token, decodifica header e payload de Base64URL para JSON e os exibe formatados.</li>
+        <li><strong>Faz:</strong> converte as claims temporais (<code>exp</code>, <code>iat</code>, <code>nbf</code>) de <em>epoch</em> (segundos desde 1970) para data/hora legível e indica se o token já expirou.</li>
+        <li><strong>Não faz:</strong> <strong>não verifica a assinatura</strong>. Sem a chave/segredo, é impossível confirmar autenticidade num site 100% client-side. A validação real de um JWT deve sempre acontecer no servidor.</li>
+      </ul>
+
+      <h2>Claims temporais mais comuns</h2>
+      <ul>
+        <li><code>exp</code> (expiration) — momento em que o token deixa de ser válido.</li>
+        <li><code>iat</code> (issued at) — momento em que o token foi emitido.</li>
+        <li><code>nbf</code> (not before) — momento a partir do qual o token passa a ser válido.</li>
+      </ul>
+
+      <h2>Perguntas frequentes (FAQ)</h2>
+
+      <h3>É seguro colar um token de produção aqui?</h3>
+      <p>
+        Recomendamos que não. Trate qualquer token JWT como uma credencial: mesmo que a
+        decodificação seja local, evite colar tokens de produção em ferramentas online — prefira
+        tokens de teste/homologação para depuração.
+      </p>
+
+      <h3>Por que a ferramenta não valida a assinatura?</h3>
+      <p>
+        Validar a assinatura exige a chave secreta (HMAC) ou a chave pública (RSA/ECDSA) usada
+        para assiná-lo, além de um ambiente confiável. Como este site é estático e roda inteiramente
+        no navegador, expor ou receber essas chaves aqui não faria sentido do ponto de vista de
+        segurança. A verificação deve ser feita no backend que consome o token.
+      </p>
+
+      <h3>O que significa "Token EXPIRADO"?</h3>
+      <p>
+        Significa que a claim <code>exp</code> do payload aponta para um instante já passado em
+        relação ao relógio do seu computador. Um token expirado normalmente é rejeitado pelo
+        servidor. Note que o cálculo depende da hora local do seu dispositivo estar correta.
+      </p>
+
+      <h3>O token continua sendo seguro depois de decodificado?</h3>
+      <p>
+        A decodificação não altera nem enfraquece o token — ela apenas revela o que já estava
+        legível (header e payload são Base64URL, não criptografia). O que protege um JWT é a
+        assinatura: se alguém alterar o payload, a assinatura deixa de bater e o servidor rejeita.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/tools/jwt.js"></script>
+</body>
+</html>

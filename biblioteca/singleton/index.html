@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Singleton — Design Patterns | Biblioteca Dev Helper</title>
+  <meta name="description" content="Aprenda o padrão Singleton (GoF) em profundidade: intenção, problema, solução, estrutura, exemplos em TypeScript e PHP, quando usar, quando evitar e armadilhas comuns." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Singleton</span>
+        </nav>
+        <span class="artigo__categoria">Padrão de Criação (GoF)</span>
+        <h1 class="artigo__titulo">Singleton</h1>
+        <p class="artigo__subtitulo">
+          Garante que uma classe tenha exatamente uma instância durante toda a vida da aplicação
+          e fornece um ponto de acesso global a essa instância.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            Assegurar que uma classe seja instanciada <strong>uma única vez</strong> e
+            prover um ponto de acesso global a essa instância, eliminando a necessidade de
+            passar a referência por toda a aplicação.
+          </p>
+          <p>
+            O Singleton é um dos 23 padrões do catálogo original de Gamma, Helm, Johnson e
+            Vlissides — o livro <em>Design Patterns: Elements of Reusable Object-Oriented
+            Software</em> (1994), carinhosamente chamado de "Gang of Four" (GoF).
+            Pertence à categoria de <strong>padrões de criação</strong>, que lidam com
+            mecanismos de instanciação de objetos.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Algumas responsabilidades em um sistema precisam existir em um único lugar:
+            o pool de conexões com o banco de dados, o logger central, o cache em memória,
+            as configurações carregadas de um arquivo, o barramento de eventos. Criar
+            múltiplas instâncias dessas estruturas causa inconsistências: cada instância
+            mantém seu próprio estado, os logs são fragmentados, o cache é duplicado.
+          </p>
+          <p>
+            A solução ingênua é usar uma variável global. O problema: variáveis globais
+            permitem que qualquer parte do código <em>sobrescreva</em> o valor, não
+            garantem que a inicialização ocorra uma única vez e tornam as dependências
+            implícitas, dificultando testes e manutenção.
+          </p>
+          <p>
+            O Singleton resolve isso encapsulando a lógica de controle de instância
+            dentro da própria classe, tornando impossível (ou ao menos explicitamente
+            difícil) criar uma segunda instância acidentalmente.
+          </p>
+        </section>
+
+        <!-- 3. SOLUÇÃO -->
+        <section class="artigo__secao">
+          <h2>Solução</h2>
+          <p>A implementação canônica do Singleton tem três elementos obrigatórios:</p>
+          <ol>
+            <li>
+              <strong>Construtor privado (ou protegido):</strong> impede que código externo
+              instancie a classe com <code>new</code>.
+            </li>
+            <li>
+              <strong>Campo estático privado:</strong> armazena a única instância da classe
+              (o campo começa <code>null</code> ou <code>undefined</code>).
+            </li>
+            <li>
+              <strong>Método estático público (<code>getInstance()</code>):</strong> verifica
+              se a instância existe; se não existir, cria e armazena; sempre retorna a
+              mesma referência.
+            </li>
+          </ol>
+          <p>
+            Ao chamar <code>MinhaClasse.getInstance()</code> várias vezes, todas as chamadas
+            recebem o mesmo objeto — não há cópias, não há estado duplicado.
+          </p>
+        </section>
+
+        <!-- 4. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+          <p>
+            O diagrama abaixo, em notação UML simplificada, mostra a classe Singleton
+            com seus membros essenciais:
+          </p>
+          <div class="code-bloco">
+<pre><code>┌───────────────────────────────────────────┐
+│                 &lt;&lt;Singleton&gt;&gt;              │
+│               ConfigManager               │
+├───────────────────────────────────────────┤
+│ - instance: ConfigManager  (estático)     │
+│ - dados: Record&lt;string, string&gt;           │
+├───────────────────────────────────────────┤
+│ - constructor()            (privado)      │
+│ + getInstance(): ConfigManager  (estático)│
+│ + get(chave: string): string | undefined  │
+│ + set(chave: string, valor: string): void │
+└───────────────────────────────────────────┘
+
+Fluxo de uso:
+
+  Código cliente A                Código cliente B
+       │                               │
+       │  ConfigManager.getInstance()  │  ConfigManager.getInstance()
+       │ ─────────────────────────────►│
+       │                               │
+       │         ┌─────────────────────┤
+       │         │  instância já existe│
+       │         │  → retorna a mesma  │
+       │         └─────────────────────┤
+       │◄──────────────────────────────│
+       │        mesma referência       │
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. EXEMPLOS DE CÓDIGO -->
+        <section class="artigo__secao">
+          <h2>Exemplos de código</h2>
+
+          <h3>Exemplo 1 — Implementação ingênua (não thread-safe)</h3>
+          <p>
+            Esta é a forma mais simples do Singleton. Em JavaScript e PHP (single-threaded
+            na maioria dos casos), funciona bem para entender o padrão. Mais adiante
+            discutimos as limitações.
+          </p>
+
+          <!-- GRUPO DE ABAS 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 1 — implementação ingênua">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>class Logger {
+  // Campo estático privado que guarda a única instância.
+  private static instance: Logger | null = null;
+
+  // Construtor privado — impede `new Logger()` fora da classe.
+  private constructor(private readonly prefix: string = "[LOG]") {}
+
+  // Ponto de acesso global: cria na primeira chamada, reutiliza nas demais.
+  public static getInstance(): Logger {
+    if (Logger.instance === null) {
+      Logger.instance = new Logger();
+    }
+    return Logger.instance;
+  }
+
+  public info(mensagem: string): void {
+    console.log(`${this.prefix} [INFO] ${mensagem}`);
+  }
+
+  public erro(mensagem: string): void {
+    console.error(`${this.prefix} [ERRO] ${mensagem}`);
+  }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+const logA = Logger.getInstance();
+const logB = Logger.getInstance();
+
+console.log(logA === logB); // true — mesma referência
+
+logA.info("Aplicação iniciada");
+logB.erro("Algo deu errado");
+// Ambas as chamadas escrevem no mesmo logger.</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+class Logger
+{
+    // Campo estático privado que guarda a única instância.
+    // Usa `self` (não `static`) porque o construtor é private,
+    // o que inviabiliza herança — LSB seria incoerente aqui.
+    private static ?self $instance = null;
+
+    // Construtor privado — impede `new Logger()` fora da classe.
+    private function __construct(
+        private readonly string $prefix = '[LOG]'
+    ) {}
+
+    // Impede clonagem da instância.
+    private function __clone(): void {}
+
+    // Ponto de acesso global: cria na primeira chamada, reutiliza nas demais.
+    public static function getInstance(): self
+    {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+        return self::$instance;
+    }
+
+    public function info(string $mensagem): void
+    {
+        echo "{$this-&gt;prefix} [INFO] {$mensagem}" . PHP_EOL;
+    }
+
+    public function erro(string $mensagem): void
+    {
+        echo "{$this-&gt;prefix} [ERRO] {$mensagem}" . PHP_EOL;
+    }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+$logA = Logger::getInstance();
+$logB = Logger::getInstance();
+
+var_dump($logA === $logB); // bool(true) — mesma referência
+
+$logA-&gt;info('Aplicação iniciada');
+$logB-&gt;erro('Algo deu errado');</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 1) -->
+
+          <h3>Exemplo 2 — Singleton com inicialização lazy e tipagem forte</h3>
+          <p>
+            Em aplicações reais, o Singleton costuma encapsular um recurso inicializado
+            com parâmetros (como uma string de conexão). O padrão abaixo aceita opções
+            na primeira chamada e as ignora nas chamadas subsequentes.
+          </p>
+
+          <!-- GRUPO DE ABAS 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 2 — Singleton com opções">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>interface ConfigOpcoes {
+  readonly arquivo: string;
+  readonly ambiente: "dev" | "staging" | "prod";
+}
+
+class ConfigManager {
+  private static instance: ConfigManager | null = null;
+  private readonly dados: Map&lt;string, string&gt; = new Map();
+
+  private constructor(opcoes: ConfigOpcoes) {
+    // Simula o carregamento de um arquivo de configuração.
+    this.dados.set("env",     opcoes.ambiente);
+    this.dados.set("arquivo", opcoes.arquivo);
+    console.log(`[Config] Carregado de "${opcoes.arquivo}" (${opcoes.ambiente})`);
+  }
+
+  // Na primeira chamada, `opcoes` é obrigatório.
+  // Nas chamadas subsequentes, o argumento é ignorado.
+  public static getInstance(opcoes?: ConfigOpcoes): ConfigManager {
+    if (ConfigManager.instance === null) {
+      if (!opcoes) {
+        throw new Error("ConfigManager: opcoes obrigatórias na primeira inicialização.");
+      }
+      ConfigManager.instance = new ConfigManager(opcoes);
+    }
+    return ConfigManager.instance;
+  }
+
+  public get(chave: string): string | undefined {
+    return this.dados.get(chave);
+  }
+
+  public set(chave: string, valor: string): void {
+    this.dados.set(chave, valor);
+  }
+
+  /** Apenas para testes — permite resetar a instância entre casos de teste. */
+  public static resetParaTestes(): void {
+    ConfigManager.instance = null;
+  }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+const cfg = ConfigManager.getInstance({
+  arquivo: ".env.prod",
+  ambiente: "prod",
+});
+
+console.log(cfg.get("env")); // "prod"
+
+// Segunda chamada sem opções — retorna a instância existente.
+const cfg2 = ConfigManager.getInstance();
+console.log(cfg === cfg2);   // true</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+class ConfigManager
+{
+    // Usa `self` (não `static`): construtor private impede subclasses,
+    // então late static binding não agrega valor e causaria confusão.
+    private static ?self $instance = null;
+
+    /** @var array&lt;string, string&gt; */
+    private array $dados = [];
+
+    private function __construct(
+        private readonly string $arquivo,
+        private readonly string $ambiente
+    ) {
+        // Simula o carregamento de um arquivo de configuração.
+        $this-&gt;dados['env']     = $ambiente;
+        $this-&gt;dados['arquivo'] = $arquivo;
+        echo "[Config] Carregado de \"{$arquivo}\" ({$ambiente})" . PHP_EOL;
+    }
+
+    private function __clone(): void {}
+
+    /**
+     * Na primeira chamada, $arquivo e $ambiente são obrigatórios.
+     * Nas chamadas subsequentes, os argumentos são ignorados.
+     *
+     * Nota PHP: em share-nothing (FPM padrão), a instância é recriada
+     * a cada request — não há estado entre requisições, ao contrário
+     * do Node.js onde o módulo persiste em memória.
+     */
+    public static function getInstance(
+        string $arquivo = '',
+        string $ambiente = ''
+    ): self {
+        if (self::$instance === null) {
+            if ($arquivo === '') {
+                throw new \RuntimeException(
+                    'ConfigManager: $arquivo obrigatório na primeira inicialização.'
+                );
+            }
+            self::$instance = new self($arquivo, $ambiente);
+        }
+        return self::$instance;
+    }
+
+    public function get(string $chave): ?string
+    {
+        return $this-&gt;dados[$chave] ?? null;
+    }
+
+    public function set(string $chave, string $valor): void
+    {
+        $this-&gt;dados[$chave] = $valor;
+    }
+
+    /** Apenas para testes — permite resetar a instância entre casos de teste. */
+    public static function resetParaTestes(): void
+    {
+        self::$instance = null;
+    }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+$cfg = ConfigManager::getInstance('.env.prod', 'prod');
+echo $cfg-&gt;get('env') . PHP_EOL; // prod
+
+// Segunda chamada sem argumentos — retorna a instância existente.
+$cfg2 = ConfigManager::getInstance();
+var_dump($cfg === $cfg2); // bool(true)</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 2) -->
+
+        </section><!-- /.artigo__secao (exemplos) -->
+
+        <!-- 6. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Recurso compartilhado com estado único:</strong> pool de conexões com
+              banco de dados, cliente HTTP com configuração centralizada, cache em memória.
+            </li>
+            <li>
+              <strong>Logger / sistema de auditoria:</strong> toda a aplicação deve escrever
+              no mesmo destino, sem fragmentação de saída.
+            </li>
+            <li>
+              <strong>Configuração carregada uma vez:</strong> variáveis de ambiente,
+              feature flags, parâmetros de aplicação carregados na inicialização.
+            </li>
+            <li>
+              <strong>Barramento de eventos (event bus) simples:</strong> um único canal
+              que distribui eventos entre subsistemas.
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>Objetos de domínio:</strong> <code>Pedido</code>, <code>Usuario</code>,
+              <code>Produto</code> nunca devem ser Singletons — cada entidade tem identidade
+              própria.
+            </li>
+            <li>
+              <strong>Services em frameworks com DI:</strong> NestJS, Spring, Laravel e
+              similares já gerenciam o ciclo de vida dos serviços. Use o escopo do container
+              (singleton scope no DI) em vez de implementar o padrão manualmente.
+            </li>
+            <li>
+              <strong>Quando a testabilidade importa:</strong> Singletons com estado
+              persistente entre testes quebram o isolamento. Se não houver um método de
+              reset (como o <code>resetParaTestes()</code> do exemplo), prefira injeção
+              de dependência.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Garante uma única instância — sem estado duplicado nem inconsistência.</li>
+            <li>Ponto de acesso global consistente, sem necessidade de passar referências por parâmetros.</li>
+            <li>Inicialização lazy (a instância só é criada quando solicitada pela primeira vez), economizando recursos se o Singleton nunca for usado.</li>
+            <li>Fácil de localizar no código: basta buscar por <code>getInstance()</code>.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Viola o Princípio da Responsabilidade Única: a classe gerencia tanto sua lógica de negócio quanto seu ciclo de vida.</li>
+            <li>Dificulta testes unitários — é preciso um mecanismo de reset ou usar técnicas de mock avançadas.</li>
+            <li>Introduz acoplamento global implícito: qualquer parte do código pode acessar e modificar o estado do Singleton.</li>
+            <li>Problemas de concorrência em ambientes multi-thread (Java, C#, Go) — a verificação <em>check-then-act</em> não é atômica sem sincronização.</li>
+            <li>Dificulta a detecção de dependências: ao contrário da injeção de dependência, o acoplamento com o Singleton não aparece na assinatura do construtor.</li>
+          </ul>
+        </section>
+
+        <!-- 8. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Estado global disfarçado</h3>
+          <p>
+            O Singleton é, na prática, uma variável global orientada a objetos. Qualquer
+            parte do sistema pode chamar <code>Singleton.getInstance()</code> e alterar
+            seu estado. Isso cria dependências ocultas que não aparecem nas assinaturas
+            dos métodos e que só se revelam em tempo de execução — especialmente doloroso
+            em projetos grandes com múltiplas equipes.
+          </p>
+
+          <h3>2. Dificulta testes e mocks</h3>
+          <p class="artigo__aviso">
+            <strong>Atenção:</strong> Testes unitários que dependem de um Singleton com
+            estado podem interferir entre si se executados na mesma instância de processo.
+            O estado do Singleton do Teste A "vaza" para o Teste B.
+          </p>
+          <p>
+            A solução clássica é adicionar um método <code>resetParaTestes()</code> (como
+            no Exemplo 2) ou, melhor ainda, refatorar o código para aceitar a dependência
+            via injeção (construtor ou parâmetro) — aí nos testes você passa um objeto
+            fake sem precisar do Singleton.
+          </p>
+
+          <h3>3. Problemas de concorrência (multi-thread) e ciclo de vida</h3>
+          <p>
+            Em TypeScript/Node.js e PHP padrão (sem pthreads), a execução é single-threaded
+            e a condição de corrida não ocorre. Mas em Java, C# ou Go, dois threads podem
+            passar pela verificação <code>if (instance == null)</code> simultaneamente e
+            criar duas instâncias. A solução é usar sincronização (<code>synchronized</code>,
+            <code>lock</code>, ou inicialização estática garantida pela linguagem).
+          </p>
+          <p class="artigo__aviso">
+            <strong>Atenção — PHP vs Node.js:</strong> há uma diferença de ciclo de vida
+            que confunde muita gente. O PHP padrão segue o modelo <em>share-nothing por
+            request</em>: cada requisição HTTP inicia um processo (ou worker) do zero,
+            executa o script e descarta tudo ao final. Isso significa que o Singleton
+            <strong>não persiste entre requisições</strong> — ele é recriado a cada request.
+            Não há vazamento de estado entre usuários, mas também não há ganho de
+            inicialização entre chamadas. Já em TypeScript/Node.js, o processo é
+            <em>long-lived</em>: o mesmo módulo é carregado uma vez e permanece em memória
+            enquanto o servidor estiver de pé. O Singleton criado na primeira requisição
+            sobrevive e é reutilizado por todas as requisições subsequentes — o que traz os
+            benefícios de cache e os riscos de estado compartilhado entre usuários concorrentes.
+          </p>
+
+          <h3>4. Herança e subclasses</h3>
+          <p>
+            Singleton e herança não combinam bem. Se <code>LoggerFilho extends Logger</code>,
+            o campo estático <code>instance</code> pode ser compartilhado entre pai e filho
+            dependendo da linguagem, gerando comportamentos inesperados. Com construtor
+            <code>private</code> (como nos exemplos acima), a herança é simplesmente
+            impossível — o que torna desnecessário, e enganoso, o uso de
+            <code>static::$instance</code> (late static binding) em PHP. Se você precisar
+            de um Singleton herdável, troque o construtor para <code>protected</code> e aí
+            sim adote <code>static::$instance</code> com <code>new static()</code> — mas
+            esteja ciente de que a complexidade aumenta rapidamente.
+          </p>
+
+          <h3>5. Serialização e desserialização</h3>
+          <p>
+            Em PHP, se o objeto for serializado e desserializado (ex.: via <code>unserialize()</code>),
+            uma nova instância é criada, quebrando a garantia do Singleton. A solução é
+            implementar <code>__wakeup()</code> lançando uma exceção para proibir a
+            desserialização.
+          </p>
+        </section>
+
+        <!-- 9. PADRÕES RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Padrões relacionados</h2>
+          <p>
+            O Singleton frequentemente aparece em conjunto ou em contraste com outros padrões:
+          </p>
+          <!--
+            Disciplina de links: só linka artigos já publicados.
+            Ao publicar um artigo novo, troque o <span> pelo <a href="../slug/">.
+            Factory Method agora existe → link real. Abstract Factory agora existe → link real.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../factory-method/">Factory Method</a></li>
+            <li><a href="../abstract-factory/">Abstract Factory</a></li>
+            <li><span class="artigo__padrao-pendente">Monostate — variação (em breve)</span></li>
+            <li><a href="../flyweight/">Flyweight</a></li>
+            <li><a href="../facade/">Facade</a></li>
+          </ul>
+          <p class="mt-1">
+            O <strong>Monostate</strong> é uma alternativa ao Singleton: em vez de controlar
+            a instância, todos os campos são estáticos, de modo que múltiplos objetos
+            compartilham o mesmo estado — mais fácil de testar, mas igualmente acoplado.
+            O <strong>Flyweight</strong> também controla a criação de instâncias, mas para
+            compartilhar objetos imutáveis em grande número. O <strong>Facade</strong>
+            frequentemente é implementado como Singleton para fornecer um ponto de acesso
+            simplificado a um subsistema.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="7878787878"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

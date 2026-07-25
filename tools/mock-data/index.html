@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gerador de Dados Fake / Mock JSON — Dev Helper</title>
+  <meta name="description" content="Gere um array JSON de objetos mock (id, nome, email, uuid, data, número, boolean, texto) com a quantidade e os campos que você escolher. Copie ou baixe." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../../biblioteca/">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Gerador de Dados Fake / Mock JSON</h1>
+        <p>Escolha a <strong>quantidade</strong> de registros e quais <strong>campos</strong> incluir, e gere um array JSON de objetos mock — ideal para popular protótipos, testes e demos.</p>
+      </header>
+
+      <div class="tool__controls">
+        <div class="tool__actions">
+          <label class="tool__label" for="md-count">Quantidade de registros:</label>
+          <input type="number" id="md-count" class="tool__select cor-num" min="1" max="1000" value="10" />
+        </div>
+
+        <fieldset class="tool__fieldset">
+          <legend class="tool__legend">Campos a incluir</legend>
+          <div class="tool__checkbox-grid">
+            <label class="tool__checkbox-label"><input type="checkbox" id="md-f-id" checked /> <span>id (incremental)</span></label>
+            <label class="tool__checkbox-label"><input type="checkbox" id="md-f-uuid" /> <span>uuid</span></label>
+            <label class="tool__checkbox-label"><input type="checkbox" id="md-f-nome" checked /> <span>nome</span></label>
+            <label class="tool__checkbox-label"><input type="checkbox" id="md-f-email" checked /> <span>email</span></label>
+            <label class="tool__checkbox-label"><input type="checkbox" id="md-f-inteiro" /> <span>número (inteiro)</span></label>
+            <label class="tool__checkbox-label"><input type="checkbox" id="md-f-boolean" /> <span>boolean (ativo)</span></label>
+            <label class="tool__checkbox-label"><input type="checkbox" id="md-f-data" /> <span>data</span></label>
+            <label class="tool__checkbox-label"><input type="checkbox" id="md-f-texto" /> <span>texto (lorem)</span></label>
+          </div>
+        </fieldset>
+
+        <div class="tool__actions">
+          <label class="tool__label" for="md-int-min">Faixa do número inteiro:</label>
+          <input type="number" id="md-int-min" class="tool__select cor-num" value="0" aria-label="Valor mínimo do inteiro" />
+          <span class="tool__label">até</span>
+          <input type="number" id="md-int-max" class="tool__select cor-num" value="100" aria-label="Valor máximo do inteiro" />
+        </div>
+
+        <div class="tool__actions tool__actions--mt">
+          <button id="md-generate" class="button" type="button">Gerar JSON</button>
+          <button id="md-copy" class="button--secondary" type="button">Copiar</button>
+          <button id="md-download" class="button--secondary" type="button">Baixar .json</button>
+        </div>
+
+        <p id="md-error" class="error-msg" role="alert" hidden></p>
+
+        <div class="tool__output">
+          <label class="tool__label" for="md-output">JSON gerado</label>
+          <textarea id="md-output" class="result" readonly spellcheck="false" aria-label="JSON gerado"></textarea>
+        </div>
+      </div>
+    </article>
+
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="2929292929"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <section>
+      <h2>Para que serve um gerador de dados mock?</h2>
+      <p>
+        Ao construir uma interface, um endpoint ou uma planilha de exemplo, muitas vezes você precisa
+        de <strong>dados realistas mas fictícios</strong> para preencher listas, tabelas e cards.
+        Digitar tudo à mão é lento; usar dados reais levanta questões de privacidade. Este gerador
+        cria um array JSON com a quantidade de registros e os campos que você escolher — pronto para
+        copiar no seu código, num arquivo de fixtures ou num mock de API.
+      </p>
+
+      <h2>Campos disponíveis</h2>
+      <p>
+        <strong>id</strong> (inteiro incremental começando em 1), <strong>uuid</strong> (identificador
+        v4), <strong>nome</strong> (nome + sobrenome), <strong>email</strong> (derivado do nome, no
+        domínio <code>example.com</code>), <strong>número</strong> inteiro dentro de uma faixa que você
+        define, <strong>boolean</strong>, <strong>data</strong> (formato <code>AAAA-MM-DD</code>) e um
+        <strong>texto</strong> curto no estilo <em>lorem ipsum</em>.
+      </p>
+
+      <h2>Perguntas frequentes (FAQ)</h2>
+
+      <h3>Os dados são reais?</h3>
+      <p>
+        Não. Nomes, e-mails e textos são combinados a partir de listas fixas e de números aleatórios,
+        sem qualquer relação com pessoas reais. O domínio <code>example.com</code> é reservado para
+        exemplos (RFC 2606) e não recebe e-mails.
+      </p>
+
+      <h3>Qual o limite de registros?</h3>
+      <p>Até 1000 por geração, para manter a resposta instantânea e o JSON manejável.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/tools/mock-data.js"></script>
+</body>
+</html>

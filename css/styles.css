@@ -1,0 +1,3429 @@
+/* ================================================================
+   DEV HELPER — Design System v2
+   Identidade: artefato tipado / engenharia
+   Paleta ink/paper/indigo — sem webfonts, sem CDN externo
+   ================================================================ */
+
+/* ── 1. Tokens ─────────────────────────────────────────────────── */
+:root {
+  /* Paleta principal */
+  --ink:            #12161d;   /* tinta — texto de alta hierarquia */
+  --paper:          #f5f6f8;   /* papel — fundo do body */
+  --surface:        #ffffff;   /* superfície — cards, nav, footer */
+  --primary:        #4f46e5;   /* índigo — marca/primary */
+  --primary-hover:  #4338ca;   /* índigo escuro — hover */
+  --primary-muted:  #645ec9;   /* índigo dessaturado — links em cards/prosa (menos "pesado" que --primary); AA: 5.27:1 sobre --surface, 4.87:1 sobre --paper */
+  --signal:         #10b981;   /* esmeralda — EXCLUSIVO: chrome de código e aba ativa */
+  --text:           #1f2530;   /* corpo de texto */
+  --muted:          #59616e;   /* texto secundário / labels */
+  --border:         #e3e6ea;   /* bordas padrão */
+  --border-soft:    #eceef1;   /* bordas sutis */
+  --bg-subtle:      #f0f2f5;   /* fundo sutil (inputs, tabelas) */
+  --code-bg:        #0e1320;   /* painel de código — fundo escuro */
+  --code-text:      #e6e9f0;   /* painel de código — texto claro */
+
+  /* Feedback semântico */
+  --success-bg:     #f0fdf4;
+  --success-fg:     #15803d;
+  --danger-bg:      #fef2f2;
+  --danger-fg:      #b91c1c;
+
+  /* ── Aliases retrocompatíveis ──────────────────────────────────
+     Mantêm as variáveis já consumidas nos HTMLs existentes.
+     NÃO remova — quebra inputs/resultado das ferramentas.
+     ──────────────────────────────────────────────────────────── */
+  --color-bg:          var(--paper);
+  --color-text:        var(--text);
+  --color-primary:     var(--primary);
+  --color-muted:       var(--muted);
+  --color-border:      var(--border);
+  --color-border-soft: var(--border-soft);
+  --color-bg-subtle:   var(--bg-subtle);
+  --color-success-bg:  var(--success-bg);
+  --color-success-fg:  var(--success-fg);
+  --color-danger-bg:   var(--danger-bg);
+  --color-danger-fg:   var(--danger-fg);
+
+  /* Tipografia */
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", "IBM Plex Mono",
+               Menlo, Consolas, monospace;
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto,
+               Helvetica, Arial, sans-serif;
+
+  /* Layout */
+  --max-width: 960px;
+  --max-width-home: 1120px;
+  --max-width-biblioteca: 1000px;
+  --max-width-article-toc: 1060px;
+  --radius:    6px;
+  --radius-lg: 10px;
+
+  /* Sidebar de navegação (injetada via js/main.js) */
+  --sidebar-width:           260px;
+  --sidebar-width-collapsed: 68px;  /* rail somente-ícones — modo colapsado (desktop) */
+  --header-h:       4rem;   /* offset aproximado da altura do header sticky */
+}
+
+/* ── 2. Reset & base ────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--paper);
+}
+
+/* Tipografia base — sobrescrita pelos seletores específicos de componente */
+h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0 0 0.75rem;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 1.5rem 0 0.6rem;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 1.1rem 0 0.4rem;
+  line-height: 1.3;
+  color: var(--text);
+}
+
+p {
+  margin: 0 0 0.85rem;
+}
+
+p:last-child {
+  margin-bottom: 0;
+}
+
+a {
+  color: var(--primary);
+}
+
+a:hover {
+  color: var(--primary-hover);
+}
+
+a:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* ── 3. Contêiner ───────────────────────────────────────────────── */
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 2rem 1.25rem;
+}
+
+/* Overrides de largura específicos por página (home e biblioteca) —
+   ajuste de consistência de layout motivado por feedback do ChatGPT. */
+.container--home {
+  max-width: var(--max-width-home);
+}
+.container--biblioteca {
+  max-width: var(--max-width-biblioteca);
+}
+/* Páginas de artigo com sumário (TOC) injetado via JS — coluna de leitura
+   (760px) + rail do sumário (~220px) precisam de mais espaço que o
+   catálogo. Aplicada via JS (main.classList.add) em js/biblioteca.js,
+   nunca escrita nos 55 index.html dos artigos. */
+.container--article-toc {
+  max-width: var(--max-width-article-toc);
+}
+
+/* ── 4. Navegação ───────────────────────────────────────────────── */
+.site-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.nav {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0.7rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+/* Brand com prefixo "> " em indigo via pseudo-elemento */
+.nav__brand {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.9375rem;
+  text-decoration: none;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.nav__brand:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: var(--radius);
+}
+
+.nav__brand::before {
+  content: "> ";
+  color: var(--primary);
+  font-weight: 400;
+}
+
+.nav__links {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  margin: 0;
+  padding: 0;
+}
+
+.nav__links a {
+  display: block;
+  text-decoration: none;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.005em;
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius);
+  transition: color 0.12s, background 0.12s;
+}
+
+.nav__links a:hover {
+  color: var(--text);
+  background: var(--bg-subtle);
+}
+
+.nav__links a:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Seletor de idioma (PT/EN) — injetado via JS como <li> extra em
+   .nav__links (ver buildLanguageSwitchMarkup em js/main.js). Compacto de
+   propósito: fica ao lado de Início/Biblioteca/Sobre/Contato, não pode
+   dominar a nav. */
+.nav__lang {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.3rem 0.3rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.nav__lang-link {
+  text-decoration: none;
+  color: var(--muted);
+  padding: 0.15rem 0.3rem;
+  border-radius: var(--radius);
+  transition: color 0.12s, background 0.12s;
+}
+
+a.nav__lang-link:hover {
+  color: var(--text);
+  background: var(--bg-subtle);
+}
+
+a.nav__lang-link:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Idioma atual — span sem link, não clicável, destacado para deixar claro
+   qual idioma está ativo. */
+.nav__lang-link--current {
+  color: var(--text);
+  font-weight: 700;
+  cursor: default;
+}
+
+.nav__lang-sep {
+  color: var(--muted);
+}
+
+/* Botão hambúrguer — injetado via JS como primeiro filho de .nav */
+.sidebar__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+  flex-shrink: 0;
+}
+
+.sidebar__toggle:hover {
+  background: var(--bg-subtle);
+  border-color: var(--primary);
+}
+
+.sidebar__toggle:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.sidebar__toggle svg {
+  pointer-events: none;
+}
+
+/* ── 4.5. Sidebar de navegação (drawer mobile / painel fixo desktop) ── */
+/*
+  Injetada inteira via js/main.js em todas as páginas.
+  Mobile (< 900px): drawer off-canvas com overlay, aberto/fechado por JS.
+  Desktop (>= 900px): painel fixo sempre visível; body ganha padding-left
+  equivalente para o conteúdo não ficar por baixo.
+*/
+.sidebar__overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(18, 22, 29, 0.45);
+  z-index: 150;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.sidebar__overlay[hidden] {
+  display: none;
+}
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: var(--sidebar-width);
+  max-width: 84vw;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  z-index: 200;
+  transform: translateX(-100%);
+  transition: transform 0.2s ease, width 0.2s ease;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-shadow: 4px 0 24px rgba(18, 22, 29, 0.12);
+}
+
+.sidebar.is-open {
+  transform: translateX(0);
+}
+
+.sidebar__panel {
+  padding: 1rem 0.85rem 2rem;
+}
+
+.sidebar__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.sidebar__top-label {
+  /* Rótulo prosa ("Menu") — não usa o marcador "// ", vai para sans */
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.sidebar__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.sidebar__close:hover {
+  background: var(--bg-subtle);
+  color: var(--text);
+}
+
+.sidebar__close:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Controles exclusivos de desktop (collapse/expand) — ocultos no mobile,
+   onde o comportamento é só o drawer via .sidebar__toggle/.sidebar__top. */
+.sidebar__desktop-controls {
+  display: none;
+}
+
+.sidebar__collapse-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.sidebar__collapse-toggle:hover {
+  background: var(--bg-subtle);
+  color: var(--primary);
+}
+
+.sidebar__collapse-toggle:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.sidebar__collapse-toggle svg {
+  transition: transform 0.15s ease;
+}
+
+.sidebar__group {
+  margin-bottom: 1.1rem;
+}
+
+.sidebar__group:last-child {
+  margin-bottom: 0;
+}
+
+.sidebar__group-title {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin: 0 0 0.35rem;
+  padding: 0 0.5rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.sidebar__group-title::before {
+  content: "// ";
+  color: var(--primary);
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+/* Filtro client-side da lista de 35 ferramentas — mesmo princípio de
+   .biblioteca-search__input (js/biblioteca.js): input nativo, filtragem
+   via toggle de `hidden` sobre os <li> já renderizados, nunca escreve o
+   termo digitado no DOM. Ver bloco "FILTRO DA SIDEBAR" em js/main.js. */
+.sidebar__search {
+  margin: 0 0 0.5rem;
+  padding: 0 0.5rem;
+}
+
+.sidebar__search-input {
+  width: 100%;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  color: var(--text);
+  transition: border-color 0.12s, background 0.12s, box-shadow 0.12s;
+}
+
+.sidebar__search-input::placeholder {
+  color: var(--muted);
+}
+
+.sidebar__search-input:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.sidebar__search-empty {
+  margin: 0.25rem 0.5rem 0;
+  padding: 0.5rem 0.6rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  background: var(--bg-subtle);
+  border-radius: var(--radius);
+}
+
+.sidebar__search-empty[hidden] {
+  display: none;
+}
+
+.sidebar__link {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--text);
+  font-size: 0.8rem;
+  line-height: 1.3;
+  transition: background 0.18s, color 0.18s;
+}
+
+.sidebar__link:hover {
+  background: var(--bg-subtle);
+  color: var(--primary);
+}
+
+.sidebar__link:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.sidebar__link svg {
+  flex-shrink: 0;
+  color: var(--muted);
+  transition: color 0.12s;
+}
+
+.sidebar__link:hover svg {
+  color: var(--primary);
+}
+
+.sidebar__link[aria-current="page"] {
+  background: #eef2ff;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.sidebar__link[aria-current="page"] svg {
+  color: var(--primary);
+}
+
+/* ── Accordion de categorias — grupo "Biblioteca" (55 artigos) ─────── */
+.sidebar__accordion {
+  margin-top: 0.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+/* Mesma tipografia/cor/padding de .sidebar__link (grupo "Ferramentas")
+   — os gatilhos de categoria são a contraparte "Biblioteca" dos links de
+   ferramenta e devem ler como a mesma família de item de navegação; só o
+   chevron (em vez de um ícone colorido por item) sinaliza que é expansível. */
+.sidebar__accordion-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 400;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.sidebar__accordion-trigger:hover {
+  background: var(--bg-subtle);
+  color: var(--primary);
+}
+
+.sidebar__accordion-trigger:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.sidebar__accordion-trigger svg {
+  flex-shrink: 0;
+  color: var(--muted);
+  transition: color 0.12s, transform 0.15s ease;
+}
+
+.sidebar__accordion-trigger:hover svg {
+  color: var(--primary);
+}
+
+.sidebar__accordion-trigger[aria-expanded="true"] svg {
+  transform: rotate(90deg);
+}
+
+.sidebar__accordion-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar__accordion-panel {
+  list-style: none;
+  margin: 0.1rem 0 0.35rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.sidebar__accordion-panel[hidden] {
+  display: none;
+}
+
+/* Link de artigo dentro do accordion — sem ícone, indentado */
+.sidebar__link--nested {
+  padding: 0.35rem 0.6rem 0.35rem 2.05rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.sidebar__link--nested:hover {
+  color: var(--primary);
+}
+
+.sidebar__link--nested[aria-current="page"] {
+  background: #eef2ff;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* Trava de scroll do body enquanto o drawer mobile está aberto */
+@media (max-width: 899.98px) {
+  body.sidebar-locked {
+    overflow: hidden;
+  }
+}
+
+/* Desktop: painel fixo sempre visível, sem overlay/hambúrguer.
+   O modo colapsado (rail somente-ícones) também é exclusivo daqui — a
+   classe .is-collapsed pode existir no mobile (preferência persistida em
+   localStorage), mas só produz efeito visual dentro deste media query. */
+@media (min-width: 900px) {
+  .sidebar__toggle {
+    display: none;
+  }
+
+  .sidebar__overlay {
+    display: none !important;
+  }
+
+  .sidebar__top {
+    display: none;
+  }
+
+  .sidebar__desktop-controls {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 0.75rem;
+  }
+
+  .sidebar {
+    transform: none;
+    box-shadow: none;
+    z-index: 90; /* abaixo do .site-header (100) — o header "clipa" o topo do painel */
+  }
+
+  .sidebar__panel {
+    padding-top: var(--header-h);
+  }
+
+  body {
+    padding-left: var(--sidebar-width);
+    transition: padding-left 0.2s ease;
+  }
+
+  /* ── Modo colapsado — rail somente-ícones (~68px) ────────────────── */
+  .sidebar.is-collapsed {
+    width: var(--sidebar-width-collapsed);
+  }
+
+  .sidebar.is-collapsed .sidebar__panel {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
+  .sidebar.is-collapsed .sidebar__desktop-controls {
+    justify-content: center;
+  }
+
+  .sidebar.is-collapsed .sidebar__collapse-toggle svg {
+    transform: rotate(180deg);
+  }
+
+  /* Título de grupo e o accordion de categorias somem — rail estreita
+     não comporta texto nem uma lista de 55 artigos; cada link continua
+     com aria-label/título nativo (title="") como identificação. */
+  .sidebar.is-collapsed .sidebar__group-title,
+  .sidebar.is-collapsed .sidebar__search,
+  .sidebar.is-collapsed .sidebar__search-empty,
+  .sidebar.is-collapsed .sidebar__accordion {
+    display: none;
+  }
+
+  /* Exceção: o accordion de Ferramentas (.sidebar__accordion--tools)
+     preserva o rail-de-ícones que já existia antes da unificação com o
+     padrão accordion+busca (ver flow
+     2026-07-21-fix-sidebar-body-disclaimer.md) — as 35 ferramentas
+     continuam navegáveis só por ícone no modo colapsado, sem categoria
+     nem chevron (que não cabem numa faixa de ~68px). O accordion da
+     Biblioteca (55 artigos, sem ícone próprio por item) continua
+     escondido por completo pela regra acima — só o link "Todos os
+     artigos" permanece visível nesse modo. Especificidade igual à regra
+     acima (3 classes); esta vence por vir depois no cascade. */
+  .sidebar.is-collapsed .sidebar__accordion--tools {
+    display: flex;
+  }
+
+  .sidebar.is-collapsed .sidebar__accordion--tools .sidebar__accordion-trigger,
+  .sidebar.is-collapsed .sidebar__accordion--tools .sidebar__accordion-label {
+    display: none;
+  }
+
+  /* Força os painéis abertos mesmo com [hidden] (categoria fechada) —
+     mesma técnica/justificativa já documentada em .tool-card[hidden]. */
+  .sidebar.is-collapsed .sidebar__accordion--tools .sidebar__accordion-panel[hidden] {
+    display: flex;
+  }
+
+  .sidebar.is-collapsed .sidebar__link {
+    justify-content: center;
+    gap: 0;
+  }
+
+  /* Some visualmente, mas continua no DOM/árvore de acessibilidade
+     (técnica "sr-only") — o nome acessível do link não depende só do
+     atributo title, que é um fallback frágil em muitos leitores de tela. */
+  .sidebar.is-collapsed .sidebar__link-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  body.sidebar-collapsed {
+    padding-left: var(--sidebar-width-collapsed);
+  }
+}
+
+/* Fallback sem JavaScript — só a home inclui este bloco (ver index.html) */
+.noscript-note {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.noscript-note a {
+  color: var(--primary);
+}
+
+/* ── 5. Hero ────────────────────────────────────────────────────── */
+/*
+  Painel escuro ink — a tese distintiva do site.
+  Contém o marcador prompt monoespaçado + heading principal.
+  Diferente do code-panel (que usa --signal/esmeralda),
+  o hero usa --primary/índigo como acento.
+*/
+.hero {
+  background: var(--ink);
+  color: var(--code-text);
+  border-radius: var(--radius-lg);
+  padding: 3.75rem 2.5rem 3.25rem;
+  margin: 2rem 0 3rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Grade pontilhada ultra-sutil — engenharia/blueprint */
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(79, 70, 229, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(79, 70, 229, 0.07) 1px, transparent 1px);
+  background-size: 36px 36px;
+  pointer-events: none;
+}
+
+/* Linha de prompt — eyebrow mono (contraste AA: ~4.8:1 sobre --ink).
+   Mantido mono: é um artefato de terminal deliberado ("~/dev-helper — ..."
+   com prefixo "> " via ::before abaixo), no mesmo espírito do marcador
+   "// " do .catalog__category-title — não é um heading de prosa. */
+.hero__prompt {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: rgba(230, 233, 240, 0.6);
+  margin: 0 0 1.75rem;
+  letter-spacing: 0.05em;
+  position: relative;
+}
+
+.hero__prompt::before {
+  content: "> ";
+  color: var(--primary);
+  opacity: 0.85;
+}
+
+/* Heading principal do hero — heading de prosa, vai para sans (mono fica
+   reservado ao .hero__prompt, que é o artefato de terminal deliberado) */
+.hero__title,
+.hero h1 {
+  font-family: var(--font-sans);
+  font-size: clamp(2rem, 4.5vw, 3.1rem);
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 1rem;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  position: relative;
+}
+
+/* Subtítulo */
+.hero__sub {
+  font-size: 0.9375rem;
+  color: rgba(230, 233, 240, 0.6);
+  margin: 0 auto 2rem;
+  max-width: 520px;
+  line-height: 1.7;
+  position: relative;
+}
+
+/* Mensagem do CTA (JS preenche via #cta-message) — texto de prosa curto
+   ("Botão clicado em ..."), vai para sans. Contraste AA: ~7:1 sobre --ink */
+.hero__message {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  color: #a5b4fc;
+  margin-top: 1rem;
+  letter-spacing: 0.02em;
+  position: relative;
+}
+
+/* Busca do hero — mesma função da busca da Biblioteca
+   (.biblioteca-search__input), mas adaptada ao fundo escuro --ink: campo
+   translúcido claro em vez de superfície branca. Filtro client-side em
+   js/main.js (bloco guardado por `if (buscaHomeInput)`), sem chamada de
+   rede e sem escrever a query digitada no DOM. */
+.hero__search-input {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto 1.25rem;
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  padding: 0.7rem 1rem;
+  border: 1px solid rgba(230, 233, 240, 0.22);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  position: relative;
+  transition: border-color 0.12s, background 0.12s, box-shadow 0.12s;
+}
+
+.hero__search-input::placeholder {
+  color: rgba(230, 233, 240, 0.55);
+}
+
+.hero__search-input:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.3);
+}
+
+/* Chips de atalho para as ferramentas mais buscadas (feedback direto de
+   usuários: "busca... CPF/CNPJ JSON SQL Senha CEP"). Puramente links —
+   funcionam sem JS, complementam (não substituem) a busca acima. */
+.hero__chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0 0 1.75rem;
+  position: relative;
+}
+
+.hero__chip {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: rgba(230, 233, 240, 0.75);
+  text-decoration: none;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid rgba(230, 233, 240, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  transition: border-color 0.12s, color 0.12s, background 0.12s, transform 0.12s;
+}
+
+.hero__chip:hover {
+  border-color: var(--primary);
+  color: #ffffff;
+  background: rgba(79, 70, 229, 0.22);
+  transform: translateY(-1px);
+}
+
+.hero__chip:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* ── Home "search-first" ───────────────────────────────────────────
+   Modificadores aplicados SOMENTE na home (index.html), lado a lado com
+   .hero/.hero__title/.hero__sub — error.html usa esses mesmos blocos base
+   sem os modificadores abaixo, então nada aqui altera a página de erro.
+   Mesmo princípio já validado em .biblioteca-search (busca como elemento
+   dominante do topo), adaptado ao painel escuro --ink que é a identidade
+   "terminal" do site: painel mais compacto, h1 menor, campo de busca maior
+   e centralizado logo abaixo do título — não mais um hero de marketing. */
+.home-hero {
+  padding: 2.5rem 2rem 2.25rem;
+  margin: 1.5rem 0 2.5rem;
+}
+
+.home-hero__title {
+  font-size: clamp(1.6rem, 3.4vw, 2.25rem);
+  margin-bottom: 0.6rem;
+}
+
+.home-hero__sub {
+  font-size: 0.85rem;
+  margin: 0 auto 1.75rem;
+  opacity: 0.85;
+}
+
+/* Campo de busca — elemento dominante do novo layout: maior que o antigo
+   .hero__search-input isolado, com ícone embutido (mesmo padrão visual de
+   .biblioteca-search__field/__icon), porém no tema escuro do hero. */
+.home-hero__field {
+  position: relative;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.home-hero__field .hero__search-input {
+  margin: 0;
+  max-width: none;
+  padding: 0.9rem 1.1rem 0.9rem 2.75rem;
+  font-size: 1rem;
+}
+
+.home-hero__icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(230, 233, 240, 0.55);
+  pointer-events: none;
+}
+
+/* Chips de atalho reposicionados abaixo da busca (elemento secundário,
+   deliberadamente menor/mais discreto — ver .hero__chip acima). */
+.home-hero .hero__chips {
+  margin-top: 1.5rem;
+  margin-bottom: 0;
+}
+
+/* ── 6. Botões ──────────────────────────────────────────────────── */
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--primary);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.65rem 1.5rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.12s, box-shadow 0.12s;
+  position: relative;
+  line-height: 1.4;
+}
+
+.button:hover {
+  background: var(--primary-hover);
+  box-shadow: 0 2px 10px rgba(79, 70, 229, 0.28);
+  color: #ffffff;
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+
+/* Botão secundário — outline */
+.button--secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: transparent;
+  color: var(--primary);
+  border: 1.5px solid var(--primary);
+  border-radius: var(--radius);
+  padding: 0.575rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, color 0.12s, box-shadow 0.12s;
+  line-height: 1.4;
+}
+
+.button--secondary:hover {
+  background: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(79, 70, 229, 0.22);
+}
+
+.button--secondary:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+
+/* ── 7. Ad / Footer ─────────────────────────────────────────────── */
+.ad {
+  margin: 2.5rem 0;
+  min-height: 90px;
+}
+
+.site-footer {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  padding: 1.5rem 1rem;
+}
+
+/* ================================================================
+   FERRAMENTAS — componentes BEM-ish reutilizáveis
+   ================================================================ */
+
+/* Wrapper principal da ferramenta — fundo/borda/sombra própria para se
+   destacar claramente do conteúdo de prosa (explicação + FAQ, exigido pelo
+   AdSense) que vem logo abaixo na mesma página. Reaproveita tokens
+   existentes (--surface/--border/--radius-lg), sem cor nova. */
+.tool {
+  margin: 2rem 0;
+  padding: 1.75rem 1.75rem 2rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 3px rgba(18, 22, 29, 0.06);
+}
+
+/* Cabeçalho da ferramenta */
+.tool__header {
+  margin-bottom: 1.75rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.tool__header h1 {
+  font-family: var(--font-sans);
+  font-size: 1.55rem;
+  font-weight: 700;
+  margin: 0 0 0.45rem;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.tool__header p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+/* Área de controles */
+.tool__controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Linha de ações horizontais */
+.tool__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tool__actions--mt {
+  margin-top: 0.5rem;
+}
+
+/* Textarea de entrada — fundo branco, foco com ring indigo.
+   Mantido mono: recebe/exibe dado técnico bruto (JSON, SQL, texto a
+   processar) — função equivalente a um editor de código, não é prosa. */
+.tool__input {
+  width: 100%;
+  min-height: 160px;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.65;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  resize: vertical;
+  color: var(--text);
+  background: var(--surface);
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+
+.tool__input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+/* Área de saída */
+.tool__output {
+  margin-top: 1rem;
+}
+
+/* Resultado pré-formatado — mantido mono: é a saída de dado/código
+   (JSON formatado, SQL indentado etc.), não um heading ou label de prosa. */
+.result {
+  width: 100%;
+  min-height: 160px;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.65;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  white-space: pre;
+  overflow: auto;
+  resize: vertical;
+  color: var(--text);
+  box-sizing: border-box;
+}
+
+/* Mensagem de erro de validação — mantido mono (borderline): no formatador
+   de JSON o texto inclui posição técnica ("linha X, coluna Y") do erro de
+   sintaxe, tratado como saída técnica/código, não prosa comum. */
+.error-msg {
+  margin-top: 0.5rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radius);
+  background: var(--danger-bg);
+  border: 1px solid #fca5a5;
+  color: var(--danger-fg);
+  font-size: 0.875rem;
+  font-family: var(--font-mono);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.error-msg[hidden] {
+  display: none;
+}
+
+/* Select de configuração */
+.tool__select {
+  padding: 0.575rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-family: var(--font-sans);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.12s;
+}
+
+.tool__select:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Label inline de controles */
+.tool__label {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ================================================================
+   HOME — CATÁLOGO DE FERRAMENTAS
+   ================================================================ */
+
+.catalog {
+  margin-top: 0;
+}
+
+.catalog__title {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 2rem;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+/* Bloco de categoria */
+.catalog__category {
+  margin-bottom: 2.75rem;
+}
+
+.catalog__category:last-child {
+  margin-bottom: 0;
+}
+
+/* Título de categoria com marcador "// " em índigo — SEM tocar HTML.
+   Mantido mono deliberadamente: é o próprio artefato do convênio "// ",
+   um rótulo técnico estilizado como comentário de código, não um heading
+   de prosa comum. */
+.catalog__category-title {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin: 0 0 1rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.catalog__category-title::before {
+  content: "// ";
+  color: var(--primary);
+  letter-spacing: 0;
+  font-weight: 400;
+}
+
+/* Grid responsivo de cards — cada .tool-row carrega título + descrição
+   curta (≤ ~50 caracteres, ver .tool-row abaixo), por isso os cards podem
+   ocupar duas linhas de texto. */
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.65rem;
+}
+
+/* Card individual — índice/glossário da Biblioteca (biblioteca/index.html,
+   55 artigos). Título + tag de categoria curta, sem descrição: prioriza
+   escaneabilidade de uma lista longa e combina com a busca client-side
+   (js/biblioteca.js), que filtra exatamente pelo texto do .tool-card__title.
+   NÃO é mais compartilhada com a home — ver .tool-row logo abaixo para os
+   cards de ferramenta. flex-direction: column (em vez de row) empilha
+   .tool-card__title e .tool-card__category como 2 linhas em vez de colocá-los
+   lado a lado. */
+.tool-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--text);
+  background: var(--surface);
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+/* Origem de autor (display: flex acima) sempre vence a origem do UA
+   ([hidden] { display: none }), independente de especificidade — sem
+   esta regra, a busca (js/biblioteca.js) marca card.hidden = true mas o
+   card continua visível. Mesmo padrão já usado em .biblioteca-search__empty[hidden],
+   .code-tabs__panel[hidden], .sidebar__accordion-panel[hidden] e .sidebar__overlay[hidden]. */
+.tool-card[hidden] {
+  display: none;
+}
+
+.tool-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.08);
+  transform: translateY(-1px);
+}
+
+.tool-card:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Título do card — sans, semibold, índigo dessaturado (menos "pesado"
+   que --primary; ver --primary-muted em :root, AA: 5.27:1 sobre --surface) */
+.tool-card__title {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--primary-muted);
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+/* Tag de categoria — segunda linha discreta abaixo do título (ex.: "Criação",
+   "Estrutural"). Puramente visual, não é lida pela busca (js/biblioteca.js
+   só consulta .tool-card__title). Empilhada sob o título graças ao
+   flex-direction: column em .tool-card (ver acima). */
+.tool-card__category {
+  margin-top: 0.15rem;
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--muted);
+  line-height: 1.2;
+}
+
+/* ── Card de ferramenta da home (index.html) ─────────────────────────
+   Ícone + (título curto, 1-3 palavras + descrição curta, ≤ ~50 caracteres)
+   empilhados em .tool-row__text. O ícone fica alinhado ao topo à esquerda;
+   o título costuma caber em 1 linha e a descrição pode quebrar em até
+   2 linhas — sem truncar com "…". */
+.tool-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--text);
+  background: var(--surface);
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+/* Origem de autor (display: flex acima) sempre vence a origem do UA
+   ([hidden] { display: none }) — mesmo footgun documentado em .tool-card[hidden]
+   logo acima. .tool-row nunca havia sido filtrado até a busca da home
+   (js/main.js, bloco `if (buscaHomeInput)`) passar a tocar `.hidden` aqui. */
+.tool-row[hidden] {
+  display: none;
+}
+
+.tool-row:hover {
+  border-color: var(--primary);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.08);
+  transform: translateY(-1px);
+}
+
+.tool-row:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Glifo SVG à esquerda — monocromático, herda currentColor. Um pequeno
+   margin-top alinha o ícone visualmente com a primeira linha do título. */
+.tool-row__icon {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+  color: var(--primary);
+}
+
+/* Envolve título + descrição para empilhá-los em coluna ao lado do ícone.
+   Gap reduzido (era 0.2rem) agora que o título é curto e cabe em 1 linha
+   — aproxima visualmente título e descrição. */
+.tool-row__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+/* Título do card da home — sans, semibold, índigo dessaturado (ver
+   --primary-muted em :root; menos "pesado" que --primary, AA: 5.27:1
+   sobre --surface) */
+.tool-row__title {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--primary-muted);
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+/* Descrição curta (≤ ~50 caracteres) — menor e discreta, quebra em até
+   2 linhas sem truncar. */
+.tool-row__desc {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+/* ── Resultados de artigos da Biblioteca na busca da home ────────────
+   Injetado/filtrado por js/main.js (bloco `if (buscaHomeInput)`) a partir
+   de BIBLIOTECA_CATEGORIES. Escondido por padrão via [hidden] (elemento
+   <section>, display block nativo — não precisa de override [hidden]).
+   Reaproveita .tool-grid/.tool-card já estilizados para o índice da
+   Biblioteca (ver acima). */
+.home-biblioteca-resultados {
+  margin-bottom: 2.75rem;
+}
+
+.home-biblioteca-resultados__title {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin: 0 0 1rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.home-biblioteca-resultados__title::before {
+  content: "// ";
+  color: var(--primary);
+  letter-spacing: 0;
+  font-weight: 400;
+}
+
+/* Mensagem "nada encontrado" combinada (ferramentas + artigos) — mesmo
+   padrão visual/semântico de .biblioteca-search__empty. */
+.home-busca__vazio {
+  margin: 0 0 2rem;
+  padding: 0.85rem 1.1rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+/* ================================================================
+   CPF / CNPJ — seções internas da ferramenta
+   ================================================================ */
+
+.tool__section {
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.tool__section:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.tool__section-title {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 1rem;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+/* Fieldset sem estilo padrão */
+.tool__fieldset {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  margin: 0;
+}
+
+.tool__legend {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 0 0.25rem;
+}
+
+.tool__radio-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 0.2rem 0;
+}
+
+.tool__checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+/* Input readonly para exibir documento gerado — mantido mono: exibe dado
+   numérico/técnico (CPF, CNPJ etc.), não texto de prosa. */
+.tool__result-input {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  letter-spacing: 0.05em;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  color: var(--text);
+  cursor: default;
+}
+
+/* Input inline na linha de validação — mantido mono: recebe o mesmo tipo
+   de dado técnico (documento a validar) exibido em .tool__result-input. */
+.tool__input-inline {
+  flex: 1;
+  min-width: 200px;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  padding: 0.575rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+
+.tool__input-inline:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+/* Resultado de validação — mensagem de prosa ("CPF válido"/"inválido"),
+   vai para sans. */
+.result-validar {
+  margin: 0;
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  min-height: 2.5rem;
+}
+
+.result-validar:empty {
+  display: none;
+}
+
+.result-validar--valido {
+  background: var(--success-bg);
+  border: 1px solid #86efac;
+  color: var(--success-fg);
+}
+
+.result-validar--invalido {
+  background: var(--danger-bg);
+  border: 1px solid #fca5a5;
+  color: var(--danger-fg);
+}
+
+.result-validar--neutro {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-weight: 400;
+}
+
+/* ================================================================
+   CARTÃO — ferramenta tools/cartao
+   ================================================================ */
+
+.cartao-aviso {
+  background: #fffbeb;
+  border: 1px solid #fbbf24;
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: #92400e;
+  margin-bottom: 1.5rem;
+  line-height: 1.55;
+}
+
+.cartao-resultado-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.cartao-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* Rótulo de campo ("Bandeira", "Número", "Validade", "CVV") — palavra de
+   prosa, vai para sans; o valor gerado abaixo permanece mono. */
+.cartao-campo__label {
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+}
+
+.cartao-campo__valor {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Mantido mono: exibe o número/dado gerado (ex.: número do cartão),
+   não é texto de prosa. */
+.cartao-campo__valor--mono {
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+}
+
+/* ================================================================
+   CONTA BANCÁRIA — ferramenta tools/conta-bancaria
+   ================================================================ */
+
+.conta-aviso {
+  background: #fffbeb;
+  border: 1px solid #fbbf24;
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: #92400e;
+  margin-bottom: 1.5rem;
+  line-height: 1.55;
+}
+
+.conta-validar-aviso {
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin: 0 0 1rem;
+  line-height: 1.55;
+}
+
+.conta-resultado-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.conta-valid-label {
+  min-width: 5rem;
+}
+
+.conta-valid-input {
+  max-width: 260px;
+}
+
+/* ================================================================
+   CONVERSOR DE MOEDA — ferramenta tools/conversor-moeda
+   ================================================================ */
+
+.conversor-tabela-taxas {
+  margin-top: 1rem;
+}
+
+.conversor-valor-input {
+  max-width: 220px;
+}
+
+.conversor-taxa-grid {
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  margin-top: 1rem;
+}
+
+/* Mantido mono: campo numérico editável (taxa de câmbio), dado técnico. */
+.conversor-taxa-input {
+  width: 100%;
+  max-width: 100%;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  padding: 0.4rem 0.6rem;
+}
+
+.conversor-taxa-input--base {
+  background: var(--bg-subtle);
+  color: var(--muted);
+  cursor: not-allowed;
+  border-color: var(--border);
+}
+
+.conversor-resultado-destaque {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.conversor-aviso-taxa {
+  font-size: 0.8rem;
+  font-style: italic;
+  margin-top: 0.75rem;
+  margin-bottom: 0;
+  color: var(--muted);
+}
+
+/* ================================================================
+   SENHA — ferramenta tools/senha
+   ================================================================ */
+
+/* Rótulo de força ("Fraca"/"Média"/"Forte"/"Muito forte") — palavra de
+   prosa, vai para sans. */
+.senha-forca-badge {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.senha-forca-barra-bg {
+  width: 100%;
+  height: 5px;
+  background: var(--border-soft);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 0.4rem;
+}
+
+.senha-forca-barra {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.senha-forca--fraca      { background: #fee2e2; color: #b91c1c; }
+.senha-forca--media      { background: #fef3c7; color: #92400e; }
+.senha-forca--forte      { background: #d1fae5; color: #065f46; }
+.senha-forca--muito-forte{ background: #dbeafe; color: #1e40af; }
+
+.senha-comprimento-input {
+  width: 5rem;
+}
+
+.senha-range-input {
+  flex: 1;
+  min-width: 120px;
+  max-width: 320px;
+}
+
+.senha-opcoes-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  padding-top: 0.25rem;
+}
+
+.senha-saida {
+  font-size: 1.1rem;
+  letter-spacing: 0.08em;
+}
+
+.senha-forca-wrapper {
+  margin-top: 0.75rem;
+  display: none;
+}
+
+.senha-forca-linha {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.senha-forca-bits {
+  font-size: 0.825rem;
+  color: var(--muted);
+}
+
+/* Mantido mono: exemplo de código/senha inline (a própria classe indica
+   isso — "exemplo-mono"). */
+.exemplo-mono {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-soft);
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* ================================================================
+   ENDEREÇO — ferramenta tools/endereco
+   ================================================================ */
+
+.endereco-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.endereco-bloco {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+/* Rótulo "Endereço 1", "Endereço 2" — texto de prosa, vai para sans. */
+.endereco-bloco__numero {
+  grid-column: 1 / -1;
+  margin: 0 0 0.25rem;
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+}
+
+/* ================================================================
+   TABELA DE INFORMAÇÕES — senha, cep e outras ferramentas
+   ================================================================ */
+
+.info-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  margin: 1rem 0;
+}
+
+.info-table thead tr {
+  background: var(--bg-subtle);
+}
+
+.info-table th {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border: 1px solid var(--border-soft);
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.info-table td {
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--border-soft);
+  vertical-align: top;
+}
+
+.info-table tbody tr:nth-child(even) {
+  background: var(--bg-subtle);
+}
+
+/* ================================================================
+   ESCOPO — ferramenta tools/escopo
+   ================================================================ */
+
+.escopo-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.escopo-campo__label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.escopo-input-nome  { max-width: 480px; }
+.escopo-input-prazo { max-width: 280px; }
+
+.escopo-textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+/* Mantido mono (borderline): textarea de saída do documento de escopo
+   gerado — conteúdo é markdown/texto estruturado destinado a copiar/colar,
+   tratado como artefato textual "de código" no mesmo padrão de .result e
+   .tool__input, embora o conteúdo em si seja mais prosa do que código. */
+.escopo-saida {
+  min-height: 360px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  resize: vertical;
+}
+
+.escopo-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.escopo-lista__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.escopo-lista__input {
+  flex: 1;
+  min-width: 0;
+  max-width: 600px;
+}
+
+.escopo-lista__btn-remover {
+  flex-shrink: 0;
+  background: transparent;
+  color: var(--danger-fg);
+  border: 1px solid var(--danger-fg);
+  border-radius: var(--radius);
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s;
+}
+
+.escopo-lista__btn-remover:hover {
+  background: var(--danger-bg);
+}
+
+.escopo-aviso-vazio {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  background: #fffbeb;
+  border: 1px solid #fbbf24;
+  border-radius: var(--radius);
+  color: #92400e;
+  font-size: 0.875rem;
+}
+
+/* ================================================================
+   SALÁRIO PJ vs CLT — ferramenta tools/salario-pj-clt
+   ================================================================ */
+
+/* Entradas CLT/PJ lado a lado (colapsam em telas estreitas). */
+.salario-entradas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.salario-entrada-grupo {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-subtle);
+  padding: 1rem;
+}
+
+.salario-entrada-grupo__titulo {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  margin: 0 0 0.75rem;
+}
+
+.salario-input--curto {
+  max-width: 200px;
+}
+
+/* Lista dinâmica de benefícios. */
+.salario-beneficios {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.salario-beneficio {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.salario-beneficio__nome {
+  flex: 2;
+  min-width: 160px;
+}
+
+.salario-beneficio__valor {
+  flex: 1;
+  min-width: 110px;
+  max-width: 160px;
+}
+
+.salario-beneficio__aplic {
+  flex-shrink: 0;
+}
+
+.salario-beneficio__remover {
+  flex-shrink: 0;
+  background: transparent;
+  color: var(--danger-fg);
+  border: 1px solid var(--danger-fg);
+  border-radius: var(--radius);
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s;
+}
+
+.salario-beneficio__remover:hover {
+  background: var(--danger-bg);
+}
+
+/* Resultado — colunas comparativas. */
+.salario-colunas {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.salario-colunas--duplo {
+  grid-template-columns: 1fr 1fr;
+}
+
+.salario-coluna {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-subtle);
+  padding: 1rem 1.25rem;
+}
+
+.salario-coluna__titulo {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.salario-linha {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.3rem 0;
+  font-size: 0.875rem;
+}
+
+.salario-linha__label {
+  color: var(--muted);
+}
+
+.salario-linha__valor {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.salario-linha--sub .salario-linha__label,
+.salario-linha--sub .salario-linha__valor {
+  color: var(--text);
+}
+
+.salario-linha--total {
+  margin-top: 0.5rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border);
+  font-size: 1rem;
+}
+
+.salario-linha--total .salario-linha__label {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.salario-linha--total .salario-linha__valor {
+  color: var(--primary);
+}
+
+.salario-diff {
+  margin-top: 1rem;
+  padding: 0.85rem 1.1rem;
+  background: var(--success-bg);
+  border: 1px solid #86efac;
+  border-radius: var(--radius);
+}
+
+.salario-diff__texto {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--success-fg);
+}
+
+@media (max-width: 720px) {
+  .salario-entradas,
+  .salario-colunas--duplo {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ================================================================
+   CALCULADORA DE HORAS TRABALHADAS — ferramenta tools/horas-trabalhadas
+   ================================================================ */
+
+.horas-campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.horas-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.horas-resultado-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 1rem;
+}
+
+/* Reaproveita o layout label/valor já usado em tools/cartao e
+   tools/conta-bancaria (.cartao-campo / .cartao-campo__label /
+   .cartao-campo__valor) para os três resultados desta calculadora. */
+
+.horas-saldo {
+  margin: 0;
+  padding: 0.85rem 1.1rem;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.horas-saldo--positivo {
+  background: var(--success-bg);
+  border: 1px solid #86efac;
+  color: var(--success-fg);
+}
+
+.horas-saldo--negativo {
+  background: var(--danger-bg);
+  border: 1px solid #fca5a5;
+  color: var(--danger-fg);
+}
+
+/* ================================================================
+   BIBLIOTECA — artigos educacionais (design patterns, arquiteturas)
+   ================================================================ */
+
+/* ── Barra de busca da Biblioteca — substitui o hero antigo ──────────
+   Estilo "search-first" (Wikipedia/Docusaurus/Notion): título compacto
+   + input de busca como elemento principal do topo. Filtro 100%
+   client-side — ver js/biblioteca.js. */
+.biblioteca-search {
+  padding: 1.75rem 0 1.5rem;
+  border-bottom: 1px solid var(--border-soft);
+  margin-bottom: 2rem;
+}
+
+/* É o <h1> da página, mas mantido mono deliberadamente: usa o marcador
+   "// " (::before abaixo), o mesmo convênio estilístico do
+   .catalog__category-title — tratado como exceção explícita por design. */
+.biblioteca-search__titulo {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0 0 0.9rem;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+
+.biblioteca-search__titulo::before {
+  content: "// ";
+  color: var(--primary);
+  font-weight: 400;
+}
+
+.biblioteca-search__field {
+  position: relative;
+  max-width: 480px;
+}
+
+.biblioteca-search__icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.biblioteca-search__input {
+  width: 100%;
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  padding: 0.65rem 0.9rem 0.65rem 2.35rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+
+.biblioteca-search__input::placeholder {
+  color: var(--muted);
+}
+
+.biblioteca-search__input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+/* Mensagem "nenhum artigo encontrado" — escondida por padrão via [hidden] */
+.biblioteca-search__empty {
+  margin: 1.5rem 0 0;
+  padding: 0.85rem 1.1rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.biblioteca-search__empty[hidden] {
+  display: none;
+}
+
+/* ── Layout do artigo ─────────────────────────────────────────── */
+/*
+  Direção "wiki moderno" (Wikipedia/Docusaurus/Notion): coluna de leitura
+  com largura confortável (originalmente ~45rem/720px, ligeiramente acima
+  do ideal teórico de 65-75ch para acomodar os headings mono, que são
+  mais largos por caractere que o corpo em sans) centralizada dentro do
+  .container (960px) — decisão deliberada de manter cabeçalho, prosa E
+  blocos de código na MESMA coluna (em vez de blocos de código "quebrando"
+  mais largos que o texto) para reduzir risco de regressão visual nos 55
+  artigos existentes sem poder revisar cada um manualmente.
+  [Rodada B] largura elevada de ~720px para 760px.
+*/
+.artigo {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+/* Wrapper injetado via JS (js/biblioteca.js) em volta de .artigo, quando o
+   artigo tem >=1 <h2> e o sumário (TOC) é construído em runtime. Nenhum dos
+   55 index.html contém esta div — ela só existe depois do JS rodar.
+   Abaixo do breakpoint de 1360px é apenas um bloco (a TOC some via
+   `.artigo-toc { display: none }`), então .artigo permanece full-width
+   standalone, como antes desta feature existir. */
+.artigo-layout {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+/* Sumário (TOC) do artigo — companheiro discreto da leitura, sem peso
+   visual (sem card, sem sombra): só uma borda fina à esquerda para separar
+   da prosa e texto pequeno/muted. Escondido abaixo do breakpoint de
+   duas colunas (ver @media (min-width: 1360px) mais abaixo). */
+.artigo-toc {
+  display: none;
+}
+
+.artigo-toc__title {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin: 0 0 0.75rem;
+}
+
+.artigo-toc ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-left: 2px solid var(--border);
+}
+
+.artigo-toc li {
+  margin: 0;
+}
+
+.artigo-toc__link {
+  display: block;
+  padding: 0.35rem 0 0.35rem 0.9rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--muted);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  margin-left: -2px;
+}
+
+.artigo-toc__link:hover,
+.artigo-toc__link:focus-visible {
+  color: var(--primary);
+}
+
+.artigo-toc__link--active {
+  color: var(--primary);
+  border-left-color: var(--primary);
+  font-weight: 600;
+}
+
+/* ── Duas colunas (artigo + TOC) — só em telas bem largas ───────────────
+   Aritmética do breakpoint: rail da sidebar (--sidebar-width: 260px, fixo
+   a partir de 900px) + .container--article-toc no seu max-width
+   (--max-width-article-toc: 1060px) = 1320px sem NENHUMA folga. 1360px dá
+   ~40px de respiro real (dividido pelas margens automáticas do
+   .artigo-layout), suficiente para a coluna de leitura (760px) + TOC
+   (200-220px) não colidirem com a borda da viewport nem com a sidebar. */
+@media (min-width: 1360px) {
+  .artigo-layout {
+    max-width: none;
+    display: grid;
+    grid-template-columns: minmax(0, 760px) minmax(200px, 220px);
+    gap: 2.75rem;
+    align-items: start;
+  }
+
+  .artigo-toc {
+    display: block;
+    position: sticky;
+    top: calc(var(--header-h) + 1.75rem);
+  }
+}
+
+.artigo__header {
+  padding: 2rem 0 2rem;
+  border-bottom: 1px solid var(--border-soft);
+  margin-bottom: 2.25rem;
+}
+
+.artigo__breadcrumb {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin: 0 0 0.75rem;
+}
+
+.artigo__breadcrumb a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.artigo__breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.artigo__breadcrumb-sep {
+  margin: 0 0.4rem;
+  color: var(--border);
+}
+
+/* Tag de categoria — eyebrow de prosa (ex.: "Criacional"), vai para sans */
+.artigo__categoria {
+  display: inline-block;
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--primary);
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 4px;
+  padding: 0.2rem 0.55rem;
+  margin-bottom: 0.8rem;
+}
+
+.artigo__titulo {
+  font-family: var(--font-sans);
+  font-size: 2.15rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: var(--ink);
+}
+
+.artigo__subtitulo {
+  font-size: 0.9375rem;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.65;
+  max-width: 700px;
+}
+
+.artigo__corpo {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Seção do artigo — respiro generoso entre blocos de conteúdo */
+.artigo__secao {
+  padding: 2.25rem 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.artigo__secao:last-child {
+  border-bottom: none;
+}
+
+/* Headings do artigo — headings de prosa, vão para sans */
+.artigo__secao h2 {
+  font-family: var(--font-sans);
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 0 0 1rem;
+  color: var(--ink);
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+}
+
+.artigo__secao h3 {
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 1.25rem 0 0.5rem;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.artigo__secao p {
+  margin: 0 0 0.85rem;
+  line-height: 1.8;
+}
+
+.artigo__secao p:last-child {
+  margin-bottom: 0;
+}
+
+/* Links de prosa dentro do corpo do artigo — índigo dessaturado
+   (--primary-muted) em vez de --primary: menos saturado/pesado em meio
+   ao texto corrido, mantendo AA (5.27:1 sobre --surface / 4.87:1 sobre
+   --paper, ambos > 4.5:1 exigido para texto normal). */
+.artigo__secao a {
+  color: var(--primary-muted);
+}
+
+.artigo__secao a:hover {
+  color: var(--primary-hover);
+}
+
+.artigo__secao ul,
+.artigo__secao ol {
+  margin: 0 0 0.85rem;
+  padding-left: 1.5rem;
+  line-height: 1.8;
+}
+
+.artigo__secao li {
+  margin-bottom: 0.35rem;
+}
+
+.artigo__lista-pros li::marker {
+  color: var(--success-fg);
+}
+
+.artigo__lista-contras li::marker {
+  color: var(--danger-fg);
+}
+
+/* Destaque — borda esquerda indigo */
+.artigo__destaque {
+  background: #eef2ff;
+  border-left: 3px solid var(--primary);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 1rem 1.25rem;
+  margin: 0 0 0.85rem;
+  font-size: 0.9375rem;
+  line-height: 1.75;
+  color: var(--text);
+}
+
+/* Aviso — borda esquerda âmbar */
+.artigo__aviso {
+  background: #fffbeb;
+  border-left: 3px solid #f59e0b;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 1rem 1.25rem;
+  margin: 0 0 0.85rem;
+  font-size: 0.9375rem;
+  line-height: 1.75;
+  color: #78350f;
+}
+
+.artigo__aviso strong {
+  color: #92400e;
+}
+
+/* ── Code inline — mantido mono: código real, não heading/label ── */
+.artigo__secao code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-soft);
+  border-radius: 4px;
+  padding: 0.12em 0.4em;
+  color: var(--text);
+}
+
+/* ================================================================
+   PAINEL-ASSINATURA — code-tabs e code-bloco
+   Fundo escuro (#0e1320), texto claro, esmeralda EXCLUSIVO na chrome.
+   Contrato JS preservado: .code-tabs__panel[hidden]{display:none}
+   e .code-tabs__tab--ativa controla o estado visual da aba.
+   ================================================================ */
+
+/* Contêiner do grupo de abas */
+.code-tabs {
+  border: 1px solid rgba(30, 45, 70, 0.8);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin: 1.5rem 0;
+  background: var(--code-bg);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+}
+
+/* Barra de abas — chrome do painel */
+.code-tabs__tabs {
+  display: flex;
+  align-items: flex-end;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 0.375rem 0.5rem 0;
+  gap: 0.125rem;
+  overflow-x: auto;
+}
+
+/* Botão de aba — mantido mono: rótulo de linguagem (ex.: "JavaScript",
+   "cURL") dentro do chrome do próprio bloco de código, não um heading. */
+.code-tabs__tab {
+  padding: 0.4rem 1rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius) var(--radius) 0 0;
+  color: rgba(230, 233, 240, 0.5);   /* AA: ~4:1 sobre code-bg #0e1320 */
+  cursor: pointer;
+  transition: color 0.12s, background 0.12s;
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.code-tabs__tab:hover {
+  color: rgba(230, 233, 240, 0.75);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.code-tabs__tab:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+/* Aba ATIVA — esmeralda (signal) — único local onde --signal aparece */
+.code-tabs__tab--ativa {
+  color: var(--signal);
+  background: rgba(16, 185, 129, 0.1);
+  border-bottom: 2px solid var(--signal);
+  margin-bottom: -1px;
+}
+
+/* Painel de código — contrato JS: [hidden] oculta o painel */
+.code-tabs__panel {
+  margin: 0;
+}
+
+.code-tabs__panel[hidden] {
+  display: none;
+}
+
+.code-tabs__panel pre {
+  margin: 0;
+  padding: 1.25rem 1.5rem;
+  background: var(--code-bg);
+  overflow-x: auto;
+  font-size: 0.875rem;
+  line-height: 1.72;
+}
+
+.code-tabs__panel pre code {
+  font-family: var(--font-mono);
+  color: var(--code-text);
+  background: transparent;
+  white-space: pre;
+}
+
+/* ── code-bloco: diagrama / ASCII sem abas ─────────────────────── */
+/*
+  Mesmo tratamento escuro do code-tabs.
+  ::before adiciona uma barra de chrome com marcador esmeralda.
+*/
+.code-bloco {
+  margin: 1.5rem 0;
+  border: 1px solid rgba(30, 45, 70, 0.8);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--code-bg);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+}
+
+/* Barra de cabeçalho decorativa */
+.code-bloco::before {
+  content: "// diagrama";
+  display: block;
+  padding: 0.4rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  color: rgba(16, 185, 129, 0.65);   /* esmeralda — chrome deste painel */
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.code-bloco pre {
+  margin: 0;
+  padding: 1.25rem 1.5rem;
+  background: var(--code-bg);
+  overflow-x: auto;
+  font-size: 0.875rem;
+  line-height: 1.68;
+}
+
+.code-bloco pre code {
+  font-family: var(--font-mono);
+  color: var(--code-text);
+  background: transparent;
+  white-space: pre;
+}
+
+/* ── Padrões relacionados ────────────────────────────────────── */
+
+.artigo__padroes-relacionados {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Tags de padrões relacionados — nomes de prosa em formato de link/nav
+   pill (ex.: "Observer"), vai para sans */
+.artigo__padroes-relacionados li a {
+  display: inline-block;
+  padding: 0.3rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-decoration: none;
+  background: var(--bg-subtle);
+  transition: border-color 0.12s, color 0.12s;
+}
+
+.artigo__padroes-relacionados li a:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* Padrão ainda sem artigo — não clicável */
+/* Mesma tratativa de .artigo__padroes-relacionados li a — sans, por
+   consistência visual (pill de nome de padrão ainda sem artigo) */
+.artigo__padrao-pendente {
+  display: inline-block;
+  padding: 0.3rem 0.8rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 20px;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  color: var(--muted);
+  background: var(--bg-subtle);
+  font-style: italic;
+  cursor: default;
+}
+
+/* Margem de conveniência */
+.artigo__secao .mt-1 {
+  margin-top: 1rem;
+}
+
+/* Figura com diagrama SVG inline */
+.artigo__figura {
+  margin: 1.5rem 0;
+  text-align: center;
+}
+.artigo__figura figcaption {
+  font-size: 0.85rem;
+  color: #59616e;
+  margin-top: 0.5rem;
+}
+
+/* ================================================================
+   RESPONSIVIDADE — mobile (≤ 640 px)
+   ================================================================ */
+
+@media (max-width: 640px) {
+  .container {
+    padding: 1.5rem 1rem;
+  }
+
+  .nav {
+    padding: 0.75rem 1rem;
+  }
+
+  .nav__links a {
+    padding: 0.3rem 0.45rem;
+    font-size: 0.825rem;
+  }
+
+  .nav__lang {
+    padding: 0.3rem 0.2rem;
+    font-size: 0.775rem;
+  }
+
+  .nav__lang-link {
+    padding: 0.15rem 0.2rem;
+  }
+
+  .hero {
+    padding: 2.5rem 1.25rem 2.25rem;
+    border-radius: var(--radius);
+    margin: 1.25rem 0 2rem;
+  }
+
+  .hero__title,
+  .hero h1 {
+    font-size: 1.85rem;
+  }
+
+  .hero__sub {
+    font-size: 0.875rem;
+  }
+
+  .tool {
+    padding: 1.25rem 1.1rem 1.5rem;
+  }
+
+  .tool-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .biblioteca-search__titulo {
+    font-size: 0.95rem;
+  }
+
+  .artigo__titulo {
+    font-size: 1.65rem;
+  }
+
+  .artigo__secao h2 {
+    font-size: 1.2rem;
+  }
+
+  .artigo__secao h3 {
+    font-size: 0.9rem;
+  }
+
+  .code-tabs__tabs {
+    padding: 0.25rem 0.25rem 0;
+  }
+
+  .code-tabs__tab {
+    padding: 0.4rem 0.65rem;
+    font-size: 0.72rem;
+  }
+
+  .code-tabs__panel pre,
+  .code-bloco pre {
+    font-size: 0.8rem;
+    padding: 1rem;
+  }
+
+  .cartao-resultado-grid,
+  .conta-resultado-grid,
+  .endereco-bloco {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ================================================================
+   REDUCED MOTION — neutraliza animações / transições
+   ================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ================================================================
+   UUID — ferramenta tools/uuid
+   Lista de UUIDs gerados: cada linha = input readonly + botão copiar.
+   ================================================================ */
+
+.uuid-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.uuid-item {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.uuid-item__input {
+  flex: 1;
+  min-width: 0;
+}
+
+.uuid-item__copy {
+  flex-shrink: 0;
+}
+
+/* ================================================================
+   CONVERSOR DE CASE — ferramenta tools/conversor-case
+   Grade de resultados: rótulo do formato + input readonly + copiar.
+   ================================================================ */
+
+.case-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.case-linha {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.case-linha__label {
+  flex: 0 0 8.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.case-linha__input {
+  flex: 1;
+  min-width: 180px;
+}
+
+.case-linha__copy {
+  flex-shrink: 0;
+}
+
+@media (max-width: 560px) {
+  .case-linha__label {
+    flex-basis: 100%;
+  }
+}
+
+/* ================================================================
+   GERADOR DE HASH — ferramenta tools/hash
+   Lista de hashes: rótulo do algoritmo + input readonly + copiar.
+   ================================================================ */
+
+.hash-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.hash-item {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.hash-item__label {
+  flex: 0 0 5.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.hash-item__input {
+  flex: 1;
+  min-width: 180px;
+  font-size: 0.8125rem;
+  letter-spacing: 0.02em;
+}
+
+.hash-item__copy {
+  flex-shrink: 0;
+}
+
+@media (max-width: 560px) {
+  .hash-item__label {
+    flex-basis: 100%;
+  }
+}
+
+/* ================================================================
+   REGEX TESTER — ferramenta tools/regex
+   ================================================================ */
+
+.regex-pattern-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.regex-delim {
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  color: var(--muted);
+}
+
+.regex-pattern-input {
+  min-width: 0;
+}
+
+.regex-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.regex-flag-hint {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+/* Área de destaque dos matches — preserva quebras/espaços do texto do usuário. */
+.regex-highlight {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.65;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  min-height: 3rem;
+}
+
+.regex-highlight:empty::before {
+  content: "O texto com os destaques aparecerá aqui.";
+  color: var(--muted);
+}
+
+.regex-match {
+  background: #fde68a;
+  color: var(--ink);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+/* ================================================================
+   DIFF DE TEXTO — ferramenta tools/diff
+   ================================================================ */
+
+.diff-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.diff-inputs__col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.diff-output {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  overflow: auto;
+}
+
+.diff-output:empty {
+  display: none;
+}
+
+/* Modo por linha */
+.diff-line {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.05rem 0.6rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.diff-line__sign {
+  flex: 0 0 1ch;
+  color: var(--muted);
+  user-select: none;
+}
+
+.diff-line__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.diff-line--add {
+  background: var(--success-bg);
+  color: var(--success-fg);
+}
+
+.diff-line--del {
+  background: var(--danger-bg);
+  color: var(--danger-fg);
+}
+
+/* Modo por palavra */
+.diff-inline {
+  padding: 0.75rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.diff-word {
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+.diff-word--add {
+  background: var(--success-bg);
+  color: var(--success-fg);
+  text-decoration: underline;
+}
+
+.diff-word--del {
+  background: var(--danger-bg);
+  color: var(--danger-fg);
+  text-decoration: line-through;
+}
+
+@media (max-width: 560px) {
+  .diff-inputs {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ================================================================
+   GERADOR DE QR CODE — ferramenta tools/qrcode
+   ================================================================ */
+
+.qr-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.qr-canvas {
+  max-width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #ffffff;
+}
+
+.qr-info {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* ================================================================
+   Hint inline — texto auxiliar/secundário ao lado de botões de ação
+   (ex.: indicador de direção detectada nos conversores CSV/YAML).
+   ================================================================ */
+.tool__hint {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  align-self: center;
+}
+
+/* ================================================================
+   CSS Gradient Generator — UI de stops de cor + preview ao vivo.
+   Exceção de CSS por ferramenta (UI atípica), conforme ROADMAP §1.3(c).
+   ================================================================ */
+.cg-stops {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.cg-stop {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.cg-stop__color {
+  width: 48px;
+  height: 38px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.cg-stop__pos {
+  max-width: 110px;
+  min-width: 80px;
+}
+
+.cg-stop__remove {
+  margin-left: auto;
+}
+
+.cg-preview {
+  width: 100%;
+  min-height: 180px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin: 0.75rem 0;
+  background: #ffffff;
+}
+
+.cg-range {
+  width: 100%;
+  max-width: 320px;
+}
+
+/* ================================================================
+   Grid de checkboxes — seleção múltipla compacta
+   (ex.: linguagens/ferramentas no gerador de .gitignore).
+   ================================================================ */
+.tool__checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.4rem 1rem;
+  margin-top: 0.5rem;
+}
+
+/* ================================================================
+   LOTE 4 — cor, contador-caracteres, mock-data, cidr,
+   json-para-typescript. Classes específicas reutilizáveis.
+   ================================================================ */
+
+/* Subtítulo de seção dentro de uma ferramenta com dois blocos. */
+.tool__subtitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 0.25rem;
+}
+
+/* Input numérico compacto (R/G/B, faixas, quantidade, prefixo). */
+.cor-num {
+  width: 88px;
+  font-family: var(--font-mono);
+}
+
+/* ---- Conversor de cor ---- */
+.cor-swatch {
+  width: 100%;
+  min-height: 72px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: #4f46e5;
+  margin-bottom: 1rem;
+}
+
+.cor-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.cor-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.cor-hex-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cor-picker {
+  width: 44px;
+  height: 38px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.cor-triple {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.cor-triple .cor-num {
+  width: 100%;
+  min-width: 0;
+}
+
+/* ---- Contraste WCAG ---- */
+.cor-contrast-result {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+  align-items: stretch;
+}
+
+.cor-ct-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  justify-content: center;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #ffffff;
+  color: #1a1a1a;
+  text-align: center;
+}
+
+.cor-ct-preview__big {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.cor-ct-preview__small {
+  font-size: 0.9rem;
+}
+
+.cor-ct-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cor-ratio {
+  font-size: 2rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--text);
+}
+
+.cor-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* ---- Contador de caracteres ---- */
+.cc-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.cc-stat {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.cc-stat__num {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--text);
+}
+
+.cc-stat__label {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.cc-limits {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 1rem;
+}
+
+.cc-limit {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-size: 0.85rem;
+}
+
+.cc-limit__label {
+  color: var(--text);
+}
+
+.cc-limit__status {
+  font-family: var(--font-mono);
+  color: var(--success-fg);
+}
+
+.cc-limit--over {
+  background: var(--danger-bg);
+  border-color: #fca5a5;
+}
+
+.cc-limit--over .cc-limit__status {
+  color: var(--danger-fg);
+  font-weight: 600;
+}
+
+
+/* Preview do editor de Markdown (tools/markdown) — caixa de conteúdo fluido.
+   Reaproveita as variáveis de tema; os elementos internos (h1-h6, p, ul, ol,
+   blockquote, pre, code) herdam o estilo global de conteúdo. */
+.md-preview {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  overflow: auto;
+  min-height: 160px;
+}
+.md-preview > :first-child { margin-top: 0; }
+.md-preview > :last-child { margin-bottom: 0; }
+
+/* Preview do card de compartilhamento (tools/meta-tags) — visual client-side,
+   montado via createElement/textContent (sem innerHTML). */
+.mt-card {
+  max-width: 480px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg-subtle);
+}
+.mt-card__img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1.91 / 1;
+  object-fit: cover;
+  background: var(--border);
+}
+.mt-card__body {
+  padding: 0.75rem 1rem;
+}
+.mt-card__domain {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+.mt-card__title {
+  display: block;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.25rem;
+}
+.mt-card__desc {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}

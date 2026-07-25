@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conversor de Moeda — Dev Helper</title>
+  <meta name="description" content="Conversor de moeda offline com taxas editáveis. Converta entre BRL, USD, EUR, GBP, JPY, ARS, CAD, CHF e outras moedas usando taxas manuais — sem API externa." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="en" href="../../en/tools/conversor-moeda/" />
+
+  <!--
+    AdSense — biblioteca carregada UMA vez por página.
+    Substitua ca-pub-0000000000000000 pelo seu pub-ID real antes do deploy.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../../biblioteca/">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Conversor de Moeda</h1>
+        <p>Converta valores entre moedas usando taxas que você mesmo define — sem consulta a nenhuma API externa.</p>
+      </header>
+
+      <!-- AVISO DE COMPLIANCE — visível e destacado -->
+      <div class="conta-aviso" role="note" aria-label="Aviso importante">
+        <strong>Aviso:</strong> as taxas exibidas são <strong>ilustrativas e inseridas manualmente</strong>. Elas <strong>não refletem cotações de mercado em tempo real</strong> e podem estar desatualizadas. Esta ferramenta é destinada <strong>exclusivamente a fins de estimativa, teste de software e aprendizado</strong>. Não utilize os resultados para transações financeiras, câmbio real ou tomada de decisões de negócio.
+      </div>
+
+      <!-- ── SEÇÃO: CONVERSOR ─────────────────────────────────────────────── -->
+      <section class="tool__section">
+        <h2 class="tool__section-title">Conversão</h2>
+
+        <div class="tool__controls">
+
+          <!-- Valor e moedas -->
+          <div class="tool__actions">
+            <label class="tool__label" for="moeda-valor">Valor:</label>
+            <input
+              id="moeda-valor"
+              class="tool__input-inline conversor-valor-input"
+              type="number"
+              min="0"
+              step="any"
+              placeholder="Ex.: 100"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+
+          <div class="tool__actions">
+            <label class="tool__label" for="moeda-origem">De:</label>
+            <select id="moeda-origem" class="tool__select"></select>
+
+            <button id="btn-inverter" class="button--secondary" type="button" title="Inverter moedas">&#8646; Inverter</button>
+
+            <label class="tool__label" for="moeda-destino">Para:</label>
+            <select id="moeda-destino" class="tool__select"></select>
+          </div>
+
+          <div class="tool__actions">
+            <button id="btn-converter" class="button" type="button">Converter</button>
+          </div>
+        </div>
+
+        <!-- Resultado da conversão -->
+        <div class="tool__output" id="conversor-resultado" hidden>
+          <div class="conta-resultado-grid">
+            <div class="cartao-campo">
+              <span class="cartao-campo__label">Valor original</span>
+              <span id="out-valor-original" class="cartao-campo__valor cartao-campo__valor--mono"></span>
+            </div>
+            <div class="cartao-campo">
+              <span class="cartao-campo__label">Taxa utilizada</span>
+              <span id="out-taxa" class="cartao-campo__valor cartao-campo__valor--mono"></span>
+            </div>
+            <div class="cartao-campo">
+              <span class="cartao-campo__label">Resultado</span>
+              <span id="out-resultado" class="cartao-campo__valor cartao-campo__valor--mono conversor-resultado-destaque"></span>
+            </div>
+          </div>
+
+          <p id="out-aviso-taxa" class="conta-validar-aviso conversor-aviso-taxa"></p>
+
+          <div class="tool__actions tool__actions--mt">
+            <button id="btn-copiar-resultado" class="button--secondary" type="button">Copiar resultado</button>
+          </div>
+        </div>
+
+        <!-- Mensagem de erro de entrada -->
+        <p id="conversor-erro" class="error-msg" role="alert" hidden></p>
+      </section>
+
+      <!-- ── SEÇÃO: TAXAS EDITÁVEIS ──────────────────────────────────────── -->
+      <section class="tool__section">
+        <h2 class="tool__section-title">Taxas de câmbio (editáveis)</h2>
+
+        <p class="conta-validar-aviso">
+          As taxas abaixo são <strong>ilustrativas</strong> e representam uma aproximação grosseira dos valores históricos — não são cotações de mercado ao vivo. Edite livremente para usar os valores que precisar. Todas as taxas são relativas ao <strong>Dólar Americano (USD)</strong> como moeda-base (1 USD = X unidades da moeda).
+        </p>
+
+        <div class="tool__actions tool__actions--mt">
+          <button id="btn-restaurar-taxas" class="button--secondary" type="button">Restaurar taxas padrão</button>
+        </div>
+
+        <div id="tabela-taxas" class="conversor-tabela-taxas"></div>
+      </section>
+
+    </article>
+
+    <!-- Bloco de anúncio — abaixo da área da ferramenta -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="8888888888"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Conteúdo real — exigido pelo AdSense -->
+    <section>
+      <h2>O que é taxa de câmbio?</h2>
+      <p>
+        A <strong>taxa de câmbio</strong> (ou câmbio) é o preço de uma moeda expresso em termos de outra.
+        Por exemplo, se a taxa USD/BRL é 5,00, isso significa que 1 dólar americano equivale a 5 reais
+        brasileiros. As taxas de câmbio variam continuamente nos mercados financeiros internacionais, influenciadas
+        por fatores como política monetária dos bancos centrais, inflação, balança comercial, fluxo de capital
+        estrangeiro e expectativas de mercado.
+      </p>
+      <p>
+        Existem dois tipos principais de taxa de câmbio:
+      </p>
+      <ul>
+        <li>
+          <strong>Taxa nominal:</strong> o preço direto de troca entre duas moedas, sem considerar o poder de
+          compra relativo. É o valor que você vê em sites de câmbio e plataformas financeiras.
+        </li>
+        <li>
+          <strong>Taxa real:</strong> a taxa nominal ajustada pela diferença de inflação entre os dois países.
+          Reflete o poder de compra real de uma moeda em relação à outra.
+        </li>
+      </ul>
+
+      <h2>Como funciona o conversor de moeda-base</h2>
+      <p>
+        Esta ferramenta usa a abordagem de <strong>moeda-base única</strong>, onde todas as taxas são expressas
+        em relação ao Dólar Americano (USD). Para converter de qualquer moeda A para qualquer moeda B, o cálculo
+        realizado é:
+      </p>
+      <p>
+        <code>resultado = valor &times; (taxa_B / taxa_A)</code>
+      </p>
+      <p>
+        Onde <code>taxa_A</code> e <code>taxa_B</code> representam quantas unidades de cada moeda equivalem
+        a 1 USD. Por exemplo, se 1 USD = 5,00 BRL e 1 USD = 0,92 EUR, então para converter 100 BRL para EUR:
+      </p>
+      <p>
+        <code>100 &times; (0,92 / 5,00) = 18,40 EUR</code>
+      </p>
+      <p>
+        Essa abordagem é simples, extensível e evita a necessidade de manter uma tabela separada para cada
+        par de moedas possível.
+      </p>
+
+      <h2>Por que as taxas são manuais e não atualizadas automaticamente?</h2>
+      <p>
+        Esta ferramenta é <strong>100% estática</strong> — não há servidor de aplicação, banco de dados nem
+        chamada a APIs externas. Todo o processamento ocorre no próprio navegador. Isso traz vantagens
+        significativas:
+      </p>
+      <ul>
+        <li><strong>Funcionamento offline:</strong> a ferramenta funciona mesmo sem conexão à internet após o carregamento inicial da página.</li>
+        <li><strong>Sem dependência externa:</strong> não está sujeita a limites de requisições, chaves de API pagas ou indisponibilidade de serviços de câmbio.</li>
+        <li><strong>Adequada para testes:</strong> desenvolvedores podem definir taxas arbitrárias para testar sistemas de e-commerce, ERPs e outros softwares que realizam conversões de moeda.</li>
+      </ul>
+      <p>
+        A contrapartida é que as taxas precisam ser atualizadas manualmente pelo usuário. Para cotações
+        de mercado em tempo real, recomendamos consultar serviços oficiais como o
+        <strong>Banco Central do Brasil</strong> (bcb.gov.br), o site do seu banco ou plataformas financeiras
+        dedicadas.
+      </p>
+
+      <h2>Moedas disponíveis e seus códigos ISO 4217</h2>
+      <p>
+        O padrão <strong>ISO 4217</strong> define códigos de três letras para identificar moedas
+        internacionalmente. Este é o padrão usado em sistemas bancários, ERPs e plataformas de câmbio globais.
+        As moedas disponíveis nesta ferramenta são:
+      </p>
+      <ul>
+        <li><strong>BRL</strong> — Real Brasileiro (Brasil)</li>
+        <li><strong>USD</strong> — Dólar Americano (Estados Unidos)</li>
+        <li><strong>EUR</strong> — Euro (Zona do Euro)</li>
+        <li><strong>GBP</strong> — Libra Esterlina (Reino Unido)</li>
+        <li><strong>JPY</strong> — Iene Japonês (Japão)</li>
+        <li><strong>ARS</strong> — Peso Argentino (Argentina)</li>
+        <li><strong>CAD</strong> — Dólar Canadense (Canadá)</li>
+        <li><strong>CHF</strong> — Franco Suíço (Suíça)</li>
+        <li><strong>CNY</strong> — Yuan Renminbi (China)</li>
+        <li><strong>MXN</strong> — Peso Mexicano (México)</li>
+      </ul>
+
+      <h2>Perguntas frequentes (FAQ)</h2>
+
+      <h3>As taxas exibidas são confiáveis para transações reais?</h3>
+      <p>
+        <strong>Não.</strong> As taxas são valores ilustrativos inseridos manualmente como ponto de partida.
+        Elas não refletem cotações de mercado em tempo real e podem estar significativamente desatualizadas.
+        Para qualquer transação financeira real — câmbio em banco, corretora, viagem internacional ou
+        transferência internacional — consulte sempre as taxas oficiais do seu banco ou de uma instituição
+        financeira autorizada pelo Banco Central.
+      </p>
+
+      <h3>Como eu atualizo as taxas para valores mais próximos da realidade?</h3>
+      <p>
+        Você pode editar qualquer taxa diretamente nos campos da seção "Taxas de câmbio (editáveis)".
+        Consulte um site confiável de câmbio (como o Banco Central do Brasil em bcb.gov.br, ou o Google
+        Finanças) para obter a cotação atual de 1 USD para cada moeda, e insira os valores nos campos
+        correspondentes. As conversões serão recalculadas automaticamente.
+      </p>
+
+      <h3>As taxas que eu editei ficam salvas?</h3>
+      <p>
+        Só durante a sessão atual da página. Ao recarregar, as taxas retornam aos valores padrão
+        ilustrativos — então anote ou copie o resultado antes de sair, se precisar dele depois.
+      </p>
+
+      <h3>Por que o resultado tem muitas casas decimais?</h3>
+      <p>
+        A divisão de taxas de câmbio frequentemente resulta em números com muitas casas decimais, especialmente
+        para moedas com valores muito discrepantes (como JPY ou ARS em relação ao USD). A ferramenta exibe
+        até 4 casas decimais para o resultado e até 6 para a taxa utilizada, de forma a preservar a precisão
+        para casos de uso técnico, como o teste de sistemas de arredondamento financeiro.
+      </p>
+
+      <h3>Por que o USD aparece com taxa 1,000000?</h3>
+      <p>
+        O Dólar Americano é a moeda-base do conversor — todas as outras taxas são expressas como
+        "quantas unidades desta moeda equivalem a 1 USD". Portanto, a taxa do USD é sempre 1,000000 por
+        definição e não pode ser alterada.
+      </p>
+
+      <h3>Posso usar esta ferramenta para testar sistemas de e-commerce?</h3>
+      <p>
+        Sim, esse é um dos casos de uso principais. Ao desenvolver ou testar sistemas que realizam conversão
+        de preços entre moedas — lojas virtuais, ERPs, sistemas de marketplace internacional — você pode
+        definir taxas arbitrárias e verificar o comportamento do seu código. As taxas editáveis permitem
+        simular cenários extremos, como taxas muito altas (ARS) ou valores fracionários muito pequenos (JPY
+        a BRL), para validar arredondamentos, exibição de valores e lógica de negócio.
+      </p>
+
+      <h3>O que significa "taxa de câmbio bid, ask e mid"?</h3>
+      <p>
+        No mercado de câmbio real, há três preços comuns: o <strong>bid</strong> (preço de compra — o que
+        o banco paga pela moeda estrangeira), o <strong>ask</strong> (preço de venda — o que o banco cobra),
+        e o <strong>mid</strong> (ponto médio entre bid e ask, usado como referência). Esta ferramenta usa
+        uma taxa única (simplificação), equivalente ao mid rate, sem spread bancário. Em transações reais,
+        o spread (diferença entre bid e ask) é o lucro do intermediário.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/tools/conversor-moeda.js"></script>
+</body>
+</html>

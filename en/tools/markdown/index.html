@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Markdown Editor and Preview — Dev Helper</title>
+  <meta name="description" content="Write Markdown and see the live preview, with safe rendering (no XSS risk) directly in your browser. Supports headings, bold, italics, code, lists, links, quotes and more." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../tools/markdown/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../../../biblioteca/">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Markdown Editor / Preview</h1>
+        <p>Write <strong>Markdown</strong> and see the result live. The rendering is done <strong>safely</strong>, building elements via the DOM (no <code>innerHTML</code>), so text and links from your content never turn into executable HTML.</p>
+      </header>
+
+      <div class="tool__controls">
+        <label class="tool__label" for="md-input">Markdown</label>
+        <textarea id="md-input" class="tool__input" spellcheck="false" autocorrect="off" autocapitalize="off" rows="14"># Hello, Markdown
+
+This is an **editor** with *live preview* and `inline code`.
+
+- list item
+- another item
+
+1. first
+2. second
+
+> An example quote.
+
+[Link to Dev Helper](https://github.com)
+
+```
+code block
+```
+
+---
+</textarea>
+      </div>
+
+      <section class="tool__output">
+        <label class="tool__label" for="md-preview">Preview</label>
+        <div id="md-preview" class="md-preview" aria-live="polite"></div>
+      </section>
+    </article>
+
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="3636363636"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <section>
+      <h2>What is Markdown?</h2>
+      <p>
+        <strong>Markdown</strong> is a lightweight markup language, created for writing
+        formatted text using a syntax that is simple to read and write. It's widely used in READMEs,
+        documentation, GitHub issues, forums and notes. This editor converts the Markdown into
+        HTML and shows the result immediately alongside it.
+      </p>
+
+      <h2>Supported syntax</h2>
+      <ul>
+        <li><strong>Headings</strong> — from <code>#</code> to <code>######</code> (h1 to h6).</li>
+        <li><strong>Bold</strong> — <code>**text**</code>.</li>
+        <li><strong>Italic</strong> — <code>*text*</code>.</li>
+        <li><strong>Inline code</strong> — <code>`code`</code>.</li>
+        <li><strong>Code blocks</strong> — delimited by three backticks.</li>
+        <li><strong>Lists</strong> — with <code>-</code>/<code>*</code> or numbered (<code>1.</code>).</li>
+        <li><strong>Links</strong> — <code>[text](url)</code>.</li>
+        <li><strong>Quotes</strong> — lines starting with <code>&gt;</code>.</li>
+        <li><strong>Horizontal rule</strong> — <code>---</code>.</li>
+        <li><strong>Paragraphs</strong> — blocks of text separated by a blank line.</li>
+      </ul>
+
+      <h2>Preview security</h2>
+      <p>
+        Since the preview is real rendered HTML, it was built with special attention to
+        <strong>XSS</strong>. All content is assembled with <code>document.createElement</code> and
+        <code>textContent</code> — never <code>innerHTML</code>. Each link's URL is validated: only
+        <code>http:</code>, <code>https:</code>, <code>mailto:</code> and relative paths are accepted;
+        schemes like <code>javascript:</code> are rejected and the link becomes plain text.
+      </p>
+
+      <h2>Frequently Asked Questions (FAQ)</h2>
+
+      <h3>Which subset of Markdown is supported?</h3>
+      <p>
+        The one described above. Out of scope (for now): tables, images, embedded HTML, nested
+        lists, task lists, footnotes, emphasis with <code>_</code>/<code>__</code> and
+        syntax highlighting in code blocks.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/tools-en/markdown.js"></script>
+</body>
+</html>

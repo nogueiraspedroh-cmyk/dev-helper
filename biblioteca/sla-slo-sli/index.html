@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SLA, SLO e SLI — Dev Helper Biblioteca</title>
+  <meta name="description" content="Entenda SLI, SLO e SLA: como medir confiabilidade com indicadores reais, definir metas internas e contratos externos, e usar Error Budget para decidir o que priorizar." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>SLA, SLO e SLI</span>
+        </nav>
+        <span class="artigo__categoria">System Design</span>
+        <h1 class="artigo__titulo">SLA, SLO e SLI</h1>
+        <p class="artigo__subtitulo">
+          Três conceitos interligados para medir e comprometer-se com a confiabilidade de
+          um sistema. Sem eles, "disponibilidade" é apenas um número sem significado acordado
+          — e decisões sobre o que priorizar ficam sem base técnica objetiva.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>SLI, SLO e SLA formam uma hierarquia para transformar "o sistema deve
+            ser confiável" em métricas mensuráveis, metas defensáveis e contratos exigíveis.</strong>
+            Cada camada tem um público diferente e consequências diferentes em caso de violação.
+          </p>
+          <p>
+            O framework foi popularizado pelo modelo de Site Reliability Engineering (SRE)
+            do Google e hoje é padrão em times que operam sistemas em produção com on-call.
+            O conceito central é que confiabilidade precisa ser definida antes de ser medida,
+            e medida antes de ser negociada. Sem essa cadeia, discussões sobre disponibilidade
+            são subjetivas e decisões de engenharia carecem de critério objetivo.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Times de engenharia enfrentam decisões constantes sobre o que priorizar: novos
+            recursos ou estabilidade? Deploy agora ou aguardar mais testes? Escalar o banco
+            ou aceitar degradação? Sem uma definição clara de quanta falha é aceitável, essas
+            decisões dependem de intuição, política interna ou pressão do momento:
+          </p>
+          <ul>
+            <li>
+              <strong>Sem SLI:</strong> não há consenso sobre o que medir. "O sistema está
+              up" pode significar que o servidor está respondendo ping enquanto 30% das
+              requisições retornam erro 500. Métricas de infraestrutura não refletem a
+              experiência real do usuário.
+            </li>
+            <li>
+              <strong>Sem SLO:</strong> não há meta para defender. Qualquer nível de falha
+              é implicitamente aceitável, o que leva a sistemas progressivamente mais
+              instáveis sem que ninguém formalize o problema.
+            </li>
+            <li>
+              <strong>Sem SLA:</strong> não há consequências formais para o provedor do
+              serviço. Usuários e clientes não têm base para exigir compensação ou escalar
+              problemas de confiabilidade.
+            </li>
+            <li>
+              <strong>Sem Error Budget:</strong> a decisão de fazer ou não um deploy arriscado
+              é tomada com base em "parece ok" em vez de "temos X% de budget restante neste
+              mês". O conceito de budget transforma a confiabilidade em recurso gerenciável.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. COMO FUNCIONA -->
+        <section class="artigo__secao">
+          <h2>Como funciona</h2>
+
+          <h3>SLI — Service Level Indicator</h3>
+          <p>
+            O SLI é a <strong>métrica real medida</strong>: um número que quantifica um
+            aspecto do comportamento do sistema do ponto de vista do usuário. É a base de
+            tudo — SLO e SLA são expressões de SLIs.
+          </p>
+          <ul>
+            <li><strong>Disponibilidade:</strong> proporção de requisições bem-sucedidas / total de requisições.</li>
+            <li><strong>Latência:</strong> proporção de requisições respondidas em menos de X ms.</li>
+            <li><strong>Taxa de erros:</strong> proporção de respostas 5xx / total de respostas.</li>
+            <li><strong>Throughput:</strong> volume de operações processadas por unidade de tempo.</li>
+          </ul>
+          <p>
+            A escolha do SLI é crítica: ele deve refletir a experiência do usuário, não a
+            saúde da infraestrutura. O servidor pode estar "up" (CPU 5%, memória ok) enquanto
+            o serviço retorna timeout para os usuários. O SLI correto captura o que o usuário
+            experimenta, não o que o dashboard de infraestrutura mostra.
+          </p>
+
+          <h3>SLO — Service Level Objective</h3>
+          <p>
+            O SLO é a <strong>meta interna</strong> para o SLI: o alvo que a equipe de
+            engenharia se compromete a atingir e defende operacionalmente. É definido como
+            um valor alvo do SLI em uma janela de tempo.
+          </p>
+          <p>
+            Exemplos:
+          </p>
+          <ul>
+            <li>99,9% das requisições com latência abaixo de 200ms nos últimos 30 dias.</li>
+            <li>Disponibilidade de 99,95% medida como proporção de requisições bem-sucedidas no mês calendário.</li>
+            <li>Taxa de erros abaixo de 0,1% em qualquer janela de 1 hora.</li>
+          </ul>
+          <p>
+            O SLO é uma meta <em>interna</em> — não é o contrato com o cliente, mas é o
+            que a engenharia trata como limite. Quando o SLO está sendo violado, é o sinal
+            para acionar on-call, paralisar deploys e priorizar estabilidade sobre funcionalidades.
+          </p>
+
+          <h3>SLA — Service Level Agreement</h3>
+          <p>
+            O SLA é o <strong>contrato externo</strong> com o cliente ou usuário. É baseado
+            nos SLOs, mas com margem de segurança: o SLA é menos restritivo que o SLO
+            interno, porque a equipe precisa de espaço para falhar no SLO sem
+            imediatamente violar o contrato.
+          </p>
+          <p>
+            A violação do SLA tem consequências formais: créditos na fatura, penalidades
+            contratuais, direito de rescisão. Por isso o SLA é sempre mais permissivo:
+            se o SLO interno é 99,9%, o SLA externo pode ser 99,5%.
+          </p>
+
+          <h3>Hierarquia e margens</h3>
+          <div class="code-bloco">
+<pre><code>  SLI (medida real)
+  ──────────────────────────────────────────────────────────────────
+  │  O que o sistema está fazendo: proporção de requisições
+  │  bem-sucedidas medida nos últimos 30 dias = 99,94%
+  ▼
+
+  SLO (meta interna — o que a engenharia defende)
+  ──────────────────────────────────────────────────────────────────
+  │  Meta: SLI ≥ 99,9%
+  │  Status: OK (99,94% > 99,9%)
+  │  Se violado → alerta de on-call, freeze de deploys arriscados
+  ▼
+
+  SLA (contrato externo — o que o cliente pode exigir)
+  ──────────────────────────────────────────────────────────────────
+  │  Contrato: disponibilidade ≥ 99,5%
+  │  Status: OK (99,94% >> 99,5%)
+  │  Se violado → créditos, penalidades, direito de rescisão
+
+  Margem de segurança: SLO (99,9%) - SLA (99,5%) = 0,4%
+  Permite que o SLO seja violado sem violar imediatamente o contrato.
+</code></pre>
+          </div>
+
+          <h3>Error Budget</h3>
+          <p>
+            O Error Budget é derivado diretamente do SLO: <strong>Error Budget = 1 - SLO</strong>.
+            Se o SLO é 99,9%, o error budget mensal é 0,1% do tempo — aproximadamente
+            <strong>43 minutos</strong> de downtime (ou proporção equivalente de requisições
+            com falha). É o quanto o sistema pode falhar dentro do período sem violar o SLO.
+          </p>
+          <p>
+            O budget funciona como recurso: quando está cheio, o time tem liberdade para
+            deployar features novas com risco controlado. Quando está próximo de zero ou
+            esgotado, a política é paralisar deploys arriscados e focar em estabilidade
+            até o orçamento se renovar. Isso torna a decisão técnica — "fazemos o deploy
+            agora?" — dependente de um dado objetivo em vez de uma discussão subjetiva.
+          </p>
+
+          <h3>Tabela de "noves" de disponibilidade</h3>
+          <div class="code-bloco">
+<pre><code>  Disponibilidade │ Downtime/ano    │ Downtime/mês   │ Downtime/semana
+  ────────────────┼─────────────────┼────────────────┼─────────────────
+  99%             │ ~87,6 horas     │ ~7,3 horas     │ ~1,7 horas
+  99,9%           │ ~8,7 horas      │ ~43,8 minutos  │ ~10,1 minutos
+  99,99%          │ ~52,6 minutos   │ ~4,4 minutos   │ ~1,0 minuto
+  99,999%         │ ~5,3 minutos    │ ~26,3 segundos │ ~6,1 segundos
+  99,9999%        │ ~31,5 segundos  │ ~2,6 segundos  │ ~0,6 segundo
+
+  Cada "nove" adicional reduz o downtime permitido por ~10x e tipicamente
+  exige arquitetura mais complexa e cara para ser atingido de forma consistente.
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 4. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Qualquer serviço com usuários externos ou internos com dependência real:</strong>
+              APIs consumidas por outros times, produtos B2B, plataformas com SLA contratual.
+              Sem SLI/SLO definidos, não há critério para saber se o sistema está bom o
+              suficiente.
+            </li>
+            <li>
+              <strong>Times com on-call:</strong> o SLO é o critério objetivo que define
+              quando acionar o on-call e quando a situação está normalizada. Sem ele, cada
+              engenheiro tem sua própria definição de "problema".
+            </li>
+            <li>
+              <strong>Times que precisam balancear velocidade e estabilidade:</strong> o
+              Error Budget é o árbitro técnico. Quando o budget está cheio, o time pode
+              ser mais agressivo em deploys. Quando está esgotado, o foco muda para
+              confiabilidade.
+            </li>
+            <li>
+              <strong>Contratos B2B com penalidades:</strong> o SLA formal com consequências
+              requer SLO interno mais restritivo e SLI bem definido para monitorar
+              continuamente.
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>Sistemas internos de dev/teste sem impacto em produção:</strong>
+              ambientes de desenvolvimento, pipelines de CI, ferramentas internas de
+              baixo criticidade. O overhead de definir e monitorar SLOs não se paga.
+            </li>
+            <li>
+              <strong>MVPs em fase de descoberta:</strong> quando o produto ainda está
+              sendo validado e a prioridade é aprender rápido, definir SLOs formais pode
+              criar rigidez desnecessária. Introduza SLOs quando o produto começar a ter
+              usuários com expectativas reais de confiabilidade.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 5. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Linguagem comum: SLI/SLO/SLA criam vocabulário compartilhado entre engenharia, produto e negócio para falar de confiabilidade com precisão.</li>
+            <li>Decisões baseadas em dados: o Error Budget transforma "fazemos o deploy?" em uma questão com resposta objetiva baseada em métricas reais.</li>
+            <li>Alinhamento de expectativas: o SLA explicita o que o cliente pode esperar e o que acontece se a expectativa não for atendida.</li>
+            <li>Priorização clara: quando o Error Budget está esgotado, toda a organização sabe que a prioridade é estabilidade — sem negociação caso a caso.</li>
+            <li>Detecta problemas invisíveis: um SLI bem escolhido captura degradação que os dashboards de infraestrutura não mostram.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Custo de setup: definir SLIs relevantes, implementar a instrumentação e criar os dashboards de SLO requer investimento inicial não trivial.</li>
+            <li>SLI difícil de escolher: medir a métrica certa que reflete a experiência do usuário é mais complexo do que parece. SLIs ruins levam a SLOs que não protegem ninguém.</li>
+            <li>Falsa precisão: SLOs de 99,95% sugerem precisão que pode não existir se a medição do SLI tiver erros ou lacunas.</li>
+            <li>Burocracia se mal aplicado: times pequenos com SLOs rígidos e processos de freeze de deploy excessivos perdem agilidade sem ganho proporcional em confiabilidade.</li>
+          </ul>
+        </section>
+
+        <!-- 6. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. SLO igual ao SLA</h3>
+          <p>
+            Quando o SLO interno e o SLA externo são idênticos, não há margem de segurança.
+            Qualquer incidente que viola o SLO viola imediatamente o contrato com o cliente.
+            O SLO interno deve ser mais restritivo que o SLA externo para absorver incidentes
+            antes que cheguem ao nível de penalidade contratual.
+          </p>
+
+          <h3>2. SLI que não reflete a experiência do usuário</h3>
+          <p>
+            Medir uptime do servidor (ping responde?) em vez de disponibilidade do serviço
+            (requisições bem-sucedidas?) é o erro mais comum. O servidor pode estar "up"
+            retornando código 200 com corpo de erro para todas as requisições. O SLI deve
+            medir o que o usuário experimenta, não o que a infraestrutura reporta.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Regra prática:</strong> se um usuário consegue perceber a degradação
+            mas o SLI não indica problema, o SLI está errado. A pergunta é: "o usuário
+            consegue fazer o que precisa?" — e o SLI deve responder isso.
+          </p>
+
+          <h3>3. Error Budget ignorado na prática</h3>
+          <p>
+            Muitos times definem SLO e calculam o Error Budget mas não mudam o comportamento
+            quando o budget se esgota. Deploys arriscados continuam, features novas continuam
+            em produção e o SLO vira uma métrica decorativa. O valor do Error Budget é
+            comportamental: ele precisa mudar decisões reais, ou não existe para nada.
+          </p>
+
+          <h3>4. SLO muito agressivo logo no início</h3>
+          <p>
+            Definir 99,999% de disponibilidade como SLO para um serviço novo exige
+            arquitetura de alta disponibilidade cara e complexa — redundância em múltiplos
+            data centers, failover automático, testes de caos, etc. Comece com 99,9%,
+            meça o SLI real por alguns meses e ajuste o SLO com base nos dados. SLOs devem
+            ser calibrados com a realidade do sistema, não com aspirações.
+          </p>
+        </section>
+
+        <!-- 7. RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Arquiteturas e padrões relacionados</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../circuit-breaker/">Circuit Breaker</a></li>
+            <li><a href="../escalabilidade-horizontal-vertical/">Escalabilidade Horizontal vs Vertical</a></li>
+            <li><a href="../load-balancing/">Load Balancing</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Circuit Breaker</strong> e SLO operam em camadas diferentes do mesmo
+            objetivo. O SLO define o nível de confiabilidade que o sistema deve atingir
+            (ex.: 99,9% de requisições com sucesso). O Circuit Breaker é um mecanismo que
+            ajuda a atingir esse objetivo ao prevenir cascata de falhas e degradar o serviço
+            graciosamente em vez de falhar completamente. O estado do circuito — quantas
+            vezes ele abriu, por quanto tempo — é um dado direto para o SLI de disponibilidade.
+          </p>
+          <p>
+            <strong>Load Balancing</strong> e <strong>Escalabilidade Horizontal</strong>
+            são mecanismos operacionais que aumentam a capacidade de manter o SLO. Escalar
+            horizontalmente distribui a carga, reduzindo o risco de sobrecarga que degrada
+            o SLI. O Load Balancer detecta instâncias com falha e remove do pool, mantendo
+            a disponibilidade medida pelo SLI mesmo quando instâncias individuais falham.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="6161616161"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

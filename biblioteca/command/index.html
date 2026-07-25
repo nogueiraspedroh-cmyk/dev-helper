@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Command — Design Patterns | Biblioteca Dev Helper</title>
+  <meta name="description" content="Aprenda o padrão Command (GoF) em profundidade: intenção, problema, solução, estrutura, exemplos em TypeScript e PHP, quando usar, quando evitar e armadilhas comuns." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Command</span>
+        </nav>
+        <span class="artigo__categoria">Padrão Comportamental (GoF)</span>
+        <h1 class="artigo__titulo">Command</h1>
+        <p class="artigo__subtitulo">
+          Encapsula uma requisição como objeto, desacoplando quem invoca a ação de quem a
+          executa — e permitindo enfileirar, logar, desfazer (undo) e refazer (redo)
+          operações por meio da mesma interface.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Representar uma ação como um objeto autônomo</strong> que encapsula
+            a operação, o receptor (Receiver) e todos os parâmetros necessários para
+            executá-la e, opcionalmente, desfazê-la. O objeto que dispara a ação
+            (Invoker) conhece apenas a interface <code>Command</code> — não sabe quem
+            executa nem como.
+          </p>
+          <p>
+            Catalogado pelo GoF (1994) como padrão comportamental, o Command aparece em
+            sistemas de edição (undo/redo), filas de tarefas, transações, menus de
+            aplicação e pipelines de processamento. Em arquiteturas modernas está presente
+            no dispatch de ações (Redux/Flux), em event sourcing e em sistemas de
+            automação onde ações precisam ser persistidas, reproduzidas ou revertidas.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Imagine um editor de texto onde botões da barra de ferramentas executam
+            operações no documento. A abordagem direta acopla cada botão ao editor e
+            impede qualquer mecanismo de desfazer:
+          </p>
+          <div class="code-bloco">
+<pre><code>// Abordagem ingênua — NÃO faça isso:
+class BotaoInserir {
+  constructor(private editor: TextoEditor) {}
+
+  clicar(texto: string, posicao: number): void {
+    // Acoplamento direto ao editor. Não há histórico, não há undo.
+    this.editor.inserir(texto, posicao);
+  }
+}
+
+class BotaoDeletar {
+  constructor(private editor: TextoEditor) {}
+
+  clicar(posicao: number, comprimento: number): void {
+    // Idem: cada botão precisa conhecer a API interna do editor.
+    this.editor.deletar(posicao, comprimento);
+  }
+}</code></pre>
+          </div>
+          <p>
+            Problemas imediatos: não há como implementar Ctrl+Z porque não existe onde
+            armazenar "o que foi feito e como reverter"; cada botão ou atalho de teclado
+            duplica a lógica de chamada; adicionar novos tipos de ação exige criar mais
+            componentes acoplados ao editor. Testes também ficam mais difíceis porque
+            não é possível testar o histórico de ações independentemente.
+          </p>
+          <p>
+            O Command resolve isso transformando cada ação em um objeto imutável que
+            carrega o receptor, os parâmetros e o estado necessário para se desfazer.
+            O Invoker mantém uma pilha desses objetos e implementar undo/redo passa a
+            ser trivial — sem modificar nenhum botão, nenhum atalho e nenhum componente
+            de domínio.
+          </p>
+        </section>
+
+        <!-- 3. SOLUÇÃO -->
+        <section class="artigo__secao">
+          <h2>Solução</h2>
+          <p>O Command organiza o código em quatro participantes:</p>
+          <ol>
+            <li>
+              <strong>Command (interface):</strong> declara <code>execute()</code> e,
+              quando undo é necessário, <code>undo()</code>. Todos os comandos concretos
+              implementam esta interface — o Invoker só conhece esse contrato.
+            </li>
+            <li>
+              <strong>ConcreteCommand:</strong> captura no construtor o Receiver e os
+              parâmetros necessários. <code>execute()</code> delega ao Receiver;
+              <code>undo()</code> reverte a operação, geralmente salvando o estado
+              anterior durante o próprio <code>execute()</code>.
+            </li>
+            <li>
+              <strong>Receiver:</strong> o objeto que sabe realizar a operação real —
+              o "músculo" do padrão. Ex.: <code>TextoEditor</code> com métodos
+              <code>inserir()</code> e <code>deletar()</code>. O Receiver contém a
+              lógica de domínio; o Command apenas a orquestra.
+            </li>
+            <li>
+              <strong>Invoker:</strong> dispara o comando via <code>execute()</code> e
+              mantém o histórico. Não conhece os tipos concretos — só a interface
+              <code>Command</code>. Implementa undo/redo percorrendo a pilha de comandos.
+            </li>
+          </ol>
+          <p>
+            A separação entre Invoker e Receiver é o benefício central: um botão de UI,
+            um atalho de teclado, uma API REST e um script de automação podem invocar o
+            mesmo <code>Command</code> sem nenhum conhecimento sobre o
+            <code>TextoEditor</code>.
+          </p>
+        </section>
+
+        <!-- 4. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+          <div class="code-bloco">
+<pre><code>         «interface»
+           Command
+  ┌───────────────────────────────┐
+  │ + execute(): void             │
+  │ + undo(): void                │
+  └───────────────────────────────┘
+              ▲
+   ┌──────────┴──────────────────────┐
+   │                                 │
+InserirTextoCommand         DeletarTextoCommand
+(ConcreteCommand)           (ConcreteCommand)
+  │                           │
+  │ usa                       │ usa
+  ▼                           ▼
+            TextoEditor (Receiver)
+  ┌──────────────────────────────────────┐
+  │ + inserir(texto, posicao): void      │
+  │ + deletar(posicao, comprimento): void│
+  │ + getConteudo(): string              │
+  └──────────────────────────────────────┘
+
+
+HistoricoComandos (Invoker)
+  ┌──────────────────────────────────────────┐
+  │ - historico: Command[]                   │
+  │ - indice: number                         │
+  │ + executar(cmd: Command): void           │
+  │ + undo(): boolean                        │
+  │ + redo(): boolean                        │
+  └──────────────────────────────────────────┘
+              │ invoca execute() / undo()
+              ▼
+           Command
+
+
+Fluxo típico (undo):
+
+  historico.executar(new InserirTextoCommand(editor, "Olá", 0))
+    → InserirTextoCommand.execute()
+      → editor.inserir("Olá", 0)   → conteudo: "Olá"
+
+  historico.undo()
+    → InserirTextoCommand.undo()
+      → editor.deletar(0, 3)        → conteudo: ""
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. EXEMPLOS DE CÓDIGO -->
+        <section class="artigo__secao">
+          <h2>Exemplos de código</h2>
+
+          <h3>Exemplo 1 — Editor de texto com histórico de undo/redo</h3>
+          <p>
+            Implementação completa com a interface <code>Command</code>, dois comandos
+            concretos que capturam o estado necessário para se desfazer, o Receiver
+            (<code>TextoEditor</code>) e o Invoker (<code>HistoricoComandos</code>) com
+            suporte completo a undo e redo. Note como
+            <code>DeletarTextoCommand</code> salva o trecho removido durante
+            <code>execute()</code> — fundamental para um undo correto.
+          </p>
+
+          <!-- GRUPO DE ABAS 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 1 — editor com undo/redo">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Command interface ─────────────────────────────────────────
+interface Command {
+  execute(): void;
+  undo(): void;
+}
+
+// ── Receiver ──────────────────────────────────────────────────
+class TextoEditor {
+  private conteudo: string = '';
+
+  inserir(texto: string, posicao: number): void {
+    this.conteudo =
+      this.conteudo.slice(0, posicao) + texto + this.conteudo.slice(posicao);
+  }
+
+  deletar(posicao: number, comprimento: number): void {
+    this.conteudo =
+      this.conteudo.slice(0, posicao) +
+      this.conteudo.slice(posicao + comprimento);
+  }
+
+  getConteudo(): string { return this.conteudo; }
+}
+
+// ── ConcreteCommands ──────────────────────────────────────────
+class InserirTextoCommand implements Command {
+  constructor(
+    private readonly editor: TextoEditor,
+    private readonly texto: string,
+    private readonly posicao: number
+  ) {}
+
+  execute(): void {
+    this.editor.inserir(this.texto, this.posicao);
+  }
+
+  // Undo: deleta exatamente o trecho que foi inserido.
+  undo(): void {
+    this.editor.deletar(this.posicao, this.texto.length);
+  }
+}
+
+class DeletarTextoCommand implements Command {
+  // Estado capturado durante execute() — essencial para undo correto.
+  private textoRemovido: string = '';
+
+  constructor(
+    private readonly editor: TextoEditor,
+    private readonly posicao: number,
+    private readonly comprimento: number
+  ) {}
+
+  execute(): void {
+    // Salva o trecho ANTES de remover.
+    this.textoRemovido = this.editor
+      .getConteudo()
+      .slice(this.posicao, this.posicao + this.comprimento);
+    this.editor.deletar(this.posicao, this.comprimento);
+  }
+
+  // Undo: reinsere o trecho salvo na posição original.
+  undo(): void {
+    this.editor.inserir(this.textoRemovido, this.posicao);
+  }
+}
+
+// ── Invoker ───────────────────────────────────────────────────
+class HistoricoComandos {
+  private readonly historico: Command[] = [];
+  private indice: number = -1;
+
+  executar(comando: Command): void {
+    // Descarta o histórico à frente do cursor (elimina redo pendente).
+    this.historico.splice(this.indice + 1);
+    this.historico.push(comando);
+    this.indice++;
+    comando.execute();
+  }
+
+  undo(): boolean {
+    if (this.indice &lt; 0) return false;
+    this.historico[this.indice].undo();
+    this.indice--;
+    return true;
+  }
+
+  redo(): boolean {
+    if (this.indice &gt;= this.historico.length - 1) return false;
+    this.indice++;
+    this.historico[this.indice].execute();
+    return true;
+  }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+const editor    = new TextoEditor();
+const historico = new HistoricoComandos();
+
+historico.executar(new InserirTextoCommand(editor, 'Olá', 0));
+console.log(editor.getConteudo());   // 'Olá'
+
+historico.executar(new InserirTextoCommand(editor, ' mundo', 3));
+console.log(editor.getConteudo());   // 'Olá mundo'
+
+historico.executar(new DeletarTextoCommand(editor, 3, 6));
+console.log(editor.getConteudo());   // 'Olá'
+
+historico.undo();
+console.log(editor.getConteudo());   // 'Olá mundo'
+
+historico.undo();
+console.log(editor.getConteudo());   // 'Olá'
+
+historico.redo();
+console.log(editor.getConteudo());   // 'Olá mundo'</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Command interface ─────────────────────────────────────────
+interface Command
+{
+    public function execute(): void;
+    public function undo(): void;
+}
+
+// ── Receiver ──────────────────────────────────────────────────
+class TextoEditor
+{
+    private string $conteudo = '';
+
+    public function inserir(string $texto, int $posicao): void
+    {
+        $this-&gt;conteudo =
+            substr($this-&gt;conteudo, 0, $posicao)
+            . $texto
+            . substr($this-&gt;conteudo, $posicao);
+    }
+
+    public function deletar(int $posicao, int $comprimento): void
+    {
+        $this-&gt;conteudo =
+            substr($this-&gt;conteudo, 0, $posicao)
+            . substr($this-&gt;conteudo, $posicao + $comprimento);
+    }
+
+    public function getConteudo(): string
+    {
+        return $this-&gt;conteudo;
+    }
+}
+
+// ── ConcreteCommands ──────────────────────────────────────────
+class InserirTextoCommand implements Command
+{
+    public function __construct(
+        private readonly TextoEditor $editor,
+        private readonly string $texto,
+        private readonly int $posicao
+    ) {}
+
+    public function execute(): void
+    {
+        $this-&gt;editor-&gt;inserir($this-&gt;texto, $this-&gt;posicao);
+    }
+
+    public function undo(): void
+    {
+        $this-&gt;editor-&gt;deletar($this-&gt;posicao, strlen($this-&gt;texto));
+    }
+}
+
+class DeletarTextoCommand implements Command
+{
+    private string $textoRemovido = '';
+
+    public function __construct(
+        private readonly TextoEditor $editor,
+        private readonly int $posicao,
+        private readonly int $comprimento
+    ) {}
+
+    public function execute(): void
+    {
+        // Salva o trecho ANTES de remover — necessário para undo.
+        $this-&gt;textoRemovido = substr(
+            $this-&gt;editor-&gt;getConteudo(),
+            $this-&gt;posicao,
+            $this-&gt;comprimento
+        );
+        $this-&gt;editor-&gt;deletar($this-&gt;posicao, $this-&gt;comprimento);
+    }
+
+    public function undo(): void
+    {
+        $this-&gt;editor-&gt;inserir($this-&gt;textoRemovido, $this-&gt;posicao);
+    }
+}
+
+// ── Invoker ───────────────────────────────────────────────────
+class HistoricoComandos
+{
+    /** @var Command[] */
+    private array $historico = [];
+    private int $indice = -1;
+
+    public function executar(Command $comando): void
+    {
+        array_splice($this-&gt;historico, $this-&gt;indice + 1);
+        $this-&gt;historico[] = $comando;
+        $this-&gt;indice++;
+        $comando-&gt;execute();
+    }
+
+    public function undo(): bool
+    {
+        if ($this-&gt;indice &lt; 0) return false;
+        $this-&gt;historico[$this-&gt;indice]-&gt;undo();
+        $this-&gt;indice--;
+        return true;
+    }
+
+    public function redo(): bool
+    {
+        if ($this-&gt;indice &gt;= count($this-&gt;historico) - 1) return false;
+        $this-&gt;indice++;
+        $this-&gt;historico[$this-&gt;indice]-&gt;execute();
+        return true;
+    }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+$editor    = new TextoEditor();
+$historico = new HistoricoComandos();
+
+$historico-&gt;executar(new InserirTextoCommand($editor, 'Olá', 0));
+echo $editor-&gt;getConteudo() . "\n";   // Olá
+
+$historico-&gt;executar(new InserirTextoCommand($editor, ' mundo', 3));
+echo $editor-&gt;getConteudo() . "\n";   // Olá mundo
+
+$historico-&gt;executar(new DeletarTextoCommand($editor, 3, 6));
+echo $editor-&gt;getConteudo() . "\n";   // Olá
+
+$historico-&gt;undo();
+echo $editor-&gt;getConteudo() . "\n";   // Olá mundo
+
+$historico-&gt;undo();
+echo $editor-&gt;getConteudo() . "\n";   // Olá
+
+$historico-&gt;redo();
+echo $editor-&gt;getConteudo() . "\n";   // Olá mundo</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 1) -->
+
+          <h3>Exemplo 2 — Controle remoto com MacroCommand</h3>
+          <p>
+            O Command também permite compor múltiplos comandos em um único
+            <code>MacroCommand</code> — executando e desfazendo um conjunto de ações
+            como se fossem uma unidade atômica. Isso demonstra a composabilidade do
+            padrão: um MacroCommand é um Command que contém outros Commands,
+            aplicando undo em ordem reversa.
+          </p>
+
+          <!-- GRUPO DE ABAS 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 2 — controle remoto e MacroCommand">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// Interface Command (mesma do Exemplo 1).
+interface Command {
+  execute(): void;
+  undo(): void;
+}
+
+// ── Receiver: dispositivos ────────────────────────────────────
+class Luz {
+  private ligada = false;
+  private intensidade = 100;
+
+  ligar(): void    { this.ligada = true;  console.log(`Luz ligada (${this.intensidade}%)`); }
+  desligar(): void { this.ligada = false; console.log('Luz desligada'); }
+
+  setIntensidade(pct: number): void {
+    const anterior = this.intensidade;
+    this.intensidade = pct;
+    console.log(`Intensidade: ${anterior}% → ${pct}%`);
+  }
+
+  getIntensidade(): number { return this.intensidade; }
+}
+
+// ── ConcreteCommands ──────────────────────────────────────────
+class LigarLuzCommand implements Command {
+  constructor(private readonly luz: Luz) {}
+  execute(): void { this.luz.ligar(); }
+  undo(): void    { this.luz.desligar(); }
+}
+
+class DimmerCommand implements Command {
+  private intensidadeAnterior = 0;
+
+  constructor(
+    private readonly luz: Luz,
+    private readonly novaIntensidade: number
+  ) {}
+
+  execute(): void {
+    this.intensidadeAnterior = this.luz.getIntensidade();
+    this.luz.setIntensidade(this.novaIntensidade);
+  }
+
+  undo(): void {
+    this.luz.setIntensidade(this.intensidadeAnterior);
+  }
+}
+
+// MacroCommand: compõe vários Commands em um único objeto Command.
+class MacroCommand implements Command {
+  constructor(private readonly comandos: Command[]) {}
+
+  execute(): void {
+    this.comandos.forEach(c =&gt; c.execute());
+  }
+
+  // Undo em ordem reversa — desfaz o último subcomando primeiro.
+  undo(): void {
+    [...this.comandos].reverse().forEach(c =&gt; c.undo());
+  }
+}
+
+// ── Invoker: controle remoto com pilha de undo ────────────────
+class ControleRemoto {
+  private readonly pilha: Command[] = [];
+
+  pressionar(comando: Command): void {
+    comando.execute();
+    this.pilha.push(comando);
+  }
+
+  desfazer(): void {
+    const ultimo = this.pilha.pop();
+    ultimo?.undo();
+  }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+const luz      = new Luz();
+const controle = new ControleRemoto();
+
+controle.pressionar(new LigarLuzCommand(luz));
+// Luz ligada (100%)
+
+controle.pressionar(new DimmerCommand(luz, 40));
+// Intensidade: 100% → 40%
+
+controle.desfazer();
+// Intensidade: 40% → 100%
+
+// Macro: "modo cinema" — acende e escurece como uma ação única.
+const modoCinema = new MacroCommand([
+  new LigarLuzCommand(luz),
+  new DimmerCommand(luz, 10),
+]);
+
+controle.pressionar(modoCinema);
+// Luz ligada (100%)
+// Intensidade: 100% → 10%
+
+// Desfaz o macro inteiro em ordem reversa.
+controle.desfazer();
+// Intensidade: 10% → 100%
+// Luz desligada</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// Interface Command (mesma do Exemplo 1).
+interface Command
+{
+    public function execute(): void;
+    public function undo(): void;
+}
+
+// ── Receiver ─────────────────────────────────────────────────
+class Luz
+{
+    private bool $ligada = false;
+    private int $intensidade = 100;
+
+    public function ligar(): void
+    {
+        $this-&gt;ligada = true;
+        echo "Luz ligada ({$this-&gt;intensidade}%)\n";
+    }
+
+    public function desligar(): void
+    {
+        $this-&gt;ligada = false;
+        echo "Luz desligada\n";
+    }
+
+    public function setIntensidade(int $pct): void
+    {
+        $anterior = $this-&gt;intensidade;
+        $this-&gt;intensidade = $pct;
+        echo "Intensidade: {$anterior}% → {$pct}%\n";
+    }
+
+    public function getIntensidade(): int
+    {
+        return $this-&gt;intensidade;
+    }
+}
+
+// ── ConcreteCommands ──────────────────────────────────────────
+class LigarLuzCommand implements Command
+{
+    public function __construct(private readonly Luz $luz) {}
+
+    public function execute(): void { $this-&gt;luz-&gt;ligar(); }
+    public function undo(): void    { $this-&gt;luz-&gt;desligar(); }
+}
+
+class DimmerCommand implements Command
+{
+    private int $intensidadeAnterior = 0;
+
+    public function __construct(
+        private readonly Luz $luz,
+        private readonly int $novaIntensidade
+    ) {}
+
+    public function execute(): void
+    {
+        $this-&gt;intensidadeAnterior = $this-&gt;luz-&gt;getIntensidade();
+        $this-&gt;luz-&gt;setIntensidade($this-&gt;novaIntensidade);
+    }
+
+    public function undo(): void
+    {
+        $this-&gt;luz-&gt;setIntensidade($this-&gt;intensidadeAnterior);
+    }
+}
+
+class MacroCommand implements Command
+{
+    /** @param Command[] $comandos */
+    public function __construct(private readonly array $comandos) {}
+
+    public function execute(): void
+    {
+        foreach ($this-&gt;comandos as $c) {
+            $c-&gt;execute();
+        }
+    }
+
+    public function undo(): void
+    {
+        foreach (array_reverse($this-&gt;comandos) as $c) {
+            $c-&gt;undo();
+        }
+    }
+}
+
+// ── Invoker ───────────────────────────────────────────────────
+class ControleRemoto
+{
+    /** @var Command[] */
+    private array $pilha = [];
+
+    public function pressionar(Command $comando): void
+    {
+        $comando-&gt;execute();
+        $this-&gt;pilha[] = $comando;
+    }
+
+    public function desfazer(): void
+    {
+        $ultimo = array_pop($this-&gt;pilha);
+        $ultimo?-&gt;undo();
+    }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+$luz      = new Luz();
+$controle = new ControleRemoto();
+
+$controle-&gt;pressionar(new LigarLuzCommand($luz));
+// Luz ligada (100%)
+
+$controle-&gt;pressionar(new DimmerCommand($luz, 40));
+// Intensidade: 100% → 40%
+
+$controle-&gt;desfazer();
+// Intensidade: 40% → 100%
+
+$modoCinema = new MacroCommand([
+    new LigarLuzCommand($luz),
+    new DimmerCommand($luz, 10),
+]);
+
+$controle-&gt;pressionar($modoCinema);
+// Luz ligada (100%)
+// Intensidade: 100% → 10%
+
+$controle-&gt;desfazer();
+// Intensidade: 10% → 100%
+// Luz desligada</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 2) -->
+
+        </section><!-- /.artigo__secao (exemplos) -->
+
+        <!-- 6. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Quando você precisa de undo/redo:</strong> o Command captura tudo
+              que é necessário para reverter uma operação — o caso de uso central do
+              padrão em editores, planilhas e qualquer sistema de edição interativa.
+            </li>
+            <li>
+              <strong>Quando ações precisam ser enfileiradas ou agendadas:</strong> filas
+              de tarefas, schedulers e sistemas de retry armazenam objetos Command para
+              execução posterior ou repetida — sem precisar saber o que cada um faz.
+            </li>
+            <li>
+              <strong>Para auditoria e log de ações:</strong> cada Command é um registro
+              estruturado da ação, seus parâmetros e timestamp. Em sistemas financeiros
+              ou de compliance, isso fornece um histórico auditável de operações.
+            </li>
+            <li>
+              <strong>Para desacoplar UI do domínio:</strong> botões, atalhos de teclado
+              e APIs REST podem invocar os mesmos Commands sem saber nada sobre o
+              Receiver — a lógica de "o que fazer" fica centralizada no Command.
+            </li>
+            <li>
+              <strong>Para compor ações em macros ou transações</strong> usando
+              MacroCommand — um conjunto de operações que deve ser executado e desfeito
+              como uma unidade atômica.
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>Quando a ação é simples, sem undo e sem fila:</strong> criar uma
+              interface e uma classe por ação para algo como "imprimir relatório" ou
+              "enviar e-mail" sem necessidade de reverter é overengineering. Uma chamada
+              direta ou uma closure é suficiente.
+            </li>
+            <li>
+              <strong>Quando a explosão de classes se torna impraticável:</strong> sistemas
+              com 50 tipos de ação geram 50 classes de Command. Em TypeScript, closures
+              ou funções de primeira classe são uma alternativa viável para Commands
+              simples sem estado de undo.
+            </li>
+            <li>
+              <strong>Quando o undo é inviável ou irrelevante:</strong> operações como
+              "enviar SMS" ou "debitar conta bancária" têm efeitos colaterais irreversíveis.
+              Implementar undo real nesses casos exigiria compensações complexas (estorno,
+              mensagem de cancelamento) — e isso geralmente é domínio de negócio, não
+              de padrão de design.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Desacopla o Invoker do Receiver — quem dispara a ação não precisa saber como ela é realizada.</li>
+            <li>Undo/redo implementado no Invoker, sem modificar nenhum componente de UI ou de domínio.</li>
+            <li>Facilita filas de tarefas, log de auditoria, retry e agendamento de operações.</li>
+            <li>MacroCommand permite compor operações atômicas sem alterar os Commands existentes.</li>
+            <li>Segue o Princípio Aberto/Fechado — novos tipos de ação não exigem modificar o Invoker.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Aumenta o número de classes — uma classe por tipo de ação pode crescer rapidamente.</li>
+            <li>Para undo correto, cada Command precisa capturar e gerenciar estado anterior — o que pode ser complexo para operações que afetam múltiplos objetos.</li>
+            <li>O Invoker pode acumular memória com histórico ilimitado — é necessário definir um limite de profundidade.</li>
+            <li>Para Commands simples sem estado, criar uma classe completa é mais verboso do que uma closure ou função.</li>
+          </ul>
+        </section>
+
+        <!-- 8. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Comando anêmico (só repassa a chamada)</h3>
+          <p>
+            O erro mais comum ao aprender o padrão: criar um Command que não encapsula
+            nada além de uma chamada direta ao Receiver, sem capturar parâmetros no
+            construtor e sem implementar undo real. Um <code>SalvarCommand</code> que
+            apenas chama <code>repositorio.salvar(objetoExterno)</code> sem fixar o
+            objeto no construtor não é um Command — é boilerplate inútil.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Regra prática:</strong> se o Command não captura tudo que precisa
+            para executar e desfazer de forma <em>autônoma</em>, ele é anêmico. O
+            construtor deve fixar Receiver + parâmetros; <code>execute()</code> não deve
+            receber argumentos.
+          </p>
+
+          <h3>2. Undo mal implementado (estado não capturado)</h3>
+          <p>
+            A armadilha técnica mais crítica: implementar <code>execute()</code> sem
+            capturar o estado anterior necessário para <code>undo()</code>. Um
+            <code>DeletarTextoCommand</code> que remove o trecho sem primeiro salvá-lo
+            em <code>this.textoRemovido</code> perde permanentemente a capacidade de
+            reverter. A regra de ouro: capture tudo que <code>undo()</code> precisará
+            <em>antes</em> de executar a operação destrutiva.
+          </p>
+
+          <h3>3. Explosão de classes de Command</h3>
+          <p>
+            Em sistemas com muitos tipos de ação, o número de classes de Command cresce
+            proporcional às ações. Quando isso ocorre e os Commands não têm estado de
+            undo, closures são mais idiomáticos. Em TypeScript:
+          </p>
+          <div class="code-bloco">
+<pre><code>// Alternativa funcional para Commands simples sem estado:
+type SimpleCommand = () =&gt; void;
+
+const fila: SimpleCommand[] = [];
+fila.push(() =&gt; console.log('Tarefa A'));
+fila.push(() =&gt; console.log('Tarefa B'));
+fila.forEach(cmd =&gt; cmd());
+
+// Reserve classes de Command para quando undo, log ou composição são necessários.</code></pre>
+          </div>
+
+          <h3>4. Command vs Strategy — distinção de intenção</h3>
+          <p>
+            A confusão mais frequente entre os dois padrões. O <strong>Command</strong>
+            encapsula <em>uma ação específica</em> com ciclo de vida definido:
+            criação → execução → (possível) desfazimento. O objeto representa o
+            "o que fazer e com quais dados" — ele pode ser armazenado, enfileirado e
+            revertido. A <strong>Strategy</strong> encapsula <em>um algoritmo
+            intercambiável</em> sem identidade ou ciclo de vida — o contexto troca a
+            estratégia ativa, mas não armazena estratégias como histórico. Use Command
+            quando a ação em si é um dado de primeira classe; use Strategy quando apenas
+            a variação do algoritmo importa.
+          </p>
+        </section>
+
+        <!-- 9. PADRÕES RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Padrões relacionados</h2>
+          <p>
+            O Command interage com padrões que complementam undo, enfileiramento e
+            coordenação de ações:
+          </p>
+          <!--
+            Disciplina de links: só linka artigos já publicados.
+            Strategy existe → link real.
+            Mediator: publicado neste lote → link real.
+            Memento: publicado → link real.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../strategy/">Strategy</a></li>
+            <li><a href="../mediator/">Mediator</a></li>
+            <li><a href="../memento/">Memento</a></li>
+          </ul>
+          <p class="mt-1">
+            O <strong>Strategy</strong> e o Command encapsulam comportamento em objetos,
+            mas com intenções distintas: Strategy troca algoritmos intercambiáveis no
+            contexto (sem ciclo de vida de execute/undo); Command representa ações
+            discretas que podem ser armazenadas, enfileiradas e revertidas. O
+            <strong>Mediator</strong> pode usar Commands para representar as ações
+            coordenadas entre componentes — o Mediator recebe um Command e decide para
+            qual Receiver encaminhá-lo, sem que os colegas se conheçam diretamente.
+            O <strong>Memento</strong> é o complemento natural do Command para undo
+            complexo: quando o estado do Receiver é rico demais para ser capturado em
+            cada Command individualmente, o Memento cria um snapshot completo do objeto
+            antes da operação, e o Command apenas armazena esse snapshot para restaurá-lo
+            no undo.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="7070707073"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

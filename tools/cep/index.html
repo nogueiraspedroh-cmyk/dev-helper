@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gerador e Validador de CEP — Dev Helper</title>
+  <meta name="description" content="Gere CEPs plausíveis por região do Brasil e valide o formato de um CEP. Ferramenta gratuita para desenvolvedores." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="en" href="../../en/tools/cep/" />
+
+  <!--
+    AdSense — biblioteca carregada UMA vez por página.
+    Substitua ca-pub-0000000000000000 pelo seu pub-ID real antes do deploy.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../../biblioteca/">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Gerador e Validador de CEP</h1>
+        <p>Gere CEPs plausíveis por região do Brasil e valide o formato de um CEP.</p>
+      </header>
+
+      <!-- ── SEÇÃO: GERAR ─────────────────────────────────────────────────── -->
+      <section class="tool__section">
+        <h2 class="tool__section-title">Gerar CEP</h2>
+
+        <div class="tool__controls">
+
+          <!-- Seletor de região -->
+          <div class="tool__actions">
+            <label class="tool__label" for="regiao-select">Região:</label>
+            <select id="regiao-select" class="tool__select">
+              <option value="aleatorio">Aleatório</option>
+              <option value="0">0 — Grande São Paulo</option>
+              <option value="1">1 — Interior de SP</option>
+              <option value="2">2 — RJ e ES</option>
+              <option value="3">3 — MG</option>
+              <option value="4">4 — BA e SE</option>
+              <option value="5">5 — PE, AL, PB e RN</option>
+              <option value="6">6 — CE, PI, MA, PA, AM, AC, AP e RR</option>
+              <option value="7">7 — DF, GO, TO, MT, MS e RO</option>
+              <option value="8">8 — PR e SC</option>
+              <option value="9">9 — RS</option>
+            </select>
+          </div>
+
+          <!-- Checkbox formatar com máscara -->
+          <label class="tool__checkbox-label">
+            <input type="checkbox" id="chk-formatar-cep" checked />
+            Formatar com máscara (NNNNN-NNN)
+          </label>
+
+          <!-- Botão de geração -->
+          <div class="tool__actions">
+            <button id="btn-gerar-cep" class="button" type="button">Gerar CEP</button>
+          </div>
+        </div>
+
+        <!-- Saída do gerador -->
+        <div class="tool__output">
+          <input
+            id="output-cep-gerado"
+            class="tool__result-input"
+            type="text"
+            readonly
+            placeholder="O CEP gerado aparecerá aqui..."
+          />
+          <div class="tool__actions tool__actions--mt">
+            <button id="btn-copiar-cep" class="button--secondary" type="button">Copiar</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── SEÇÃO: VALIDAR ───────────────────────────────────────────────── -->
+      <section class="tool__section">
+        <h2 class="tool__section-title">Validar CEP</h2>
+
+        <div class="tool__controls">
+          <div class="tool__actions">
+            <input
+              id="input-validar-cep"
+              class="tool__input-inline"
+              type="text"
+              placeholder="Cole um CEP (com ou sem máscara)"
+              maxlength="9"
+              spellcheck="false"
+              autocorrect="off"
+              autocapitalize="off"
+            />
+            <button id="btn-validar-cep" class="button" type="button">Validar</button>
+            <button id="btn-limpar-validar-cep" class="button--secondary" type="button">Limpar</button>
+          </div>
+        </div>
+
+        <div class="tool__output">
+          <p id="result-validar-cep" class="result-validar"></p>
+        </div>
+      </section>
+    </article>
+
+    <!-- Bloco de anúncio — abaixo da área de resultado da ferramenta -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="5555555555"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Conteúdo real — exigido pelo AdSense -->
+    <section>
+      <h2>O que é o CEP?</h2>
+      <p>
+        O <strong>CEP</strong> (Código de Endereçamento Postal) é um sistema numérico criado pelos
+        Correios em 1972 para identificar logradouros, localidades, edificações e serviços postais
+        no Brasil. É composto por <strong>8 dígitos</strong> no formato <code>NNNNN-NNN</code>,
+        onde os primeiros 5 dígitos identificam a região/setor e os 3 últimos identificam o
+        sub-setor e sufixo.
+      </p>
+      <p>
+        O CEP é amplamente utilizado em sistemas de e-commerce, logística, cadastros e entregas
+        para determinar o endereço de destino. Diferentemente do CPF e CNPJ, o CEP
+        <strong>não possui dígito verificador</strong> — não há nenhum cálculo matemático que
+        confirme se um CEP existe; a única forma de verificar isso é consultando a base de dados
+        oficial dos Correios.
+      </p>
+
+      <h2>Estrutura do CEP por região</h2>
+      <p>
+        O primeiro dígito do CEP determina a grande região de abrangência, conforme a tabela
+        oficial dos Correios:
+      </p>
+      <table class="info-table">
+        <thead>
+          <tr>
+            <th>1º dígito</th>
+            <th>Região</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><code>0</code></td><td>Grande São Paulo</td></tr>
+          <tr><td><code>1</code></td><td>Interior de São Paulo</td></tr>
+          <tr><td><code>2</code></td><td>Rio de Janeiro e Espírito Santo</td></tr>
+          <tr><td><code>3</code></td><td>Minas Gerais</td></tr>
+          <tr><td><code>4</code></td><td>Bahia e Sergipe</td></tr>
+          <tr><td><code>5</code></td><td>Pernambuco, Alagoas, Paraíba e Rio Grande do Norte</td></tr>
+          <tr><td><code>6</code></td><td>Ceará, Piauí, Maranhão, Pará, Amazonas, Acre, Amapá e Roraima</td></tr>
+          <tr><td><code>7</code></td><td>Distrito Federal, Goiás, Tocantins, Mato Grosso, Mato Grosso do Sul e Rondônia</td></tr>
+          <tr><td><code>8</code></td><td>Paraná e Santa Catarina</td></tr>
+          <tr><td><code>9</code></td><td>Rio Grande do Sul</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Importante: validação de formato, não de existência</h2>
+      <p>
+        Esta ferramenta valida apenas o <strong>formato</strong> do CEP — verifica se o valor
+        fornecido possui exatamente 8 dígitos numéricos, que é a exigência mínima para um CEP
+        plausível. Ela <strong>não confirma</strong> se o CEP existe na base de dados dos
+        Correios, nem retorna o logradouro correspondente. Para consultar um CEP real, utilize
+        a API pública <a href="https://viacep.com.br" target="_blank" rel="noopener noreferrer">ViaCEP</a>
+        ou o site oficial dos <a href="https://www.correios.com.br" target="_blank" rel="noopener noreferrer">Correios</a>.
+      </p>
+      <p>
+        Da mesma forma, os CEPs <strong>gerados</strong> por esta ferramenta são numericamente
+        plausíveis (respeitam a faixa de primeiro dígito da região selecionada), mas podem não
+        corresponder a nenhum endereço real — são úteis para preencher campos de formulário em
+        ambientes de desenvolvimento e teste.
+      </p>
+
+      <h2>Perguntas frequentes (FAQ)</h2>
+
+      <h3>O CEP possui dígito verificador?</h3>
+      <p>
+        Não. Diferentemente do CPF e CNPJ, o CEP brasileiro <strong>não possui dígito
+        verificador</strong>. Isso significa que qualquer sequência de 8 dígitos é
+        "matematicamente válida" — não há cálculo que detecte um CEP incorreto sem consultar
+        a base dos Correios. A validação aqui é apenas de formato (8 dígitos numéricos).
+      </p>
+
+      <h3>Os CEPs gerados correspondem a endereços reais?</h3>
+      <p>
+        Não necessariamente. Os CEPs gerados são <strong>plausíveis</strong> (respeitam o
+        primeiro dígito da região escolhida), mas os demais dígitos são aleatórios. É possível
+        que um CEP gerado coincida com um endereço real, mas isso é puramente casual. Para
+        testes que exijam CEPs reais, utilize uma lista curada de CEPs conhecidos ou consulte
+        os Correios.
+      </p>
+
+      <h3>Para que serve gerar CEPs fictícios?</h3>
+      <p>
+        Durante o desenvolvimento de sistemas que possuem campos de endereço, é comum precisar
+        de CEPs fictícios para preencher formulários de teste, popular bancos de dados de
+        desenvolvimento, testar validações de front-end ou simular cadastros sem usar dados
+        reais de usuários.
+      </p>
+
+      <h3>A máscara (hífen) interfere na validação?</h3>
+      <p>
+        Não. A ferramenta remove automaticamente qualquer hífen ou espaço antes de validar —
+        você pode colar o CEP com ou sem a máscara <code>NNNNN-NNN</code>.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/tools/cep.js"></script>
+</body>
+</html>

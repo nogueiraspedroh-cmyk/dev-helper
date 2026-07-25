@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Composite — Design Patterns | Biblioteca Dev Helper</title>
+  <meta name="description" content="Aprenda o padrão Composite (GoF) em profundidade: intenção, problema, solução, estrutura, exemplos em TypeScript e PHP, quando usar, quando evitar e armadilhas comuns." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Composite</span>
+        </nav>
+        <span class="artigo__categoria">Padrão Estrutural (GoF)</span>
+        <h1 class="artigo__titulo">Composite</h1>
+        <p class="artigo__subtitulo">
+          Compõe objetos em estruturas de árvore para representar hierarquias
+          parte-todo, permitindo que o cliente trate objetos individuais e
+          composições de forma uniforme via uma interface comum.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Compor objetos em árvores parte-todo</strong> e permitir que o
+            código cliente trate um objeto individual (folha) e uma composição de
+            objetos (nó composto) exatamente da mesma forma — por meio de uma
+            interface comum.
+          </p>
+          <p>
+            Catalogado pelo GoF (1994) como padrão estrutural, o Composite é a
+            resposta elegante a estruturas hierárquicas onde a lógica que se aplica
+            a um elemento isolado deve se propagar recursivamente por toda a árvore.
+            A operação <code>tamanho()</code> de um arquivo retorna seu tamanho
+            fixo; a mesma operação em um diretório soma os tamanhos de todos os
+            filhos — mas o código que chama <code>tamanho()</code> não precisa
+            distinguir um do outro.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Imagine um sistema de arquivos. Ele tem arquivos — objetos simples com
+            nome e tamanho fixo — e diretórios, que contêm outros arquivos e
+            diretórios. Você quer calcular o tamanho total de qualquer item: seja
+            um arquivo individual ou um diretório inteiro (somando recursivamente
+            tudo que está dentro dele).
+          </p>
+          <p>
+            Sem o Composite, o código cliente precisa diferenciar os dois casos a
+            todo momento:
+          </p>
+          <ul>
+            <li>
+              Se é um arquivo, retorne seu tamanho diretamente.
+            </li>
+            <li>
+              Se é um diretório, itere sobre os filhos, verifique se cada filho é
+              arquivo ou diretório, e recursão se necessário.
+            </li>
+          </ul>
+          <p>
+            Isso resulta em condicionais espalhadas por todo o código cliente —
+            e cada vez que você adiciona um novo tipo de nó (ex.: link simbólico),
+            precisa atualizar todos esses pontos. O Composite elimina esse problema:
+            folhas e compostos implementam a mesma interface; a recursão fica
+            encapsulada dentro do composto.
+          </p>
+
+          <h3>Transparência vs Segurança</h3>
+          <p>
+            O GoF descreve duas abordagens para onde colocar os métodos de gerência
+            de filhos (<code>adicionar</code>, <code>remover</code>):
+          </p>
+          <ul>
+            <li>
+              <strong>Transparência (na interface Component):</strong> tanto folhas
+              quanto compostos declaram os métodos de gerência. O cliente trata tudo
+              uniformemente — mas folhas precisam implementar métodos que não fazem
+              sentido para elas (geralmente lançando uma exceção ou não fazendo nada),
+              o que viola o Princípio de Substituição de Liskov.
+            </li>
+            <li>
+              <strong>Segurança (só no Composite):</strong> apenas o composto expõe
+              <code>adicionar</code> e <code>remover</code>. O cliente que precisar
+              gerenciar filhos deve obter uma referência tipada como
+              <code>Diretorio</code>, não como <code>Componente</code>. Perde-se
+              alguma uniformidade, mas o código fica seguro e correto em tempo de
+              compilação. Esta é a abordagem preferível em TypeScript e PHP.
+            </li>
+          </ul>
+          <p>
+            Os exemplos abaixo adotam a abordagem de segurança: <code>adicionar</code>
+            existe apenas em <code>Diretorio</code> (o Composite), não na interface
+            <code>Componente</code>.
+          </p>
+        </section>
+
+        <!-- 3. SOLUÇÃO -->
+        <section class="artigo__secao">
+          <h2>Solução</h2>
+          <p>O Composite organiza o código em três participantes:</p>
+          <ol>
+            <li>
+              <strong>Component (interface):</strong> o contrato compartilhado por
+              folhas e compostos. Define as operações que o cliente pode chamar
+              uniformemente. Ex.: interface <code>Componente</code> com
+              <code>nome(): string</code> e <code>tamanho(): number</code>.
+            </li>
+            <li>
+              <strong>Leaf (Folha):</strong> implementa Component e não tem filhos.
+              Representa o objeto primitivo da hierarquia. Ex.: <code>Arquivo</code>
+              — retorna seu tamanho diretamente.
+            </li>
+            <li>
+              <strong>Composite (Composto):</strong> implementa Component e mantém
+              uma lista de filhos do tipo Component. Implementa as operações
+              recursando nos filhos. Ex.: <code>Diretorio</code> — soma o tamanho
+              de todos os filhos, que podem ser outros diretórios ou arquivos.
+            </li>
+          </ol>
+          <p>
+            A chave do padrão é que o Composite armazena referências ao tipo
+            <code>Componente</code> (a interface), não ao tipo concreto. Isso
+            permite misturar folhas e outros compostos na mesma lista de filhos,
+            criando árvores de profundidade arbitrária.
+          </p>
+        </section>
+
+        <!-- 4. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+          <div class="code-bloco">
+<pre><code>        «interface» Componente
+   ┌─────────────────────────────────┐
+   │ + nome(): string                │
+   │ + tamanho(): number             │
+   └─────────────────────────────────┘
+          ▲                   ▲
+          │ implementa         │ implementa
+       Arquivo              Diretorio
+       (Folha)              (Composto)
+  ┌──────────────────┐  ┌──────────────────────────────────┐
+  │ - _nome: string  │  │ - filhos: Componente[]           │
+  │ - _tamanho: num  │  │ + adicionar(c: Componente): this │
+  │ + nome(): string │  │ + nome(): string                 │
+  │ + tamanho(): num │  │ + tamanho(): number              │
+  └──────────────────┘  │   → soma tamanhos dos filhos     │
+                        └──────────────────────────────────┘
+                                      │ filhos
+                          ┌───────────┴────────────┐
+                          ▼                         ▼
+                       Arquivo                  Diretorio
+                      (folha)              (pode conter mais filhos)
+
+
+Árvore de exemplo:
+
+  raiz/                        ← Diretorio
+  ├── src/                     ← Diretorio
+  │   ├── main.ts              ← Arquivo (1200 bytes)
+  │   └── util.ts              ← Arquivo  (800 bytes)
+  ├── dist/                    ← Diretorio
+  │   └── main.js              ← Arquivo (3500 bytes)
+  └── package.json             ← Arquivo  (400 bytes)
+
+  raiz.tamanho()  == 5900   (soma recursiva de tudo)
+  src.tamanho()   == 2000
+  dist.tamanho()  == 3500
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. EXEMPLOS DE CÓDIGO -->
+        <section class="artigo__secao">
+          <h2>Exemplos de código</h2>
+
+          <h3>Exemplo 1 — Sistema de arquivos com cálculo recursivo de tamanho</h3>
+          <p>
+            O cliente chama <code>tamanho()</code> em qualquer <code>Componente</code>
+            sem saber se está lidando com um arquivo ou um diretório inteiro. A
+            recursão fica encapsulada dentro de <code>Diretorio</code>.
+          </p>
+
+          <!-- GRUPO DE ABAS 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 1 — sistema de arquivos">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Component — interface comum a folhas e compostos ─────────
+interface Componente {
+  nome(): string;
+  tamanho(): number; // em bytes
+}
+
+// ── Leaf (Folha) — objeto sem filhos ──────────────────────────
+class Arquivo implements Componente {
+  constructor(
+    private readonly _nome: string,
+    private readonly _tamanho: number
+  ) {}
+
+  nome(): string    { return this._nome; }
+  tamanho(): number { return this._tamanho; }
+}
+
+// ── Composite (Composto) — agrega e recursa nos filhos ────────
+class Diretorio implements Componente {
+  private readonly filhos: Componente[] = [];
+
+  constructor(private readonly _nome: string) {}
+
+  nome(): string { return this._nome; }
+
+  adicionar(componente: Componente): this {
+    this.filhos.push(componente);
+    return this; // fluent — permite encadear chamadas
+  }
+
+  tamanho(): number {
+    // Recursa nos filhos — não distingue Arquivo de Diretorio
+    return this.filhos.reduce((acc, filho) => acc + filho.tamanho(), 0);
+  }
+
+  listar(nivel = 0): void {
+    const p = "  ".repeat(nivel);
+    console.log(`${p}[DIR]  ${this._nome}/ (${this.tamanho()} bytes)`);
+    for (const filho of this.filhos) {
+      if (filho instanceof Diretorio) {
+        filho.listar(nivel + 1);
+      } else {
+        console.log(`${p}  [ARQ] ${filho.nome()} (${filho.tamanho()} bytes)`);
+      }
+    }
+  }
+}
+
+// ── Código cliente — opera sobre Componente uniformemente ────
+function exibirTamanho(componente: Componente): void {
+  console.log(`"${componente.nome()}" ocupa ${componente.tamanho()} bytes`);
+}
+
+// ── Montagem da árvore ────────────────────────────────────────
+const raiz = new Diretorio("raiz");
+const src  = new Diretorio("src");
+const dist = new Diretorio("dist");
+
+src.adicionar(new Arquivo("main.ts", 1200))
+   .adicionar(new Arquivo("util.ts", 800));
+
+dist.adicionar(new Arquivo("main.js", 3500));
+
+raiz.adicionar(src)
+    .adicionar(dist)
+    .adicionar(new Arquivo("package.json", 400));
+
+raiz.listar();
+// [DIR]  raiz/ (5900 bytes)
+//   [DIR]  src/ (2000 bytes)
+//     [ARQ] main.ts (1200 bytes)
+//     [ARQ] util.ts (800 bytes)
+//   [DIR]  dist/ (3500 bytes)
+//     [ARQ] main.js (3500 bytes)
+//   [ARQ] package.json (400 bytes)
+
+// Mesma chamada — sem distinguir folha de composto:
+exibirTamanho(new Arquivo("readme.md", 200));
+// "readme.md" ocupa 200 bytes
+exibirTamanho(raiz);
+// "raiz" ocupa 5900 bytes</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Component — interface comum a folhas e compostos ─────────
+interface Componente
+{
+    public function nome(): string;
+    public function tamanho(): int; // em bytes
+}
+
+// ── Leaf (Folha) — objeto sem filhos ──────────────────────────
+class Arquivo implements Componente
+{
+    public function __construct(
+        private readonly string $nome,
+        private readonly int $tamanho
+    ) {}
+
+    public function nome(): string { return $this-&gt;nome; }
+    public function tamanho(): int { return $this-&gt;tamanho; }
+}
+
+// ── Composite (Composto) — agrega e recursa nos filhos ────────
+class Diretorio implements Componente
+{
+    /** @var Componente[] */
+    private array $filhos = [];
+
+    public function __construct(private readonly string $nome) {}
+
+    public function nome(): string { return $this-&gt;nome; }
+
+    public function adicionar(Componente $componente): static
+    {
+        $this-&gt;filhos[] = $componente;
+        return $this; // fluent — permite encadear chamadas
+    }
+
+    public function tamanho(): int
+    {
+        // Recursa nos filhos — não distingue Arquivo de Diretorio
+        return array_sum(array_map(
+            fn(Componente $filho) =&gt; $filho-&gt;tamanho(),
+            $this-&gt;filhos
+        ));
+    }
+
+    public function listar(int $nivel = 0): void
+    {
+        $p = str_repeat('  ', $nivel);
+        echo "{$p}[DIR]  {$this-&gt;nome}/ ({$this-&gt;tamanho()} bytes)" . PHP_EOL;
+        foreach ($this-&gt;filhos as $filho) {
+            if ($filho instanceof Diretorio) {
+                $filho-&gt;listar($nivel + 1);
+            } else {
+                echo "{$p}  [ARQ] {$filho-&gt;nome()} ({$filho-&gt;tamanho()} bytes)" . PHP_EOL;
+            }
+        }
+    }
+}
+
+// ── Código cliente — opera sobre Componente uniformemente ────
+function exibirTamanho(Componente $componente): void
+{
+    echo "\"{$componente-&gt;nome()}\" ocupa {$componente-&gt;tamanho()} bytes" . PHP_EOL;
+}
+
+// ── Montagem da árvore ────────────────────────────────────────
+$raiz = new Diretorio('raiz');
+$src  = new Diretorio('src');
+$dist = new Diretorio('dist');
+
+$src-&gt;adicionar(new Arquivo('main.ts', 1200))
+    -&gt;adicionar(new Arquivo('util.ts', 800));
+
+$dist-&gt;adicionar(new Arquivo('main.js', 3500));
+
+$raiz-&gt;adicionar($src)
+     -&gt;adicionar($dist)
+     -&gt;adicionar(new Arquivo('package.json', 400));
+
+$raiz-&gt;listar();
+// [DIR]  raiz/ (5900 bytes)
+//   [DIR]  src/ (2000 bytes)
+//     [ARQ] main.ts (1200 bytes)
+//     [ARQ] util.ts (800 bytes)
+//   [DIR]  dist/ (3500 bytes)
+//     [ARQ] main.js (3500 bytes)
+//   [ARQ] package.json (400 bytes)
+
+exibirTamanho(new Arquivo('readme.md', 200));
+// "readme.md" ocupa 200 bytes
+exibirTamanho($raiz);
+// "raiz" ocupa 5900 bytes</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 1) -->
+
+          <h3>Exemplo 2 — Organograma com cálculo recursivo de folha de pagamento</h3>
+          <p>
+            O mesmo padrão se aplica a qualquer hierarquia parte-todo. Um
+            <code>Funcionario</code> (folha) tem salário fixo; um
+            <code>Departamento</code> (composto) soma os salários de todos os seus
+            membros, que podem ser funcionários ou outros departamentos aninhados.
+          </p>
+
+          <!-- GRUPO DE ABAS 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 2 — organograma">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Component ─────────────────────────────────────────────────
+interface UnidadeOrg {
+  titulo(): string;
+  salarioTotal(): number; // em centavos
+}
+
+// ── Leaf ──────────────────────────────────────────────────────
+class Funcionario implements UnidadeOrg {
+  constructor(
+    private readonly _titulo: string,
+    private readonly _salario: number
+  ) {}
+
+  titulo(): string        { return this._titulo; }
+  salarioTotal(): number  { return this._salario; }
+}
+
+// ── Composite ─────────────────────────────────────────────────
+class Departamento implements UnidadeOrg {
+  private readonly membros: UnidadeOrg[] = [];
+
+  constructor(private readonly _titulo: string) {}
+
+  titulo(): string { return this._titulo; }
+
+  adicionar(membro: UnidadeOrg): this {
+    this.membros.push(membro);
+    return this;
+  }
+
+  salarioTotal(): number {
+    return this.membros.reduce((acc, m) => acc + m.salarioTotal(), 0);
+  }
+}
+
+// ── Uso ───────────────────────────────────────────────────────
+const engenharia = new Departamento("Engenharia");
+engenharia
+  .adicionar(new Funcionario("Alice", 1200000))  // R$12.000
+  .adicionar(new Funcionario("Bruno",  950000));  // R$ 9.500
+
+const design = new Departamento("Design");
+design.adicionar(new Funcionario("Carla", 800000)); // R$8.000
+
+const empresa = new Departamento("Empresa");
+empresa
+  .adicionar(engenharia)
+  .adicionar(design)
+  .adicionar(new Funcionario("Diana (CEO)", 2500000)); // R$25.000
+
+// O cliente opera sobre UnidadeOrg — não distingue folha de composto
+const itens: UnidadeOrg[] = [engenharia, design, empresa];
+for (const item of itens) {
+  const valor = (item.salarioTotal() / 100).toFixed(2);
+  console.log(`${item.titulo()}: R$${valor}`);
+}
+// Engenharia: R$21500.00   (12000 + 9500)
+// Design:     R$8000.00
+// Empresa:    R$54500.00   (21500 + 8000 + 25000 ✓)</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Component ─────────────────────────────────────────────────
+interface UnidadeOrg
+{
+    public function titulo(): string;
+    public function salarioTotal(): int; // em centavos
+}
+
+// ── Leaf ──────────────────────────────────────────────────────
+class Funcionario implements UnidadeOrg
+{
+    public function __construct(
+        private readonly string $titulo,
+        private readonly int $salario
+    ) {}
+
+    public function titulo(): string      { return $this-&gt;titulo; }
+    public function salarioTotal(): int   { return $this-&gt;salario; }
+}
+
+// ── Composite ─────────────────────────────────────────────────
+class Departamento implements UnidadeOrg
+{
+    /** @var UnidadeOrg[] */
+    private array $membros = [];
+
+    public function __construct(private readonly string $titulo) {}
+
+    public function titulo(): string { return $this-&gt;titulo; }
+
+    public function adicionar(UnidadeOrg $membro): static
+    {
+        $this-&gt;membros[] = $membro;
+        return $this;
+    }
+
+    public function salarioTotal(): int
+    {
+        return array_sum(array_map(
+            fn(UnidadeOrg $m) =&gt; $m-&gt;salarioTotal(),
+            $this-&gt;membros
+        ));
+    }
+}
+
+// ── Uso ───────────────────────────────────────────────────────
+$engenharia = new Departamento('Engenharia');
+$engenharia
+    -&gt;adicionar(new Funcionario('Alice', 1200000))   // R$12.000
+    -&gt;adicionar(new Funcionario('Bruno',  950000));   // R$ 9.500
+
+$design = new Departamento('Design');
+$design-&gt;adicionar(new Funcionario('Carla', 800000)); // R$8.000
+
+$empresa = new Departamento('Empresa');
+$empresa
+    -&gt;adicionar($engenharia)
+    -&gt;adicionar($design)
+    -&gt;adicionar(new Funcionario('Diana (CEO)', 2500000)); // R$25.000
+
+// O cliente opera sobre UnidadeOrg — não distingue folha de composto
+$itens = [$engenharia, $design, $empresa];
+foreach ($itens as $item) {
+    printf("%s: R$%.2f\n", $item-&gt;titulo(), $item-&gt;salarioTotal() / 100);
+}
+// Engenharia: R$21500.00   (12000 + 9500)
+// Design:     R$8000.00
+// Empresa:    R$54500.00   (21500 + 8000 + 25000 ✓)</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 2) -->
+
+        </section><!-- /.artigo__secao (exemplos) -->
+
+        <!-- 6. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Quando a estrutura é naturalmente hierárquica (parte-todo):</strong>
+              sistemas de arquivos, menus de navegação, organogramas, árvores de
+              expressão aritmética, componentes de UI aninhados. Se a estrutura é
+              uma árvore, Composite é a escolha natural.
+            </li>
+            <li>
+              <strong>Quando o cliente deve tratar objetos simples e compostos
+              uniformemente:</strong> se o código que percorre a hierarquia não
+              deve se preocupar se o nó atual é folha ou composto, use Composite.
+            </li>
+            <li>
+              <strong>Quando operações precisam se propagar recursivamente:</strong>
+              calcular totais, renderizar, serializar, aplicar permissões — qualquer
+              operação que precisa visitar todos os nós da árvore.
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>Quando a hierarquia é plana ou fixa:</strong> se os objetos
+              não formam uma árvore real (ex.: uma lista de itens de mesmo nível),
+              o overhead estrutural do Composite não se justifica.
+            </li>
+            <li>
+              <strong>Quando tipos diferentes requerem interfaces muito distintas:</strong>
+              se folha e composto precisam de métodos muito diferentes, forçar uma
+              interface comum inflada cria mais problemas do que resolve.
+            </li>
+            <li>
+              <strong>Quando performance é crítica em árvores muito profundas:</strong>
+              a recursão do Composite percorre cada nó. Em árvores extremamente
+              profundas, o custo de chamada pode ser relevante — considere caching
+              de resultados intermediários ou percurso iterativo.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Elimina condicionais espalhadas no cliente para distinguir folha de composto — a polimorfismo cuida disso.</li>
+            <li>Princípio Aberto/Fechado: novos tipos de folha ou composto podem ser adicionados sem alterar o código cliente ou os outros nós.</li>
+            <li>Permite construir estruturas de profundidade arbitrária com o mesmo conjunto de classes.</li>
+            <li>A operação se propaga naturalmente pela árvore — sem código de travessia no cliente.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Pode ser difícil restringir quais tipos de componentes podem ser filhos de quais compostos — a interface comum não expressa essas restrições.</li>
+            <li>A abordagem de transparência (métodos add/remove na interface Component) viola o Princípio de Substituição de Liskov quando aplicados a folhas.</li>
+            <li>Depurar árvores profundas pode ser trabalhoso — rastrear a origem de um valor recursivo exige percorrer toda a cadeia.</li>
+          </ul>
+        </section>
+
+        <!-- 8. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Interface inflada — métodos de gerência em folhas</h3>
+          <p>
+            A tentação de colocar <code>adicionar()</code> e <code>remover()</code>
+            na interface <code>Componente</code> (abordagem de transparência) é
+            real: o cliente ganha uniformidade total. O preço é que
+            <code>Arquivo</code> precisa implementar esses métodos mesmo não tendo
+            filhos. A prática idiomática em TypeScript e PHP é mantê-los apenas em
+            <code>Diretorio</code> (abordagem de segurança). Quando o cliente
+            precisar chamar <code>adicionar()</code>, ele já sabe que está lidando
+            com um composto — o type system confirma isso em tempo de compilação.
+          </p>
+
+          <h3>2. Ciclos na árvore</h3>
+          <p class="artigo__aviso">
+            <strong>Atenção:</strong> se um nó for adicionado como filho de si
+            mesmo — ou como descendente de algum de seus próprios descendentes —
+            a recursão de <code>tamanho()</code> entrará em loop infinito. O
+            Composite não previne ciclos por padrão. Se o domínio permitir essa
+            possibilidade (ex.: links simbólicos em sistemas de arquivos reais),
+            implemente detecção de ciclos: mantenha um <code>Set</code> dos nós
+            já visitados durante a recursão e abort se encontrar um repetido.
+          </p>
+
+          <h3>3. Confundir Composite com Decorator</h3>
+          <p>
+            Ambos usam composição recursiva e implementam a mesma interface do
+            objeto que envolvem. A diferença está na intenção e na cardinalidade:
+            o <strong>Decorator</strong> envolve exatamente <em>um</em> objeto e
+            adiciona responsabilidade ao redor das suas chamadas. O
+            <strong>Composite</strong> agrega <em>N</em> filhos e a sua operação
+            primária é acumular ou propagar o resultado pelos filhos. Se você tem
+            um "wrapper de um único objeto" que adiciona comportamento, é Decorator.
+            Se você tem um nó que agrega e delega para múltiplos filhos, é Composite.
+          </p>
+
+          <h3>4. Caching ausente em árvores grandes</h3>
+          <p>
+            Cada chamada a <code>tamanho()</code> em um diretório raiz percorre
+            toda a árvore. Se a árvore for grande e imutável (ou raramente muda),
+            calcule e armazene o resultado em cache no composto, invalidando-o
+            apenas quando um filho for adicionado ou removido. Sem esse cuidado,
+            operações repetidas sobre a raiz têm custo O(n) a cada chamada.
+          </p>
+        </section>
+
+        <!-- 9. PADRÕES RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Padrões relacionados</h2>
+          <p>
+            O Composite é frequentemente combinado ou comparado com outros padrões
+            que também lidam com composição e travessia de estruturas:
+          </p>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../decorator/">Decorator</a></li>
+            <li><a href="../proxy/">Proxy</a></li>
+            <li><a href="../visitor/">Visitor</a></li>
+            <li><a href="../iterator/">Iterator</a></li>
+          </ul>
+          <p class="mt-1">
+            O <strong>Decorator</strong> é o padrão com maior semelhança estrutural:
+            ambos usam composição recursiva com uma interface comum. A diferença
+            está na cardinalidade e na intenção — Decorator envolve um único objeto
+            para adicionar responsabilidade; Composite agrega N filhos para propagar
+            operações. O <strong>Proxy</strong> também controla acesso a um único
+            objeto e pode ser aplicado a nós de uma árvore Composite para, por
+            exemplo, carregá-los sob demanda (lazy loading de subárvores).
+            O <strong>Visitor</strong> é o complemento natural do Composite: separa
+            a lógica de travessia e processamento dos nós da estrutura da própria
+            árvore, permitindo adicionar operações sem modificar as classes de nó.
+            O <strong>Iterator</strong> pode ser usado para percorrer a árvore de
+            forma uniforme sem expor sua estrutura interna.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="9797979797"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

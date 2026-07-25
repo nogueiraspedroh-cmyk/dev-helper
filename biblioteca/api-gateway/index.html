@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Gateway — Dev Helper Biblioteca</title>
+  <meta name="description" content="Entenda API Gateway: ponto de entrada único para microsserviços, centralizando autenticação, roteamento, rate limiting e logging. Inclui o padrão BFF, diferença com proxy reverso e as armadilhas de single point of failure e lógica de negócio no Gateway." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>API Gateway</span>
+        </nav>
+        <span class="artigo__categoria">System Design</span>
+        <h1 class="artigo__titulo">API Gateway</h1>
+        <p class="artigo__subtitulo">
+          Ponto de entrada único para um conjunto de serviços, centralizando
+          autenticação, roteamento, rate limiting, logging e transformação de
+          requests — ao custo de introduzir um componente crítico que precisa
+          de alta disponibilidade e disciplina para não virar um god object.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>O API Gateway é o intermediário entre os clientes externos e
+            os serviços internos de um sistema, oferecendo um único endereço de
+            entrada que centraliza preocupações transversais.</strong> Em vez de
+            cada serviço implementar autenticação, rate limiting e logging
+            individualmente, o Gateway resolve essas questões uma vez, antes de
+            encaminhar a requisição ao serviço responsável.
+          </p>
+          <p>
+            O padrão é especialmente valioso em arquiteturas de microsserviços,
+            onde dezenas ou centenas de serviços precisariam de implementação
+            redundante dessas funcionalidades se não houvesse um ponto centralizador.
+            Clientes externos veem apenas um endereço; a complexidade interna
+            fica encapsulada atrás do Gateway.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Em uma arquitetura de microsserviços, cada serviço é um processo
+            independente com seu próprio endereço de rede. Expor todos eles
+            diretamente aos clientes cria um conjunto de problemas difíceis
+            de resolver individualmente em cada serviço:
+          </p>
+          <ul>
+            <li>
+              <strong>Autenticação duplicada:</strong> cada serviço precisaria
+              validar tokens JWT ou chaves de API. Qualquer inconsistência na
+              implementação cria brechas de segurança. Manter a lógica atualizada
+              em vinte serviços é operacionalmente inviável.
+            </li>
+            <li>
+              <strong>Acoplamento do cliente à topologia interna:</strong> se o
+              cliente sabe que <code>/users</code> está no host A e
+              <code>/orders</code> no host B, qualquer reorganização interna
+              quebra os clientes. O cliente não deveria conhecer a topologia
+              interna do sistema.
+            </li>
+            <li>
+              <strong>Rate limiting inconsistente:</strong> proteger cada serviço
+              individualmente exige implementação e configuração repetida. Um
+              serviço sem rate limiting é um vetor de abuso ou indisponibilidade
+              por sobrecarga.
+            </li>
+            <li>
+              <strong>Observabilidade fragmentada:</strong> logs distribuídos entre
+              dezenas de serviços sem correlação dificultam o diagnóstico de
+              problemas que atravessam múltiplos serviços.
+            </li>
+            <li>
+              <strong>Diferentes necessidades de clientes distintos:</strong> um
+              app mobile precisa de respostas compactas; um dashboard web precisa
+              de dados agregados; uma integração de terceiros segue um contrato
+              fixo. Cada cliente tem necessidades diferentes do mesmo dado.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. COMO FUNCIONA -->
+        <section class="artigo__secao">
+          <h2>Como funciona</h2>
+
+          <h3>Fluxo de requisição</h3>
+          <div class="code-bloco">
+<pre><code>  Cliente (browser, app mobile, parceiro)
+        │
+        ▼
+  ┌─────────────────────────────────────────────┐
+  │               API Gateway                   │
+  │                                             │
+  │  1. Autenticação/Autorização (JWT/API Key)  │
+  │  2. Rate Limiting                           │
+  │  3. SSL Termination                         │
+  │  4. Roteamento por path/método              │
+  │  5. Transformação de request/response       │
+  │  6. Logging e métricas                      │
+  └──────────────┬──────────────────────────────┘
+                 │ roteia para o serviço correto
+        ┌────────┼────────────┐
+        ▼        ▼            ▼
+  ┌──────────┐ ┌──────────┐ ┌──────────┐
+  │  User    │ │  Order   │ │ Payment  │
+  │ Service  │ │ Service  │ │ Service  │
+  └──────────┘ └──────────┘ └──────────┘
+</code></pre>
+          </div>
+
+          <h3>Responsabilidades típicas</h3>
+          <ul>
+            <li>
+              <strong>Roteamento:</strong> mapeia paths externos para serviços
+              internos. <code>/users/*</code> vai para o User Service;
+              <code>/orders/*</code> vai para o Order Service. Os serviços internos
+              não precisam saber que estão expostos sob esses paths.
+            </li>
+            <li>
+              <strong>Autenticação e Autorização:</strong> valida JWT, API Key ou
+              sessão antes de encaminhar a requisição. Os serviços internos confiam
+              que o Gateway já validou a identidade — recebem apenas o contexto do
+              usuário (ex.: user ID em um header interno), sem precisar implementar
+              autenticação.
+            </li>
+            <li>
+              <strong>Rate Limiting:</strong> limita o número de requisições por IP,
+              por usuário autenticado ou por chave de API em uma janela de tempo.
+              Protege os serviços downstream de sobrecarga acidental ou intencional.
+            </li>
+            <li>
+              <strong>SSL Termination:</strong> o Gateway decripta HTTPS e encaminha
+              HTTP simples para os serviços internos. A comunicação interna fica em
+              rede privada, simplificando a gestão de certificados (apenas o Gateway
+              precisa de certificado público).
+            </li>
+            <li>
+              <strong>Transformação de request e response:</strong> pode adicionar
+              headers, converter formatos (ex.: REST externo para gRPC interno),
+              agregar respostas de múltiplos serviços em uma única resposta ao cliente.
+            </li>
+            <li>
+              <strong>Logging e Observabilidade:</strong> ponto central para registrar
+              todas as requisições com correlation ID, facilitando o rastreamento de
+              uma requisição através de múltiplos serviços.
+            </li>
+            <li>
+              <strong>Circuit Breaker:</strong> pode encapsular lógica de resiliência
+              para os serviços downstream — se um serviço está com falhas, o Gateway
+              pode retornar uma resposta de fallback sem propagar a instabilidade
+              ao cliente.
+            </li>
+          </ul>
+
+          <h3>BFF — Backend for Frontend</h3>
+          <p>
+            O padrão BFF é uma variação onde cada tipo de cliente tem seu próprio
+            Gateway especializado com transformações específicas para suas necessidades:
+          </p>
+          <div class="code-bloco">
+<pre><code>  ┌─────────────┐   ┌─────────────┐   ┌──────────────────┐
+  │  App Mobile │   │  Web App    │   │  Parceiros (B2B) │
+  └──────┬──────┘   └──────┬──────┘   └────────┬─────────┘
+         │                 │                    │
+         ▼                 ▼                    ▼
+  ┌─────────────┐   ┌─────────────┐   ┌──────────────────┐
+  │  BFF Mobile │   │  BFF Web    │   │  BFF B2B         │
+  │  (compacto) │   │  (agregado) │   │  (contrato fixo) │
+  └──────┬──────┘   └──────┬──────┘   └────────┬─────────┘
+         └─────────────────┼────────────────────┘
+                           │
+              ┌────────────┼────────────┐
+              ▼            ▼            ▼
+        ┌──────────┐ ┌──────────┐ ┌──────────┐
+        │  User    │ │  Order   │ │ Payment  │
+        │ Service  │ │ Service  │ │ Service  │
+        └──────────┘ └──────────┘ └──────────┘
+</code></pre>
+          </div>
+          <p>
+            O BFF resolve o problema de clientes com necessidades distintas: o app
+            mobile precisa de payloads menores; o dashboard web precisa de dados
+            agregados de múltiplos serviços em uma chamada; parceiros B2B têm
+            contratos de API fixos e estáveis. Cada BFF adapta o mesmo backend
+            para o cliente que serve, sem que os serviços internos precisem conhecer
+            os diferentes formatos.
+          </p>
+
+          <h3>API Gateway vs Proxy Reverso</h3>
+          <div class="code-bloco">
+<pre><code>  PROXY REVERSO (nginx, HAProxy, Traefik)
+  ─────────────────────────────────────────
+  Roteia requisições e faz load balancing.
+  Sem lógica de negócio ou de aplicação.
+  Configurado por regras estáticas (paths, hosts).
+  Alta performance, baixa latência de overhead.
+
+  API GATEWAY (Kong, AWS API Gateway, Apigee)
+  ─────────────────────────────────────────
+  Proxy reverso + autenticação + rate limiting
+  + transformações + logging centralizado.
+  Pode ter plugins/middlewares extensíveis.
+  Overhead maior, mas funcionalidades ricas.
+
+  Na prática: um API Gateway usa um proxy reverso
+  internamente. O que diferencia é a camada de
+  funcionalidades de aplicação construída em cima.
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 4. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Arquitetura de microsserviços com múltiplos serviços
+              expostos:</strong> quando há mais de dois ou três serviços que
+              precisam ser acessíveis por clientes externos, o Gateway elimina
+              a duplicação de código de infraestrutura em cada um deles.
+            </li>
+            <li>
+              <strong>Centralização de autenticação:</strong> em vez de cada
+              serviço implementar e manter sua lógica de validação de tokens,
+              o Gateway valida uma vez e propaga apenas o contexto necessário.
+              Uma mudança na estratégia de autenticação (ex.: migração de JWT
+              para PASETO) acontece em um lugar.
+            </li>
+            <li>
+              <strong>Clientes com necessidades diferentes (BFF):</strong> mobile
+              app, SPA web e integrações B2B raramente precisam exatamente do
+              mesmo formato de resposta. O BFF permite adaptar sem contaminar os
+              serviços internos com lógica de apresentação.
+            </li>
+            <li>
+              <strong>Controle de tráfego e proteção dos serviços:</strong> rate
+              limiting, throttling e circuit breaker centralizados no Gateway
+              protegem serviços internos sem exigir que cada um implemente
+              esses mecanismos.
+            </li>
+          </ul>
+
+          <h2>Quando evitar ou ter cuidado</h2>
+          <ul>
+            <li>
+              <strong>Monolito ou aplicação simples:</strong> adicionar um API
+              Gateway a uma aplicação única é overhead sem benefício — a aplicação
+              já é o ponto de entrada. O padrão existe para resolver a complexidade
+              de múltiplos serviços independentes; sem essa complexidade, ele
+              adiciona latência e um componente extra para operar sem nenhum ganho.
+            </li>
+            <li>
+              <strong>Gateway como god object com lógica de negócio:</strong>
+              o risco mais grave do padrão. Roteamento baseado em estado do usuário,
+              regras de desconto, orquestração de workflows de negócio — tudo isso
+              pertence aos serviços. Um Gateway com lógica de domínio vira um
+              monolito disfarçado que acopla todos os serviços a si mesmo.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 5. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Centralização de preocupações transversais: autenticação, rate limiting e logging implementados uma vez, aplicados consistentemente em todos os serviços.</li>
+            <li>Desacoplamento da topologia interna: clientes não sabem quais serviços existem internamente — reorganizações internas não quebram os clientes.</li>
+            <li>Ponto único de observabilidade: todos os requests passam pelo Gateway, que pode gerar métricas, traces e logs com correlation ID sem depender de cada serviço.</li>
+            <li>Simplificação dos serviços internos: cada serviço assume que quem chegou até ele já foi autenticado e autorizado, podendo focar exclusivamente em sua lógica de domínio.</li>
+            <li>Controle de versão de API centralizado: múltiplas versões de API podem coexistir no Gateway enquanto os serviços evoluem internamente sem quebrar contratos.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Single point of failure: se o Gateway cair, nenhum cliente consegue acessar nenhum serviço. Alta disponibilidade do Gateway não é opcional.</li>
+            <li>Latência adicional: cada requisição passa por um hop extra. Em caminhos críticos de latência, esse overhead (tipicamente 1–5 ms) precisa ser considerado.</li>
+            <li>Risco de acúmulo de lógica: a conveniência de centralizar incentiva colocar lógica de negócio no Gateway ao longo do tempo, criando um gargalo de deploy e um ponto de acoplamento.</li>
+            <li>Complexidade operacional: o Gateway precisa ser operado, monitorado, escalado e atualizado como qualquer outro serviço crítico de infraestrutura.</li>
+            <li>Gargalo de escalabilidade: todo o tráfego externo passa pelo Gateway. Escalar o Gateway horizontalmente precisa ser planejado antes que ele se torne o limitador de throughput do sistema.</li>
+          </ul>
+        </section>
+
+        <!-- 6. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Lógica de negócio no Gateway</h3>
+          <p>
+            É a armadilha mais comum e mais grave. Começa de forma inocente: uma
+            regra de roteamento que verifica o plano do usuário, um header
+            que muda baseado no saldo da conta, uma transformação que aplica
+            regras de desconto. Com o tempo, o Gateway acumula lógica de domínio
+            que deveria estar nos serviços.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Regra prática:</strong> o Gateway deve ser ignorante do domínio.
+            Se a decisão de roteamento depende de algo além da URL, do método HTTP
+            e de headers técnicos (autenticação, content-type), é um sinal de que
+            lógica de negócio está vazando para o Gateway.
+          </p>
+
+          <h3>2. Single point of failure sem alta disponibilidade</h3>
+          <p>
+            Um Gateway rodando em instância única é um risco existencial para o
+            sistema. Uma falha de hardware, um deploy mal-sucedido ou um pico de
+            tráfego que esgota recursos derruba todos os serviços simultaneamente.
+            O Gateway precisa de múltiplas instâncias atrás de um load balancer,
+            com health checks agressivos e capacidade de auto-scaling.
+          </p>
+
+          <h3>3. Rate limiting sem granularidade adequada</h3>
+          <p>
+            Limitar requisições apenas por IP penaliza usuários legítimos que
+            compartilham o mesmo endereço IP via NAT corporativo ou CGNAT de
+            provedores móveis — centenas de usuários distintos com o mesmo IP
+            público. O limite baseado em usuário autenticado (por token JWT ou
+            chave de API) é mais preciso e justo. Idealmente, os dois mecanismos
+            coexistem para diferentes tipos de proteção.
+          </p>
+          <div class="code-bloco">
+<pre><code>  # Rate limiting por IP: blunt instrument
+  # Penaliza grupos de usuários legítimos (NAT, escritório, campus)
+
+  # Rate limiting por usuário autenticado: mais preciso
+  # Limita o comportamento individual, não o IP compartilhado
+
+  # Combinação ideal:
+  # - Por IP: proteção contra bots e ataques não autenticados
+  # - Por usuário: proteção contra abuso de usuários autenticados
+  # - Por chave de API: controle de uso para integrações B2B
+</code></pre>
+          </div>
+
+          <h3>4. SSL termination sem comunicação interna segura</h3>
+          <p>
+            Terminar TLS no Gateway e usar HTTP simples internamente pressupõe que
+            a rede interna é confiável. Em ambientes cloud multi-tenant, containers
+            orquestrados ou quando compliance exige (PCI-DSS, HIPAA), a rede interna
+            não pode ser assumida como segura. Nesses casos, mTLS (mutual TLS) entre
+            Gateway e serviços garante autenticação mútua e confidencialidade mesmo
+            dentro da rede privada.
+          </p>
+        </section>
+
+        <!-- 7. RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Arquiteturas e padrões relacionados</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../cdn/">CDN</a></li>
+            <li><a href="../rest-vs-graphql-vs-grpc/">REST vs GraphQL vs gRPC</a></li>
+            <li><a href="../load-balancing/">Load Balancing</a></li>
+            <li><a href="../circuit-breaker/">Circuit Breaker</a></li>
+            <li><span class="artigo__padrao-pendente">Rate Limiting (em breve)</span></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Load Balancing</strong> e API Gateway operam em camadas distintas:
+            o load balancer distribui tráfego entre instâncias do mesmo serviço (escala
+            horizontal); o API Gateway roteia entre serviços diferentes. Em produção,
+            o tráfego frequentemente passa pelo Gateway e depois por um load balancer
+            antes de chegar a uma instância específica do serviço.
+          </p>
+          <p>
+            O <strong>Circuit Breaker</strong> é um parceiro natural do API Gateway:
+            quando um serviço downstream começa a falhar, o Gateway pode abrir o
+            circuit breaker e retornar uma resposta de fallback sem propagar a
+            instabilidade aos clientes e sem sobrecarregar o serviço doente com
+            requisições que vão falhar de qualquer forma.
+          </p>
+          <p>
+            A escolha entre <strong>REST, GraphQL e gRPC</strong> afeta diretamente
+            as responsabilidades do Gateway: uma API GraphQL pode substituir parcialmente
+            o Gateway para consultas compostas (o cliente declara o que precisa em uma
+            única requisição); gRPC interno pode ser exposto como REST externo pelo
+            Gateway via transcoding. O protocolo interno não precisa ser o mesmo que
+            o protocolo externo.
+          </p>
+          <p>
+            A <strong>CDN</strong> frequentemente opera na frente do API Gateway:
+            a CDN serve assets estáticos na borda sem chegar ao Gateway; requisições
+            dinâmicas passam pela CDN (que pode ajudar com roteamento geográfico)
+            e chegam ao Gateway para processamento.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="6767676767"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

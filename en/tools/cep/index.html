@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CEP (Brazilian ZIP Code) Generator and Validator — Dev Helper</title>
+  <meta name="description" content="Generate plausible CEPs (Brazilian ZIP codes) by region and validate the format of a CEP. Free tool for developers." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../tools/cep/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!--
+    AdSense — biblioteca carregada UMA vez por página.
+    Substitua ca-pub-0000000000000000 pelo seu pub-ID real antes do deploy.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../../../biblioteca/">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>CEP (Brazilian ZIP Code) Generator and Validator</h1>
+        <p>Generate plausible CEPs by Brazilian region and validate the format of a CEP.</p>
+      </header>
+
+      <!-- ── SECTION: GENERATE ─────────────────────────────────────────────── -->
+      <section class="tool__section">
+        <h2 class="tool__section-title">Generate CEP</h2>
+
+        <div class="tool__controls">
+
+          <!-- Region selector -->
+          <div class="tool__actions">
+            <label class="tool__label" for="regiao-select">Region:</label>
+            <select id="regiao-select" class="tool__select">
+              <option value="aleatorio">Random</option>
+              <option value="0">0 — Greater São Paulo</option>
+              <option value="1">1 — SP countryside</option>
+              <option value="2">2 — RJ and ES</option>
+              <option value="3">3 — MG</option>
+              <option value="4">4 — BA and SE</option>
+              <option value="5">5 — PE, AL, PB and RN</option>
+              <option value="6">6 — CE, PI, MA, PA, AM, AC, AP and RR</option>
+              <option value="7">7 — DF, GO, TO, MT, MS and RO</option>
+              <option value="8">8 — PR and SC</option>
+              <option value="9">9 — RS</option>
+            </select>
+          </div>
+
+          <!-- Checkbox format with mask -->
+          <label class="tool__checkbox-label">
+            <input type="checkbox" id="chk-formatar-cep" checked />
+            Format with mask (NNNNN-NNN)
+          </label>
+
+          <!-- Generate button -->
+          <div class="tool__actions">
+            <button id="btn-gerar-cep" class="button" type="button">Generate CEP</button>
+          </div>
+        </div>
+
+        <!-- Generator output -->
+        <div class="tool__output">
+          <input
+            id="output-cep-gerado"
+            class="tool__result-input"
+            type="text"
+            readonly
+            placeholder="The generated CEP will appear here..."
+          />
+          <div class="tool__actions tool__actions--mt">
+            <button id="btn-copiar-cep" class="button--secondary" type="button">Copy</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── SECTION: VALIDATE ────────────────────────────────────────────── -->
+      <section class="tool__section">
+        <h2 class="tool__section-title">Validate CEP</h2>
+
+        <div class="tool__controls">
+          <div class="tool__actions">
+            <input
+              id="input-validar-cep"
+              class="tool__input-inline"
+              type="text"
+              placeholder="Paste a CEP (with or without mask)"
+              maxlength="9"
+              spellcheck="false"
+              autocorrect="off"
+              autocapitalize="off"
+            />
+            <button id="btn-validar-cep" class="button" type="button">Validate</button>
+            <button id="btn-limpar-validar-cep" class="button--secondary" type="button">Clear</button>
+          </div>
+        </div>
+
+        <div class="tool__output">
+          <p id="result-validar-cep" class="result-validar"></p>
+        </div>
+      </section>
+    </article>
+
+    <!-- Ad block — below the tool's result area -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="5555555555"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Real content — required by AdSense -->
+    <section>
+      <h2>What is the CEP?</h2>
+      <p>
+        The <strong>CEP</strong> (Código de Endereçamento Postal) is a numeric system created by
+        the Brazilian postal service (Correios) in 1972 to identify streets, localities,
+        buildings and postal services in Brazil. It consists of <strong>8 digits</strong> in the
+        format <code>NNNNN-NNN</code>, where the first 5 digits identify the region/sector and
+        the last 3 identify the sub-sector and suffix.
+      </p>
+      <p>
+        The CEP is widely used in e-commerce, logistics, registration and delivery systems to
+        determine the destination address. Unlike the CPF and CNPJ, the CEP
+        <strong>has no check digit</strong> — there is no mathematical calculation that confirms
+        whether a CEP exists; the only way to verify that is by consulting the Correios' official
+        database.
+      </p>
+
+      <h2>CEP structure by region</h2>
+      <p>
+        The first digit of the CEP determines the broad coverage region, according to the
+        Correios' official table:
+      </p>
+      <table class="info-table">
+        <thead>
+          <tr>
+            <th>1st digit</th>
+            <th>Region</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><code>0</code></td><td>Greater São Paulo</td></tr>
+          <tr><td><code>1</code></td><td>São Paulo countryside</td></tr>
+          <tr><td><code>2</code></td><td>Rio de Janeiro and Espírito Santo</td></tr>
+          <tr><td><code>3</code></td><td>Minas Gerais</td></tr>
+          <tr><td><code>4</code></td><td>Bahia and Sergipe</td></tr>
+          <tr><td><code>5</code></td><td>Pernambuco, Alagoas, Paraíba and Rio Grande do Norte</td></tr>
+          <tr><td><code>6</code></td><td>Ceará, Piauí, Maranhão, Pará, Amazonas, Acre, Amapá and Roraima</td></tr>
+          <tr><td><code>7</code></td><td>Distrito Federal, Goiás, Tocantins, Mato Grosso, Mato Grosso do Sul and Rondônia</td></tr>
+          <tr><td><code>8</code></td><td>Paraná and Santa Catarina</td></tr>
+          <tr><td><code>9</code></td><td>Rio Grande do Sul</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Important: format validation, not existence</h2>
+      <p>
+        This tool validates only the <strong>format</strong> of the CEP — it checks whether the
+        supplied value has exactly 8 numeric digits, which is the minimum requirement for a
+        plausible CEP. It <strong>does not confirm</strong> whether the CEP exists in the
+        Correios' database, nor does it return the corresponding street address. To look up a
+        real CEP, use the public
+        <a href="https://viacep.com.br" target="_blank" rel="noopener noreferrer">ViaCEP</a> API
+        or the official <a href="https://www.correios.com.br" target="_blank" rel="noopener noreferrer">Correios</a> website.
+      </p>
+      <p>
+        Likewise, the CEPs <strong>generated</strong> by this tool are numerically plausible
+        (they respect the first-digit range of the selected region), but may not correspond to
+        any real address — they are useful for filling form fields in development and testing
+        environments.
+      </p>
+
+      <h2>Frequently Asked Questions (FAQ)</h2>
+
+      <h3>Does the CEP have a check digit?</h3>
+      <p>
+        No. Unlike the CPF and CNPJ, the Brazilian CEP <strong>has no check digit</strong>. This
+        means any sequence of 8 digits is "mathematically valid" — there is no calculation that
+        detects an incorrect CEP without consulting the Correios' database. Validation here is
+        format-only (8 numeric digits).
+      </p>
+
+      <h3>Do the generated CEPs correspond to real addresses?</h3>
+      <p>
+        Not necessarily. The generated CEPs are <strong>plausible</strong> (they respect the
+        first digit of the chosen region), but the remaining digits are random. It is possible
+        for a generated CEP to coincide with a real address, but that is purely coincidental.
+        For tests that require real CEPs, use a curated list of known CEPs or consult the
+        Correios.
+      </p>
+
+      <h3>What is generating fictitious CEPs useful for?</h3>
+      <p>
+        While developing systems that have address fields, it is common to need fictitious CEPs
+        to fill in test forms, populate development databases, test front-end validations or
+        simulate registrations without using real user data.
+      </p>
+
+      <h3>Does the mask (hyphen) interfere with validation?</h3>
+      <p>
+        No. The tool automatically removes any hyphen or space before validating — you can
+        paste the CEP with or without the <code>NNNNN-NNN</code> mask.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/tools-en/cep.js"></script>
+</body>
+</html>

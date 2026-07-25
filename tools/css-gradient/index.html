@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CSS Gradient Generator — Dev Helper</title>
+  <meta name="description" content="Monte gradientes CSS lineares e radiais com várias cores, ângulo/direção e posições de stop, com preview ao vivo e o código pronto para copiar." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../../biblioteca/">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>CSS Gradient Generator</h1>
+        <p>Monte um gradiente <strong>linear</strong> ou <strong>radial</strong> com quantas cores quiser, ajuste ângulo/direção e posição de cada cor, veja o <strong>preview ao vivo</strong> e copie o código CSS pronto.</p>
+      </header>
+
+      <div class="tool__controls">
+        <fieldset class="tool__fieldset">
+          <legend class="tool__legend">Tipo</legend>
+          <label class="tool__radio-label"><input type="radio" name="cg-type" value="linear" checked /> Linear</label>
+          <label class="tool__radio-label"><input type="radio" name="cg-type" value="radial" /> Radial</label>
+        </fieldset>
+
+        <div id="cg-angle-row" class="tool__actions">
+          <label class="tool__label" for="cg-angle">Ângulo</label>
+          <input type="range" id="cg-angle" class="cg-range" min="0" max="360" step="1" value="90" />
+          <span id="cg-angle-out" class="tool__hint">90°</span>
+        </div>
+
+        <div id="cg-shape-row" class="tool__actions" hidden>
+          <label class="tool__label" for="cg-shape">Forma</label>
+          <select id="cg-shape" class="tool__select">
+            <option value="circle">Círculo</option>
+            <option value="ellipse">Elipse</option>
+          </select>
+        </div>
+
+        <label class="tool__label">Cores (stops)</label>
+        <div id="cg-stops" class="cg-stops"></div>
+        <div class="tool__actions">
+          <button id="cg-add" class="button--secondary" type="button">Adicionar cor</button>
+        </div>
+
+        <div class="tool__output">
+          <label class="tool__label">Preview</label>
+          <div id="cg-preview" class="cg-preview" aria-label="Pré-visualização do gradiente"></div>
+
+          <label class="tool__label" for="cg-code">Código CSS</label>
+          <textarea id="cg-code" class="result" readonly spellcheck="false" aria-label="Código CSS do gradiente"></textarea>
+          <div class="tool__actions tool__actions--mt">
+            <button id="cg-copy" class="button--secondary" type="button">Copiar</button>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="2626262626"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <section>
+      <h2>O que são gradientes CSS?</h2>
+      <p>
+        Um gradiente é uma transição suave entre duas ou mais cores. No CSS, eles são valores da
+        propriedade <code>background</code> (na verdade uma <em>imagem</em> gerada pelo navegador). O
+        <strong>linear-gradient</strong> vai de um lado a outro segundo um ângulo; o
+        <strong>radial-gradient</strong> irradia de um ponto central em forma de círculo ou elipse.
+        Cada cor pode ter uma <strong>posição</strong> (em %) que controla onde ela fica na transição.
+      </p>
+
+      <h2>Como usar</h2>
+      <p>
+        Escolha o tipo, ajuste o ângulo (linear) ou a forma (radial), e adicione ou remova cores. Para
+        cada cor você define o tom (seletor de cor) e, opcionalmente, a posição. O preview atualiza na
+        hora e o campo de código traz a linha CSS pronta, por exemplo
+        <code>background: linear-gradient(90deg, #4f46e5 0%, #ec4899 100%);</code>.
+      </p>
+
+      <h2>Perguntas frequentes (FAQ)</h2>
+
+      <h3>Como o preview evita riscos de segurança?</h3>
+      <p>
+        O gradiente aplicado ao preview é montado apenas com valores <strong>validados pelo próprio
+        código</strong>: as cores vêm de seletores de cor (sempre um hexadecimal válido) e as posições
+        são números limitados a 0–100%. Nada de texto livre é injetado como CSS ou HTML, o que elimina
+        o risco de injeção.
+      </p>
+
+      <h3>Posso usar quantas cores?</h3>
+      <p>
+        Sim. Use "Adicionar cor" para criar novos stops e "Remover" para tirá-los (mantendo no mínimo
+        dois, necessários para haver transição).
+      </p>
+
+      <h3>Qual a diferença entre círculo e elipse no radial?</h3>
+      <p>
+        <strong>Círculo</strong> mantém o raio igual em todas as direções; <strong>elipse</strong>
+        acompanha a proporção do elemento, podendo ficar oval em áreas retangulares.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/tools/css-gradient.js"></script>
+</body>
+</html>

@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Boas Práticas de Estrutura de Pastas — Estruturas de Projeto | Biblioteca Dev Helper</title>
+  <meta name="description" content="Boas práticas de estrutura de pastas em projetos de software: convenções comuns, como a estrutura expõe a arquitetura, exemplos de backend API e frontend SPA, e armadilhas como a pasta utils/lixeira e barrel re-exports com acoplamento circular." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Estrutura de Pastas</span>
+        </nav>
+        <span class="artigo__categoria">Estruturas de Projeto</span>
+        <h1 class="artigo__titulo">Boas Práticas de Estrutura de Pastas</h1>
+        <p class="artigo__subtitulo">
+          A estrutura de diretórios de um projeto não é apenas organização —
+          é documentação viva da arquitetura. Uma estrutura bem pensada comunica
+          onde cada coisa vive, quais são os limites do sistema e quais convenções
+          o time acordou seguir. Uma estrutura mal pensada esconde a arquitetura,
+          cria fricção e vira lixeira.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Definir convenções de diretório que tornam a arquitetura do
+            sistema visível na estrutura de arquivos</strong>, facilitando a
+            navegação, reduzindo o tempo para encontrar onde algo está ou deve
+            estar, e deixando claro quais são os limites e responsabilidades de
+            cada parte do sistema.
+          </p>
+          <p>
+            Uma boa estrutura de pastas responde a três perguntas sem que o
+            desenvolvedor precise abrir nenhum arquivo: <em>o que este projeto
+            faz</em>, <em>como ele é organizado</em> e <em>onde eu coloco o
+            código novo</em>.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Sem convenções explícitas, projetos crescem de forma entrópica:
+          </p>
+          <ul>
+            <li>Cada desenvolvedor coloca arquivos onde acha conveniente.</li>
+            <li>Código de naturezas diferentes (configuração, lógica de negócio, utilitários, infraestrutura) mistura-se nos mesmos diretórios.</li>
+            <li>A pasta <code>utils/</code> vira repositório de tudo que não tem dono claro.</li>
+            <li>Novos membros do time levam semanas para entender onde procurar algo.</li>
+            <li>A arquitetura real e a estrutura de pastas divergem — o código diz uma coisa, a pasta diz outra.</li>
+          </ul>
+          <p>
+            O custo não é apenas estético. Estrutura confusa gera imports
+            circulares, torna refatorações arriscadas e dificulta a visibilidade
+            do que pode ser reutilizado.
+          </p>
+        </section>
+
+        <!-- 3. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+
+          <h3>Convenções comuns de nível de projeto</h3>
+          <p>
+            Independente da linguagem ou framework, certas convenções de diretório
+            de nível raiz se repetem na maioria dos projetos bem organizados:
+          </p>
+          <div class="code-bloco">
+<pre><code>  projeto/
+  ├── src/           ← código-fonte da aplicação (único lugar com lógica)
+  ├── tests/         ← testes automatizados (ou __tests__/ junto ao src/)
+  │     ├── unit/
+  │     ├── integration/
+  │     └── e2e/
+  ├── docs/          ← documentação técnica (ADRs, diagramas, guias)
+  ├── config/        ← arquivos de configuração de ambiente e ferramentas
+  │     ├── jest.config.ts
+  │     └── tsconfig.json
+  ├── scripts/       ← scripts de build, seed, migração e automação
+  └── dist/          ← artefato compilado (gerado; nunca versionado)
+</code></pre>
+          </div>
+
+          <h3>Exemplo: backend API (Node/Express com camadas)</h3>
+          <div class="code-bloco">
+<pre><code>  src/
+  ├── users/                       ← feature: usuários
+  │     ├── http/
+  │     │     ├── UserController.ts
+  │     │     └── CreateUserDto.ts
+  │     ├── application/
+  │     │     └── CreateUserUseCase.ts
+  │     ├── domain/
+  │     │     ├── User.ts           ← entidade de domínio
+  │     │     └── IUserRepository.ts ← interface (porta)
+  │     └── infra/
+  │           └── PrismaUserRepository.ts ← implementação concreta
+  │
+  ├── orders/                      ← feature: pedidos
+  │     ├── http/
+  │     ├── application/
+  │     ├── domain/
+  │     └── infra/
+  │
+  ├── shared/                      ← código genuinamente compartilhado
+  │     ├── errors/                ← classes de erro de domínio
+  │     ├── types/                 ← tipos TypeScript compartilhados
+  │     └── middleware/            ← middlewares HTTP transversais
+  │
+  └── app.ts                       ← bootstrap: monta o servidor Express
+</code></pre>
+          </div>
+
+          <h3>Exemplo: frontend SPA (React/Vue)</h3>
+          <div class="code-bloco">
+<pre><code>  src/
+  ├── features/                    ← funcionalidades da aplicação
+  │     ├── auth/
+  │     │     ├── components/      ← componentes específicos de auth
+  │     │     ├── hooks/           ← hooks de auth (useAuth, useLogin)
+  │     │     ├── services/        ← chamadas de API de auth
+  │     │     └── types.ts         ← tipos de auth
+  │     │
+  │     └── dashboard/
+  │           ├── components/
+  │           ├── hooks/
+  │           └── services/
+  │
+  ├── components/                  ← componentes de UI reutilizáveis (sem lógica de negócio)
+  │     ├── Button/
+  │     │     ├── Button.tsx
+  │     │     └── Button.test.tsx
+  │     └── Modal/
+  │
+  ├── hooks/                       ← hooks genéricos (useDebounce, useFetch)
+  ├── services/                    ← cliente HTTP, configuração de API
+  ├── store/                       ← estado global (Redux, Zustand, Pinia)
+  ├── types/                       ← tipos TypeScript globais
+  └── main.tsx                     ← entry point
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 4. COMO FUNCIONA -->
+        <section class="artigo__secao">
+          <h2>Como a estrutura expõe (ou esconde) a arquitetura</h2>
+
+          <h3>Screaming Architecture</h3>
+          <p>
+            Robert C. Martin propôs que a estrutura de um projeto deveria "gritar"
+            o que o sistema faz — não o framework que ele usa. Uma pasta raiz
+            chamada <code>rails/</code> grita "este é um projeto Rails". Uma pasta
+            raiz com <code>users/</code>, <code>orders/</code> e <code>payments/</code>
+            grita "este é um sistema de e-commerce". A segunda revela a intenção do
+            negócio.
+          </p>
+          <p>
+            Na prática, isso significa que os diretórios de nível mais alto devem
+            refletir as funcionalidades ou domínios do sistema, não os mecanismos
+            técnicos. Frameworks e bibliotecas são detalhes — deveriam aparecer
+            apenas nas camadas mais externas.
+          </p>
+
+          <h3>Onde colocar os testes</h3>
+          <p>
+            Há duas convenções, cada uma com trade-offs:
+          </p>
+          <ul>
+            <li>
+              <strong>Junto ao código (<code>User.test.ts</code> ao lado de <code>User.ts</code>):</strong>
+              facilita encontrar e manter o teste ao lado da implementação. Favorece
+              testes unitários. Mais comum em projetos JavaScript/TypeScript com Jest
+              ou Vitest.
+            </li>
+            <li>
+              <strong>Diretório <code>tests/</code> separado:</strong> separa
+              claramente o código de produção do código de teste. Facilita ter testes
+              de integração e e2e que testam múltiplos módulos. Mais comum em projetos
+              Python, Go e Java.
+            </li>
+          </ul>
+          <p>
+            O mais importante é ser consistente. Misturar as duas convenções no
+            mesmo projeto cria confusão sobre onde o teste de algo está.
+          </p>
+        </section>
+
+        <!-- 5. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Princípios práticos</h2>
+
+          <h3>Nomeie diretórios pelo propósito, não pelo tipo</h3>
+          <p>
+            <code>helpers/</code>, <code>utils/</code> e <code>misc/</code> descrevem
+            <em>o tipo</em> de arquivo (código auxiliar), não o <em>propósito</em>.
+            Substitua por nomes que comuniquem a intenção: <code>formatters/</code>,
+            <code>validators/</code>, <code>date-utils/</code>. Se não consegue
+            nomear o diretório com precisão, provavelmente o código dentro dele
+            não tem coesão suficiente para estar junto.
+          </p>
+
+          <h3>Profundidade máxima útil</h3>
+          <p>
+            Estruturas com mais de quatro ou cinco níveis de profundidade são difíceis
+            de navegar. Se o caminho de um arquivo é
+            <code>src/features/orders/services/handlers/processors/</code>, é
+            provável que a hierarquia esteja modelando subdivisões que poderiam
+            ser capturadas pelo nome do arquivo em vez de por diretórios.
+          </p>
+
+          <h3>Consistência sobre perfeição</h3>
+          <p>
+            Uma estrutura boa aplicada de forma consistente é mais valiosa do que
+            uma estrutura "perfeita" onde cada desenvolvedor interpreta de forma
+            diferente onde as coisas vão. Documente as convenções no
+            <code>README</code> ou num ADR (Architecture Decision Record) e siga-as.
+          </p>
+        </section>
+
+        <!-- 6. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Boas práticas vs anti-padrões</h2>
+
+          <h3>Boas práticas</h3>
+          <ul class="artigo__lista-pros">
+            <li>Separar código-fonte (<code>src/</code>) de artefatos gerados (<code>dist/</code>) e de scripts de automação (<code>scripts/</code>).</li>
+            <li>Nomes de diretório em minúsculas e com hífen (kebab-case) — evitam problemas em sistemas de arquivo case-insensitive.</li>
+            <li>Estrutura que reflete o domínio do negócio nos níveis superiores.</li>
+            <li>Testes próximos ao código que testam, ou num diretório de testes com estrutura espelhada.</li>
+            <li>Um <code>index.ts</code> (barrel) por diretório apenas quando a API pública do módulo é estável e explicitamente definida.</li>
+          </ul>
+
+          <h3>Anti-padrões</h3>
+          <ul class="artigo__lista-contras">
+            <li><code>utils/</code> sem critério: acaba com arquivos de formatação de data, helpers de string, funções matemáticas e validadores de CPF no mesmo diretório.</li>
+            <li><code>shared/</code> ou <code>common/</code> sem critério de admissão: vira o novo <code>utils/</code>.</li>
+            <li>Diretórios com um único arquivo: se há apenas um arquivo, o diretório provavelmente não agrega valor.</li>
+            <li>Estrutura que copia o framework, não o domínio: pastas <code>controllers/</code>, <code>models/</code>, <code>views/</code> como nível mais alto ocultam o que o sistema faz.</li>
+            <li>Barrel re-exports encadeados (veja abaixo).</li>
+          </ul>
+        </section>
+
+        <!-- 7. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. A pasta utils/ como lixeira</h3>
+          <p>
+            <code>utils/</code> começa com uma função de formatação de data e
+            termina com 40 arquivos de naturezas completamente distintas. O problema
+            não é ter código utilitário — é agrupá-lo sem critério de coesão. Quando
+            você não consegue descrever o que <code>utils/</code> contém em uma frase,
+            ela virou lixeira.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Solução:</strong> divida por domínio de responsabilidade.
+            <code>formatters/</code> para formatação de valores, <code>validators/</code>
+            para validações, <code>parsers/</code> para parsing. Se um utilitário
+            pertence semanticamente a uma feature, coloque-o dentro dessa feature.
+          </p>
+
+          <h3>2. Barrel re-exports criando acoplamento circular</h3>
+          <p>
+            Barrel exports (<code>index.ts</code> que re-exporta tudo do diretório)
+            são convenientes para importar de um módulo por um caminho curto. O
+            problema surge quando barrels são encadeados: <code>A</code> exporta
+            <code>B</code> e <code>C</code>; <code>B</code> importa de <code>A</code>
+            para usar <code>C</code>. Resultado: dependência circular que o bundler
+            pode resolver de formas imprevisíveis.
+          </p>
+          <div class="code-bloco">
+<pre><code>  // anti-padrão: B importa de A para usar C (que A re-exporta)
+  // src/users/index.ts
+  export { UserService } from './UserService';
+  export { UserUtils } from './UserUtils';   // C
+
+  // src/users/UserService.ts
+  import { UserUtils } from '../users';      // importa A para chegar em C
+  //                           ^^^^^^ cria dependência circular em UserService -&gt; users/index -&gt; UserService
+
+  // correto: importar diretamente
+  import { UserUtils } from './UserUtils';
+</code></pre>
+          </div>
+          <p>
+            Use barrels com moderação. Um <code>index.ts</code> é adequado para
+            definir a API pública de um módulo — o que ele expõe para outros módulos.
+            Não use barrels como atalho para evitar imports diretos dentro do
+            mesmo módulo.
+          </p>
+
+          <h3>3. Diretório shared/ sem critério de entrada</h3>
+          <p>
+            <code>shared/</code> resolve o problema de código usado por múltiplas
+            features, mas sem um critério claro de o que pertence a ele, torna-se
+            outro depósito. Dois sinais de que algo não pertence a <code>shared/</code>:
+            (1) só uma feature usa; (2) o código sabe de detalhes de uma feature
+            específica. Nenhum dos dois casos é "genuinamente compartilhado".
+          </p>
+
+          <h3>4. Estrutura que diverge da arquitetura real</h3>
+          <p>
+            Uma estrutura por camadas com pastas <code>controllers/</code> e
+            <code>services/</code> é cosmética se o <code>UserController</code> acessa
+            o banco diretamente. Uma estrutura por features é enganosa se todas as
+            features importam livremente umas das outras. A estrutura de pastas
+            deve refletir os limites reais do sistema — não criá-los no papel
+            enquanto o código os viola.
+          </p>
+        </section>
+
+        <!-- 8. PADRÕES E ARQUITETURAS RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Tópicos relacionados</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../feature-vs-layer/">Organização por Feature vs Camada</a></li>
+            <li><a href="../arquitetura-em-camadas/">Arquitetura em Camadas</a></li>
+          </ul>
+          <p class="mt-1">
+            A estrutura de pastas e a
+            <a href="../feature-vs-layer/">organização por feature vs camada</a> são
+            decisões complementares: a organização define o critério primário de
+            agrupamento; a estrutura de pastas define as convenções de nomeação,
+            profundidade e localização de cada tipo de artefato dentro desse critério.
+          </p>
+          <p>
+            A <a href="../arquitetura-em-camadas/">Arquitetura em Camadas</a> define
+            regras de dependência entre partes do sistema. A estrutura de pastas é
+            a forma como essas camadas se tornam visíveis no sistema de arquivos.
+            Uma boa estrutura torna as violações de arquitetura óbvias — um import
+            de <code>infra/</code> para <code>domain/</code> é imediatamente
+            suspeito quando os diretórios estão nomeados de forma consistente com
+            a arquitetura.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="4646464646"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

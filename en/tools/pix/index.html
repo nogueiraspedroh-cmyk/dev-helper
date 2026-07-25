@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PIX (Brazilian Instant Payment) Copy-and-Paste and QR Code Generator — Dev Helper</title>
+  <meta name="description" content="Generate the PIX Copy-and-Paste code (BR Code / EMV) and the QR Code of a static PIX, with CRC16 calculation." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../tools/pix/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../../../biblioteca/">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>PIX Copy-and-Paste / QR Code Generator</h1>
+        <p>Generate the <strong>PIX Copy-and-Paste code</strong> (BR Code / EMV standard) and the <strong>QR Code</strong> of a static PIX — no external libraries. The CRC16 is calculated locally.</p>
+      </header>
+
+      <div class="tool__controls">
+        <label class="tool__label" for="pix-key">PIX key</label>
+        <input type="text" id="pix-key" class="tool__input-inline" spellcheck="false" autocomplete="off" placeholder="CPF/CNPJ, e-mail, phone (+55...) or random key" />
+
+        <label class="tool__label" for="pix-name">Recipient name <span class="regex-flag-hint">(max. 25, no accents)</span></label>
+        <input type="text" id="pix-name" class="tool__input-inline" spellcheck="false" autocomplete="off" maxlength="40" placeholder="John Doe" />
+
+        <label class="tool__label" for="pix-city">City <span class="regex-flag-hint">(max. 15)</span></label>
+        <input type="text" id="pix-city" class="tool__input-inline" spellcheck="false" autocomplete="off" maxlength="30" placeholder="Sao Paulo" />
+
+        <label class="tool__label" for="pix-amount">Amount <span class="regex-flag-hint">(optional, e.g.: 10.50)</span></label>
+        <input type="text" id="pix-amount" class="tool__input-inline" spellcheck="false" autocomplete="off" inputmode="decimal" placeholder="Leave empty for the payer to enter" />
+
+        <label class="tool__label" for="pix-txid">Identifier / txid <span class="regex-flag-hint">(optional, alphanumeric, max. 25)</span></label>
+        <input type="text" id="pix-txid" class="tool__input-inline" spellcheck="false" autocomplete="off" placeholder="*** (default when empty)" />
+
+        <label class="tool__label" for="pix-desc">Description <span class="regex-flag-hint">(optional)</span></label>
+        <input type="text" id="pix-desc" class="tool__input-inline" spellcheck="false" autocomplete="off" maxlength="40" placeholder="E.g.: Payment for order 123" />
+
+        <div class="tool__actions tool__actions--mt">
+          <button id="pix-generate" class="button" type="button">Generate PIX</button>
+        </div>
+      </div>
+
+      <p id="pix-error" class="error-msg" role="alert" hidden></p>
+
+      <section id="pix-output" class="tool__output" hidden>
+        <label class="tool__label" for="pix-payload">PIX Copy-and-Paste</label>
+        <textarea id="pix-payload" class="tool__input" readonly spellcheck="false" rows="4"></textarea>
+        <div class="tool__actions">
+          <button id="pix-copy" class="button--secondary" type="button">Copy code</button>
+        </div>
+        <div class="qr-result">
+          <canvas id="pix-canvas" class="qr-canvas" aria-label="QR Code of the generated PIX" role="img"></canvas>
+          <div class="tool__actions">
+            <button id="pix-download" class="button" type="button" disabled>Download QR (PNG)</button>
+          </div>
+        </div>
+      </section>
+    </article>
+
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="3131313131"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <section>
+      <h2>What is the PIX Copy-and-Paste code?</h2>
+      <p>
+        <strong>PIX</strong> is Brazil's instant payment system, run by the Central Bank of
+        Brazil. The <strong>PIX Copy-and-Paste code</strong> is a text string in the
+        <strong>BR Code</strong> standard, which follows the Central Bank's
+        <strong>EMV® QR Code</strong> specification. It contains, in numbered fields (ID +
+        length + value), the data needed for a payment: the recipient's PIX key, name, city, the
+        amount (optional) and a transaction identifier. The same text can be turned into a
+        <strong>QR Code</strong> for the bank app to scan.
+      </p>
+
+      <h2>How this generator works</h2>
+      <p>
+        Everything is assembled in your browser. The fields are organized in the EMV format, the
+        amount is formatted with two decimal places, the name and city are normalized (uppercase,
+        no accents) and, at the end, the <strong>CRC16-CCITT</strong> checksum (polynomial
+        <code>0x1021</code>, initial value <code>0xFFFF</code>, no reflection) is calculated over
+        the whole payload with <code>6304</code> already appended. The QR code reuses the same
+        generation engine as the site's QR Code tool (Reed-Solomon, no CDN).
+      </p>
+
+      <h2>Frequently Asked Questions (FAQ)</h2>
+
+      <h3>Is it a static or dynamic PIX?</h3>
+      <p>
+        <strong>Static</strong>: the data is embedded in the code itself. There is no URL for a
+        charge (dynamic payload), nor generation of a <em>location</em> — only the recipient's
+        fields.
+      </p>
+
+      <h3>Why do the name and city lose their accents?</h3>
+      <p>
+        The BR Code standard recommends simple characters in these fields. That's why the name
+        (max. 25) and the city (max. 15) are converted to uppercase without accents, avoiding
+        reading issues in some apps.
+      </p>
+
+      <h3>What is the txid field?</h3>
+      <p>
+        It is a transaction identifier (field 62, subfield 05). When you don't enter anything,
+        the default value used is <code>***</code>, which is accepted for static PIX. If you
+        prefer, use an alphanumeric identifier of up to 25 characters.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/lib/qrcode-core.js"></script>
+  <script src="../../../js/tools-en/pix.js"></script>
+</body>
+</html>

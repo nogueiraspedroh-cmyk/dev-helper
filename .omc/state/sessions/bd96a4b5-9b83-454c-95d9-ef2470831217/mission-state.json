@@ -1,0 +1,131 @@
+{
+  "updatedAt": "2026-07-25T15:39:38.960Z",
+  "missions": [
+    {
+      "id": "session:bd96a4b5-9b83-454c-95d9-ef2470831217:none",
+      "source": "session",
+      "name": "none",
+      "objective": "Session mission",
+      "createdAt": "2026-07-25T14:38:34.214Z",
+      "updatedAt": "2026-07-25T15:39:38.960Z",
+      "status": "running",
+      "workerCount": 8,
+      "taskCounts": {
+        "total": 8,
+        "pending": 0,
+        "blocked": 0,
+        "inProgress": 1,
+        "completed": 7,
+        "failed": 0
+      },
+      "agents": [
+        {
+          "name": "dev-typescript:a553baa",
+          "role": "dev-typescript",
+          "ownership": "a553baada2c4b212f",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-07-25T14:50:18.958Z"
+        },
+        {
+          "name": "dev-typescript:a624ba0",
+          "role": "dev-typescript",
+          "ownership": "a624ba07313ca49a0",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-07-25T14:57:02.572Z"
+        },
+        {
+          "name": "code-reviewer:a8137ee",
+          "role": "code-reviewer",
+          "ownership": "a8137ee26b69da101",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-07-25T15:01:49.167Z"
+        },
+        {
+          "name": "dev-typescript:a7113f5",
+          "role": "dev-typescript",
+          "ownership": "a7113f5a4717d77e0",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-07-25T15:06:30.769Z"
+        },
+        {
+          "name": "documentador-fluxos:a0c6c7e",
+          "role": "documentador-fluxos",
+          "ownership": "a0c6c7e2cdd5d4ba9",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-07-25T15:08:41.189Z"
+        },
+        {
+          "name": "dev-typescript:a666ced",
+          "role": "dev-typescript",
+          "ownership": "a666ced9f93244d2c",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-07-25T15:34:03.968Z"
+        },
+        {
+          "name": "code-reviewer:a7ecd5b",
+          "role": "code-reviewer",
+          "ownership": "a7ecd5bb3fc7eca44",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-07-25T15:38:33.591Z"
+        },
+        {
+          "name": "dev-typescript:ad6fc7d",
+          "role": "dev-typescript",
+          "ownership": "ad6fc7d8b97c7ba1b",
+          "status": "running",
+          "currentStep": null,
+          "latestUpdate": null,
+          "completedSummary": null,
+          "updatedAt": "2026-07-25T15:39:38.960Z"
+        }
+      ],
+      "timeline": [
+        {
+          "id": "session-start:a7ecd5bb3fc7eca44:2026-07-25T15:34:39.974Z",
+          "at": "2026-07-25T15:34:39.974Z",
+          "kind": "update",
+          "agent": "code-reviewer:a7ecd5b",
+          "detail": "started code-reviewer:a7ecd5b",
+          "sourceKey": "session-start:a7ecd5bb3fc7eca44"
+        },
+        {
+          "id": "session-stop:a7ecd5bb3fc7eca44:2026-07-25T15:38:33.591Z",
+          "at": "2026-07-25T15:38:33.591Z",
+          "kind": "completion",
+          "agent": "code-reviewer:a7ecd5b",
+          "detail": "completed",
+          "sourceKey": "session-stop:a7ecd5bb3fc7eca44"
+        },
+        {
+          "id": "session-start:ad6fc7d8b97c7ba1b:2026-07-25T15:39:38.960Z",
+          "at": "2026-07-25T15:39:38.960Z",
+          "kind": "update",
+          "agent": "dev-typescript:ad6fc7d",
+          "detail": "started dev-typescript:ad6fc7d",
+          "sourceKey": "session-start:ad6fc7d8b97c7ba1b"
+        }
+      ]
+    }
+  ]
+}

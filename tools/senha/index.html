@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gerador de Senha — Dev Helper</title>
+  <meta name="description" content="Gere senhas seguras diretamente no navegador usando criptografia nativa (Web Crypto API). Controle comprimento, conjuntos de caracteres, gere várias de uma vez e veja o indicador de entropia." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!--
+    AdSense — biblioteca carregada UMA vez por página.
+    Substitua ca-pub-0000000000000000 pelo seu pub-ID real antes do deploy.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../../biblioteca/">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Gerador de Senha</h1>
+        <p>Gere senhas seguras usando a Web Crypto API.</p>
+      </header>
+
+      <div class="tool__controls">
+
+        <!-- Comprimento da senha -->
+        <div class="tool__actions">
+          <label class="tool__label" for="senha-comprimento">Comprimento:</label>
+          <input
+            type="number"
+            id="senha-comprimento"
+            class="tool__select senha-comprimento-input"
+            min="4"
+            max="64"
+            value="16"
+          />
+          <input
+            type="range"
+            id="senha-range"
+            min="4"
+            max="64"
+            value="16"
+            class="senha-range-input"
+          />
+        </div>
+
+        <!-- Quantidade (geração em lote) -->
+        <div class="tool__actions">
+          <label class="tool__label" for="senha-quantidade">Quantidade:</label>
+          <input
+            type="number"
+            id="senha-quantidade"
+            class="tool__select senha-comprimento-input"
+            min="1"
+            max="50"
+            value="1"
+          />
+        </div>
+
+        <!-- Conjuntos de caracteres -->
+        <fieldset class="tool__fieldset">
+          <legend class="tool__legend">Conjuntos de caracteres</legend>
+          <div class="senha-opcoes-grid">
+            <label class="tool__checkbox-label">
+              <input type="checkbox" id="chk-maiusculas" checked />
+              Maiúsculas (A-Z)
+            </label>
+            <label class="tool__checkbox-label">
+              <input type="checkbox" id="chk-minusculas" checked />
+              Minúsculas (a-z)
+            </label>
+            <label class="tool__checkbox-label">
+              <input type="checkbox" id="chk-numeros" checked />
+              Números (0-9)
+            </label>
+            <label class="tool__checkbox-label">
+              <input type="checkbox" id="chk-simbolos" checked />
+              Símbolos (!@#$%…)
+            </label>
+          </div>
+        </fieldset>
+
+        <!-- Opção: evitar ambíguos -->
+        <label class="tool__checkbox-label">
+          <input type="checkbox" id="chk-ambiguos" />
+          Evitar caracteres ambíguos (remove 0, O, o, 1, l, I)
+        </label>
+
+        <!-- Botões de ação -->
+        <div class="tool__actions">
+          <button id="btn-gerar-senha" class="button" type="button">Gerar senha</button>
+          <button id="btn-copiar-senha" class="button--secondary" type="button">Copiar</button>
+        </div>
+      </div>
+
+      <!-- Saída -->
+      <div class="tool__output">
+        <!-- Senha gerada -->
+        <input
+          id="output-senha"
+          class="tool__result-input senha-saida"
+          type="text"
+          readonly
+          placeholder="A senha gerada aparecerá aqui..."
+          spellcheck="false"
+          autocorrect="off"
+          autocapitalize="off"
+        />
+
+        <!-- Indicador de força / entropia -->
+        <div id="senha-forca-wrapper" class="senha-forca-wrapper">
+          <div class="senha-forca-linha">
+            <span id="senha-forca-label" class="senha-forca-badge"></span>
+            <span id="senha-forca-bits" class="senha-forca-bits"></span>
+          </div>
+          <div class="senha-forca-barra-bg">
+            <div id="senha-forca-barra" class="senha-forca-barra"></div>
+          </div>
+        </div>
+
+        <!-- Mensagem de erro (nenhum conjunto selecionado) -->
+        <p id="senha-error" class="error-msg" role="alert" hidden></p>
+
+        <!-- Saída em lote (quantidade > 1) -->
+        <div id="senha-lote-wrapper" class="tool__output" hidden>
+          <textarea
+            id="output-senha-lote"
+            class="result"
+            rows="8"
+            readonly
+            spellcheck="false"
+            aria-label="Senhas geradas"
+          ></textarea>
+          <div class="tool__actions">
+            <button id="btn-copiar-lote" class="button--secondary" type="button">Copiar todas</button>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- Bloco de anúncio — abaixo do resultado da ferramenta -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="6666666666"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Conteúdo real — exigido pelo AdSense -->
+    <section>
+      <h2>Como esta ferramenta gera senhas seguras</h2>
+      <p>
+        Esta ferramenta usa a <strong>Web Crypto API</strong>
+        (<code>window.crypto.getRandomValues</code>), disponível em todos os navegadores modernos,
+        que produz números aleatórios criptograficamente seguros — ou seja, imprevisíveis por
+        design, ao contrário do <code>Math.random()</code> do JavaScript, que usa um gerador
+        pseudoaleatório simples não adequado para criptografia.
+      </p>
+      <p>
+        Além disso, o algoritmo garante <strong>ausência de viés de módulo</strong>: ao escolher
+        um caractere do alfabeto, valores fora do maior múltiplo do tamanho do alfabeto são
+        rejeitados e um novo valor é sorteado. Isso assegura distribuição uniforme entre todos os
+        caracteres possíveis. O resultado é então embaralhado com Fisher-Yates usando a mesma
+        fonte criptográfica, garantindo ao menos um caractere de cada conjunto selecionado.
+      </p>
+
+      <h2>O que é entropia de senha?</h2>
+      <p>
+        A <strong>entropia</strong> é uma medida da imprevisibilidade de uma senha, expressa em
+        bits. A fórmula básica é:
+      </p>
+      <p class="exemplo-mono">
+        entropia (bits) = comprimento × log₂(tamanho do alfabeto)
+      </p>
+      <p>
+        Por exemplo, uma senha de 16 caracteres usando maiúsculas + minúsculas + números
+        (alfabeto de 62 símbolos) tem entropia de 16 × log₂(62) ≈ <strong>95 bits</strong>.
+        Com símbolos adicionados (alfabeto ~90), sobe para cerca de <strong>102 bits</strong>.
+      </p>
+
+      <table class="info-table">
+        <thead>
+          <tr>
+            <th>Faixa de entropia</th>
+            <th>Classificação</th>
+            <th>Uso típico</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Abaixo de 40 bits</td>
+            <td>Fraca</td>
+            <td>Evitar em qualquer contexto real</td>
+          </tr>
+          <tr>
+            <td>40–59 bits</td>
+            <td>Média</td>
+            <td>Aceitável para contextos de baixo risco</td>
+          </tr>
+          <tr>
+            <td>60–127 bits</td>
+            <td>Forte</td>
+            <td>Recomendado para contas e sistemas</td>
+          </tr>
+          <tr>
+            <td>128 bits ou mais</td>
+            <td>Muito forte</td>
+            <td>Padrão para criptografia e sistemas críticos</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Dicas para senhas mais seguras</h2>
+      <ul>
+        <li>Use comprimentos de <strong>16 caracteres ou mais</strong> — o comprimento impacta exponencialmente a entropia.</li>
+        <li>Inclua todos os conjuntos de caracteres disponíveis (maiúsculas, minúsculas, números e símbolos) para maximizar o alfabeto.</li>
+        <li>Nunca reutilize a mesma senha em múltiplos serviços.</li>
+        <li>Use um <strong>gerenciador de senhas</strong> para armazenar senhas geradas — não as memorize manualmente.</li>
+        <li>Troque senhas sempre que suspeitar de comprometimento ou vazamento de dados.</li>
+        <li>Habilite autenticação de dois fatores (2FA) como camada extra de proteção.</li>
+      </ul>
+
+      <h2>Perguntas frequentes (FAQ)</h2>
+
+      <h3>Por que usar <code>crypto.getRandomValues</code> em vez de <code>Math.random</code>?</h3>
+      <p>
+        <code>Math.random()</code> usa um gerador pseudoaleatório (PRNG) projetado para velocidade,
+        não para segurança. Em alguns engines, seu estado pode ser inferido a partir de saídas
+        anteriores. <code>window.crypto.getRandomValues</code> usa a fonte de entropia do sistema
+        operacional (equivalente a <code>/dev/urandom</code> no Linux), adequada para uso
+        criptográfico.
+      </p>
+
+      <h3>O que é viés de módulo e como é evitado?</h3>
+      <p>
+        Se o tamanho do alfabeto não é divisor exato do intervalo do número aleatório (0–255 para
+        um byte, por exemplo), alguns caracteres aparecem com probabilidade ligeiramente maior —
+        isso se chama viés de módulo. Esta ferramenta rejeita valores fora do maior múltiplo do
+        tamanho do alfabeto e sorteia novamente, garantindo distribuição perfeitamente uniforme.
+      </p>
+
+      <h3>O que são caracteres ambíguos?</h3>
+      <p>
+        São caracteres visualmente parecidos que podem causar confusão ao transcrever senhas
+        manualmente: <code>0</code> (zero) e <code>O</code> (letra O), <code>1</code> (um) e
+        <code>l</code> (L minúsculo) e <code>I</code> (i maiúsculo). A opção
+        <em>Evitar caracteres ambíguos</em> os remove do alfabeto, reduzindo levemente a entropia
+        mas facilitando a transcrição manual quando necessário.
+      </p>
+
+      <h3>A entropia exibida é uma garantia de segurança?</h3>
+      <p>
+        A entropia indica a <em>imprevisibilidade teórica</em> da senha, assumindo que o gerador
+        é verdadeiramente aleatório. Ela não leva em conta ataques de lado (side-channel) nem
+        comprometimento do dispositivo. É uma métrica útil e bem fundamentada, mas não substitui
+        boas práticas gerais de segurança.
+      </p>
+
+      <h3>Posso usar esta ferramenta para gerar senhas de produção?</h3>
+      <p>
+        Sim — a geração é criptograficamente segura. No entanto, lembre-se de que a responsabilidade
+        pelo armazenamento e uso seguro da senha é sua. Use um gerenciador de senhas para guardar
+        senhas geradas, nunca as armazene em texto puro.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/tools/senha.js"></script>
+</body>
+</html>

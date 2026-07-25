@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Strategy — Design Patterns | Biblioteca Dev Helper</title>
+  <meta name="description" content="Aprenda o padrão Strategy (GoF) em profundidade: intenção, problema, solução, estrutura, exemplos em TypeScript e PHP, quando usar, quando evitar e armadilhas comuns." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Strategy</span>
+        </nav>
+        <span class="artigo__categoria">Padrão Comportamental (GoF)</span>
+        <h1 class="artigo__titulo">Strategy</h1>
+        <p class="artigo__subtitulo">
+          Define uma família de algoritmos, encapsula cada um deles e os torna
+          intercambiáveis — permitindo que o algoritmo varie independentemente dos
+          clientes que o utilizam e seja trocado em tempo de execução.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Encapsular cada variação de algoritmo</strong> em uma classe (ou função)
+            separada, tornando-as intercambiáveis. O contexto que usa o algoritmo não sabe
+            qual implementação está ativa — ele apenas chama o método da interface. Isso
+            permite trocar o comportamento em runtime sem alterar o contexto.
+          </p>
+          <p>
+            O Strategy pertence à categoria de <strong>padrões comportamentais</strong> no
+            catálogo do GoF (Gamma, Helm, Johnson e Vlissides, 1994). É um dos padrões mais
+            aplicados na prática — frequentemente sem que o desenvolvedor perceba que está
+            seguindo um padrão nomeado — e é o mecanismo central por trás de muitos
+            frameworks de validação, ordenação e roteamento.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Considere um sistema de e-commerce que calcula o frete de um pedido. No início,
+            havia apenas uma transportadora. Com o crescimento, surgiram várias opções:
+            Correios (PAC e SEDEX), transportadoras privadas, retirada na loja e entrega
+            expressa. A implementação ingênua concentra toda a lógica de cálculo numa
+            única classe com condicionais crescentes:
+          </p>
+          <div class="code-bloco">
+<pre><code>// Abordagem ingênua — NÃO faça isso:
+calcularFrete(tipo: string, peso: number, distancia: number): number {
+  if (tipo === "pac") {
+    return peso * 0.05 + distancia * 0.01;
+  } else if (tipo === "sedex") {
+    return peso * 0.12 + distancia * 0.02 + 5;
+  } else if (tipo === "expressa") {
+    return peso * 0.20 + distancia * 0.03 + 15;
+  } else if (tipo === "retirada") {
+    return 0;
+  }
+  throw new Error(`Tipo desconhecido: ${tipo}`);
+}</code></pre>
+          </div>
+          <p>
+            Cada nova transportadora exige modificar esse método: risco de regressão,
+            dificuldade de testar cada caso de forma isolada, e violação do Princípio
+            Aberto/Fechado. Além disso, a lógica de cálculo não pode ser reutilizada
+            de forma independente — ela está presa dentro da condicional.
+          </p>
+          <p>
+            O padrão Strategy resolve isso extraindo cada algoritmo de cálculo para sua
+            própria classe, que implementa uma interface comum. O contexto (pedido,
+            carrinho) recebe a estratégia por injeção e a chama sem saber qual é.
+          </p>
+        </section>
+
+        <!-- 3. SOLUÇÃO -->
+        <section class="artigo__secao">
+          <h2>Solução</h2>
+          <p>O Strategy organiza o código em três participantes:</p>
+          <ol>
+            <li>
+              <strong>Strategy (interface):</strong> declara o método que todos os
+              algoritmos devem implementar. Ex.: <code>EstrategiaFrete</code> com o
+              método <code>calcular(peso, distancia)</code>.
+            </li>
+            <li>
+              <strong>ConcreteStrategy:</strong> implementa o algoritmo específico.
+              Ex.: <code>FreteCorreiosPac</code>, <code>FreteCorreiosSedex</code>,
+              <code>FreteExpresso</code>, <code>RetiradaNaLoja</code>.
+            </li>
+            <li>
+              <strong>Context:</strong> mantém uma referência a um objeto Strategy e
+              delega o trabalho a ele. O contexto pode permitir troca de estratégia
+              em tempo de execução via um setter. Ex.: classe <code>Pedido</code> que
+              armazena a estratégia de frete e a invoca ao calcular o total.
+            </li>
+          </ol>
+
+          <h3>Strategy em TypeScript: funções como estratégias</h3>
+          <p>
+            Em TypeScript (e JavaScript), funções são cidadãs de primeira classe — é
+            possível passar uma função diretamente como estratégia, sem necessidade de
+            criar uma classe extra. Esta variante é mais leve e idiomática em TS para
+            estratégias sem estado:
+          </p>
+          <div class="code-bloco">
+<pre><code>// Em vez de uma interface com classe, a estratégia é simplesmente um tipo de função:
+type EstrategiaFrete = (peso: number, distancia: number) =&gt; number;
+
+const pacStrategy: EstrategiaFrete   = (p, d) =&gt; p * 0.05 + d * 0.01;
+const sedexStrategy: EstrategiaFrete = (p, d) =&gt; p * 0.12 + d * 0.02 + 5;
+
+// O contexto aceita qualquer função do tipo correto:
+class Pedido {
+  constructor(private estrategiaFrete: EstrategiaFrete) {}
+
+  calcularFrete(peso: number, distancia: number): number {
+    return this.estrategiaFrete(peso, distancia);
+  }
+}</code></pre>
+          </div>
+          <p>
+            Em PHP, funções de primeira classe também existem (callables, closures, arrow
+            functions), mas para estratégias com estado ou que precisam de dependências
+            injetadas, interfaces com classes concretas são mais idiomáticas e
+            recomendadas pela tipagem estrita do PHPStan/Psalm.
+          </p>
+        </section>
+
+        <!-- 4. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+          <div class="code-bloco">
+<pre><code>       «interface»
+      EstrategiaFrete
+  ┌──────────────────────────────────┐
+  │ + calcular(peso, dist): number   │
+  └──────────────────────────────────┘
+              ▲
+   ┌──────────┼──────────────────────┐
+   │          │                      │
+FreteCorreiosPac  FreteCorreiosSedex  RetiradaNaLoja
+(Concrete)        (Concrete)          (Concrete)
+
+
+          Pedido (Context)
+  ┌───────────────────────────────────────┐
+  │ - estrategia: EstrategiaFrete         │
+  │ + setEstrategia(e: EstrategiaFrete)   │
+  │ + calcularFrete(peso, dist): number   │
+  └───────────────────────────────────────┘
+              │ usa (delega para)
+              ▼
+         EstrategiaFrete
+
+
+Fluxo de troca em runtime:
+
+  pedido.setEstrategia(new FreteCorreiosPac())
+  pedido.calcularFrete(2, 50)  →  FreteCorreiosPac.calcular(2, 50)
+
+  // Usuário muda para entrega expressa:
+  pedido.setEstrategia(new FreteExpresso())
+  pedido.calcularFrete(2, 50)  →  FreteExpresso.calcular(2, 50)
+  // Sem alterar Pedido; sem if/else.
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. EXEMPLOS DE CÓDIGO -->
+        <section class="artigo__secao">
+          <h2>Exemplos de código</h2>
+
+          <h3>Exemplo 1 — Estratégias de cálculo de frete</h3>
+          <p>
+            Implementação completa com interface tipada, concretes e contexto.
+            A estratégia pode ser trocada a qualquer momento via setter.
+          </p>
+
+          <!-- GRUPO DE ABAS 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 1 — cálculo de frete">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Strategy interface ────────────────────────────────────────
+interface EstrategiaFrete {
+  calcular(pesoKg: number, distanciaKm: number): number;
+  descricao(): string;
+}
+
+// ── ConcreteStrategies ────────────────────────────────────────
+class FreteCorreiosPac implements EstrategiaFrete {
+  calcular(pesoKg: number, distanciaKm: number): number {
+    return pesoKg * 0.05 + distanciaKm * 0.01;
+  }
+  descricao(): string { return "Correios PAC (econômico)"; }
+}
+
+class FreteCorreiosSedex implements EstrategiaFrete {
+  calcular(pesoKg: number, distanciaKm: number): number {
+    return pesoKg * 0.12 + distanciaKm * 0.02 + 5;
+  }
+  descricao(): string { return "Correios SEDEX (expresso)"; }
+}
+
+class FreteTransportadora implements EstrategiaFrete {
+  constructor(private readonly taxaBase: number) {}
+
+  calcular(pesoKg: number, distanciaKm: number): number {
+    return this.taxaBase + pesoKg * 0.08 + distanciaKm * 0.015;
+  }
+  descricao(): string { return `Transportadora (taxa base: R$${this.taxaBase})`; }
+}
+
+class RetiradaNaLoja implements EstrategiaFrete {
+  calcular(_pesoKg: number, _distanciaKm: number): number { return 0; }
+  descricao(): string { return "Retirada na loja (grátis)"; }
+}
+
+// ── Context ───────────────────────────────────────────────────
+class Pedido {
+  private estrategia: EstrategiaFrete;
+
+  constructor(estrategia: EstrategiaFrete) {
+    this.estrategia = estrategia;
+  }
+
+  // Permite trocar a estratégia em runtime (ex.: usuário muda opção de entrega).
+  setEstrategiaFrete(estrategia: EstrategiaFrete): void {
+    this.estrategia = estrategia;
+  }
+
+  calcularFrete(pesoKg: number, distanciaKm: number): number {
+    return this.estrategia.calcular(pesoKg, distanciaKm);
+  }
+
+  resumo(pesoKg: number, distanciaKm: number): void {
+    const valor = this.calcularFrete(pesoKg, distanciaKm);
+    console.log(
+      `${this.estrategia.descricao()}: R$${valor.toFixed(2)}`
+    );
+  }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+const pedido = new Pedido(new FreteCorreiosPac());
+pedido.resumo(3, 200);
+// → Correios PAC (econômico): R$2.15
+
+pedido.setEstrategiaFrete(new FreteCorreiosSedex());
+pedido.resumo(3, 200);
+// → Correios SEDEX (expresso): R$9.36
+
+pedido.setEstrategiaFrete(new FreteTransportadora(10));
+pedido.resumo(3, 200);
+// → Transportadora (taxa base: R$10): R$13.24
+
+pedido.setEstrategiaFrete(new RetiradaNaLoja());
+pedido.resumo(3, 200);
+// → Retirada na loja (grátis): R$0.00</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Strategy interface ────────────────────────────────────────
+interface EstrategiaFrete
+{
+    public function calcular(float $pesoKg, float $distanciaKm): float;
+    public function descricao(): string;
+}
+
+// ── ConcreteStrategies ────────────────────────────────────────
+class FreteCorreiosPac implements EstrategiaFrete
+{
+    public function calcular(float $pesoKg, float $distanciaKm): float
+    {
+        return $pesoKg * 0.05 + $distanciaKm * 0.01;
+    }
+
+    public function descricao(): string
+    {
+        return 'Correios PAC (econômico)';
+    }
+}
+
+class FreteCorreiosSedex implements EstrategiaFrete
+{
+    public function calcular(float $pesoKg, float $distanciaKm): float
+    {
+        return $pesoKg * 0.12 + $distanciaKm * 0.02 + 5;
+    }
+
+    public function descricao(): string
+    {
+        return 'Correios SEDEX (expresso)';
+    }
+}
+
+class FreteTransportadora implements EstrategiaFrete
+{
+    public function __construct(private readonly float $taxaBase) {}
+
+    public function calcular(float $pesoKg, float $distanciaKm): float
+    {
+        return $this-&gt;taxaBase + $pesoKg * 0.08 + $distanciaKm * 0.015;
+    }
+
+    public function descricao(): string
+    {
+        return "Transportadora (taxa base: R\${$this-&gt;taxaBase})";
+    }
+}
+
+class RetiradaNaLoja implements EstrategiaFrete
+{
+    public function calcular(float $pesoKg, float $distanciaKm): float
+    {
+        return 0.0;
+    }
+
+    public function descricao(): string
+    {
+        return 'Retirada na loja (grátis)';
+    }
+}
+
+// ── Context ───────────────────────────────────────────────────
+class Pedido
+{
+    public function __construct(private EstrategiaFrete $estrategia) {}
+
+    // Permite trocar a estratégia em runtime.
+    public function setEstrategiaFrete(EstrategiaFrete $estrategia): void
+    {
+        $this-&gt;estrategia = $estrategia;
+    }
+
+    public function calcularFrete(float $pesoKg, float $distanciaKm): float
+    {
+        return $this-&gt;estrategia-&gt;calcular($pesoKg, $distanciaKm);
+    }
+
+    public function resumo(float $pesoKg, float $distanciaKm): void
+    {
+        $valor = $this-&gt;calcularFrete($pesoKg, $distanciaKm);
+        echo sprintf(
+            "%s: R$%.2f\n",
+            $this-&gt;estrategia-&gt;descricao(),
+            $valor
+        );
+    }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+$pedido = new Pedido(new FreteCorreiosPac());
+$pedido-&gt;resumo(3, 200);
+// → Correios PAC (econômico): R$2.15
+
+$pedido-&gt;setEstrategiaFrete(new FreteCorreiosSedex());
+$pedido-&gt;resumo(3, 200);
+// → Correios SEDEX (expresso): R$9.36
+
+$pedido-&gt;setEstrategiaFrete(new FreteTransportadora(10));
+$pedido-&gt;resumo(3, 200);
+// → Transportadora (taxa base: R$10): R$13.24
+
+$pedido-&gt;setEstrategiaFrete(new RetiradaNaLoja());
+$pedido-&gt;resumo(3, 200);
+// → Retirada na loja (grátis): R$0.00</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 1) -->
+
+          <h3>Exemplo 2 — Estratégia como função (TypeScript) vs callable (PHP)</h3>
+          <p>
+            Para estratégias simples sem estado próprio, funções são mais leves do que
+            classes. TypeScript trata funções como tipos de primeira classe; PHP usa
+            <code>callable</code> ou closures. A diferença é relevante para a testabilidade
+            e para a injeção de dependências.
+          </p>
+
+          <!-- GRUPO DE ABAS 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 2 — estratégia funcional">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// Estratégia como tipo de função — sem classes extras.
+type Comparador&lt;T&gt; = (a: T, b: T) =&gt; number;
+
+// Estratégias concretas: simples arrow functions.
+const porPrecoAsc: Comparador&lt;{ preco: number }&gt;  = (a, b) =&gt; a.preco - b.preco;
+const porPrecoDesc: Comparador&lt;{ preco: number }&gt; = (a, b) =&gt; b.preco - a.preco;
+const porNome: Comparador&lt;{ nome: string }&gt;       = (a, b) =&gt; a.nome.localeCompare(b.nome);
+
+// Contexto genérico: aceita qualquer estratégia compatível com o tipo T.
+function ordenar&lt;T&gt;(itens: T[], comparador: Comparador&lt;T&gt;): T[] {
+  return [...itens].sort(comparador);
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+const produtos = [
+  { nome: "Caneta",   preco: 2.50 },
+  { nome: "Caderno",  preco: 18.90 },
+  { nome: "Borracha", preco: 1.20 },
+];
+
+console.log(ordenar(produtos, porPrecoAsc).map(p =&gt; p.nome));
+// ["Borracha", "Caneta", "Caderno"]
+
+console.log(ordenar(produtos, porPrecoDesc).map(p =&gt; p.nome));
+// ["Caderno", "Caneta", "Borracha"]
+
+console.log(ordenar(produtos, porNome).map(p =&gt; p.nome));
+// ["Borracha", "Caderno", "Caneta"]
+
+// Estratégia anônima inline — para casos pontuais sem reuso:
+const porNomeDesc = ordenar(produtos, (a, b) =&gt; b.nome.localeCompare(a.nome));
+console.log(porNomeDesc.map(p =&gt; p.nome));
+// ["Caneta", "Caderno", "Borracha"]</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// Em PHP, callable e closures funcionam como estratégias funcionais.
+// Para PHPStan/Psalm, docblocks de tipo ajudam na análise estática.
+
+/** @param array&lt;array{nome: string, preco: float}&gt; $itens */
+function ordenar(array $itens, callable $comparador): array
+{
+    usort($itens, $comparador);
+    return $itens;
+}
+
+// Estratégias como arrow functions (PHP 7.4+):
+$porPrecoAsc  = fn($a, $b) =&gt; $a['preco'] &lt;=&gt; $b['preco'];
+$porPrecoDesc = fn($a, $b) =&gt; $b['preco'] &lt;=&gt; $a['preco'];
+$porNome      = fn($a, $b) =&gt; strcmp($a['nome'], $b['nome']);
+
+// ── Uso ──────────────────────────────────────────────────────
+$produtos = [
+    ['nome' =&gt; 'Caneta',   'preco' =&gt; 2.50],
+    ['nome' =&gt; 'Caderno',  'preco' =&gt; 18.90],
+    ['nome' =&gt; 'Borracha', 'preco' =&gt; 1.20],
+];
+
+$resultado = ordenar($produtos, $porPrecoAsc);
+echo implode(', ', array_column($resultado, 'nome')) . PHP_EOL;
+// Borracha, Caneta, Caderno
+
+$resultado = ordenar($produtos, $porPrecoDesc);
+echo implode(', ', array_column($resultado, 'nome')) . PHP_EOL;
+// Caderno, Caneta, Borracha
+
+$resultado = ordenar($produtos, $porNome);
+echo implode(', ', array_column($resultado, 'nome')) . PHP_EOL;
+// Borracha, Caderno, Caneta
+
+// Estratégia inline anônima:
+$resultado = ordenar($produtos, fn($a, $b) =&gt; strcmp($b['nome'], $a['nome']));
+echo implode(', ', array_column($resultado, 'nome')) . PHP_EOL;
+// Caneta, Caderno, Borracha</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 2) -->
+
+        </section><!-- /.artigo__secao (exemplos) -->
+
+        <!-- 6. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Quando há múltiplas variações de um algoritmo</strong> que precisam
+              ser intercambiáveis — cálculo de frete, desconto, validação, ordenação,
+              compressão, autenticação, serialização.
+            </li>
+            <li>
+              <strong>Quando o algoritmo precisa variar em runtime:</strong> o usuário
+              escolhe o método de pagamento, a opção de entrega, o formato de exportação.
+              Com Strategy, a troca é simples — um setter ou uma injeção na construção.
+            </li>
+            <li>
+              <strong>Para eliminar condicionais repetitivas:</strong> se você tem um
+              <code>if/else</code> ou <code>switch</code> que cresce a cada nova variação
+              e está espalhado por vários métodos, Strategy extrai cada ramo para sua
+              própria classe testável.
+            </li>
+            <li>
+              <strong>Para isolar algoritmos em testes unitários:</strong> cada estratégia
+              pode ser testada de forma independente, sem precisar do contexto completo.
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>Quando há apenas dois casos simples e estáveis:</strong> um
+              <code>if/else</code> direto no código é mais legível do que criar uma
+              interface, duas classes e um mecanismo de injeção para algo que nunca mudará.
+            </li>
+            <li>
+              <strong>Quando o algoritmo não tem variação real:</strong> se a "estratégia"
+              é sempre a mesma e nenhuma alternativa está prevista, o padrão adiciona
+              abstração desnecessária.
+            </li>
+            <li>
+              <strong>Quando o contexto precisa conhecer detalhes de cada estratégia:</strong>
+              se o contexto precisa fazer downcasting para saber qual estratégia está ativa
+              e agir diferente em cada caso, a abstração foi mal aplicada — a lógica
+              condicional voltou disfarçada.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Permite trocar algoritmos em runtime sem alterar o contexto.</li>
+            <li>Isola cada variação de algoritmo em sua própria classe — mais fácil de testar, entender e manter.</li>
+            <li>Elimina condicionais longas (if/else ou switch) que crescem a cada nova variação.</li>
+            <li>Segue o Princípio Aberto/Fechado — novas estratégias não exigem modificar o contexto.</li>
+            <li>Favorece composição sobre herança — o comportamento é injetado, não herdado.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Aumenta o número de classes/objetos no sistema — overengineering para casos triviais.</li>
+            <li>O cliente precisa conhecer as estratégias disponíveis para escolher e injetar a correta.</li>
+            <li>Estratégias sem estado poderiam ser funções simples — criar uma classe completa para isso é verboso, especialmente em PHP.</li>
+            <li>Se as estratégias precisam de muitos dados do contexto, a interface pode se tornar acoplada ao contexto, reduzindo a flexibilidade.</li>
+          </ul>
+        </section>
+
+        <!-- 8. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Overengineering para dois casos triviais</h3>
+          <p>
+            O erro mais frequente: aplicar Strategy quando há exatamente dois casos e
+            nenhuma perspectiva de crescimento. Se o sistema sempre terá "frete grátis
+            para compras acima de R$100" e "frete fixo de R$15 para as demais", um
+            simples ternário é mais legível do que uma interface com duas classes.
+            Reserve Strategy para quando a variação é o ponto de extensão real do design.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Regra prática:</strong> se você se pergunta "vale a pena extrair
+            isso para Strategy?", pergunte primeiro se há três ou mais variações — ou
+            se uma terceira é uma certeza no horizonte. Com duas variações fixas, a
+            resposta geralmente é não.
+          </p>
+
+          <h3>2. Vazamento de contexto para a estratégia</h3>
+          <p>
+            A interface da estratégia deve receber apenas os dados de que o algoritmo
+            precisa — não o contexto inteiro. Passar o objeto <code>Pedido</code> completo
+            para <code>EstrategiaFrete.calcular(pedido)</code> cria acoplamento bidirecional:
+            a estratégia passa a depender da estrutura interna do contexto. Prefira
+            parâmetros primitivos ou DTOs específicos: <code>calcular(pesoKg, distanciaKm)</code>.
+          </p>
+
+          <h3>3. Estado compartilhado entre chamadas</h3>
+          <p>
+            Se a estratégia acumula estado entre chamadas (ex.: contagem de requisições,
+            cache interno), ela deixa de ser segura para uso em ambientes concorrentes
+            (Node.js multi-request, servidores multi-thread) ou para reutilização em
+            testes. Estratégias devem ser <strong>stateless</strong> sempre que possível —
+            ou, se precisam de estado, esse estado deve ser passado explicitamente na
+            chamada do método.
+          </p>
+
+          <h3>4. Strategy vs Template Method</h3>
+          <p>
+            Ambos resolvem a variação de comportamento, mas de formas opostas. O
+            <strong>Template Method</strong> usa <em>herança</em>: a classe base define
+            o esqueleto e as subclasses preenchem os passos variáveis — o algoritmo é
+            fixo, apenas partes dele variam. O <strong>Strategy</strong> usa
+            <em>composição</em>: o algoritmo inteiro é trocável, o contexto é estável.
+            Prefira Strategy quando o algoritmo completo varia; prefira Template Method
+            quando apenas partes do algoritmo variam e a estrutura geral é fixa.
+          </p>
+        </section>
+
+        <!-- 9. PADRÕES RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Padrões relacionados</h2>
+          <p>
+            O Strategy interage com vários outros padrões comportamentais e de criação:
+          </p>
+          <!--
+            Disciplina de links: só linka artigos já publicados.
+            Ao publicar um artigo novo, troque o <span> pelo <a href="../slug/">.
+            Factory Method, State e Template Method existem → links reais.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../factory-method/">Factory Method</a></li>
+            <li><a href="../state/">State</a></li>
+            <li><a href="../template-method/">Template Method</a></li>
+          </ul>
+          <p class="mt-1">
+            O <strong>Factory Method</strong> frequentemente é usado para criar e injetar
+            a estratégia correta no contexto: o creator seleciona qual ConcreteStrategy
+            instanciar com base em configuração ou tipo, entregando-a pronta para o
+            Context. O padrão <strong>State</strong> é estruturalmente idêntico ao
+            Strategy — ambos encapsulam comportamento variável em objetos intercambiáveis
+            — mas com intenções diferentes: Strategy troca algoritmos (o contexto não
+            sabe qual está ativo e não se importa), enquanto State gerencia transições de
+            estado (o objeto se comporta diferente em cada estado e as transições são
+            parte do design). O <strong>Template Method</strong> é o "primo de herança"
+            do Strategy: usa herança para variar partes do algoritmo, enquanto Strategy
+            usa composição para variar o algoritmo inteiro.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="8080808080"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

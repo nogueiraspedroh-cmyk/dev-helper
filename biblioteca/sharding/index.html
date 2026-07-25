@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sharding e Particionamento — Dev Helper Biblioteca</title>
+  <meta name="description" content="Entenda sharding: particionamento horizontal e vertical, estratégias range-based, hash-based e directory-based, escolha da shard key, resharding com consistent hashing e as armadilhas de hotspot e joins cross-shard." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Sharding e Particionamento</span>
+        </nav>
+        <span class="artigo__categoria">System Design</span>
+        <h1 class="artigo__titulo">Sharding e Particionamento</h1>
+        <p class="artigo__subtitulo">
+          Dividir os dados de um banco de dados em partições menores distribuídas entre
+          múltiplos nós para escalar horizontalmente o armazenamento e a escrita —
+          ao custo de complexidade operacional significativa e restrições nos padrões de acesso.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Sharding divide os dados de um banco em partições menores (shards)
+            espalhadas entre múltiplos nós, permitindo que o volume de dados e a taxa de
+            escrita cresçam além do limite de uma única máquina.</strong>
+          </p>
+          <p>
+            Um único servidor de banco de dados tem limites físicos: capacidade de disco,
+            memória RAM e largura de banda de I/O. Quando o volume de dados ultrapassa
+            esses limites, escalar verticalmente (mais RAM, mais CPU, mais disco) se torna
+            progressivamente mais caro e eventualmente impossível. Sharding distribui a
+            carga por múltiplos nós — cada um responsável por uma fatia do dataset —
+            transformando o problema de capacidade vertical em um problema de coordenação
+            horizontal.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Sistemas que crescem além de dezenas ou centenas de gigabytes de dados ativos
+            enfrentam gargalos que indexação e otimização de queries não conseguem resolver
+            sozinhos:
+          </p>
+          <ul>
+            <li>
+              <strong>Volume de dados excede a capacidade de um nó:</strong> tabelas com
+              bilhões de linhas degradam a performance mesmo com índices otimizados. O
+              índice em si se torna grande demais para caber em memória, forçando I/O de
+              disco em cada operação de busca.
+            </li>
+            <li>
+              <strong>Taxa de escrita excede o throughput de um nó:</strong> um único
+              servidor tem um número máximo de writes por segundo que pode processar. Em
+              sistemas de alto volume — logs, métricas, transações financeiras — esse
+              limite é atingido antes do limite de armazenamento.
+            </li>
+            <li>
+              <strong>Read replicas não resolvem o problema de escrita:</strong> adicionar
+              replicas de leitura distribui a carga de leitura, mas todas as escritas ainda
+              passam pelo primary. O gargalo de escrita permanece.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. COMO FUNCIONA -->
+        <section class="artigo__secao">
+          <h2>Como funciona</h2>
+
+          <h3>Particionamento horizontal vs vertical</h3>
+          <p>
+            É importante distinguir os dois tipos de particionamento, pois o termo
+            frequentemente causa confusão:
+          </p>
+          <ul>
+            <li>
+              <strong>Particionamento horizontal (sharding):</strong> divide as
+              <em>linhas</em> de uma tabela entre múltiplos nós. Todos os shards têm o
+              mesmo schema. Ex.: usuários com ID 1–1.000.000 no Shard A, ID
+              1.000.001–2.000.000 no Shard B. É o que se entende por sharding na maioria
+              dos contextos.
+            </li>
+            <li>
+              <strong>Particionamento vertical:</strong> divide as <em>colunas</em> de uma
+              tabela entre bancos diferentes. Ex.: a tabela <code>users</code> com dados de
+              perfil em um banco e dados de pagamento em outro. Técnica diferente, com
+              motivação diferente — normalmente usada para isolar domínios por segurança ou
+              compliance, não para escala de volume.
+            </li>
+          </ul>
+
+          <h3>Arquitetura de sharding</h3>
+          <p>
+            O componente central de uma arquitetura shardada é o <strong>shard
+            router</strong>: a camada que recebe a requisição do cliente, determina em qual
+            shard os dados residem e encaminha a operação ao nó correto.
+          </p>
+          <div class="code-bloco">
+<pre><code>  Cliente
+     │
+     ▼
+  ┌──────────────┐
+  │ Shard Router │  determina o shard com base na shard key
+  └──────┬───────┘
+         │
+    ┌────┼────┐
+    ▼    ▼    ▼
+  ┌───┐┌───┐┌───┐
+  │ A ││ B ││ C │   cada shard é um nó de banco independente
+  └───┘└───┘└───┘
+  (mesmo schema em todos os shards)
+</code></pre>
+          </div>
+          <p>
+            O router pode ser implementado na camada de aplicação (o código decide qual
+            banco conectar), em um proxy dedicado (ex.: ProxySQL, Vitess) ou ser nativo
+            ao banco (ex.: MongoDB com mongos, Cassandra com token-aware drivers).
+          </p>
+
+          <h3>Shard key</h3>
+          <p>
+            A <strong>shard key</strong> é o campo (ou combinação de campos) usado para
+            determinar em qual shard um registro pertence. É a decisão de design mais
+            crítica em uma arquitetura shardada — uma shard key mal escolhida cria
+            <em>hotspots</em>: um shard sobrecarregado enquanto os demais ficam ociosos,
+            anulando o benefício da distribuição.
+          </p>
+          <p>
+            Critérios para uma boa shard key:
+          </p>
+          <ul>
+            <li><strong>Alta cardinalidade:</strong> muitos valores distintos possíveis, para que os dados se distribuam entre muitos shards.</li>
+            <li><strong>Distribuição uniforme:</strong> os valores não devem se concentrar em poucos ranges ou hashes.</li>
+            <li><strong>Alinhamento com os padrões de acesso:</strong> operações frequentes devem tocar um shard por vez. Evite shard keys que forcem o router a consultar todos os shards para responder uma query comum.</li>
+          </ul>
+
+          <h3>Estratégias de sharding</h3>
+
+          <h4>Range-based</h4>
+          <p>
+            O shard é determinado por um intervalo de valores da shard key. Ex.:
+            registros com <code>created_at</code> em janeiro vão ao Shard A, fevereiro
+            ao Shard B.
+          </p>
+          <div class="code-bloco">
+<pre><code>  shard key: user_id (numérico)
+
+  Shard A: user_id  1 – 1.000.000
+  Shard B: user_id  1.000.001 – 2.000.000
+  Shard C: user_id  2.000.001 – 3.000.000
+
+  Vantagem: range queries eficientes ("todos os users de 1 a 500k")
+  Risco: hotspot se novos registros são criados sequencialmente
+         (todos vão ao último shard enquanto os anteriores ficam ociosos)
+</code></pre>
+          </div>
+
+          <h4>Hash-based</h4>
+          <p>
+            O shard é determinado por uma função de hash aplicada à shard key:
+            <code>shard = hash(shard_key) % num_shards</code>. Distribui os dados
+            uniformemente, eliminando hotspots de range.
+          </p>
+          <div class="code-bloco">
+<pre><code>  shard key: user_id
+
+  shard = MD5(user_id) % 3
+
+  user_id=1001  → hash mod 3 = 2 → Shard C
+  user_id=1002  → hash mod 3 = 0 → Shard A
+  user_id=1003  → hash mod 3 = 1 → Shard B
+
+  Vantagem: distribuição uniforme, sem hotspots de range
+  Risco: range queries ineficientes (exige consultar todos os shards)
+         resharding exige remapear quase todos os registros
+</code></pre>
+          </div>
+
+          <h4>Directory-based</h4>
+          <p>
+            Uma tabela de lookup (o "diretório") mapeia explicitamente cada valor de
+            shard key para seu shard. O router consulta o diretório antes de cada
+            operação.
+          </p>
+          <div class="code-bloco">
+<pre><code>  Tabela de lookup (diretório):
+  ┌──────────┬────────┐
+  │ tenant   │ shard  │
+  ├──────────┼────────┤
+  │ empresa1 │ A      │
+  │ empresa2 │ B      │
+  │ empresa3 │ A      │
+  │ empresa4 │ C      │
+  └──────────┴────────┘
+
+  Vantagem: flexível — pode mover tenants entre shards sem alterar lógica
+  Risco: a tabela de lookup vira ponto único de falha e gargalo de latência
+</code></pre>
+          </div>
+
+          <h3>Resharding e consistent hashing</h3>
+          <p>
+            Quando um shard fica grande demais ou sobrecarregado, os dados precisam ser
+            redistribuídos — operação chamada de <strong>resharding</strong>. Com
+            hash-based simples (<code>% N</code>), adicionar um shard muda a fórmula e
+            potencialmente invalida o mapeamento de quase todos os registros, exigindo
+            mover a maioria dos dados.
+          </p>
+          <p>
+            <strong>Consistent hashing</strong> resolve isso: os shards e as chaves são
+            posicionados num anel circular, e cada chave pertence ao shard mais próximo
+            no sentido horário. Ao adicionar ou remover um shard, apenas as chaves
+            adjacentes a ele no anel precisam ser movidas — em média <code>K/N</code>
+            chaves (onde K é o total de chaves e N o número de shards), em vez de quase
+            todas.
+          </p>
+
+          <h3>Joins cross-shard</h3>
+          <p>
+            Joins entre dados que residem em shards diferentes não são executados pelo
+            banco — cada shard é um banco independente. A aplicação precisa buscar os
+            dados de cada shard separadamente e combinar os resultados em memória.
+            Dependendo do volume, isso pode ser mais lento que o join original e
+            introduz lógica de merge na camada de aplicação.
+          </p>
+          <p>
+            A solução mais comum é <strong>desnormalizar</strong>: duplicar os dados
+            necessários dentro do mesmo shard para evitar o join cross-shard. Ex.: em
+            vez de fazer join com a tabela de usuários em outro shard, copiar o nome do
+            usuário para dentro do registro do pedido no momento da criação.
+          </p>
+        </section>
+
+        <!-- 4. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Volume de dados excede a capacidade de um único nó:</strong> quando
+              escalar verticalmente (mais RAM, mais disco) se torna proibitivo em custo ou
+              inviável tecnicamente.
+            </li>
+            <li>
+              <strong>Taxa de escrita excede o throughput de um nó:</strong> sistemas de
+              alto volume como analytics em tempo real, séries temporais de IoT ou
+              plataformas de e-commerce em grande escala.
+            </li>
+            <li>
+              <strong>Os dados têm uma dimensão natural de particionamento:</strong> por
+              usuário (redes sociais, SaaS multi-tenant), por região geográfica ou por
+              período de tempo. A shard key surge naturalmente do domínio.
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>Esgote as alternativas mais simples primeiro:</strong> indexação
+              correta, otimização de queries, caching e read replicas podem adiar ou
+              eliminar a necessidade de sharding por muito tempo. Sharding adiciona
+              complexidade operacional permanente.
+            </li>
+            <li>
+              <strong>Joins cross-shard são frequentes no seu workload:</strong> se o
+              padrão de acesso do sistema exige combinar dados de múltiplas dimensões com
+              frequência, sharding transforma cada operação simples em um problema de
+              coordenação distribuída.
+            </li>
+            <li>
+              <strong>Sem uma shard key natural:</strong> se não há uma chave que distribua
+              os dados uniformemente e que se alinhe com os padrões de acesso, o sistema
+              vai criar hotspots. Sharding sem uma boa shard key é pior que não shardear.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 5. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Escala horizontal real de escrita: a capacidade de ingestão de dados cresce linearmente com o número de shards.</li>
+            <li>Volume de dados ilimitado: o dataset pode crescer além do limite de qualquer máquina individual.</li>
+            <li>Isolamento de falhas: a falha de um shard afeta apenas os dados naquele shard, não o sistema inteiro.</li>
+            <li>Queries localizadas ficam mais rápidas: com uma boa shard key, a maioria das queries toca apenas um shard — um dataset menor, com índices menores que cabem inteiros em memória.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Complexidade operacional alta: monitorar, fazer backup, restaurar e atualizar N bancos de dados independentes em vez de um.</li>
+            <li>Joins cross-shard: precisam ser implementados na aplicação, com lógica de merge manual e múltiplas viagens de rede.</li>
+            <li>Transações cross-shard: ACID não se aplica entre shards. Two-phase commit ou padrões como Saga são necessários, com trade-offs significativos de consistência.</li>
+            <li>Resharding é custoso: redistribuir dados com o sistema em produção exige coordenação cuidadosa para evitar inconsistência e downtime.</li>
+            <li>Hotspots são difíceis de diagnosticar: a distribuição pode parecer uniforme nos dados mas ser extremamente desigual no acesso.</li>
+          </ul>
+        </section>
+
+        <!-- 6. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Shard key que cria hotspot</h3>
+          <p>
+            O exemplo clássico é usar <code>created_at</code> (timestamp) como shard key
+            num sistema de logs ou eventos. Todo o tráfego novo vai ao shard do período
+            mais recente — os shards antigos ficam ociosos enquanto o shard atual é
+            bombardeado. O sistema shardado performa pior que o sistema não shardado
+            porque a carga, em vez de distribuída, está concentrada num único nó.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Regra prática:</strong> antes de adotar uma shard key, simule a
+            distribuição com dados reais de produção (não com dados de teste uniformes)
+            e com a projeção do padrão de acesso futuro, não apenas do presente.
+          </p>
+
+          <h3>2. Joins cross-shard em loop</h3>
+          <p>
+            A aplicação busca uma lista de IDs do Shard A e, para cada ID, faz uma query
+            no Shard B para buscar dados relacionados — o problema N+1 em escala
+            distribuída. Em vez de um join eficiente no banco, são N queries de rede
+            serializadas. O resultado é pior em latência e carga do que antes do sharding.
+          </p>
+          <p>
+            Soluções: desnormalizar os dados necessários para dentro do mesmo shard no
+            momento da escrita, ou usar fan-out (consultar todos os shards em paralelo
+            e agregar os resultados), aceitando o custo de múltiplas conexões.
+          </p>
+
+          <h3>3. Resharding não planejado</h3>
+          <p>
+            O crescimento do sistema excede a capacidade dos shards existentes e é
+            necessário adicionar shards. Com hash-based simples, isso exige mover a
+            maioria dos dados. Com o sistema em produção, a janela de consistência
+            durante a migração precisa ser gerenciada — dados sendo movidos não podem
+            ser acessados pelo router antigo e o router novo ainda não conhece o destino
+            final. Planejar resharding antes de precisar dele é parte da arquitetura.
+          </p>
+
+          <h3>4. Transações cross-shard</h3>
+          <p>
+            Uma operação que precisa modificar dados em dois shards diferentes não tem
+            garantia ACID. Se o sistema confirma a escrita no Shard A mas falha antes de
+            escrever no Shard B, os dados ficam em estado inconsistente. Two-phase commit
+            (2PC) resolve o problema mas introduz locks distribuídos e degrada a
+            disponibilidade. O padrão Saga substitui a transação distribuída por uma
+            sequência de transações locais com compensações em caso de falha.
+          </p>
+        </section>
+
+        <!-- 7. RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Arquiteturas e padrões relacionados</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../replicacao-de-banco/">Replicação de Banco de Dados</a></li>
+            <li><a href="../sql-vs-nosql/">SQL vs NoSQL</a></li>
+            <li><a href="../escalabilidade-horizontal-vertical/">Escalabilidade Horizontal vs Vertical</a></li>
+            <li><a href="../caching/">Caching</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Replicação</strong> e sharding são técnicas complementares e
+            frequentemente usadas juntas: sharding distribui as escritas entre múltiplos
+            nós primários, enquanto replicação adiciona replicas de leitura a cada shard
+            para aumentar o throughput de leitura e a disponibilidade. A arquitetura
+            resultante tem tanto escala horizontal de escrita quanto tolerância a falhas.
+          </p>
+          <p>
+            Bancos <strong>NoSQL</strong> como Cassandra, DynamoDB e MongoDB foram
+            projetados com sharding nativo — a lógica de distribuição faz parte do
+            banco, não da aplicação. Em bancos SQL relacionais, sharding normalmente é
+            implementado na camada de aplicação ou com ferramentas como Vitess (MySQL)
+            ou Citus (PostgreSQL). A escolha entre SQL e NoSQL é influenciada por quão
+            central o sharding é para o design desde o início.
+          </p>
+          <p>
+            O <strong>caching</strong> é frequentemente a primeira linha de defesa contra
+            sobrecarga do banco: ao reduzir o número de leituras que chegam ao banco,
+            o caching adia o momento em que sharding se torna necessário. Avaliar caching
+            antes de sharding é a sequência correta de decisões arquiteturais.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="6363636363"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

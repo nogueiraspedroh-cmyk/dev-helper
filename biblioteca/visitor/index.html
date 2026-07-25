@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visitor — Design Patterns | Biblioteca Dev Helper</title>
+  <meta name="description" content="Aprenda o padrão Visitor (GoF) em profundidade: intenção, problema, solução, estrutura, exemplos em TypeScript e PHP, quando usar, quando evitar e armadilhas comuns." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Visitor</span>
+        </nav>
+        <span class="artigo__categoria">Padrão Comportamental (GoF)</span>
+        <h1 class="artigo__titulo">Visitor</h1>
+        <p class="artigo__subtitulo">
+          Separa um algoritmo dos objetos sobre os quais ele opera, permitindo adicionar
+          novas operações a uma hierarquia de classes sem modificá-las — por meio de
+          double dispatch, cada elemento "aceita" o visitor e invoca o método correto
+          para o seu próprio tipo.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Representar uma operação a ser executada sobre os elementos de uma
+            hierarquia de objetos.</strong> O Visitor permite definir uma nova operação
+            sem alterar as classes dos elementos sobre os quais ela opera. Cada classe
+            concreta da hierarquia implementa um método <code>accept(visitor)</code> que
+            chama o método do visitor específico para aquele tipo — o chamado
+            <em>double dispatch</em>.
+          </p>
+          <p>
+            Catalogado pelo GoF (1994) como padrão comportamental, o Visitor é o padrão
+            indicado quando uma hierarquia de objetos é estável mas você precisa adicionar
+            novas operações com frequência. É amplamente utilizado em compiladores (AST
+            com visitors de type-checking, geração de código e otimização), ferramentas
+            de análise estática, serialização de árvores e processamento de documentos
+            estruturados.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Imagine uma árvore sintática abstrata (AST) com três tipos de nó:
+            <code>Numero</code>, <code>Soma</code> e <code>Multiplicacao</code>. Você
+            precisa adicionar duas operações independentes: imprimir a expressão como
+            string e calcular o resultado numérico. A abordagem direta coloca as
+            operações dentro das classes:
+          </p>
+          <div class="code-bloco">
+<pre><code>// Abordagem ingênua — NÃO faça isso:
+class Soma {
+  constructor(readonly esquerda: IExpressao, readonly direita: IExpressao) {}
+
+  imprimir(): string {
+    // Lógica de impressão acoplada ao nó da AST.
+    return `(${this.esquerda.imprimir()} + ${this.direita.imprimir()})`;
+  }
+
+  calcular(): number {
+    // Lógica de cálculo também acoplada.
+    return this.esquerda.calcular() + this.direita.calcular();
+  }
+  // Ao adicionar uma terceira operação (ex.: serializar, otimizar, compilar),
+  // é preciso abrir e modificar TODAS as classes da hierarquia.
+}</code></pre>
+          </div>
+          <p>
+            Cada nova operação exige abrir e modificar todas as classes da hierarquia —
+            <code>Numero</code>, <code>Soma</code>, <code>Multiplicacao</code> — ao
+            mesmo tempo. Isso viola o Princípio Aberto/Fechado: as classes de domínio
+            deveriam estar fechadas para modificação. Em compiladores reais, a AST
+            pode ter dezenas de tipos de nó e dúzias de passes (optimizações,
+            verificações de tipos, geração de bytecode) — misturar tudo nas classes de
+            nó torna o código ininteligível.
+          </p>
+          <p>
+            O Visitor resolve isso extraindo cada operação para uma classe própria
+            (o ConcreteVisitor). As classes da hierarquia ficam estáveis; novos
+            comportamentos são adicionados sem tocá-las.
+          </p>
+        </section>
+
+        <!-- 3. SOLUÇÃO -->
+        <section class="artigo__secao">
+          <h2>Solução</h2>
+          <p>O Visitor organiza o código em quatro participantes:</p>
+          <ol>
+            <li>
+              <strong>Element (interface):</strong> cada classe da hierarquia declara
+              <code>accept(visitor: IVisitor): void</code>. A implementação é sempre
+              a mesma: <code>visitor.visitTipoConcreto(this)</code>. Esse padrão é o
+              double dispatch — o método correto do visitor é escolhido em tempo de
+              execução com base no tipo concreto do elemento.
+            </li>
+            <li>
+              <strong>ConcreteElement:</strong> as classes concretas da hierarquia
+              (<code>Numero</code>, <code>Soma</code>, <code>Multiplicacao</code>).
+              Cada uma implementa <code>accept()</code> chamando o método
+              <code>visit</code> correspondente do visitor. Expõem seus dados internos
+              (via getters ou campos <code>readonly</code>) para que os visitors possam
+              acessá-los.
+            </li>
+            <li>
+              <strong>Visitor (interface):</strong> declara um método <code>visit</code>
+              para cada ConcreteElement da hierarquia.
+              Ex.: <code>visitNumero(no: Numero): void</code>,
+              <code>visitSoma(no: Soma): void</code>. Quando um novo tipo de nó é
+              adicionado à hierarquia, todos os visitors precisam ser atualizados — o
+              custo inverso ao da abordagem ingênua.
+            </li>
+            <li>
+              <strong>ConcreteVisitor:</strong> implementa a operação específica para
+              cada tipo de elemento. Cada visitor é uma classe coesa com uma única
+              responsabilidade: imprimir, calcular, serializar, otimizar. Pode acumular
+              estado interno durante a visitação (ex.: uma pilha para calcular, uma
+              lista de partes para imprimir).
+            </li>
+          </ol>
+          <p>
+            O mecanismo central é o <em>double dispatch</em>: a linguagem resolve o
+            método correto em dois passos — primeiro despacha para o <code>accept()</code>
+            do elemento correto (escolhido pelo polimorfismo da hierarquia); dentro do
+            <code>accept()</code>, o elemento chama <code>visitor.visitTipo(this)</code>,
+            resolvendo o método do visitor pelo tipo concreto de <code>this</code>. Sem
+            esse segundo despacho, o visitor precisaria de instanceof/type-switch para
+            detectar o tipo — quebrando o polimorfismo.
+          </p>
+        </section>
+
+        <!-- 4. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+          <div class="code-bloco">
+<pre><code>        «interface»
+        IExpressao
+  ┌──────────────────────────────────┐
+  │ + accept(v: IVisitor): void      │
+  └──────────────────────────────────┘
+               ▲
+   ┌───────────┼──────────────────┐
+   │           │                  │
+Numero       Soma          Multiplicacao
+(Terminal) (NonTerminal)  (NonTerminal)
+  │             │                  │
+  │accept:      │accept:           │accept:
+  │v.visitNum.. │v.visitSoma(this) │v.visitMult..(this)
+  ▼             ▼                  ▼
+        «interface»
+         IVisitor
+  ┌─────────────────────────────────────────────┐
+  │ + visitNumero(no: Numero): void             │
+  │ + visitSoma(no: Soma): void                 │
+  │ + visitMultiplicacao(no: Multiplicacao):void│
+  └─────────────────────────────────────────────┘
+               ▲
+   ┌───────────┴──────────────────┐
+   │                              │
+ImprimirVisitor          CalcularVisitor
+  │ partes: string[]       pilha: number[]
+  │ visitNumero → push     visitNumero → push
+  │ visitSoma → parênteses visitSoma → pop+pop+soma
+  │ resultado(): string    resultado(): number
+  └──────────────────────────────┘
+
+
+Double dispatch — fluxo passo a passo:
+
+  arvore.accept(calculador)
+    │
+    ├─ arvore é Multiplicacao → Multiplicacao.accept(calculador)
+    │    └─ calculador.visitMultiplicacao(this)
+    │         ├─ this.esquerda.accept(calculador)   // Soma
+    │         │    └─ calculador.visitSoma(this)
+    │         │         ├─ this.esquerda.accept(calculador) // Numero(2)
+    │         │         │    └─ calculador.visitNumero(this) → pilha:[2]
+    │         │         └─ this.direita.accept(calculador)  // Numero(3)
+    │         │              └─ calculador.visitNumero(this) → pilha:[2,3]
+    │         │         → pop 3, pop 2, push 5       pilha:[5]
+    │         └─ this.direita.accept(calculador)    // Numero(4)
+    │              └─ calculador.visitNumero(this)  → pilha:[5,4]
+    │         → pop 4, pop 5, push 20               pilha:[20]
+    resultado(): 20
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. EXEMPLOS DE CÓDIGO -->
+        <section class="artigo__secao">
+          <h2>Exemplos de código</h2>
+
+          <h3>Exemplo 1 — AST de expressões com ImprimirVisitor e CalcularVisitor</h3>
+          <p>
+            Implementação completa com a hierarquia de expressões (<code>Numero</code>,
+            <code>Soma</code>, <code>Multiplicacao</code>), a interface
+            <code>IVisitor</code> e dois visitors concretos. Note como cada classe da
+            hierarquia implementa <code>accept()</code> com exatamente uma linha —
+            toda a lógica da operação fica no visitor, sem tocar nos nós da AST.
+          </p>
+
+          <!-- GRUPO DE ABAS 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 1 — AST com Imprimir e Calcular visitor">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Visitor interface ─────────────────────────────────────────
+// Declarado ANTES dos elementos porque eles referenciam IVisitor.
+// Em TS, forward references funcionam via interface — sem problema de ordem.
+interface IVisitor {
+  visitNumero(no: Numero): void;
+  visitSoma(no: Soma): void;
+  visitMultiplicacao(no: Multiplicacao): void;
+}
+
+// ── Element interface ─────────────────────────────────────────
+interface IExpressao {
+  accept(visitor: IVisitor): void;
+}
+
+// ── ConcreteElements (nós da AST) ─────────────────────────────
+class Numero implements IExpressao {
+  constructor(readonly valor: number) {}
+
+  // Double dispatch: chama o método correto do visitor para este tipo.
+  accept(visitor: IVisitor): void {
+    visitor.visitNumero(this);
+  }
+}
+
+class Soma implements IExpressao {
+  constructor(
+    readonly esquerda: IExpressao,
+    readonly direita: IExpressao
+  ) {}
+
+  accept(visitor: IVisitor): void {
+    visitor.visitSoma(this);
+  }
+}
+
+class Multiplicacao implements IExpressao {
+  constructor(
+    readonly esquerda: IExpressao,
+    readonly direita: IExpressao
+  ) {}
+
+  accept(visitor: IVisitor): void {
+    visitor.visitMultiplicacao(this);
+  }
+}
+
+// ── ConcreteVisitor 1: Imprimir ───────────────────────────────
+// Monta a representação textual da expressão com parênteses explícitos.
+class ImprimirVisitor implements IVisitor {
+  private partes: string[] = [];
+
+  visitNumero(no: Numero): void {
+    this.partes.push(String(no.valor));
+  }
+
+  visitSoma(no: Soma): void {
+    this.partes.push('(');
+    no.esquerda.accept(this);   // visita o filho esquerdo
+    this.partes.push(' + ');
+    no.direita.accept(this);    // visita o filho direito
+    this.partes.push(')');
+  }
+
+  visitMultiplicacao(no: Multiplicacao): void {
+    this.partes.push('(');
+    no.esquerda.accept(this);
+    this.partes.push(' * ');
+    no.direita.accept(this);
+    this.partes.push(')');
+  }
+
+  resultado(): string {
+    return this.partes.join('');
+  }
+}
+
+// ── ConcreteVisitor 2: Calcular ───────────────────────────────
+// Avalia a expressão usando uma pilha — sem nenhuma alteração nos nós.
+class CalcularVisitor implements IVisitor {
+  private pilha: number[] = [];
+
+  visitNumero(no: Numero): void {
+    this.pilha.push(no.valor);
+  }
+
+  visitSoma(no: Soma): void {
+    no.esquerda.accept(this);
+    no.direita.accept(this);
+    const b = this.pilha.pop()!;
+    const a = this.pilha.pop()!;
+    this.pilha.push(a + b);
+  }
+
+  visitMultiplicacao(no: Multiplicacao): void {
+    no.esquerda.accept(this);
+    no.direita.accept(this);
+    const b = this.pilha.pop()!;
+    const a = this.pilha.pop()!;
+    this.pilha.push(a * b);
+  }
+
+  resultado(): number {
+    return this.pilha[0] ?? 0;
+  }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+// AST que representa: (2 + 3) * 4
+const arvore: IExpressao = new Multiplicacao(
+  new Soma(new Numero(2), new Numero(3)),
+  new Numero(4)
+);
+
+// Operação 1: imprimir (sem tocar nos nós da AST)
+const imprimir = new ImprimirVisitor();
+arvore.accept(imprimir);
+console.log(imprimir.resultado());   // ((2 + 3) * 4)
+
+// Operação 2: calcular (sem tocar nos nós da AST)
+const calcular = new CalcularVisitor();
+arvore.accept(calcular);
+console.log(calcular.resultado());   // 20
+
+// A AST pode ser visitada múltiplas vezes por visitors diferentes.
+// Nenhuma classe de nó foi modificada para suportar essas operações.</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Interfaces (forward declarations não são necessárias em PHP) ──
+interface IVisitor
+{
+    public function visitNumero(Numero $no): void;
+    public function visitSoma(Soma $no): void;
+    public function visitMultiplicacao(Multiplicacao $no): void;
+}
+
+interface IExpressao
+{
+    public function accept(IVisitor $visitor): void;
+}
+
+// ── ConcreteElements ──────────────────────────────────────────
+class Numero implements IExpressao
+{
+    public function __construct(public readonly float $valor) {}
+
+    public function accept(IVisitor $visitor): void
+    {
+        $visitor-&gt;visitNumero($this);
+    }
+}
+
+class Soma implements IExpressao
+{
+    public function __construct(
+        public readonly IExpressao $esquerda,
+        public readonly IExpressao $direita
+    ) {}
+
+    public function accept(IVisitor $visitor): void
+    {
+        $visitor-&gt;visitSoma($this);
+    }
+}
+
+class Multiplicacao implements IExpressao
+{
+    public function __construct(
+        public readonly IExpressao $esquerda,
+        public readonly IExpressao $direita
+    ) {}
+
+    public function accept(IVisitor $visitor): void
+    {
+        $visitor-&gt;visitMultiplicacao($this);
+    }
+}
+
+// ── ConcreteVisitor 1: Imprimir ───────────────────────────────
+class ImprimirVisitor implements IVisitor
+{
+    /** @var string[] */
+    private array $partes = [];
+
+    public function visitNumero(Numero $no): void
+    {
+        $this-&gt;partes[] = (string) $no-&gt;valor;
+    }
+
+    public function visitSoma(Soma $no): void
+    {
+        $this-&gt;partes[] = '(';
+        $no-&gt;esquerda-&gt;accept($this);
+        $this-&gt;partes[] = ' + ';
+        $no-&gt;direita-&gt;accept($this);
+        $this-&gt;partes[] = ')';
+    }
+
+    public function visitMultiplicacao(Multiplicacao $no): void
+    {
+        $this-&gt;partes[] = '(';
+        $no-&gt;esquerda-&gt;accept($this);
+        $this-&gt;partes[] = ' * ';
+        $no-&gt;direita-&gt;accept($this);
+        $this-&gt;partes[] = ')';
+    }
+
+    public function resultado(): string
+    {
+        return implode('', $this-&gt;partes);
+    }
+}
+
+// ── ConcreteVisitor 2: Calcular ───────────────────────────────
+class CalcularVisitor implements IVisitor
+{
+    /** @var float[] */
+    private array $pilha = [];
+
+    public function visitNumero(Numero $no): void
+    {
+        $this-&gt;pilha[] = $no-&gt;valor;
+    }
+
+    public function visitSoma(Soma $no): void
+    {
+        $no-&gt;esquerda-&gt;accept($this);
+        $no-&gt;direita-&gt;accept($this);
+        $b = array_pop($this-&gt;pilha);
+        $a = array_pop($this-&gt;pilha);
+        $this-&gt;pilha[] = $a + $b;
+    }
+
+    public function visitMultiplicacao(Multiplicacao $no): void
+    {
+        $no-&gt;esquerda-&gt;accept($this);
+        $no-&gt;direita-&gt;accept($this);
+        $b = array_pop($this-&gt;pilha);
+        $a = array_pop($this-&gt;pilha);
+        $this-&gt;pilha[] = $a * $b;
+    }
+
+    public function resultado(): float
+    {
+        return $this-&gt;pilha[0] ?? 0.0;
+    }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+// AST: (2 + 3) * 4
+$arvore = new Multiplicacao(
+    new Soma(new Numero(2), new Numero(3)),
+    new Numero(4)
+);
+
+$imprimir = new ImprimirVisitor();
+$arvore-&gt;accept($imprimir);
+echo $imprimir-&gt;resultado() . "\n";   // ((2 + 3) * 4)
+
+$calcular = new CalcularVisitor();
+$arvore-&gt;accept($calcular);
+echo $calcular-&gt;resultado() . "\n";   // 20</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 1) -->
+
+          <h3>Exemplo 2 — Adicionando novas operações sem tocar na hierarquia</h3>
+          <p>
+            O principal benefício do Visitor: adicionar operações é aberto para extensão.
+            Reutilizando o mesmo AST do Exemplo 1, implementamos dois visitors adicionais —
+            <code>ContarNosVisitor</code> (conta quantos nós tem a AST) e
+            <code>SerializarJsonVisitor</code> (serializa a árvore para JSON) — sem
+            alterar uma única linha de <code>Numero</code>, <code>Soma</code> ou
+            <code>Multiplicacao</code>.
+          </p>
+
+          <!-- GRUPO DE ABAS 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 2 — novos visitors sem alterar a hierarquia">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// Reutiliza IVisitor, IExpressao, Numero, Soma e Multiplicacao do Exemplo 1.
+
+// ── ConcreteVisitor 3: Contar nós ────────────────────────────
+// Conta o total de nós da AST — folhas (Numero) e internos (Soma, Multiplicacao).
+class ContarNosVisitor implements IVisitor {
+  private contagem = 0;
+
+  visitNumero(_no: Numero): void {
+    this.contagem++;
+  }
+
+  visitSoma(no: Soma): void {
+    this.contagem++;
+    no.esquerda.accept(this);
+    no.direita.accept(this);
+  }
+
+  visitMultiplicacao(no: Multiplicacao): void {
+    this.contagem++;
+    no.esquerda.accept(this);
+    no.direita.accept(this);
+  }
+
+  resultado(): number {
+    return this.contagem;
+  }
+}
+
+// ── ConcreteVisitor 4: Serializar para JSON ───────────────────
+// Serializa a AST para uma string JSON sem usar JSON.stringify na raiz.
+// Usa a pilha implícita da recursão: cada visit constrói e armazena
+// o fragmento JSON do sub-nó antes de compor o nó pai.
+class SerializarJsonVisitor implements IVisitor {
+  private json = '';
+
+  visitNumero(no: Numero): void {
+    this.json = `{"tipo":"Numero","valor":${no.valor}}`;
+  }
+
+  visitSoma(no: Soma): void {
+    no.esquerda.accept(this);
+    const esq = this.json;
+    no.direita.accept(this);
+    const dir = this.json;
+    this.json = `{"tipo":"Soma","esq":${esq},"dir":${dir}}`;
+  }
+
+  visitMultiplicacao(no: Multiplicacao): void {
+    no.esquerda.accept(this);
+    const esq = this.json;
+    no.direita.accept(this);
+    const dir = this.json;
+    this.json = `{"tipo":"Mult","esq":${esq},"dir":${dir}}`;
+  }
+
+  resultado(): string {
+    return this.json;
+  }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+// Mesma AST: (2 + 3) * 4
+const arvore: IExpressao = new Multiplicacao(
+  new Soma(new Numero(2), new Numero(3)),
+  new Numero(4)
+);
+
+// Visitor 3: contar
+const contar = new ContarNosVisitor();
+arvore.accept(contar);
+console.log(contar.resultado());
+// 5  (Multiplicacao + Soma + Numero(2) + Numero(3) + Numero(4))
+
+// Visitor 4: serializar
+const serializar = new SerializarJsonVisitor();
+arvore.accept(serializar);
+console.log(serializar.resultado());
+// {"tipo":"Mult",
+//   "esq":{"tipo":"Soma",
+//     "esq":{"tipo":"Numero","valor":2},
+//     "dir":{"tipo":"Numero","valor":3}},
+//   "dir":{"tipo":"Numero","valor":4}}
+
+// Zero linhas alteradas em Numero, Soma e Multiplicacao.</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// Reutiliza IVisitor, IExpressao, Numero, Soma e Multiplicacao do Exemplo 1.
+
+// ── ConcreteVisitor 3: Contar nós ────────────────────────────
+class ContarNosVisitor implements IVisitor
+{
+    private int $contagem = 0;
+
+    public function visitNumero(Numero $no): void
+    {
+        $this-&gt;contagem++;
+    }
+
+    public function visitSoma(Soma $no): void
+    {
+        $this-&gt;contagem++;
+        $no-&gt;esquerda-&gt;accept($this);
+        $no-&gt;direita-&gt;accept($this);
+    }
+
+    public function visitMultiplicacao(Multiplicacao $no): void
+    {
+        $this-&gt;contagem++;
+        $no-&gt;esquerda-&gt;accept($this);
+        $no-&gt;direita-&gt;accept($this);
+    }
+
+    public function resultado(): int
+    {
+        return $this-&gt;contagem;
+    }
+}
+
+// ── ConcreteVisitor 4: Serializar para JSON ───────────────────
+class SerializarJsonVisitor implements IVisitor
+{
+    private string $json = '';
+
+    public function visitNumero(Numero $no): void
+    {
+        $this-&gt;json = sprintf('{"tipo":"Numero","valor":%s}', $no-&gt;valor);
+    }
+
+    public function visitSoma(Soma $no): void
+    {
+        $no-&gt;esquerda-&gt;accept($this);
+        $esq = $this-&gt;json;
+        $no-&gt;direita-&gt;accept($this);
+        $dir = $this-&gt;json;
+        $this-&gt;json = sprintf('{"tipo":"Soma","esq":%s,"dir":%s}', $esq, $dir);
+    }
+
+    public function visitMultiplicacao(Multiplicacao $no): void
+    {
+        $no-&gt;esquerda-&gt;accept($this);
+        $esq = $this-&gt;json;
+        $no-&gt;direita-&gt;accept($this);
+        $dir = $this-&gt;json;
+        $this-&gt;json = sprintf('{"tipo":"Mult","esq":%s,"dir":%s}', $esq, $dir);
+    }
+
+    public function resultado(): string
+    {
+        return $this-&gt;json;
+    }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+$arvore = new Multiplicacao(
+    new Soma(new Numero(2), new Numero(3)),
+    new Numero(4)
+);
+
+// Visitor 3: contar
+$contar = new ContarNosVisitor();
+$arvore-&gt;accept($contar);
+echo $contar-&gt;resultado() . "\n";
+// 5  (Multiplicacao + Soma + Numero(2) + Numero(3) + Numero(4))
+
+// Visitor 4: serializar
+$serializar = new SerializarJsonVisitor();
+$arvore-&gt;accept($serializar);
+echo $serializar-&gt;resultado() . "\n";
+// {"tipo":"Mult",
+//   "esq":{"tipo":"Soma",
+//     "esq":{"tipo":"Numero","valor":2},
+//     "dir":{"tipo":"Numero","valor":3}},
+//   "dir":{"tipo":"Numero","valor":4}}</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 2) -->
+
+        </section><!-- /.artigo__secao (exemplos) -->
+
+        <!-- 6. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Quando você precisa adicionar operações frequentes a uma hierarquia
+              estável:</strong> se a hierarquia (os tipos de nó) muda raramente mas novas
+              operações (visitors) são adicionadas com frequência, o Visitor mantém o
+              código das operações coeso e as classes de domínio intocadas.
+            </li>
+            <li>
+              <strong>Em compiladores e ferramentas de análise:</strong> a AST tem tipos
+              de nó estáveis (expressões, declarações, literais), mas os passes
+              (type-checking, inlining, geração de código, análise de fluxo) são
+              adicionados incrementalmente. Cada passe é um Visitor.
+            </li>
+            <li>
+              <strong>Para operações que acessam dados de múltiplos tipos sem
+              relacionamento de herança:</strong> um visitor de serialização ou de
+              auditoria pode acessar campos internos de tipos completamente diferentes
+              e produzir um resultado unificado — sem precisar que esses tipos
+              compartilhem comportamento.
+            </li>
+            <li>
+              <strong>Para separar preocupações em hierarquias complexas:</strong>
+              quando misturar múltiplas operações nas classes torna o código difícil
+              de entender, o Visitor concentra cada operação numa única classe coesa.
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>Quando a hierarquia muda com frequência:</strong> adicionar um novo
+              tipo de elemento (ex.: um novo nó de AST) exige atualizar a interface
+              <code>IVisitor</code> e <em>todos</em> os visitors existentes. Se a
+              hierarquia é volátil, o Visitor gera mais trabalho do que economiza —
+              o Open/Closed fica invertido para elementos.
+            </li>
+            <li>
+              <strong>Quando as classes precisam proteger seus internos:</strong> o Visitor
+              precisa acessar os dados internos dos elementos (campos <code>readonly</code>
+              ou getters). Se o encapsulamento é crítico e os dados não devem ser expostos,
+              o padrão é inadequado — ele essencialmente força cada elemento a ser um
+              DTO para os visitors.
+            </li>
+            <li>
+              <strong>Para hierarquias pequenas e poucas operações:</strong> com dois
+              tipos de elemento e uma operação, criar interface de visitor, dois
+              <code>accept()</code> e uma classe concreta é overengineering. Um método
+              direto na classe resolve com menos código.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Aberto para novas operações: adicionar um visitor não toca nas classes da hierarquia.</li>
+            <li>Concentra a lógica de cada operação numa única classe coesa — fácil de localizar, testar e manter.</li>
+            <li>Permite acumular estado durante a visitação (contagem, pilha, buffer de saída) sem poluir os elementos.</li>
+            <li>Pode percorrer hierarquias compostas (Composite) de forma ordenada e recursiva, aplicando transformações complexas.</li>
+            <li>Visitação múltipla: a mesma estrutura pode ser visitada por diferentes visitors de forma independente.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Fechado para novos elementos: adicionar um tipo à hierarquia exige atualizar todos os visitors — o custo inverso ao da abordagem ingênua.</li>
+            <li>Quebra parcialmente o encapsulamento: os elementos precisam expor seus dados internos para que os visitors os acessem.</li>
+            <li>Double dispatch é não-intuitivo para quem não conhece o padrão — o fluxo de execução é menos óbvio do que uma chamada direta.</li>
+            <li>Aumenta o número de classes: cada operação se torna uma classe; hierarquias grandes com muitas operações geram muitos visitors.</li>
+          </ul>
+        </section>
+
+        <!-- 8. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Double dispatch obscuro — usando instanceof no lugar de accept()</h3>
+          <p>
+            A tentação mais comum ao aprender o Visitor: implementar o visitor com
+            um bloco <code>if/instanceof</code> em vez de usar <code>accept()</code>.
+            Isso derrota o propósito do padrão e cria um acoplamento explícito ao tipo:
+          </p>
+          <div class="code-bloco">
+<pre><code>// ERRADO — visitor com instanceof (não é Visitor real):
+class CalcularErrado {
+  calcular(no: IExpressao): number {
+    if (no instanceof Numero)        return no.valor;
+    if (no instanceof Soma)          return this.calcular(no.esquerda) + this.calcular(no.direita);
+    if (no instanceof Multiplicacao) return this.calcular(no.esquerda) * this.calcular(no.direita);
+    throw new Error('Tipo desconhecido');
+    // Problema: adicionar um novo tipo de nó não gera erro de compilação —
+    // o código simplesmente lança em runtime, sem aviso estático.
+  }
+}
+
+// CORRETO — o compilador garante que todos os tipos são cobertos:
+// Se Divisao for adicionada a IVisitor, todo ConcreteVisitor que
+// não implementar visitDivisao() gerará erro de compilação.</code></pre>
+          </div>
+          <p>
+            Com o double dispatch real, o compilador força todos os visitors a
+            implementar o método para cada novo tipo — o contrato da interface
+            <code>IVisitor</code> atua como checklist estático de cobertura.
+          </p>
+
+          <h3>2. Hierarquia instável — Open/Closed invertido para elementos</h3>
+          <p>
+            O Visitor troca o eixo do Open/Closed: fica aberto para novas operações
+            (visitors) mas fechado para novos tipos na hierarquia. Quando um projeto
+            está na fase de modelagem e a hierarquia de elementos ainda está mudando,
+            cada novo tipo exige atualizar <em>todos</em> os visitors existentes — o
+            oposto do que o padrão promete. Aplique o Visitor somente quando a
+            hierarquia de elementos for razoavelmente estável.
+          </p>
+
+          <h3>3. Visitor com estado mutável compartilhado entre visitações</h3>
+          <p>
+            Quando um visitor acumula estado interno (pilha, partes, contagem), ele
+            só pode ser usado uma vez por visitação. Reutilizar a mesma instância em
+            duas árvores diferentes produz resultados incorretos porque o estado da
+            primeira visitação contamina a segunda.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Regra prática:</strong> crie uma nova instância do visitor para
+            cada visitação. Se um visitor precisa ser reutilizável, implemente um
+            método <code>reset()</code> que zera o estado interno — e documente esse
+            requisito explicitamente.
+          </p>
+
+          <h3>4. Visitor vs Strategy — distinção de intenção</h3>
+          <p>
+            A confusão mais frequente entre os dois padrões. O
+            <strong>Strategy</strong> encapsula um algoritmo intercambiável por
+            objeto: o contexto tem <em>uma</em> estratégia ativa que pode ser trocada,
+            mas cada objeto tem a sua própria. O <strong>Visitor</strong> encapsula
+            uma operação que <em>percorre uma hierarquia inteira</em>: um único visitor
+            atravessa todos os elementos, chamando o método correto em cada tipo — o
+            algoritmo é distribuído pelos métodos <code>visit*</code>, não por objetos
+            isolados. Use Strategy quando um único objeto precisa de um comportamento
+            intercambiável; use Visitor quando uma operação precisa atravessar e
+            processar múltiplos tipos em uma hierarquia.
+          </p>
+        </section>
+
+        <!-- 9. PADRÕES RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Padrões relacionados</h2>
+          <p>
+            O Visitor trabalha em conjunto com padrões que organizam hierarquias e
+            percorrimentos:
+          </p>
+          <!--
+            Disciplina de links: só linka artigos já publicados.
+            Composite existe → link real.
+            Iterator existe → link real.
+            Command existe → link real.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../composite/">Composite</a></li>
+            <li><a href="../iterator/">Iterator</a></li>
+            <li><a href="../command/">Command</a></li>
+          </ul>
+          <p class="mt-1">
+            O <strong>Composite</strong> é o parceiro natural do Visitor: o Composite
+            organiza os objetos em estruturas de árvore; o Visitor percorre essa árvore
+            aplicando uma operação em cada nó. O método <code>accept()</code> no nó
+            composto tipicamente delega para os filhos, que por sua vez delegam para
+            os seus filhos — a recursão do Composite e o double dispatch do Visitor
+            se combinam naturalmente. O <strong>Iterator</strong> é uma alternativa
+            mais simples quando a operação é apenas percorrer e entregar elementos ao
+            chamador, sem processar por tipo; quando é necessário processar cada tipo
+            de elemento diferentemente, o Visitor é mais adequado. O
+            <strong>Command</strong> encapsula uma ação discreta sobre um receptor
+            específico; o Visitor encapsula uma operação que se distribui por toda
+            uma hierarquia — são padrões complementares quando um sistema tem tanto
+            ações discretas (Command) quanto passes de análise ou transformação sobre
+            estruturas de dados (Visitor).
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="5151515151"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

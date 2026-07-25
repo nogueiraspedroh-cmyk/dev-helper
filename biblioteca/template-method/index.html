@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Template Method — Design Patterns | Biblioteca Dev Helper</title>
+  <meta name="description" content="Aprenda o padrão Template Method (GoF) em profundidade: intenção, problema, solução, hooks, diferença com Strategy, exemplos em TypeScript e PHP, quando usar, quando evitar e armadilhas comuns." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Template Method</span>
+        </nav>
+        <span class="artigo__categoria">Padrão Comportamental (GoF)</span>
+        <h1 class="artigo__titulo">Template Method</h1>
+        <p class="artigo__subtitulo">
+          Define o esqueleto de um algoritmo num método da classe-base, delegando passos
+          específicos às subclasses via métodos abstratos e hooks — sem alterar a estrutura
+          geral do algoritmo.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Definir o esqueleto de um algoritmo na classe-base</strong> e deixar
+            que as subclasses preencham os passos variáveis — sem alterar a estrutura
+            geral do algoritmo. A classe-base chama os métodos que as subclasses
+            implementam (não o contrário): é a inversão de controle, também chamada de
+            <em>princípio de Hollywood</em> — "não nos chame, nós chamamos você".
+          </p>
+          <p>
+            Catalogado pelo GoF (1994) como padrão comportamental, o Template Method é
+            a base de muitos frameworks: o framework define o fluxo geral e chama métodos
+            que o desenvolvedor implementa na subclasse (hooks de ciclo de vida em React,
+            Angular, Laravel, etc.). O padrão é também a estrutura-mãe do
+            <strong>Factory Method</strong>, que é uma especialização: um Template Method
+            cujo único passo variável é a criação de um objeto.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Considere um pipeline de geração de relatórios que sempre segue as mesmas
+            etapas: coletar dados, processar, formatar e exportar. A lógica de coleta
+            e processamento é idêntica para todos os relatórios, mas a formatação e
+            exportação variam (CSV, PDF, HTML).
+          </p>
+          <p>
+            Sem o Template Method, duas abordagens comuns geram problemas:
+          </p>
+          <ol>
+            <li>
+              <strong>Duplicação:</strong> copiar o pipeline inteiro para cada subclasse.
+              Mudanças no fluxo geral exigem atualizar todas as cópias — violação do
+              princípio DRY.
+            </li>
+            <li>
+              <strong>Condicional no algoritmo:</strong> uma única classe com
+              <code>if (formato === "csv")</code> embutido no método de exportação — os
+              mesmos problemas de crescimento e testabilidade do Strategy mal aplicado.
+            </li>
+          </ol>
+          <p>
+            O Template Method resolve: a classe-base define o fluxo fixo e chama métodos
+            abstratos/hooks nas posições variáveis. Cada subclasse implementa apenas os
+            passos que diferem.
+          </p>
+        </section>
+
+        <!-- 3. SOLUÇÃO -->
+        <section class="artigo__secao">
+          <h2>Solução</h2>
+          <p>O Template Method organiza o código em dois participantes:</p>
+          <ol>
+            <li>
+              <strong>AbstractClass (classe-base):</strong> define o <em>template method</em>
+              — o método que contém o algoritmo completo em sequência. Chama métodos
+              abstratos (que subclasses devem implementar) e hooks (que subclasses podem
+              sobrescrever, mas têm implementação padrão). O template method geralmente é
+              <code>final</code> (ou equivalente) para impedir que subclasses alterem a
+              estrutura do algoritmo.
+            </li>
+            <li>
+              <strong>ConcreteClass (subclasse):</strong> implementa apenas os passos
+              variáveis declarados como abstratos na classe-base. Pode sobrescrever hooks
+              para adicionar comportamento opcional sem alterar o fluxo geral.
+            </li>
+          </ol>
+
+          <h3>Template Method vs Strategy</h3>
+          <p>
+            Ambos resolvem a variação de partes de um processo, mas de formas opostas:
+          </p>
+          <ul>
+            <li>
+              <strong>Template Method</strong> usa <em>herança</em>: a variação é resolvida
+              em tempo de compilação. A subclasse é criada uma vez e sempre executará os
+              mesmos passos concretos. O algoritmo inteiro está na classe-base; apenas
+              partes dele variam.
+            </li>
+            <li>
+              <strong>Strategy</strong> usa <em>composição</em>: a variação é resolvida
+              em tempo de execução. O algoritmo inteiro pode ser trocado por injeção.
+              Prefira Strategy quando o algoritmo inteiro varia; prefira Template Method
+              quando apenas partes variam e a estrutura geral é fixa.
+            </li>
+          </ul>
+
+          <h3>Factory Method como especialização</h3>
+          <p>
+            O Factory Method é um Template Method com um único passo variável: a criação
+            do objeto. A classe-base define o template method de "criação" e delega para
+            o método abstrato <code>criarProduto()</code> que cada subclasse implementa.
+            Isso torna o Factory Method conceitualmente um caso especial do Template Method.
+          </p>
+        </section>
+
+        <!-- 4. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+          <div class="code-bloco">
+<pre><code>      GeradorRelatorio (AbstractClass)
+  ┌───────────────────────────────────────────┐
+  │ + gerar(): void  [template method]        │
+  │     1. dados = coletarDados()             │
+  │     2. proc  = processar(dados)           │
+  │     3. aposProcessar(proc) [hook opcl.]   │
+  │     4. out   = formatar(proc)             │
+  │     5. exportar(out)                      │
+  │                                           │
+  │ # coletarDados(): Dados    [concreto]     │
+  │ # processar(d): Proc       [concreto]     │
+  │ # aposProcessar(p): void   [hook — vazio] │
+  │ # formatar(p): string      [abstrato]     │
+  │ # exportar(s): void        [abstrato]     │
+  └───────────────────────────────────────────┘
+              ▲
+   ┌──────────┴──────────┐
+   │                     │
+RelatorioCSV         RelatorioPDF
+(ConcreteClass)      (ConcreteClass)
+formatar → CSV       formatar → PDF
+exportar → arquivo   exportar → impressora
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. EXEMPLOS DE CÓDIGO -->
+        <section class="artigo__secao">
+          <h2>Exemplos de código</h2>
+
+          <h3>Exemplo 1 — Pipeline de geração de relatórios</h3>
+          <p>
+            A classe-base define o fluxo completo. Subclasses implementam apenas
+            formatação e exportação. Um hook opcional permite customização sem
+            tornar o passo obrigatório.
+          </p>
+
+          <!-- GRUPO DE ABAS 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 1 — pipeline de relatórios">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// Tipos simples para o exemplo.
+type DadosBrutos = { titulo: string; valores: number[] };
+type DadosProcessados = { titulo: string; soma: number; media: number; count: number };
+
+// ── AbstractClass ─────────────────────────────────────────────
+abstract class GeradorRelatorio {
+
+  // Template Method — define o algoritmo completo. Subclasses
+  // nao devem sobrescrever este metodo (use readonly na pratica).
+  gerar(titulo: string, valores: number[]): void {
+    const brutos   = this.coletarDados(titulo, valores);   // fixo
+    const proc     = this.processar(brutos);               // fixo
+    this.aposProcessar(proc);                              // hook (opcional)
+    const saida    = this.formatar(proc);                  // abstrato
+    this.exportar(saida);                                  // abstrato
+  }
+
+  // Passos concretos — implementados na classe-base (logica comum).
+  protected coletarDados(titulo: string, valores: number[]): DadosBrutos {
+    return { titulo, valores };
+  }
+
+  protected processar(d: DadosBrutos): DadosProcessados {
+    const soma = d.valores.reduce((acc, v) => acc + v, 0);
+    return {
+      titulo: d.titulo,
+      soma,
+      media: d.valores.length ? soma / d.valores.length : 0,
+      count: d.valores.length,
+    };
+  }
+
+  // Hook — implementacao padrao vazia; subclasses podem sobrescrever.
+  protected aposProcessar(_proc: DadosProcessados): void { /* vazio */ }
+
+  // Passos abstratos — obrigatorios nas subclasses.
+  protected abstract formatar(proc: DadosProcessados): string;
+  protected abstract exportar(saida: string): void;
+}
+
+// ── ConcreteClass: CSV ────────────────────────────────────────
+class RelatorioCSV extends GeradorRelatorio {
+  protected formatar(proc: DadosProcessados): string {
+    return [
+      "titulo,soma,media,count",
+      `${proc.titulo},${proc.soma},${proc.media.toFixed(2)},${proc.count}`,
+    ].join("\n");
+  }
+
+  protected exportar(saida: string): void {
+    console.log("[CSV] Exportando:\n" + saida);
+  }
+}
+
+// ── ConcreteClass: resumo de texto ───────────────────────────
+class RelatorioTexto extends GeradorRelatorio {
+  // Sobrescreve o hook para logar antes de formatar.
+  protected override aposProcessar(proc: DadosProcessados): void {
+    console.log(`[Hook] Processamento concluido para: "${proc.titulo}"`);
+  }
+
+  protected formatar(proc: DadosProcessados): string {
+    return (
+      `=== ${proc.titulo} ===\n` +
+      `Total: ${proc.soma}  |  Media: ${proc.media.toFixed(2)}  |  Itens: ${proc.count}`
+    );
+  }
+
+  protected exportar(saida: string): void {
+    console.log("[TEXTO] Imprimindo:\n" + saida);
+  }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+const csv   = new RelatorioCSV();
+const texto = new RelatorioTexto();
+
+const valores = [10, 20, 30, 40];
+
+csv.gerar("Vendas Junho", valores);
+// [CSV] Exportando:
+// titulo,soma,media,count
+// Vendas Junho,100,25.00,4
+
+texto.gerar("Vendas Junho", valores);
+// [Hook] Processamento concluido para: "Vendas Junho"
+// [TEXTO] Imprimindo:
+// === Vendas Junho ===
+// Total: 100  |  Media: 25.00  |  Itens: 4</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── AbstractClass ─────────────────────────────────────────────
+abstract class GeradorRelatorio
+{
+    // Template Method — final para proteger a estrutura do algoritmo.
+    final public function gerar(string $titulo, array $valores): void
+    {
+        $brutos = $this-&gt;coletarDados($titulo, $valores);
+        $proc   = $this-&gt;processar($brutos);
+        $this-&gt;aposProcessar($proc);          // hook opcional
+        $saida  = $this-&gt;formatar($proc);
+        $this-&gt;exportar($saida);
+    }
+
+    // Passos concretos — logica comum na classe-base.
+    protected function coletarDados(string $titulo, array $valores): array
+    {
+        return ['titulo' =&gt; $titulo, 'valores' =&gt; $valores];
+    }
+
+    protected function processar(array $d): array
+    {
+        $soma  = array_sum($d['valores']);
+        $count = count($d['valores']);
+        return [
+            'titulo' =&gt; $d['titulo'],
+            'soma'   =&gt; $soma,
+            'media'  =&gt; $count &gt; 0 ? $soma / $count : 0,
+            'count'  =&gt; $count,
+        ];
+    }
+
+    // Hook — padrao vazio; subclasses podem sobrescrever.
+    protected function aposProcessar(array $proc): void { /* vazio */ }
+
+    // Passos abstratos — obrigatorios nas subclasses.
+    abstract protected function formatar(array $proc): string;
+    abstract protected function exportar(string $saida): void;
+}
+
+// ── ConcreteClass: CSV ────────────────────────────────────────
+class RelatorioCSV extends GeradorRelatorio
+{
+    protected function formatar(array $proc): string
+    {
+        return implode("\n", [
+            'titulo,soma,media,count',
+            sprintf('%s,%d,%.2f,%d', $proc['titulo'], $proc['soma'], $proc['media'], $proc['count']),
+        ]);
+    }
+
+    protected function exportar(string $saida): void
+    {
+        echo "[CSV] Exportando:\n" . $saida . "\n";
+    }
+}
+
+// ── ConcreteClass: texto ──────────────────────────────────────
+class RelatorioTexto extends GeradorRelatorio
+{
+    // Sobrescreve o hook.
+    protected function aposProcessar(array $proc): void
+    {
+        echo "[Hook] Processamento concluido para: \"{$proc['titulo']}\"\n";
+    }
+
+    protected function formatar(array $proc): string
+    {
+        return sprintf(
+            "=== %s ===\nTotal: %d  |  Media: %.2f  |  Itens: %d",
+            $proc['titulo'], $proc['soma'], $proc['media'], $proc['count']
+        );
+    }
+
+    protected function exportar(string $saida): void
+    {
+        echo "[TEXTO] Imprimindo:\n" . $saida . "\n";
+    }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+$csv   = new RelatorioCSV();
+$texto = new RelatorioTexto();
+
+$valores = [10, 20, 30, 40];
+
+$csv-&gt;gerar('Vendas Junho', $valores);
+// [CSV] Exportando:
+// titulo,soma,media,count
+// Vendas Junho,100,25.00,4
+
+$texto-&gt;gerar('Vendas Junho', $valores);
+// [Hook] Processamento concluido para: "Vendas Junho"
+// [TEXTO] Imprimindo:
+// === Vendas Junho ===
+// Total: 100  |  Media: 25.00  |  Itens: 4</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 1) -->
+
+          <h3>Exemplo 2 — Parser de dados com etapas fixas e variáveis</h3>
+          <p>
+            Um segundo exemplo realista: pipeline de parsing onde abertura, fechamento
+            e validação são fixos, mas a lógica de leitura linha-a-linha varia por
+            formato (CSV vs formato de log). Ilustra também um hook que adiciona
+            comportamento opcional entre etapas.
+          </p>
+
+          <!-- GRUPO DE ABAS 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 2 — parser com template method">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── AbstractClass ─────────────────────────────────────────────
+abstract class Parser {
+  // Template Method — define o fluxo de parsing.
+  parse(conteudo: string): string[] {
+    const linhas = this.dividirLinhas(conteudo);           // fixo
+    const filtradas = this.filtrarLinhas(linhas);          // hook (padrao: passa tudo)
+    const resultado: string[] = [];
+    for (const linha of filtradas) {
+      const item = this.parseLinha(linha);                 // abstrato
+      if (item !== null) resultado.push(item);
+    }
+    this.aposParser(resultado);                            // hook (padrao: vazio)
+    return resultado;
+  }
+
+  // Passo fixo: divide por linha.
+  private dividirLinhas(conteudo: string): string[] {
+    return conteudo.split("\n").map(l =&gt; l.trim()).filter(l =&gt; l.length &gt; 0);
+  }
+
+  // Hook: filtragem antes do parse. Padrao: sem filtro.
+  protected filtrarLinhas(linhas: string[]): string[] {
+    return linhas;
+  }
+
+  // Abstrato: cada parser implementa o parse de uma linha.
+  protected abstract parseLinha(linha: string): string | null;
+
+  // Hook: acao apos o parse completo. Padrao: vazio.
+  protected aposParser(_resultado: string[]): void { /* vazio */ }
+}
+
+// ── Concrete: parser de CSV (primeira coluna) ─────────────────
+class ParserCSV extends Parser {
+  constructor(private readonly colunaIndex: number = 0) { super(); }
+
+  // Ignora linhas de cabecalho (comecam com "#").
+  protected override filtrarLinhas(linhas: string[]): string[] {
+    return linhas.filter(l =&gt; !l.startsWith("#"));
+  }
+
+  protected parseLinha(linha: string): string | null {
+    const partes = linha.split(",");
+    return partes[this.colunaIndex]?.trim() ?? null;
+  }
+}
+
+// ── Concrete: parser de log (extrai nivel de severity) ────────
+class ParserLog extends Parser {
+  private erros = 0;
+
+  protected parseLinha(linha: string): string | null {
+    // Espera formato: "[NIVEL] mensagem"
+    const match = linha.match(/^\[([A-Z]+)\]\s+(.+)$/);
+    if (!match) return null;
+    if (match[1] === "ERROR") this.erros++;
+    return `${match[1]}: ${match[2]}`;
+  }
+
+  protected override aposParser(resultado: string[]): void {
+    console.log(`[Log] ${resultado.length} linhas parseadas, ${this.erros} erros.`);
+  }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+const csv = new ParserCSV(0);
+const csvDados = "# cabecalho ignorado\nAlice,30,SP\nBob,25,RJ\nCarla,28,MG";
+console.log(csv.parse(csvDados));
+// ["Alice", "Bob", "Carla"]
+
+const log = new ParserLog();
+const logDados = "[INFO] Sistema iniciado\n[ERROR] Falha na conexao\n[INFO] Tentando reconectar\n[ERROR] Timeout";
+console.log(log.parse(logDados));
+// [Log] 4 linhas parseadas, 2 erros.
+// ["INFO: Sistema iniciado", "ERROR: Falha na conexao", "INFO: Tentando reconectar", "ERROR: Timeout"]</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── AbstractClass ─────────────────────────────────────────────
+abstract class Parser
+{
+    // Template Method.
+    final public function parse(string $conteudo): array
+    {
+        $linhas    = $this-&gt;dividirLinhas($conteudo);
+        $filtradas = $this-&gt;filtrarLinhas($linhas);
+        $resultado = [];
+        foreach ($filtradas as $linha) {
+            $item = $this-&gt;parseLinha($linha);
+            if ($item !== null) {
+                $resultado[] = $item;
+            }
+        }
+        $this-&gt;aposParser($resultado);
+        return $resultado;
+    }
+
+    private function dividirLinhas(string $conteudo): array
+    {
+        return array_filter(
+            array_map('trim', explode("\n", $conteudo)),
+            fn($l) =&gt; $l !== ''
+        );
+    }
+
+    // Hook com padrao — subclasses podem sobrescrever.
+    protected function filtrarLinhas(array $linhas): array { return $linhas; }
+    protected function aposParser(array $resultado): void  { /* vazio */ }
+
+    // Abstrato.
+    abstract protected function parseLinha(string $linha): ?string;
+}
+
+// ── Concrete: CSV ─────────────────────────────────────────────
+class ParserCSV extends Parser
+{
+    public function __construct(private readonly int $colunaIndex = 0) {}
+
+    protected function filtrarLinhas(array $linhas): array
+    {
+        return array_filter($linhas, fn($l) =&gt; !str_starts_with($l, '#'));
+    }
+
+    protected function parseLinha(string $linha): ?string
+    {
+        $partes = explode(',', $linha);
+        return isset($partes[$this-&gt;colunaIndex])
+            ? trim($partes[$this-&gt;colunaIndex])
+            : null;
+    }
+}
+
+// ── Concrete: Log ─────────────────────────────────────────────
+class ParserLog extends Parser
+{
+    private int $erros = 0;
+
+    protected function parseLinha(string $linha): ?string
+    {
+        if (!preg_match('/^\[([A-Z]+)\]\s+(.+)$/', $linha, $m)) {
+            return null;
+        }
+        if ($m[1] === 'ERROR') {
+            $this-&gt;erros++;
+        }
+        return $m[1] . ': ' . $m[2];
+    }
+
+    protected function aposParser(array $resultado): void
+    {
+        printf("[Log] %d linhas parseadas, %d erros.\n", count($resultado), $this-&gt;erros);
+    }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+$csv = new ParserCSV(0);
+$csvDados = "# cabecalho ignorado\nAlice,30,SP\nBob,25,RJ\nCarla,28,MG";
+print_r($csv-&gt;parse($csvDados));
+// Array ( [0] =&gt; Alice [1] =&gt; Bob [2] =&gt; Carla )
+
+$log = new ParserLog();
+$logDados = "[INFO] Sistema iniciado\n[ERROR] Falha na conexao\n[INFO] Tentando reconectar\n[ERROR] Timeout";
+print_r($log-&gt;parse($logDados));
+// [Log] 4 linhas parseadas, 2 erros.
+// Array ( [0] =&gt; INFO: Sistema iniciado [1] =&gt; ERROR: Falha na conexao ... )</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 2) -->
+
+        </section><!-- /.artigo__secao (exemplos) -->
+
+        <!-- 6. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Quando múltiplas classes compartilham o mesmo algoritmo geral</strong>
+              mas diferem em passos específicos — pipelines de processamento, importadores,
+              parsers, geradores de relatório, fluxos de autenticação.
+            </li>
+            <li>
+              <strong>Para eliminar duplicação de código:</strong> a lógica comum fica na
+              classe-base uma única vez; as subclasses implementam apenas o que é diferente.
+              Mudanças no fluxo geral afetam um único lugar.
+            </li>
+            <li>
+              <strong>Para criar frameworks e bibliotecas extensíveis:</strong> o framework
+              define o fluxo (template method) e expõe hooks para que o usuário customize
+              comportamentos sem precisar entender o fluxo interno completo.
+            </li>
+            <li>
+              <strong>Quando a variação é em compile-time</strong> (subclasse escolhida
+              na configuração ou na inicialização, não em runtime): Template Method é mais
+              simples que Strategy nesse cenário.
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>Quando o algoritmo inteiro varia:</strong> se cada variação não
+              compartilha quase nada com as outras, Template Method força subclasses que
+              implementam quase tudo — use Strategy (composição) em vez de herança.
+            </li>
+            <li>
+              <strong>Quando a variação precisa acontecer em runtime:</strong> herança é
+              estática. Se você precisa trocar o comportamento enquanto o sistema roda,
+              Strategy é mais adequado.
+            </li>
+            <li>
+              <strong>Quando a hierarquia de herança já é profunda:</strong> adicionar
+              mais um nível de herança aumenta a complexidade e o acoplamento estrutural.
+              Considere composição.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Elimina duplicação: a lógica comum vive na classe-base; subclasses implementam apenas as variações.</li>
+            <li>O fluxo do algoritmo é controlado e centralizado — subclasses não podem alterar a ordem dos passos se o template method for final.</li>
+            <li>Hooks permitem extensão opcional sem tornar o passo obrigatório.</li>
+            <li>Facilita a criação de frameworks extensíveis com pontos de customização bem definidos.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Herança é um acoplamento forte: a subclasse está permanentemente ligada à estrutura da classe-base.</li>
+            <li>O Princípio de Substituição de Liskov pode ser violado se subclasses sobrescreverem passos de maneiras incompatíveis com o contrato geral.</li>
+            <li>Hooks demais tornam o template method difícil de entender — fica obscuro quais passos são realmente variáveis.</li>
+            <li>Para adicionar um novo passo ao algoritmo na classe-base, todas as subclasses existentes podem precisar ser atualizadas.</li>
+          </ul>
+        </section>
+
+        <!-- 8. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Princípio de Hollywood — "não nos chame, nós chamamos você"</h3>
+          <p>
+            O template method é chamado pelo cliente; ele chama os métodos das subclasses.
+            O erro é a subclasse chamar diretamente o template method ou outros métodos
+            da classe-base de formas não previstas — quebrando o contrato de inversão de
+            controle. Use <code>final</code> (ou o equivalente na linguagem) no template
+            method para garantir que a estrutura do algoritmo não seja sobrescrita.
+          </p>
+
+          <h3>2. Hooks demais</h3>
+          <p class="artigo__aviso">
+            <strong>Atenção:</strong> cada hook é um ponto de extensão opcional que aumenta
+            a complexidade do contrato da classe-base. Se houver muitos hooks, a subclasse
+            precisa entender o fluxo completo para saber quais sobrescrever — perdendo a
+            vantagem de abstração. Regra prática: exponha apenas os hooks que o cenário
+            real de extensão exige. Hooks não usados são ruído.
+          </p>
+
+          <h3>3. Rigidez da herança</h3>
+          <p>
+            Template Method acopla a subclasse à estrutura da classe-base em tempo de
+            compilação. Se o fluxo do algoritmo precisar mudar (ex.: adicionar um passo
+            entre dois passos existentes), todas as subclasses podem ser afetadas. Para
+            fluxos que evoluem muito, considere Strategy (composição de passos como objetos
+            injetáveis) ou um pipeline baseado em Chain of Responsibility.
+          </p>
+
+          <h3>4. Subclasse que anula um passo sem respeitar o contrato</h3>
+          <p>
+            Se uma subclasse sobrescreve um passo abstrato e retorna um valor que viola
+            o contrato esperado pela classe-base (ex.: retorna <code>null</code> quando
+            o template method espera uma string), o algoritmo inteiro pode falhar de
+            forma silenciosa ou com erros difíceis de rastrear. Documente claramente
+            as invariantes de cada passo abstrato e valide-as no template method quando
+            necessário.
+          </p>
+        </section>
+
+        <!-- 9. PADRÕES RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Padrões relacionados</h2>
+          <p>
+            O Template Method interage com outros padrões de criação e comportamentais:
+          </p>
+          <!--
+            Disciplina de links: só linka artigos já publicados.
+            Factory Method existe → link real.
+            Strategy existe → link real.
+            Observer existe agora → link real.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../factory-method/">Factory Method</a></li>
+            <li><a href="../strategy/">Strategy</a></li>
+            <li><a href="../observer/">Observer</a></li>
+          </ul>
+          <p class="mt-1">
+            O <strong>Factory Method</strong> é uma especialização do Template Method: o
+            template method tem um único passo variável que é a criação de um objeto —
+            o método de fábrica abstrato. Toda a estrutura de herança do Factory Method
+            é, conceitualmente, um Template Method aplicado à criação. O
+            <strong>Strategy</strong> é o "primo de composição" do Template Method: resolve
+            o mesmo problema de variação de comportamento mas com composição em vez de
+            herança — preferível quando a variação precisa acontecer em runtime ou quando
+            hierarquias de herança profundas são indesejáveis. O <strong>Observer</strong>
+            pode ser combinado com Template Method: o template method define o fluxo de
+            processamento e, em um dos passos (hook ou passo fixo), notifica Observers
+            sobre o progresso ou resultado — desacoplando consumidores do resultado sem
+            alterar o fluxo do algoritmo.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="8686868686"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

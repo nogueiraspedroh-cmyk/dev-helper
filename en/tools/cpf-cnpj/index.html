@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CPF/CNPJ Generator and Validator — Dev Helper</title>
+  <meta name="description" content="Generate valid CPF and CNPJ numbers (numeric and alphanumeric) and validate documents directly in your browser. Supports Brazil's new alphanumeric CNPJ format." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../tools/cpf-cnpj/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!--
+    AdSense — biblioteca carregada UMA vez por página.
+    Substitua ca-pub-0000000000000000 pelo seu pub-ID real antes do deploy.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../../../biblioteca/">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>CPF/CNPJ Generator and Validator</h1>
+        <p>Generate valid CPF and CNPJ numbers (with correct check digits) and validate documents.</p>
+      </header>
+
+      <!-- ── SECTION: GENERATE ─────────────────────────────────────────────── -->
+      <section class="tool__section">
+        <h2 class="tool__section-title">Generate</h2>
+
+        <div class="tool__controls">
+
+          <!-- CNPJ format options -->
+          <fieldset class="tool__fieldset">
+            <legend class="tool__legend">CNPJ format</legend>
+            <label class="tool__radio-label">
+              <input type="radio" name="cnpj-formato" value="numerico" checked />
+              Numeric (14 digits — traditional format)
+            </label>
+            <label class="tool__radio-label">
+              <input type="radio" name="cnpj-formato" value="alfanumerico" />
+              Alphanumeric (new format from Brazil's Receita Federal)
+            </label>
+          </fieldset>
+
+          <!-- Checkbox format with mask -->
+          <label class="tool__checkbox-label">
+            <input type="checkbox" id="chk-formatar" checked />
+            Format with mask (CPF: 000.000.000-00 / CNPJ: 00.000.000/0000-00)
+          </label>
+
+          <!-- Generation buttons -->
+          <div class="tool__actions">
+            <button id="btn-gerar-cpf" class="button" type="button">Generate CPF</button>
+            <button id="btn-gerar-cnpj" class="button" type="button">Generate CNPJ</button>
+          </div>
+        </div>
+
+        <!-- Generator output -->
+        <div class="tool__output">
+          <input
+            id="output-gerado"
+            class="tool__result-input"
+            type="text"
+            readonly
+            placeholder="The generated document will appear here..."
+          />
+          <div class="tool__actions tool__actions--mt">
+            <button id="btn-copiar-gerado" class="button--secondary" type="button">Copy</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── SECTION: VALIDATE ────────────────────────────────────────────── -->
+      <section class="tool__section">
+        <h2 class="tool__section-title">Validate</h2>
+
+        <div class="tool__controls">
+          <div class="tool__actions">
+            <input
+              id="input-validar"
+              class="tool__input-inline"
+              type="text"
+              placeholder="Paste a CPF or CNPJ (with or without mask)"
+              maxlength="20"
+              spellcheck="false"
+              autocorrect="off"
+              autocapitalize="off"
+            />
+            <button id="btn-validar" class="button" type="button">Validate</button>
+            <button id="btn-limpar-validar" class="button--secondary" type="button">Clear</button>
+          </div>
+        </div>
+
+        <div class="tool__output">
+          <p id="result-validar" class="result-validar"></p>
+        </div>
+      </section>
+    </article>
+
+    <!-- Ad block — below the tool's result area -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="2222222222"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Real content — required by AdSense -->
+    <section>
+      <h2>What are CPF and CNPJ?</h2>
+      <p>
+        The <strong>CPF</strong> (Cadastro de Pessoas Físicas) is Brazil's individual taxpayer
+        identification document, issued by the Receita Federal (Brazil's federal revenue
+        service). It has 11 digits, the last 2 of which are <em>check digits</em> calculated
+        from the first 9 using a modulo-11 algorithm, which detects typing errors and prevents
+        simple fictitious documents from being accepted.
+      </p>
+      <p>
+        The <strong>CNPJ</strong> (Cadastro Nacional da Pessoa Jurídica) identifies companies
+        and entities in Brazil. In the traditional (numeric) format, it has 14 digits — 12 base
+        digits and 2 check digits. It follows the same modulo-11 principle as the CPF, with
+        specific weights for each position.
+      </p>
+
+      <h2>The new alphanumeric CNPJ</h2>
+      <p>
+        Starting in 2026, Brazil's Receita Federal began issuing CNPJs in the
+        <strong>alphanumeric</strong> format: the 12 base characters can be digits (0–9)
+        <em>or</em> uppercase letters (A–Z), while the final 2 check digits remain always
+        numeric. This significantly expands the capacity to register new companies.
+      </p>
+      <p>
+        When calculating the check digits of the alphanumeric CNPJ, each character is converted
+        to a numeric value by subtracting 48 from its ASCII code: so '0'–'9' become 0–9 and
+        'A'–'Z' become 17–42. The same weights used for the numeric CNPJ are applied to these
+        values, and the modulo-11 rule is identical.
+      </p>
+      <p>
+        This tool supports generation and validation of both formats.
+      </p>
+
+      <h2>Frequently Asked Questions (FAQ)</h2>
+
+      <h3>Are the generated documents from real people or companies?</h3>
+      <p>
+        No. The CPFs and CNPJs generated by this tool are <strong>fictitious</strong> —
+        mathematically valid (they pass the check-digit verification), but they do not belong
+        to any person or company registered with the Receita Federal. They are useful only for
+        software testing, filling development forms and validating systems.
+      </p>
+
+      <h3>What are check digits?</h3>
+      <p>
+        They are the last digits of a CPF or CNPJ, calculated mathematically from the preceding
+        digits. Any typing error in one of the preceding digits (except for rare coincidences)
+        makes the check digits incorrect, allowing systems to detect invalid documents even
+        before consulting the Receita Federal.
+      </p>
+
+      <h3>Why are some CPFs with all equal digits invalid?</h3>
+      <p>
+        Sequences like 000.000.000-00, 111.111.111-11, … 999.999.999-99 pass the check-digit
+        calculation mathematically, but are officially rejected by the Receita Federal for being
+        obviously fictitious. This tool rejects them during validation and never generates them.
+      </p>
+
+      <h3>Can I validate an alphanumeric CNPJ here?</h3>
+      <p>
+        Yes. The tool automatically detects the format by length and content: if the input field
+        has 14 characters with letters in the first 12, it is treated as an alphanumeric CNPJ;
+        if they are all digits, it is treated as a traditional numeric CNPJ; if it has 11
+        digits, it is treated as a CPF.
+      </p>
+
+      <h3>Does the mask (dots, dash and slash) interfere with validation?</h3>
+      <p>
+        No. The tool automatically removes any punctuation character before validating — you
+        can paste the document with or without formatting.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/tools-en/cpf-cnpj.js"></script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contador de Caracteres e Palavras — Dev Helper</title>
+  <meta name="description" content="Conte caracteres (com e sem espaços), palavras, linhas e parágrafos ao vivo, com indicadores de limite para post no X (280), meta description (160) e title tag (60)." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../../biblioteca/">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Contador de Caracteres e Palavras</h1>
+        <p>Cole ou digite um texto e veja, <strong>ao vivo</strong>, a contagem de caracteres (com e sem espaços), palavras, linhas e parágrafos — mais indicadores dos limites mais comuns de redes e SEO.</p>
+      </header>
+
+      <div class="tool__controls">
+        <textarea id="cc-input" class="tool__input" spellcheck="false" placeholder="Digite ou cole seu texto aqui…" aria-label="Texto para contar"></textarea>
+
+        <div class="cc-stats">
+          <div class="cc-stat"><span class="cc-stat__num" id="cc-chars-with">0</span><span class="cc-stat__label">caracteres (com espaços)</span></div>
+          <div class="cc-stat"><span class="cc-stat__num" id="cc-chars-without">0</span><span class="cc-stat__label">caracteres (sem espaços)</span></div>
+          <div class="cc-stat"><span class="cc-stat__num" id="cc-words">0</span><span class="cc-stat__label">palavras</span></div>
+          <div class="cc-stat"><span class="cc-stat__num" id="cc-lines">0</span><span class="cc-stat__label">linhas</span></div>
+          <div class="cc-stat"><span class="cc-stat__num" id="cc-paragraphs">0</span><span class="cc-stat__label">parágrafos</span></div>
+        </div>
+
+        <div class="cc-limits" id="cc-limits" aria-live="polite"></div>
+
+        <div class="tool__actions tool__actions--mt">
+          <button id="cc-clear" class="button--secondary" type="button">Limpar</button>
+        </div>
+      </div>
+    </article>
+
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="3030303030"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <section>
+      <h2>O que é contado</h2>
+      <p>
+        <strong>Caracteres com espaços</strong> é o total de todos os símbolos, incluindo espaços e
+        quebras de linha — é o número que redes sociais e mecanismos de busca costumam limitar.
+        <strong>Caracteres sem espaços</strong> ignora qualquer espaço em branco. <strong>Palavras</strong>
+        são sequências separadas por espaço. <strong>Linhas</strong> conta as quebras de linha, e
+        <strong>parágrafos</strong> conta blocos separados por uma linha em branco.
+      </p>
+
+      <h2>Limites comuns</h2>
+      <p>
+        A ferramenta mostra o quanto falta (ou o quanto excedeu) para três limites frequentes:
+        <strong>280</strong> caracteres de um post no X (Twitter), <strong>~160</strong> de uma
+        <em>meta description</em> e <strong>~60</strong> de uma <em>title tag</em> — os dois últimos
+        importantes para o SEO, porque o Google trunca o que passa disso nos resultados.
+      </p>
+
+      <h2>Perguntas frequentes (FAQ)</h2>
+
+      <h3>Emojis contam como um caractere?</h3>
+      <p>
+        Sim. A contagem usa <em>code points</em> Unicode, então um emoji (mesmo os compostos por pares
+        substitutos) conta como um único caractere, como a maioria das plataformas faz.
+      </p>
+
+      <h3>Os limites são exatos para cada plataforma?</h3>
+      <p>
+        São valores de referência amplamente usados. Cada plataforma pode ter regras próprias (por
+        exemplo, contar links de forma diferente), então trate-os como um guia, não como uma garantia.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/tools/contador-caracteres.js"></script>
+</body>
+</html>

@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monolito vs Microsserviços — Arquiteturas | Biblioteca Dev Helper</title>
+  <meta name="description" content="Entenda as diferenças entre Monolito e Microsserviços, o espectro entre os dois extremos, o Monolito Modular como terceira via, e as armadilhas do Distributed Monolith e do Big Ball of Mud." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Monolito vs Microsserviços</span>
+        </nav>
+        <span class="artigo__categoria">Arquitetura</span>
+        <h1 class="artigo__titulo">Monolito vs Microsserviços</h1>
+        <p class="artigo__subtitulo">
+          Dois estilos arquiteturais frequentemente apresentados como opostos,
+          mas que formam um espectro contínuo. A escolha entre eles determina
+          como o sistema é <em>implantado</em>, <em>escalado</em> e
+          <em>operado</em> — e tem consequências profundas para equipes pequenas
+          e grandes.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Um Monolito é uma única unidade de deploy.</strong> Todo o
+            código da aplicação é compilado, empacotado e implantado junto.
+            <strong>Microsserviços são um conjunto de serviços com fronteiras de
+            domínio bem definidas</strong>, cada um com seu próprio ciclo de
+            deploy, banco de dados e escalabilidade independentes.
+          </p>
+          <p>
+            O <strong>Monolito</strong> não é sinônimo de código desorganizado.
+            Um monolito pode — e deve — ter fronteiras internas claras, módulos
+            bem encapsulados e separação de responsabilidades rigorosa. O que
+            o define é a <em>unidade de deploy</em>: um único artefato que sobe
+            ou cai por inteiro.
+          </p>
+          <p>
+            Os <strong>Microsserviços</strong> não são sinônimo de boas práticas.
+            O que os define é a <em>independência operacional</em>: cada serviço
+            pode ser implantado, escalado, atualizado e falhado sem afetar os
+            demais. Essa independência tem um custo concreto — comunicação via
+            rede, consistência eventual entre serviços, complexidade de operações
+            distribuídas — que só vale a pena quando o sistema e a organização
+            atingiram um tamanho e uma maturidade que justifiquem esse custo.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            A decisão raramente é feita de forma consciente. Os dois problemas
+            mais comuns surgem nos extremos opostos:
+          </p>
+          <ul>
+            <li>
+              <strong>O Monolito sem fronteiras internas (Big Ball of Mud):</strong>
+              à medida que o sistema cresce, módulos passam a depender
+              diretamente de detalhes internos de outros módulos. O que era uma
+              separação clara vira um emaranhado. Qualquer mudança pode quebrar
+              algo em outro lugar. O deploy ainda é único — mas o código está
+              tão acoplado que ninguém consegue trabalhar rápido sem medo.
+            </li>
+            <li>
+              <strong>Microsserviços prematuros:</strong> uma equipe de cinco
+              pessoas com um produto ainda em validação decide adotar
+              microsserviços "para escalar". O resultado é que 80% do tempo
+              vai para infraestrutura (Kubernetes, service mesh, CI/CD por
+              serviço, tracing distribuído, sagas para transações) e 20% para
+              o produto. A complexidade operacional supera a capacidade da
+              equipe antes de o produto provar que precisa escalar.
+            </li>
+          </ul>
+          <p>
+            O problema central é a falsa dicotomia: como se as únicas opções
+            fossem "monolito bagunçado" ou "microsserviços sofisticados". Existe
+            um espectro inteiro entre os dois extremos, e a maioria dos sistemas
+            vive bem num ponto intermediário.
+          </p>
+        </section>
+
+        <!-- 3. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+          <p>
+            O diagrama abaixo contrasta a estrutura de um monolito com módulos
+            internos e um cluster de microsserviços com API Gateway. Note que
+            o monolito pode ter fronteiras de domínio tão claras quanto os
+            microsserviços — a diferença é que a comunicação entre módulos ocorre
+            em memória, sem overhead de rede.
+          </p>
+          <div class="code-bloco">
+<pre><code>  MONOLITO (unidade de deploy única)
+  ┌────────────────────────────────────────────────────┐
+  │                     Aplicação                      │
+  │                                                    │
+  │   ┌─────────────┐   ┌─────────────────────────┐   │
+  │   │  Módulo     │   │       Módulo             │   │
+  │   │  Pedidos    │──▶│     Pagamentos           │   │
+  │   └─────────────┘   └─────────────────────────┘   │
+  │   ┌─────────────┐   ┌─────────────────────────┐   │
+  │   │  Módulo     │   │       Módulo             │   │
+  │   │  Estoque    │◀──│      Usuários            │   │
+  │   └─────────────┘   └─────────────────────────┘   │
+  │                                                    │
+  │        comunicação em memória (chamadas diretas)   │
+  └───────────────────────┬────────────────────────────┘
+                          │ 1 deploy, 1 processo
+                          ▼
+                    ┌───────────┐
+                    │    BD     │
+                    └───────────┘
+
+
+  MICROSSERVIÇOS (serviços independentes)
+
+                    ┌───────────────┐
+                    │  API Gateway  │
+                    └──────┬────────┘
+                           │
+           ┌───────────────┼────────────────┐
+           │               │                │
+           ▼               ▼                ▼
+    ┌─────────────┐  ┌───────────┐  ┌─────────────┐
+    │   Serviço   │  │  Serviço  │  │   Serviço   │
+    │   Pedidos   │  │Pagamentos │  │  Usuários   │
+    └──────┬──────┘  └─────┬─────┘  └──────┬──────┘
+           │               │                │
+           ▼               ▼                ▼
+    ┌─────────────┐  ┌───────────┐  ┌─────────────┐
+    │   BD        │  │   BD      │  │   BD        │
+    │  próprio    │  │  próprio  │  │  próprio    │
+    └─────────────┘  └───────────┘  └─────────────┘
+
+    comunicação via HTTP/gRPC/mensageria (rede)
+    deploy, escala e falha independentes por serviço
+</code></pre>
+          </div>
+
+          <h3>O espectro: não é uma escolha binária</h3>
+          <p>
+            Entre os dois extremos existe um continuum de estilos arquiteturais.
+            A progressão abaixo não é uma receita — é um mapa de opções:
+          </p>
+          <ul>
+            <li>
+              <strong>Monolito:</strong> unidade de deploy única, sem
+              fronteiras internas explícitas. Funciona bem para sistemas
+              pequenos e equipes iniciantes, mas deteriora sem disciplina.
+            </li>
+            <li>
+              <strong>Monolito Modular:</strong> unidade de deploy única com
+              fronteiras de domínio rigorosas internamente. Módulos se
+              comunicam apenas por interfaces públicas definidas. O principal
+              benefício dos microsserviços (separação de domínio) sem o custo
+              operacional.
+            </li>
+            <li>
+              <strong>SOA / Serviços:</strong> alguns serviços grandes e
+              relativamente independentes, frequentemente compartilhando um
+              barramento de mensagens centralizado (ESB). Estilo comum em
+              empresas com sistemas legados de grande porte.
+            </li>
+            <li>
+              <strong>Microsserviços:</strong> muitos serviços pequenos,
+              independentes, com BD próprio por serviço e comunicação
+              descentralizada (HTTP, gRPC ou mensageria direta). Cada serviço
+              pode ser implantado e escalado de forma totalmente autônoma.
+            </li>
+            <li>
+              <strong>Serverless / FaaS:</strong> funções individuais como
+              unidade de deploy. Escala a zero. Sem servidor para gerenciar.
+              Complexidade operacional terceirizada ao provedor, mas com novos
+              desafios de cold start, observabilidade e acoplamento implícito
+              via eventos.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 4. COMO FUNCIONA -->
+        <section class="artigo__secao">
+          <h2>Como funciona</h2>
+
+          <h3>Monolito</h3>
+          <p>
+            Todas as chamadas entre módulos acontecem em memória, dentro do mesmo
+            processo. Não há latência de rede, não há falha parcial de comunicação
+            e não há necessidade de serialização de dados entre domínios. Transações
+            ACID cobrindo múltiplos módulos são triviais — é uma única transação de
+            banco de dados. O deploy é um único artefato: uma imagem Docker, um JAR,
+            um binário Go. O rollback é simples: reverter para a imagem anterior.
+          </p>
+          <p>
+            O custo aparece no crescimento: sem disciplina de fronteiras internas,
+            módulos passam a depender de detalhes de implementação uns dos outros.
+            Um único time precisa coordenar mudanças que afetam várias partes do
+            sistema. O tempo de build e de teste cresce com o tamanho da base.
+            Escalar uma parte específica exige escalar o monolito inteiro.
+          </p>
+
+          <h3>Microsserviços</h3>
+          <p>
+            Cada serviço é um processo independente. A comunicação entre serviços
+            ocorre via rede — HTTP síncrono, gRPC ou mensageria assíncrona
+            (Kafka, RabbitMQ). Cada serviço tem seu próprio banco de dados,
+            portanto não há transações distribuídas triviais: operações que
+            cruzam fronteiras de serviço precisam de sagas (sequências de
+            transações locais com compensações) ou de aceitação de consistência
+            eventual.
+          </p>
+          <p>
+            O benefício concreto é a independência operacional: o time de
+            Pagamentos pode fazer deploy sem coordenar com o time de Pedidos.
+            O serviço de Catálogo pode escalar horizontalmente sem afetar o
+            serviço de Checkout. Uma falha no serviço de Recomendações não
+            derruba o serviço de Pedidos — se o circuit breaker estiver
+            configurado corretamente.
+          </p>
+          <p>
+            O custo concreto é a complexidade operacional: tracing distribuído
+            (correlacionar um request que passou por cinco serviços), gestão de
+            falhas parciais (o que fazer quando um serviço downstream não
+            responde), versionamento de contratos de API entre serviços, CI/CD
+            por serviço, infraestrutura de observabilidade (logs centralizados,
+            métricas, traces) e orquestração de contêineres (Kubernetes ou
+            equivalente).
+          </p>
+
+          <h3>O Monolito Modular como terceira via</h3>
+          <p>
+            O Monolito Modular captura o principal benefício dos microsserviços
+            — separação clara de domínios — sem o custo operacional da
+            comunicação em rede. Módulos expõem apenas interfaces públicas;
+            o acesso direto a estruturas internas de outro módulo é proibido
+            por convenção ou por mecanismos de linguagem (pacotes privados,
+            módulos com exports controlados). A comunicação entre módulos pode
+            ser síncrona (chamadas de método por interface) ou assíncrona
+            (eventos em memória via bus interno).
+          </p>
+          <p class="artigo__aviso">
+            <strong>Caminho evolutivo recomendado:</strong> comece com um
+            monolito modular bem estruturado. Quando um módulo específico
+            precisar de escala independente, de um ciclo de deploy autônomo ou
+            de uma tecnologia diferente — e essa dor for mensurável — extraia
+            esse módulo como serviço. Não projete microsserviços antes de ter
+            os problemas que eles resolvem.
+          </p>
+        </section>
+
+        <!-- 5. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar cada abordagem</h2>
+
+          <h3>Monolito (incluindo Monolito Modular)</h3>
+          <ul>
+            <li>
+              <strong>Produto novo ou em validação:</strong> a velocidade de
+              iteração é crítica. Um monolito reduz a fricção de deploy,
+              debug e refatoração. Mudar as fronteiras de domínio — algo comum
+              nos primeiros meses — é trivial dentro de um monolito e caro
+              entre serviços.
+            </li>
+            <li>
+              <strong>Equipe pequena ou sem maturidade em operações distribuídas:</strong>
+              operar microsserviços exige conhecimento de orquestração de
+              contêineres, service mesh, tracing distribuído e estratégias de
+              consistência eventual. Uma equipe sem essa maturidade pagará um
+              custo de aprendizado alto demais no momento errado.
+            </li>
+            <li>
+              <strong>Domínio ainda não bem compreendido:</strong> as fronteiras
+              de serviço em microsserviços são difíceis de mudar depois de
+              estabelecidas — cada mudança de fronteira implica migração de
+              dados, mudança de contrato de API e coordenação entre times.
+              Se o domínio ainda está sendo descoberto, monolito primeiro.
+            </li>
+            <li>
+              <strong>Quando consistência ACID é frequentemente necessária:</strong>
+              se múltiplas entidades de domínio precisam mudar atomicamente com
+              frequência, a transação local do monolito é muito mais simples que
+              uma saga distribuída.
+            </li>
+          </ul>
+
+          <h3>Microsserviços</h3>
+          <ul>
+            <li>
+              <strong>Escala assimétrica real:</strong> quando partes diferentes
+              do sistema têm cargas radicalmente diferentes e escalar o
+              monolito inteiro para atender ao pico de uma parte é
+              economicamente inviável.
+            </li>
+            <li>
+              <strong>Times independentes e autônomos:</strong> a Lei de Conway
+              é implacável — a arquitetura do sistema reflete a estrutura de
+              comunicação da organização. Microsserviços fazem sentido quando
+              há times autônomos, com donos de domínio claros, que precisam
+              fazer deploy de forma independente sem coordenação constante.
+            </li>
+            <li>
+              <strong>Tecnologias ou requisitos radicalmente diferentes por domínio:</strong>
+              um serviço de processamento de imagens em Python, um serviço de
+              baixa latência em Go e um serviço de relatórios em JVM podem
+              coexistir quando cada um é um serviço independente.
+            </li>
+            <li>
+              <strong>Organização já madura em DevOps e operações distribuídas:</strong>
+              CI/CD por serviço, observabilidade, gestão de incidentes
+              distribuídos e cultura de on-call já estabelecida.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 6. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+
+          <h3>Monolito — Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Deploy simples: um único artefato, rollback trivial, sem coordenação entre serviços.</li>
+            <li>Debug direto: stack trace completo em um único processo, sem precisar correlacionar logs de vários serviços.</li>
+            <li>Transações ACID naturais: consistência entre múltiplas entidades sem sagas ou compensações.</li>
+            <li>Latência zero entre módulos: comunicação em memória, sem serialização nem overhead de rede.</li>
+            <li>Menos infraestrutura: não exige orquestrador de contêineres, service mesh nem tracing distribuído.</li>
+            <li>Refatoração de fronteiras mais barata: mover código entre módulos é muito mais simples que migrar entre serviços.</li>
+          </ul>
+
+          <h3>Monolito — Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Escala do todo ou nada: não é possível escalar apenas uma parte sem escalar o sistema inteiro.</li>
+            <li>Acoplamento insidioso: sem disciplina ativa, módulos se acoplam ao longo do tempo e o sistema deteriora.</li>
+            <li>Build e deploy do sistema inteiro a cada mudança: uma mudança pequena exige redeployar tudo.</li>
+            <li>Adoção de novas tecnologias por todo o sistema: trocar o banco ou o framework afeta tudo de uma vez.</li>
+          </ul>
+
+          <h3>Microsserviços — Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Deploy independente por serviço: times autônomos podem lançar sem coordenação com outros times.</li>
+            <li>Escala granular: escale apenas o serviço que está sob pressão, com a infraestrutura adequada para aquela carga.</li>
+            <li>Isolamento de falhas: uma falha num serviço não precisa derrubar o sistema inteiro (com circuit breakers e graceful degradation).</li>
+            <li>Flexibilidade tecnológica por serviço: cada serviço pode usar a linguagem, banco e framework mais adequados ao seu domínio.</li>
+            <li>Fronteiras de domínio explícitas e forçadas pela rede: o custo da comunicação desincentiva acoplamento acidental.</li>
+          </ul>
+
+          <h3>Microsserviços — Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Complexidade operacional alta: Kubernetes, service mesh, CI/CD por serviço, tracing distribuído, gestão de secrets por serviço.</li>
+            <li>Consistência eventual entre serviços: transações distribuídas exigem sagas, com lógica de compensação e tolerância a falhas parciais.</li>
+            <li>Latência e falhas de rede: chamadas entre serviços podem falhar, ter timeout ou introduzir latência imprevisível.</li>
+            <li>Versionamento de contratos de API: mudanças de interface precisam de backward compatibility ou coordenação de versões entre times.</li>
+            <li>Overhead de observabilidade: correlacionar um request que passou por cinco serviços exige tracing distribuído bem configurado.</li>
+            <li>Custo de infraestrutura: mais processos, mais contêineres, mais recursos de rede e armazenamento.</li>
+          </ul>
+        </section>
+
+        <!-- 7. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Big Ball of Mud — o problema não é o tamanho, é a falta de fronteiras</h3>
+          <p>
+            Um monolito deteriora não porque cresceu, mas porque cresceu sem
+            fronteiras internas disciplinadas. Módulos passam a acessar
+            diretamente as tabelas de banco de outros módulos, a chamar métodos
+            internos de outras classes e a compartilhar estado global. O resultado
+            é um sistema onde ninguém sabe o impacto completo de uma mudança.
+            A solução não é migrar para microsserviços — é impor fronteiras.
+            Um Big Ball of Mud migrado para microsserviços vira um Distributed
+            Monolith (veja abaixo), que é ainda pior.
+          </p>
+
+          <h3>2. Distributed Monolith — o pior dos dois mundos</h3>
+          <p>
+            O Distributed Monolith ocorre quando múltiplos serviços são implantados
+            de forma independente, mas são tão acoplados que não podem operar de
+            forma independente: serviços que compartilham o mesmo banco de dados,
+            que precisam ser atualizados juntos em toda mudança de schema, que
+            chamam uns aos outros de forma síncrona em cadeia longa sem tolerância
+            a falha, ou que exigem deploy coordenado porque não mantêm
+            backward compatibility.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Definição prática:</strong> se você precisa fazer deploy de
+            dois ou mais serviços ao mesmo tempo para que uma funcionalidade
+            funcione, você tem um Distributed Monolith naquele ponto. Você paga
+            o custo operacional dos microsserviços sem ganhar a independência
+            que justificaria esse custo.
+          </p>
+
+          <h3>3. A falsa promessa de velocidade inicial com microsserviços</h3>
+          <p>
+            Times pequenos que adotam microsserviços no início de um produto
+            frequentemente relatam que passam mais tempo lidando com
+            infraestrutura do que com o produto em si. Configurar pipelines de
+            CI/CD por serviço, Kubernetes, service mesh, tracing e gestão de
+            configuração distribuída é trabalho real que consome tempo de
+            produto. Para um time sem um engenheiro de plataforma dedicado,
+            esse custo supera qualquer ganho de escalabilidade que o produto
+            ainda não precisa.
+          </p>
+          <p>
+            "Você precisa ser o Netflix para precisar dos microsserviços do
+            Netflix antes de ter o problema do Netflix." O Netflix migrou de
+            um monolito para microsserviços depois de já ter milhões de usuários
+            e uma organização com centenas de engenheiros — não no dia zero.
+          </p>
+
+          <h3>4. Granularidade errada dos serviços</h3>
+          <p>
+            Serviços muito granulares (um serviço por entidade de banco de dados,
+            por exemplo) eliminam qualquer transação local e multiplicam a
+            complexidade de sagas. Serviços muito grandes (um serviço por
+            camada técnica, como "serviço de banco de dados" e "serviço de
+            negócio") são apenas um monolito distribuído. A fronteira correta
+            de um serviço é o <em>bounded context</em> do Domain-Driven Design:
+            um domínio de negócio coeso com um modelo interno consistente,
+            não uma divisão técnica ou de granularidade de objeto.
+          </p>
+
+          <h3>5. Ignorar a Lei de Conway</h3>
+          <p>
+            A Lei de Conway afirma que organizações tendem a produzir sistemas
+            que espelham sua estrutura de comunicação. Microsserviços funcionam
+            quando há um time claramente responsável por cada serviço, com
+            autonomia para tomar decisões de tecnologia e deploy. Tentar adotar
+            microsserviços sem reorganizar os times — mantendo uma única equipe
+            responsável por todos os serviços — produz o custo dos dois mundos
+            sem o benefício de nenhum.
+          </p>
+        </section>
+
+        <!-- 8. ARQUITETURAS E PADRÕES RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Arquiteturas e padrões relacionados</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../monolito-vs-monorepo/">Monorepo vs Multi-repo</a></li>
+            <li><a href="../cqrs/">CQRS</a></li>
+            <li><a href="../event-driven/">Event-Driven Architecture</a></li>
+            <li><a href="../arquitetura-em-camadas/">Arquitetura em Camadas</a></li>
+            <li><a href="../arquitetura-hexagonal/">Arquitetura Hexagonal</a></li>
+          </ul>
+          <p class="mt-1">
+            O <strong>Monorepo vs Multi-repo</strong> é frequentemente confundido
+            com Monolito vs Microsserviços, mas são dimensões ortogonais: um
+            monorepo pode conter múltiplos microsserviços independentes; um
+            multi-repo pode conter os módulos de um único monolito. A decisão
+            de repositório afeta o fluxo de desenvolvimento e o reuso de código,
+            não a topologia de deploy.
+          </p>
+          <p>
+            O <strong>CQRS</strong> com bancos separados é um padrão especialmente
+            valioso dentro de microsserviços: cada serviço mantém seu próprio
+            Read Model projetado para suas necessidades, evitando joins entre
+            serviços via chamadas de rede. A sincronização ocorre via eventos
+            publicados no barramento inter-serviços.
+          </p>
+          <p>
+            A <strong>Event-Driven Architecture</strong> é o mecanismo de
+            comunicação assíncrona preferido entre microsserviços. Em vez de
+            chamadas HTTP síncronas em cadeia (que criam acoplamento temporal e
+            amplificam falhas), os serviços publicam eventos de domínio que
+            outros serviços consomem de forma independente. EDA não elimina
+            a complexidade de consistência eventual, mas a torna explícita e
+            gerenciável.
+          </p>
+          <p>
+            A <strong>Arquitetura Hexagonal</strong> e a <strong>Arquitetura
+            em Camadas</strong> descrevem a organização <em>interna</em> de
+            cada serviço (ou do monolito). Elas são complementares à decisão
+            de Monolito vs Microsserviços: um microsserviço bem estruturado
+            internamente com Hexagonal tem portas claras que facilitam a
+            extração ou fusão de serviços futura.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="5050505050"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Abstract Factory — Design Patterns | Biblioteca Dev Helper</title>
+  <meta name="description" content="Aprenda o padrão Abstract Factory (GoF) em profundidade: intenção, problema, solução, estrutura, exemplos em TypeScript e PHP, quando usar, quando evitar e armadilhas comuns." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Abstract Factory</span>
+        </nav>
+        <span class="artigo__categoria">Padrão de Criação (GoF)</span>
+        <h1 class="artigo__titulo">Abstract Factory</h1>
+        <p class="artigo__subtitulo">
+          Fornece uma interface para criar <strong>famílias de objetos relacionados</strong>
+          sem especificar suas classes concretas — garantindo que os produtos de uma mesma
+          família sejam sempre compatíveis entre si.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            Definir uma <strong>interface (a fábrica abstrata)</strong> que declara métodos
+            de criação para cada produto de uma família. Cada implementação concreta dessa
+            interface — a fábrica concreta — cria uma variante coesa dos produtos.
+            O código cliente trabalha exclusivamente com as interfaces abstratas: da fábrica
+            e dos produtos. Nunca referencia as classes concretas diretamente.
+          </p>
+          <p>
+            Catalogado por Gamma, Helm, Johnson e Vlissides no livro
+            <em>Design Patterns: Elements of Reusable Object-Oriented Software</em> (1994),
+            o Abstract Factory pertence à categoria de <strong>padrões de criação</strong>.
+            É frequentemente descrito como um "super-factory" ou "factory de factories",
+            mas a essência é mais simples: coordenar a criação de múltiplos produtos que
+            precisam trabalhar juntos.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Imagine um toolkit de componentes de interface gráfica que deve funcionar em
+            dois sistemas operacionais: Windows e macOS. Cada SO tem sua própria aparência
+            e comportamento para botões, checkboxes, menus e janelas. O problema central
+            não é criar um componente isolado — é garantir que todos os componentes usados
+            juntos pertençam à mesma família visual. Misturar um botão Windows com um
+            checkbox macOS resulta numa interface inconsistente.
+          </p>
+          <p>
+            A solução ingênua — um <code>if/switch</code> espalhado pelo código cliente
+            escolhendo qual classe concreta instanciar — cria dois problemas sérios:
+          </p>
+          <ul>
+            <li>
+              <strong>Acoplamento ao SO:</strong> o código de negócio precisa saber
+              se está rodando em Windows ou macOS, misturando decisão de plataforma com
+              lógica de apresentação.
+            </li>
+            <li>
+              <strong>Inconsistência garantida:</strong> basta um desenvolvedor esquecer
+              um <code>if</code> em algum lugar para misturar componentes de famílias
+              diferentes. O compilador não detecta esse erro.
+            </li>
+          </ul>
+
+          <h3>Abstract Factory vs Factory Method</h3>
+          <p>
+            A distinção mais importante do padrão — e a que mais gera confusão:
+          </p>
+          <ul>
+            <li>
+              <strong>Factory Method</strong> cria <em>um único produto</em>. A variação
+              está em qual classe concreta desse produto é instanciada, controlada por
+              subclasses do Creator. É um ponto de extensão para um tipo de objeto.
+            </li>
+            <li>
+              <strong>Abstract Factory</strong> cria <em>uma família inteira de produtos
+              relacionados</em>. Uma única fábrica concreta é responsável por criar
+              botão, checkbox e menu — todos do mesmo tema/plataforma. É uma coordenação
+              de múltiplos factory methods em torno de uma família coesa.
+            </li>
+          </ul>
+          <p>
+            De fato, as fábricas concretas do Abstract Factory costumam implementar
+            seus métodos de criação usando o padrão Factory Method internamente.
+            O Abstract Factory é, conceitualmente, uma composição de Factory Methods
+            agrupados por família.
+          </p>
+        </section>
+
+        <!-- 3. SOLUÇÃO -->
+        <section class="artigo__secao">
+          <h2>Solução</h2>
+          <p>O Abstract Factory organiza o código em cinco participantes:</p>
+          <ol>
+            <li>
+              <strong>AbstractFactory (interface):</strong> declara os métodos de criação
+              para cada tipo de produto da família. Ex.: <code>criarBotao()</code> e
+              <code>criarCheckbox()</code>.
+            </li>
+            <li>
+              <strong>ConcreteFactory:</strong> implementa a AbstractFactory criando
+              produtos de uma variante específica. Ex.: <code>WindowsFactory</code>
+              cria <code>WindowsBotao</code> e <code>WindowsCheckbox</code>.
+            </li>
+            <li>
+              <strong>AbstractProduct (interface por tipo):</strong> define o contrato
+              de cada tipo de produto. Ex.: <code>Botao</code> com <code>renderizar()</code>,
+              <code>Checkbox</code> com <code>marcar()</code>.
+            </li>
+            <li>
+              <strong>ConcreteProduct:</strong> implementa o AbstractProduct para uma
+              variante. Ex.: <code>WindowsBotao</code>, <code>MacOsBotao</code>.
+            </li>
+            <li>
+              <strong>Cliente:</strong> usa somente as interfaces AbstractFactory e
+              AbstractProduct. Recebe a fábrica concreta via injeção (construtor ou
+              parâmetro) — nunca a instancia diretamente.
+            </li>
+          </ol>
+          <p>
+            Para trocar toda a família (mudar do tema Windows para macOS), basta
+            fornecer uma fábrica concreta diferente ao cliente. Nenhuma linha de código
+            do cliente precisa mudar.
+          </p>
+        </section>
+
+        <!-- 4. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+          <p>
+            Diagrama UML simplificado com o exemplo de kit de UI por plataforma:
+          </p>
+          <div class="code-bloco">
+<pre><code>          «interface»               «interface»
+            Botao                    Checkbox
+    ┌──────────────────┐     ┌──────────────────────┐
+    │ + renderizar()   │     │ + marcar()            │
+    └──────────────────┘     └──────────────────────┘
+            ▲                          ▲
+    ┌───────┴───────┐          ┌───────┴────────┐
+    │               │          │                │
+WindowsBotao   MacOsBotao  WindowsCheckbox  MacOsCheckbox
+(ConcreteProduct)           (ConcreteProduct)
+
+
+          «interface»
+        UIFactory
+    ┌──────────────────────────┐
+    │ + criarBotao(): Botao    │
+    │ + criarCheckbox():       │
+    │     Checkbox             │
+    └──────────────────────────┘
+              ▲
+    ┌─────────┴────────────────┐
+    │                          │
+WindowsFactory            MacOsFactory
+(ConcreteFactory)         (ConcreteFactory)
+criarBotao()              criarBotao()
+  → new WindowsBotao()      → new MacOsBotao()
+criarCheckbox()           criarCheckbox()
+  → new WindowsCheckbox()   → new MacOsCheckbox()
+
+
+Fluxo de chamada:
+
+  cliente (recebe UIFactory via injeção)
+    │
+    │  const botao   = factory.criarBotao()
+    │  const check   = factory.criarCheckbox()
+    │  botao.renderizar()
+    │  check.marcar()
+    ▼
+  Resultado: todos os componentes são da mesma família.
+  Para trocar de plataforma: injete uma fábrica diferente.
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. EXEMPLOS DE CÓDIGO -->
+        <section class="artigo__secao">
+          <h2>Exemplos de código</h2>
+
+          <h3>Exemplo 1 — Kit de UI por tema (Light / Dark)</h3>
+          <p>
+            A fábrica abstrata garante que botão e checkbox sejam sempre do mesmo tema.
+            O cliente renderiza a aplicação sem saber qual tema está ativo.
+          </p>
+
+          <!-- GRUPO DE ABAS 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 1 — kit de UI por tema">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── AbstractProducts ─────────────────────────────────────────
+interface Botao {
+  renderizar(): string;
+}
+
+interface Checkbox {
+  marcar(): string;
+}
+
+// ── ConcreteProducts — tema Light ────────────────────────────
+class LightBotao implements Botao {
+  renderizar(): string {
+    return "[LIGHT] Botao branco renderizado";
+  }
+}
+
+class LightCheckbox implements Checkbox {
+  marcar(): string {
+    return "[LIGHT] Checkbox claro marcado";
+  }
+}
+
+// ── ConcreteProducts — tema Dark ─────────────────────────────
+class DarkBotao implements Botao {
+  renderizar(): string {
+    return "[DARK] Botao escuro renderizado";
+  }
+}
+
+class DarkCheckbox implements Checkbox {
+  marcar(): string {
+    return "[DARK] Checkbox escuro marcado";
+  }
+}
+
+// ── AbstractFactory ───────────────────────────────────────────
+interface UIFactory {
+  criarBotao(): Botao;
+  criarCheckbox(): Checkbox;
+}
+
+// ── ConcreteFactories ─────────────────────────────────────────
+class LightFactory implements UIFactory {
+  criarBotao(): Botao     { return new LightBotao(); }
+  criarCheckbox(): Checkbox { return new LightCheckbox(); }
+}
+
+class DarkFactory implements UIFactory {
+  criarBotao(): Botao     { return new DarkBotao(); }
+  criarCheckbox(): Checkbox { return new DarkCheckbox(); }
+}
+
+// ── Cliente ───────────────────────────────────────────────────
+// Recebe a fábrica via injeção — nunca instancia produtos diretamente.
+function renderizarApp(factory: UIFactory): void {
+  const botao   = factory.criarBotao();
+  const checkbox = factory.criarCheckbox();
+
+  console.log(botao.renderizar());
+  console.log(checkbox.marcar());
+}
+
+// Seleção da família ocorre na borda da aplicação, não no cliente.
+const tema: "light" | "dark" = "dark";
+const factory: UIFactory = tema === "dark" ? new DarkFactory() : new LightFactory();
+
+renderizarApp(factory);
+// → [DARK] Botao escuro renderizado
+// → [DARK] Checkbox escuro marcado</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── AbstractProducts ─────────────────────────────────────────
+interface Botao
+{
+    public function renderizar(): string;
+}
+
+interface Checkbox
+{
+    public function marcar(): string;
+}
+
+// ── ConcreteProducts — tema Light ────────────────────────────
+class LightBotao implements Botao
+{
+    public function renderizar(): string
+    {
+        return '[LIGHT] Botao branco renderizado';
+    }
+}
+
+class LightCheckbox implements Checkbox
+{
+    public function marcar(): string
+    {
+        return '[LIGHT] Checkbox claro marcado';
+    }
+}
+
+// ── ConcreteProducts — tema Dark ─────────────────────────────
+class DarkBotao implements Botao
+{
+    public function renderizar(): string
+    {
+        return '[DARK] Botao escuro renderizado';
+    }
+}
+
+class DarkCheckbox implements Checkbox
+{
+    public function marcar(): string
+    {
+        return '[DARK] Checkbox escuro marcado';
+    }
+}
+
+// ── AbstractFactory ───────────────────────────────────────────
+interface UIFactory
+{
+    public function criarBotao(): Botao;
+    public function criarCheckbox(): Checkbox;
+}
+
+// ── ConcreteFactories ─────────────────────────────────────────
+class LightFactory implements UIFactory
+{
+    public function criarBotao(): Botao       { return new LightBotao(); }
+    public function criarCheckbox(): Checkbox { return new LightCheckbox(); }
+}
+
+class DarkFactory implements UIFactory
+{
+    public function criarBotao(): Botao       { return new DarkBotao(); }
+    public function criarCheckbox(): Checkbox { return new DarkCheckbox(); }
+}
+
+// ── Cliente ───────────────────────────────────────────────────
+function renderizarApp(UIFactory $factory): void
+{
+    $botao    = $factory-&gt;criarBotao();
+    $checkbox = $factory-&gt;criarCheckbox();
+
+    echo $botao-&gt;renderizar() . PHP_EOL;
+    echo $checkbox-&gt;marcar()  . PHP_EOL;
+}
+
+// Seleção da família ocorre na borda da aplicação, não no cliente.
+$tema    = 'dark';
+$factory = $tema === 'dark' ? new DarkFactory() : new LightFactory();
+
+renderizarApp($factory);
+// → [DARK] Botao escuro renderizado
+// → [DARK] Checkbox escuro marcado</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 1) -->
+
+          <h3>Exemplo 2 — Família de conexões de banco (SQL / NoSQL)</h3>
+          <p>
+            O mesmo princípio aplicado a infraestrutura: a fábrica garante que
+            conexão, query builder e transação sempre pertençam ao mesmo provider.
+            Útil em testes, onde a fábrica concreta aponta para um banco em memória.
+          </p>
+
+          <!-- GRUPO DE ABAS 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 2 — família de conexões">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── AbstractProducts ─────────────────────────────────────────
+interface Conexao {
+  conectar(dsn: string): void;
+  fechar(): void;
+}
+
+interface QueryBuilder {
+  selecionar(tabela: string): string;
+}
+
+// ── ConcreteProducts — PostgreSQL ─────────────────────────────
+class PgConexao implements Conexao {
+  conectar(dsn: string): void  { console.log(`[PG] Conectado: ${dsn}`); }
+  fechar(): void               { console.log("[PG] Conexao fechada"); }
+}
+
+class PgQueryBuilder implements QueryBuilder {
+  selecionar(tabela: string): string {
+    return `SELECT * FROM "${tabela}";`;   // → SELECT * FROM "usuarios";
+  }
+}
+
+// ── ConcreteProducts — SQLite (testes) ────────────────────────
+class SqliteConexao implements Conexao {
+  conectar(dsn: string): void  { console.log(`[SQLite] Conectado: ${dsn}`); }
+  fechar(): void               { console.log("[SQLite] Conexao fechada"); }
+}
+
+class SqliteQueryBuilder implements QueryBuilder {
+  selecionar(tabela: string): string {
+    return `SELECT * FROM \`${tabela}\`;`;  // → SELECT * FROM `usuarios`;
+  }
+}
+
+// ── AbstractFactory ───────────────────────────────────────────
+interface DatabaseFactory {
+  criarConexao(): Conexao;
+  criarQueryBuilder(): QueryBuilder;
+}
+
+// ── ConcreteFactories ─────────────────────────────────────────
+class PostgresFactory implements DatabaseFactory {
+  criarConexao(): Conexao         { return new PgConexao(); }
+  criarQueryBuilder(): QueryBuilder { return new PgQueryBuilder(); }
+}
+
+class SqliteFactory implements DatabaseFactory {
+  criarConexao(): Conexao         { return new SqliteConexao(); }
+  criarQueryBuilder(): QueryBuilder { return new SqliteQueryBuilder(); }
+}
+
+// ── Cliente ───────────────────────────────────────────────────
+function executarConsulta(factory: DatabaseFactory, dsn: string): void {
+  const conn = factory.criarConexao();
+  const qb   = factory.criarQueryBuilder();
+
+  conn.conectar(dsn);
+  console.log(qb.selecionar("usuarios"));
+  conn.fechar();
+}
+
+// Em produção: PostgresFactory. Em testes: SqliteFactory.
+executarConsulta(new PostgresFactory(), "postgres://localhost/app");
+// → [PG] Conectado: postgres://localhost/app
+// → SELECT * FROM "usuarios";
+// → [PG] Conexao fechada</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── AbstractProducts ─────────────────────────────────────────
+interface Conexao
+{
+    public function conectar(string $dsn): void;
+    public function fechar(): void;
+}
+
+interface QueryBuilder
+{
+    public function selecionar(string $tabela): string;
+}
+
+// ── ConcreteProducts — PostgreSQL ─────────────────────────────
+class PgConexao implements Conexao
+{
+    public function conectar(string $dsn): void { echo "[PG] Conectado: {$dsn}" . PHP_EOL; }
+    public function fechar(): void              { echo "[PG] Conexao fechada" . PHP_EOL; }
+}
+
+class PgQueryBuilder implements QueryBuilder
+{
+    public function selecionar(string $tabela): string
+    {
+        return "SELECT * FROM \"{$tabela}\";";  // → SELECT * FROM "usuarios";
+    }
+}
+
+// ── ConcreteProducts — SQLite (testes) ────────────────────────
+class SqliteConexao implements Conexao
+{
+    public function conectar(string $dsn): void { echo "[SQLite] Conectado: {$dsn}" . PHP_EOL; }
+    public function fechar(): void              { echo "[SQLite] Conexao fechada" . PHP_EOL; }
+}
+
+class SqliteQueryBuilder implements QueryBuilder
+{
+    public function selecionar(string $tabela): string
+    {
+        return "SELECT * FROM `{$tabela}`;";  // → SELECT * FROM `usuarios`;
+    }
+}
+
+// ── AbstractFactory ───────────────────────────────────────────
+interface DatabaseFactory
+{
+    public function criarConexao(): Conexao;
+    public function criarQueryBuilder(): QueryBuilder;
+}
+
+// ── ConcreteFactories ─────────────────────────────────────────
+class PostgresFactory implements DatabaseFactory
+{
+    public function criarConexao(): Conexao           { return new PgConexao(); }
+    public function criarQueryBuilder(): QueryBuilder { return new PgQueryBuilder(); }
+}
+
+class SqliteFactory implements DatabaseFactory
+{
+    public function criarConexao(): Conexao           { return new SqliteConexao(); }
+    public function criarQueryBuilder(): QueryBuilder { return new SqliteQueryBuilder(); }
+}
+
+// ── Cliente ───────────────────────────────────────────────────
+function executarConsulta(DatabaseFactory $factory, string $dsn): void
+{
+    $conn = $factory-&gt;criarConexao();
+    $qb   = $factory-&gt;criarQueryBuilder();
+
+    $conn-&gt;conectar($dsn);
+    echo $qb-&gt;selecionar('usuarios') . PHP_EOL;
+    $conn-&gt;fechar();
+}
+
+// Em produção: PostgresFactory. Em testes: SqliteFactory.
+executarConsulta(new PostgresFactory(), 'postgres://localhost/app');
+// → [PG] Conectado: postgres://localhost/app
+// → SELECT * FROM "usuarios";
+// → [PG] Conexao fechada</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 2) -->
+
+        </section><!-- /.artigo__secao (exemplos) -->
+
+        <!-- 6. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Quando o sistema deve ser independente de como seus produtos são
+              criados:</strong> o cliente não deve saber se está lidando com produtos
+              Windows, macOS, PostgreSQL ou SQLite.
+            </li>
+            <li>
+              <strong>Quando os produtos devem ser usados juntos:</strong> botão e checkbox
+              do mesmo tema, conexão e query builder do mesmo banco. A fábrica garante a
+              consistência que um conjunto de Factory Methods isolados não garantiria.
+            </li>
+            <li>
+              <strong>Quando você quer expor apenas interfaces, não implementações:</strong>
+              o Abstract Factory é o mecanismo clássico de bibliotecas que permitem ao
+              consumidor trocar a implementação concreta (ex.: driver de banco de dados).
+            </li>
+            <li>
+              <strong>Quando novas famílias serão adicionadas:</strong> para adicionar um
+              novo tema ou provider, basta criar uma nova fábrica concreta — sem tocar
+              no código cliente nem nas fábricas existentes.
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>Quando há apenas uma família e ela nunca vai variar:</strong> criar
+              uma AbstractFactory para uma única implementação concreta é overengineering
+              puro. Use Factory Method simples ou instanciação direta.
+            </li>
+            <li>
+              <strong>Quando adicionar novos tipos de produto é frequente:</strong> o
+              Abstract Factory sofre com extensão de produto (adicionar um terceiro
+              tipo de componente, ex.: <code>Menu</code>): exige alterar a
+              AbstractFactory e todas as fábricas concretas — violando Aberto/Fechado
+              para extensão de tipos de produto.
+            </li>
+            <li>
+              <strong>Em projetos com DI containers:</strong> frameworks modernos (NestJS,
+              Spring, Laravel) gerenciam famílias de implementações via módulos e escopos
+              de injeção. Reimplementar Abstract Factory manualmente costuma ser redundante.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Garante compatibilidade entre produtos de uma mesma família — impossibilita misturar produtos de famílias diferentes.</li>
+            <li>Segue o Princípio do Aberto/Fechado para novas famílias: adicionar uma nova fábrica concreta não altera código existente.</li>
+            <li>Segue o Princípio da Responsabilidade Única: cada fábrica concreta cuida da criação de uma família inteira.</li>
+            <li>Desacopla completamente o cliente das classes concretas de produto.</li>
+            <li>Facilita troca de toda a família em tempo de execução (ex.: tema claro/escuro, ambiente de testes vs produção).</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Adicionar um novo tipo de produto (ex.: um terceiro componente na família) exige modificar a AbstractFactory e todas as fábricas concretas — o ponto mais frágil do padrão.</li>
+            <li>Introduz uma hierarquia considerável de classes e interfaces mesmo para casos moderados.</li>
+            <li>Pode ser difícil de justificar o custo quando as famílias são poucas e estáveis.</li>
+          </ul>
+        </section>
+
+        <!-- 8. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Usar Abstract Factory quando só há uma família (overengineering)</h3>
+          <p class="artigo__aviso">
+            <strong>Atenção:</strong> Se o sistema tem apenas um conjunto de produtos
+            concretos e nenhuma variação real está planejada, criar uma AbstractFactory
+            com uma única ConcreteFactory adiciona cerimônia sem benefício. Comece com
+            Factory Method ou instanciação direta. Refatore para Abstract Factory quando
+            a segunda família aparecer de verdade.
+          </p>
+
+          <h3>2. Confundir com Factory Method</h3>
+          <p>
+            Factory Method gerencia a criação de <em>um único tipo de produto</em> via
+            herança de Creator. Abstract Factory gerencia a criação de
+            <em>uma família de tipos</em> via composição de métodos de criação.
+            Se o seu "Abstract Factory" tem apenas um método <code>criar()</code>,
+            provavelmente é um Factory Method disfarçado.
+          </p>
+
+          <h3>3. Extensão de produto quebra todas as fábricas</h3>
+          <p>
+            Quando um novo tipo de produto precisa ser adicionado à família (ex.: adicionar
+            <code>criarMenu()</code> à interface <code>UIFactory</code>), todas as fábricas
+            concretas existentes precisam ser atualizadas — mesmo aquelas que não usarão o
+            novo produto. Esse é o custo estrutural do padrão. Avalie se a variação principal
+            do seu sistema é de <em>famílias</em> (Abstract Factory é adequado) ou de
+            <em>tipos de produto</em> (Strategy ou Factory Method podem ser melhores).
+          </p>
+
+          <h3>4. Seleção da fábrica concreta no lugar errado</h3>
+          <p>
+            A escolha de qual fábrica concreta usar deve ocorrer o mais próximo possível
+            da borda da aplicação (ponto de entrada, arquivo de configuração, container de
+            DI). Se o código cliente decide qual fábrica instanciar com um
+            <code>if/switch</code> baseado em configuração, o padrão perde metade do seu
+            valor — o cliente ainda está acoplado às classes concretas das fábricas.
+          </p>
+        </section>
+
+        <!-- 9. PADRÕES RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Padrões relacionados</h2>
+          <p>
+            O Abstract Factory se conecta a vários outros padrões de criação:
+          </p>
+          <!--
+            Disciplina de links: só linka artigos já publicados.
+            Factory Method, Singleton, Builder e Prototype existem neste lote ou já existiam.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../factory-method/">Factory Method</a></li>
+            <li><a href="../builder/">Builder</a></li>
+            <li><a href="../prototype/">Prototype</a></li>
+            <li><a href="../singleton/">Singleton</a></li>
+          </ul>
+          <p class="mt-1">
+            O <strong>Factory Method</strong> é o tijolo de construção do Abstract Factory:
+            cada método de criação da fábrica abstrata é, conceitualmente, um Factory Method.
+            O <strong>Builder</strong> foca no processo de montagem passo a passo de um único
+            objeto complexo, enquanto o Abstract Factory cria famílias inteiras de objetos
+            simples de uma só vez. O <strong>Prototype</strong> é uma alternativa quando a
+            criação de novos objetos é feita por clonagem de instâncias existentes — pode
+            ser usado dentro de uma fábrica para reduzir o número de subclasses. O
+            <strong>Singleton</strong> é frequentemente aplicado às fábricas concretas:
+            como a fábrica não tem estado relevante, geralmente só uma instância é necessária.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="9191919191"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

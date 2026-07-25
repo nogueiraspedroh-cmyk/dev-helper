@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Iterator — Design Patterns | Biblioteca Dev Helper</title>
+  <meta name="description" content="Aprenda o padrão Iterator (GoF) em profundidade: intenção, problema, solução, estrutura, exemplos em TypeScript e PHP, quando usar, quando evitar e armadilhas comuns." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Iterator</span>
+        </nav>
+        <span class="artigo__categoria">Padrão Comportamental (GoF)</span>
+        <h1 class="artigo__titulo">Iterator</h1>
+        <p class="artigo__subtitulo">
+          Fornece uma forma de acessar sequencialmente os elementos de uma coleção sem
+          expor sua representação interna — desacoplando o algoritmo de percorrimento
+          da estrutura de dados subjacente.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Encapsular o mecanismo de travessia de uma coleção</strong> num
+            objeto separado (o Iterator), expondo apenas uma interface de acesso
+            sequencial — <code>temProximo()</code> / <code>proximo()</code> no estilo
+            GoF, ou os protocolos nativos das linguagens (<code>Symbol.iterator</code>
+            e generators em TypeScript; <code>Iterator</code>/<code>IteratorAggregate</code>
+            e generators em PHP). O cliente percorre a coleção sem saber se ela é um
+            array, uma lista encadeada, uma árvore ou um resultado de banco de dados.
+          </p>
+          <p>
+            Catalogado pelo GoF (1994) como padrão comportamental, o Iterator é hoje
+            tão fundamental que todas as linguagens modernas o incorporaram nos seus
+            protocolos de iteração nativos. Em TypeScript, qualquer objeto que implemente
+            <code>Symbol.iterator</code> pode ser usado em <code>for...of</code>,
+            spread (<code>[...col]</code>) e desestruturação. Em PHP, implementar
+            <code>Iterator</code> ou <code>IteratorAggregate</code> habilita o
+            <code>foreach</code> nativo.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Uma aplicação de músicas armazena a playlist numa lista encadeada customizada.
+            A interface de exibição precisa percorrer a lista para mostrar as faixas.
+            A abordagem direta expõe a estrutura interna:
+          </p>
+          <div class="code-bloco">
+<pre><code>// Abordagem ingênua — NÃO faça isso:
+class PlaylistUI {
+  mostrar(playlist: ListaEncadeada): void {
+    // Acoplamento direto à estrutura interna — acessa o nó diretamente.
+    let no = playlist.cabeca;   // propriedade interna exposta
+    while (no !== null) {
+      console.log(no.valor);    // acessa o campo interno do nó
+      no = no.proximo;          // navega pela estrutura interna
+    }
+  }
+}</code></pre>
+          </div>
+          <p>
+            Se a <code>ListaEncadeada</code> mudar para um array circular ou uma árvore
+            balanceada, toda a lógica de percorrimento na UI precisa ser reescrita.
+            Além disso, implementar uma segunda forma de travessia (ex.: em ordem
+            reversa) exige duplicar o loop em outro lugar — sem nenhuma abstração
+            reutilizável.
+          </p>
+          <p>
+            O Iterator extrai o percorrimento para um objeto dedicado. A coleção expõe
+            apenas um método <code>criarIterador()</code> — o cliente usa a interface do
+            Iterator sem saber nada sobre a estrutura interna da coleção.
+          </p>
+        </section>
+
+        <!-- 3. SOLUÇÃO -->
+        <section class="artigo__secao">
+          <h2>Solução</h2>
+          <p>O Iterator organiza o código em quatro participantes:</p>
+          <ol>
+            <li>
+              <strong>Iterator (interface):</strong> declara as operações de travessia.
+              No estilo GoF: <code>temProximo(): boolean</code> e <code>proximo(): T</code>.
+              Na SPL do PHP: <code>current()</code>, <code>next()</code>,
+              <code>rewind()</code>, <code>valid()</code>, <code>key()</code>.
+              Em TypeScript: o método <code>[Symbol.iterator]()</code> retornando um
+              objeto com <code>next(): IteratorResult&lt;T&gt;</code>.
+            </li>
+            <li>
+              <strong>ConcreteIterator:</strong> mantém o cursor interno na coleção e
+              implementa as operações de travessia. Cada chamada a
+              <code>criarIterador()</code> retorna uma <em>nova instância</em> com seu
+              próprio cursor — permitindo múltiplas travessias simultâneas independentes.
+            </li>
+            <li>
+              <strong>Aggregate (interface):</strong> declara o método de criação do
+              iterador. Ex.: <code>criarIterador(): IteradorLista&lt;T&gt;</code>.
+            </li>
+            <li>
+              <strong>ConcreteAggregate:</strong> a coleção concreta que implementa o
+              Aggregate e retorna o ConcreteIterator adequado. Pode fornecer múltiplos
+              tipos de iterador (frente, reverso, filtrado) sem alterar a interface da
+              coleção.
+            </li>
+          </ol>
+
+          <h3>Iterator nativo vs GoF</h3>
+          <p>
+            A estrutura GoF (com <code>temProximo()</code>/<code>proximo()</code> em
+            classes separadas) é útil para aprender o padrão e para linguagens sem
+            protocolos nativos de iteração. Em TypeScript moderno, o protocolo
+            <code>Symbol.iterator</code> com generators (<code>function*</code>) é mais
+            idiomático — ele cria automaticamente os estados de cursor via
+            <code>yield</code>, sem precisar de uma classe ConcreteIterator separada.
+            Em PHP, <code>IteratorAggregate</code> + Generator segue o mesmo princípio.
+          </p>
+        </section>
+
+        <!-- 4. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+          <div class="code-bloco">
+<pre><code>       «interface»
+      IteradorLista&lt;T&gt;
+  ┌──────────────────────────────┐
+  │ + temProximo(): boolean      │
+  │ + proximo(): T               │
+  └──────────────────────────────┘
+              ▲
+  IteradorListaEncadeada&lt;T&gt;
+  ┌──────────────────────────────┐
+  │ - atual: No&lt;T&gt; | null        │
+  │ + temProximo(): boolean      │
+  │ + proximo(): T               │
+  └──────────────────────────────┘
+              ▲ cria
+              │
+       «interface»
+       Agregado&lt;T&gt;
+  ┌──────────────────────────────────────┐
+  │ + criarIterador(): IteradorLista&lt;T&gt;  │
+  └──────────────────────────────────────┘
+              ▲
+  ListaEncadeada&lt;T&gt; (ConcreteAggregate)
+  ┌──────────────────────────────────────┐
+  │ - cabeca: No&lt;T&gt; | null               │
+  │ + adicionar(valor: T): void          │
+  │ + criarIterador(): IteradorLista&lt;T&gt;  │
+  └──────────────────────────────────────┘
+
+
+Fluxo de uso (estilo GoF):
+
+  const it = lista.criarIterador();
+  while (it.temProximo()) {
+    console.log(it.proximo());   // sem acessar cabeca, No nem proximo
+  }
+
+Fluxo nativo (TypeScript):
+
+  for (const item of lista) { ... }  // usa Symbol.iterator implicitamente
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. EXEMPLOS DE CÓDIGO -->
+        <section class="artigo__secao">
+          <h2>Exemplos de código</h2>
+
+          <h3>Exemplo 1 — Lista encadeada com Iterator manual (estilo GoF)</h3>
+          <p>
+            Implementação clássica do padrão: <code>IteradorLista&lt;T&gt;</code> como
+            interface, <code>IteradorListaEncadeada&lt;T&gt;</code> como ConcreteIterator
+            e <code>ListaEncadeada&lt;T&gt;</code> como Aggregate. O cliente percorre
+            a coleção sem nenhum acesso à estrutura interna de nós.
+          </p>
+
+          <!-- GRUPO DE ABAS 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 1 — iterator manual (GoF)">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Iterator interface (estilo GoF) ──────────────────────────
+interface IteradorLista&lt;T&gt; {
+  temProximo(): boolean;
+  proximo(): T;
+}
+
+// ── Nó interno da lista ───────────────────────────────────────
+// Classe privada do pacote — o cliente nunca a vê.
+class No&lt;T&gt; {
+  proximo: No&lt;T&gt; | null = null;
+  constructor(readonly valor: T) {}
+}
+
+// ── ConcreteIterator ──────────────────────────────────────────
+class IteradorListaEncadeada&lt;T&gt; implements IteradorLista&lt;T&gt; {
+  private atual: No&lt;T&gt; | null;
+
+  constructor(inicio: No&lt;T&gt; | null) {
+    this.atual = inicio;
+  }
+
+  temProximo(): boolean {
+    return this.atual !== null;
+  }
+
+  proximo(): T {
+    if (this.atual === null) {
+      throw new Error('Iterator: sem mais elementos');
+    }
+    const valor = this.atual.valor;
+    this.atual = this.atual.proximo;
+    return valor;
+  }
+}
+
+// ── ConcreteAggregate ─────────────────────────────────────────
+class ListaEncadeada&lt;T&gt; {
+  private cabeca: No&lt;T&gt; | null = null;
+  private cauda: No&lt;T&gt; | null = null;
+
+  adicionar(valor: T): void {
+    const no = new No(valor);
+    if (this.cauda === null) {
+      this.cabeca = this.cauda = no;
+    } else {
+      this.cauda.proximo = no;
+      this.cauda = no;
+    }
+  }
+
+  // Cada chamada retorna um iterador com cursor próprio.
+  criarIterador(): IteradorLista&lt;T&gt; {
+    return new IteradorListaEncadeada(this.cabeca);
+  }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+const lista = new ListaEncadeada&lt;string&gt;();
+lista.adicionar('Maçã');
+lista.adicionar('Banana');
+lista.adicionar('Cereja');
+
+const it = lista.criarIterador();
+while (it.temProximo()) {
+  console.log(it.proximo());
+}
+// Maçã
+// Banana
+// Cereja
+
+// Dois iteradores simultâneos na mesma lista — cursores independentes:
+const it1 = lista.criarIterador();
+const it2 = lista.criarIterador();
+console.log(it1.proximo()); // Maçã
+console.log(it2.proximo()); // Maçã  (cursor independente)
+console.log(it1.proximo()); // Banana</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// PHP possui a interface nativa Iterator (SPL) com 5 métodos.
+// Ao implementá-la, a classe pode ser usada diretamente no foreach.
+
+// ── Nó interno ────────────────────────────────────────────────
+class No
+{
+    public ?No $proximo = null;
+    public function __construct(public readonly mixed $valor) {}
+}
+
+// ── ConcreteAggregate implementando Iterator (SPL) ────────────
+// Aqui a lista e o iterador são a mesma classe — abordagem compacta.
+// Para cursores independentes simultâneos, separe numa classe IteradorListaEncadeada.
+class ListaEncadeada implements Iterator
+{
+    private ?No $cabeca   = null;
+    private ?No $cauda    = null;
+    private ?No $cursor   = null;
+    private int $posicao  = 0;
+
+    public function adicionar(mixed $valor): void
+    {
+        $no = new No($valor);
+        if ($this-&gt;cauda === null) {
+            $this-&gt;cabeca = $this-&gt;cauda = $no;
+        } else {
+            $this-&gt;cauda-&gt;proximo = $no;
+            $this-&gt;cauda = $no;
+        }
+    }
+
+    // ── Métodos da interface Iterator (SPL) ──────────────────
+    public function rewind(): void
+    {
+        $this-&gt;cursor  = $this-&gt;cabeca;
+        $this-&gt;posicao = 0;
+    }
+
+    public function valid(): bool
+    {
+        return $this-&gt;cursor !== null;
+    }
+
+    public function current(): mixed
+    {
+        return $this-&gt;cursor?-&gt;valor;
+    }
+
+    public function key(): int
+    {
+        return $this-&gt;posicao;
+    }
+
+    public function next(): void
+    {
+        $this-&gt;cursor  = $this-&gt;cursor?-&gt;proximo;
+        $this-&gt;posicao++;
+    }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+$lista = new ListaEncadeada();
+$lista-&gt;adicionar('Maçã');
+$lista-&gt;adicionar('Banana');
+$lista-&gt;adicionar('Cereja');
+
+// foreach nativo, graças à interface Iterator (SPL).
+foreach ($lista as $indice =&gt; $fruta) {
+    echo "{$indice}: {$fruta}\n";
+}
+// 0: Maçã
+// 1: Banana
+// 2: Cereja</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 1) -->
+
+          <h3>Exemplo 2 — Protocolo nativo: Symbol.iterator / Generator (TS) e IteratorAggregate / Generator (PHP)</h3>
+          <p>
+            As linguagens modernas incorporam o Iterator como protocolo nativo. Em
+            TypeScript, implementar <code>[Symbol.iterator]()</code> como um generator
+            (<code>function*</code> / método com <code>yield</code>) torna a coleção
+            compatível com <code>for...of</code>, spread e desestruturação — sem
+            precisar de uma classe ConcreteIterator separada. Em PHP,
+            <code>IteratorAggregate</code> + Generator alcança o mesmo resultado com
+            muito menos código do que os 5 métodos da interface <code>Iterator</code>.
+          </p>
+
+          <!-- GRUPO DE ABAS 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 2 — protocolo nativo com generators">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// Lista encadeada com protocolo nativo Symbol.iterator via generator.
+// Sem classes ConcreteIterator — o yield gerencia o cursor automaticamente.
+
+class No&lt;T&gt; {
+  proximo: No&lt;T&gt; | null = null;
+  constructor(readonly valor: T) {}
+}
+
+class ListaEncadeada&lt;T&gt; {
+  private cabeca: No&lt;T&gt; | null = null;
+  private cauda:  No&lt;T&gt; | null = null;
+
+  adicionar(valor: T): void {
+    const no = new No(valor);
+    if (!this.cauda) {
+      this.cabeca = this.cauda = no;
+    } else {
+      this.cauda.proximo = no;
+      this.cauda = no;
+    }
+  }
+
+  // Generator que implementa Symbol.iterator — torna a lista iterável nativamente.
+  *[Symbol.iterator](): Generator&lt;T&gt; {
+    let atual = this.cabeca;
+    while (atual !== null) {
+      yield atual.valor;   // suspende aqui e entrega o valor ao chamador
+      atual = atual.proximo;
+    }
+  }
+
+  // Segundo generator: iterador filtrado (múltiplas estratégias de travessia).
+  *filtrar(predicado: (item: T) =&gt; boolean): Generator&lt;T&gt; {
+    for (const item of this) {   // reutiliza Symbol.iterator
+      if (predicado(item)) yield item;
+    }
+  }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+const lista = new ListaEncadeada&lt;number&gt;();
+[3, 1, 4, 1, 5, 9, 2, 6].forEach(n =&gt; lista.adicionar(n));
+
+// for...of usa Symbol.iterator implicitamente.
+for (const n of lista) {
+  process.stdout.write(n + ' ');
+}
+// 3 1 4 1 5 9 2 6
+
+console.log();
+
+// Spread também usa Symbol.iterator.
+const arr = [...lista];
+console.log(arr);   // [3, 1, 4, 1, 5, 9, 2, 6]
+
+// Iterador filtrado: só valores ímpares.
+for (const n of lista.filtrar(n =&gt; n % 2 !== 0)) {
+  process.stdout.write(n + ' ');
+}
+// 3 1 1 5 9
+
+console.log();
+
+// Múltiplas travessias independentes simultâneas são seguras:
+// cada chamada ao generator cria um novo objeto com cursor próprio.
+const itA = lista[Symbol.iterator]();
+const itB = lista[Symbol.iterator]();
+console.log(itA.next().value);   // 3
+console.log(itB.next().value);   // 3  (cursor independente)
+console.log(itA.next().value);   // 1</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// IteratorAggregate + Generator: implementação mais simples que a interface Iterator.
+// getIterator() retorna um Generator — PHP trata automaticamente como Traversable.
+
+class No
+{
+    public ?No $proximo = null;
+    public function __construct(public readonly mixed $valor) {}
+}
+
+class ListaEncadeada implements IteratorAggregate
+{
+    private ?No $cabeca = null;
+    private ?No $cauda  = null;
+
+    public function adicionar(mixed $valor): void
+    {
+        $no = new No($valor);
+        if ($this-&gt;cauda === null) {
+            $this-&gt;cabeca = $this-&gt;cauda = $no;
+        } else {
+            $this-&gt;cauda-&gt;proximo = $no;
+            $this-&gt;cauda = $no;
+        }
+    }
+
+    // Generator que substitui os 5 métodos do Iterator com um único yield.
+    // Cada foreach cria uma nova instância do Generator com cursor próprio.
+    public function getIterator(): Generator
+    {
+        $atual = $this-&gt;cabeca;
+        while ($atual !== null) {
+            yield $atual-&gt;valor;   // suspende; entrega o valor ao foreach
+            $atual = $atual-&gt;proximo;
+        }
+    }
+
+    // Generator filtrado: segunda estratégia de travessia.
+    public function filtrar(callable $predicado): Generator
+    {
+        foreach ($this as $item) {   // reutiliza getIterator()
+            if ($predicado($item)) {
+                yield $item;
+            }
+        }
+    }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+$lista = new ListaEncadeada();
+foreach ([3, 1, 4, 1, 5, 9, 2, 6] as $n) {
+    $lista-&gt;adicionar($n);
+}
+
+// foreach nativo via IteratorAggregate.
+foreach ($lista as $n) {
+    echo $n . ' ';
+}
+// 3 1 4 1 5 9 2 6
+
+echo PHP_EOL;
+
+// Conversão para array.
+$arr = iterator_to_array($lista, false);
+print_r($arr);   // [3, 1, 4, 1, 5, 9, 2, 6]
+
+// Iterador filtrado: só valores ímpares.
+foreach ($lista-&gt;filtrar(fn($n) =&gt; $n % 2 !== 0) as $n) {
+    echo $n . ' ';
+}
+// 3 1 1 5 9
+
+echo PHP_EOL;
+
+// Travessias simultâneas independentes:
+// cada foreach chama getIterator() e obtém um Generator novo.
+$genA = $lista-&gt;getIterator();
+$genB = $lista-&gt;getIterator();
+$genA-&gt;current(); // 3
+$genB-&gt;current(); // 3  (cursor independente)
+$genA-&gt;next();
+echo $genA-&gt;current() . "\n";   // 1
+echo $genB-&gt;current() . "\n";   // 3  (genB ainda no primeiro)</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 2) -->
+
+        </section><!-- /.artigo__secao (exemplos) -->
+
+        <!-- 6. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Quando você tem uma coleção customizada</strong> e não quer expor
+              sua estrutura interna (nós, cursores, índices) para quem a percorre. O
+              Iterator provê o acesso sequencial sem vazar detalhes de implementação.
+            </li>
+            <li>
+              <strong>Quando precisar de múltiplas formas de travessia</strong> da mesma
+              coleção — em frente, em reverso, em largura, em profundidade, filtrado.
+              Cada estratégia se torna um Iterator separado retornado pela coleção.
+            </li>
+            <li>
+              <strong>Para tornar coleções customizadas compatíveis com loops nativos:</strong>
+              em TypeScript, <code>Symbol.iterator</code> habilita <code>for...of</code>,
+              spread e desestruturação; em PHP, <code>IteratorAggregate</code> habilita
+              <code>foreach</code> — sem nenhuma mudança na API pública da coleção.
+            </li>
+            <li>
+              <strong>Quando o código de percorrimento precisa ser reutilizado</strong>
+              em múltiplos lugares sem duplicação — o Iterator encapsula o loop numa
+              única definição.
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>Para arrays e coleções simples já nativamente iteráveis:</strong>
+              o padrão adiciona complexidade sem benefício quando a coleção já é um
+              array ou um tipo que o loop da linguagem já suporta nativamente.
+            </li>
+            <li>
+              <strong>Quando a coleção sempre será percorrida de um único modo:</strong>
+              se não há variação de estratégia de travessia e a estrutura é estável,
+              um método <code>paraArray()</code> que retorna um array é mais simples e
+              suficiente.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Desacopla o algoritmo de travessia da estrutura de dados — trocar de lista encadeada para árvore não quebra o cliente.</li>
+            <li>Suporte a múltiplos iteradores simultâneos e independentes na mesma coleção, cada um com seu próprio cursor.</li>
+            <li>Múltiplas estratégias de travessia (frente, reverso, filtrado) sem modificar a interface da coleção.</li>
+            <li>Integração nativa com loops da linguagem via Symbol.iterator (TS) e Iterator/IteratorAggregate (PHP).</li>
+            <li>Generators eliminam a classe ConcreteIterator separada, reduzindo drasticamente o código necessário.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Overhead de criação de objeto iterador para coleções simples onde um índice seria suficiente.</li>
+            <li>Modificar a coleção durante a iteração pode invalidar o cursor do iterador — comportamento indefinido que exige cuidado.</li>
+            <li>Iteradores baseados em classes (estilo GoF) exigem mais código do que a abordagem funcional com generators.</li>
+          </ul>
+        </section>
+
+        <!-- 8. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Invalidar o iterador ao modificar a coleção durante a iteração</h3>
+          <p>
+            A armadilha mais perigosa: adicionar ou remover elementos da coleção
+            enquanto um iterador a percorre pode pular elementos, visitar o mesmo
+            elemento duas vezes ou causar exceções de acesso nulo. Em Java isso gera
+            <code>ConcurrentModificationException</code>; em TypeScript e PHP o
+            comportamento é indefinido e silencioso — o pior tipo de bug.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Regra de ouro:</strong> nunca modifique a coleção durante a
+            iteração com o mesmo iterador. Se precisar filtrar e remover elementos,
+            colete os índices ou itens a remover numa lista separada e modifique a
+            coleção <em>após</em> o loop ter terminado.
+          </p>
+
+          <h3>2. Vazar a estrutura interna pelo Iterator</h3>
+          <p>
+            Um Iterator que expõe os nós internos (<code>No&lt;T&gt;</code>) em vez dos
+            valores (<code>T</code>) derrota o propósito do padrão. O cliente acaba
+            acessando <code>it.proximo().valor</code> e depois <code>.proximo</code>
+            diretamente — o encapsulamento foi quebrado. O Iterator deve expor somente
+            o tipo de dado que o cliente precisa, nunca os containers internos.
+          </p>
+
+          <h3>3. Estado compartilhado entre iteradores</h3>
+          <p>
+            Se uma coleção armazena o cursor interno como campo de instância (em vez
+            de retornar um objeto iterador separado com cursor próprio), dois loops
+            concorrentes "roubam" posições um do outro. A solução: cada chamada a
+            <code>criarIterador()</code> ou <code>getIterator()</code> deve retornar
+            um <em>novo objeto</em> com seu próprio cursor. Generators em TypeScript
+            e PHP resolvem isso automaticamente — cada invocação do generator cria
+            uma instância independente.
+          </p>
+
+          <h3>4. Esquecer o rewind em PHP</h3>
+          <p>
+            Ao usar a interface <code>Iterator</code> do PHP (não IteratorAggregate),
+            o <code>foreach</code> chama <code>rewind()</code> antes de iniciar o
+            loop. Se <code>rewind()</code> não reinicializa corretamente o cursor, o
+            segundo <code>foreach</code> na mesma instância começa do ponto onde o
+            primeiro parou — comportamento surpreendente. Com
+            <code>IteratorAggregate</code> + Generator isso não ocorre: cada
+            <code>foreach</code> chama <code>getIterator()</code> e obtém um Generator
+            novo com cursor zerado.
+          </p>
+        </section>
+
+        <!-- 9. PADRÕES RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Padrões relacionados</h2>
+          <p>
+            O Iterator se integra com padrões estruturais que organizam coleções
+            hierárquicas:
+          </p>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../composite/">Composite</a></li>
+            <li><a href="../visitor/">Visitor</a></li>
+          </ul>
+          <p class="mt-1">
+            O <strong>Composite</strong> organiza objetos em estruturas de árvore
+            (parte-todo); o Iterator é o complemento natural para percorrê-la. Um
+            Iterator pode implementar travessia em largura (BFS) ou em profundidade
+            (DFS) sobre a árvore de Composites — o cliente usa a mesma interface
+            de iteração independentemente da estratégia de percorrimento escolhida.
+            O <strong>Visitor</strong> é o par do Iterator em operações sobre
+            estruturas: enquanto o Iterator percorre sequencialmente e entrega cada
+            elemento ao chamador, o Visitor percorre a estrutura e aplica uma
+            operação específica em cada tipo de nó — separando o algoritmo de
+            processamento da estrutura do Composite.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="4040404040"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

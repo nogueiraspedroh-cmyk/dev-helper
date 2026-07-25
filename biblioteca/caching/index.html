@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Caching — Dev Helper Biblioteca</title>
+  <meta name="description" content="Entenda caching: hierarquia de cache, estratégias de escrita (Cache-Aside, Write-Through, Write-Behind, Read-Through), políticas de eviction e as armadilhas de cache stampede, dados stale e colisão de chaves." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Caching</span>
+        </nav>
+        <span class="artigo__categoria">System Design</span>
+        <h1 class="artigo__titulo">Caching</h1>
+        <p class="artigo__subtitulo">
+          Armazenar o resultado de uma operação custosa para servir requisições futuras
+          mais rápido. Reduz latência, aumenta throughput e diminui a carga sobre banco
+          de dados e serviços de origem — ao custo de lidar com invalidação e consistência.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Cache é uma camada de armazenamento mais rápida que guarda resultados
+            de operações custosas para evitar refazê-las.</strong> A premissa é simples:
+            se um dado foi calculado ou buscado uma vez e vai ser pedido de novo em breve,
+            armazená-lo perto do consumidor é mais barato do que buscá-lo novamente na origem.
+          </p>
+          <p>
+            O benefício é triplo: <strong>latência menor</strong> (o dado chega ao cliente
+            mais rápido), <strong>throughput maior</strong> (mais requisições atendidas pela
+            mesma capacidade) e <strong>carga reduzida na origem</strong> (o banco de dados,
+            a API externa ou o serviço de computação recebe menos chamadas). Cache é uma das
+            técnicas de performance mais impactantes disponíveis e aparece em praticamente
+            todas as camadas de um sistema moderno.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Operações de I/O — acesso a banco de dados, chamadas a APIs externas, leitura de
+            disco — são ordens de magnitude mais lentas do que operações em memória. Quando
+            essas operações custosas são repetidas para cada requisição, o sistema paga o
+            custo integral mesmo que o resultado não tenha mudado.
+          </p>
+          <ul>
+            <li>
+              <strong>Latência acumulada:</strong> uma query que leva 50 ms é imperceptível
+              isolada, mas quando uma página faz 20 queries para montar a resposta, o tempo
+              acumulado passa de 1 segundo. Se a maioria dessas queries retorna os mesmos dados
+              para usuários diferentes, o trabalho está sendo repetido desnecessariamente.
+            </li>
+            <li>
+              <strong>Sobrecarga da origem em picos:</strong> um evento que multiplica por dez
+              as requisições multiplica por dez as queries no banco. Sem cache, a infraestrutura
+              de origem precisa ter capacidade para o pico máximo em vez de para a carga média.
+            </li>
+            <li>
+              <strong>Limites de rate de APIs externas:</strong> serviços de terceiros
+              frequentemente impõem limites de requisições por segundo ou por hora. Sem cache
+              das respostas, o limite é atingido mais rapidamente e o sistema começa a receber
+              erros ou bloqueios.
+            </li>
+            <li>
+              <strong>Computações repetidas:</strong> resultados de agregações, rankings,
+              relatórios e transformações pesadas são candidatos diretos: custam caro para
+              computar e raramente mudam a cada requisição.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. COMO FUNCIONA -->
+        <section class="artigo__secao">
+          <h2>Como funciona</h2>
+
+          <h3>Hierarquia de cache</h3>
+          <p>
+            Cache existe em múltiplas camadas, cada uma com latência e capacidade distintas.
+            Quanto mais próximo do processador, mais rápido — e menor — o cache.
+          </p>
+          <div class="code-bloco">
+<pre><code>  Mais rápido / Menor capacidade
+  ┌────────────────────────────────────────────────────────────────┐
+  │  L1/L2/L3 do processador  (~1–10 ns)   gerenciado pelo CPU    │
+  │  RAM  (~100 ns)                         gerenciada pelo OS     │
+  │  Cache de aplicação — Redis/Memcached  (~1 ms via rede LAN)   │
+  │  CDN  (~10–50 ms, borda geográfica)    gerenciada pelo CDN     │
+  │  Cache do navegador  (0 ms se HIT)     gerenciado pelo browser │
+  └────────────────────────────────────────────────────────────────┘
+  Mais lento / Maior capacidade (origem: banco de dados, API)
+</code></pre>
+          </div>
+          <p>
+            Na prática, o desenvolvedor controla as camadas de aplicação para baixo: cache
+            no próprio processo, Redis/Memcached para cache distribuído entre instâncias,
+            CDN para assets e respostas HTTP e cabeçalhos HTTP para o cache do navegador.
+          </p>
+
+          <h3>Estratégias de escrita e leitura</h3>
+          <p>
+            A estratégia define o relacionamento entre cache e origem: quem popula o cache,
+            quando e com qual garantia de consistência.
+          </p>
+          <div class="code-bloco">
+<pre><code>  CACHE-ASIDE (Lazy Loading)              WRITE-THROUGH
+
+  Requisição                              Escrita
+      │                                       │
+      ▼                                       ▼
+  ┌────────┐  HIT                         ┌────────┐
+  │ Cache  │──────────────► Resposta      │ Cache  │◄── escrita simultânea
+  └────┬───┘                              └────┬───┘
+       │ MISS                                  │ escrita simultânea
+       ▼                                       ▼
+  ┌────────┐                             ┌────────┐
+  │  Banco │                             │  Banco │
+  └────┬───┘                             └────────┘
+       │ popula cache
+       ▼                                 Cache sempre fresco.
+  ┌────────┐──────────────► Resposta     Toda escrita tem latência dupla.
+  │ Cache  │                             Cache pode ter dados nunca lidos
+  └────────┘                             (desperdício de memória).
+
+  App controla o cache explicitamente.
+  Cold start: miss na 1ª requisição.
+  Risco: dados stale se TTL longo.
+
+
+  WRITE-BEHIND (Write-Back)              READ-THROUGH
+
+  Escrita                                Requisição
+      │                                       │
+      ▼                                       ▼
+  ┌────────┐◄── escrita imediata          ┌────────┐  HIT
+  │ Cache  │                              │ Cache  │──────────► Resposta
+  └────────┘                              └────┬───┘
+       │ assíncrono (batch)                    │ MISS: cache busca na origem
+       ▼                                       ▼
+  ┌────────┐                             ┌────────┐
+  │  Banco │                             │  Banco │
+  └────────┘                             └────┬───┘
+                                              │ popula cache
+  Máxima performance de escrita.              ▼
+  Risco: perda de dados se cache        ┌────────┐──────────────► Resposta
+  cair antes de persistir no banco.     │ Cache  │
+                                        └────────┘
+
+                                        App não distingue cache de origem.
+</code></pre>
+          </div>
+
+          <h3>Políticas de eviction</h3>
+          <p>
+            Cache tem capacidade finita. Quando está cheio, algum dado precisa ser removido
+            para dar espaço ao novo. A política de eviction define qual dado é removido:
+          </p>
+          <ul>
+            <li>
+              <strong>LRU (Least Recently Used):</strong> remove o dado acessado há mais
+              tempo. É a política padrão da maioria das implementações (Redis, Memcached)
+              porque reflete bem a localidade temporal — dados usados recentemente têm
+              maior probabilidade de serem usados novamente.
+            </li>
+            <li>
+              <strong>LFU (Least Frequently Used):</strong> remove o dado acessado com
+              menor frequência. Melhor para padrões de acesso estáveis onde alguns dados
+              são acessados consistentemente muito mais que outros.
+            </li>
+            <li>
+              <strong>TTL (Time To Live):</strong> não é uma política de eviction de
+              capacidade — é uma validade máxima. O dado expira após um tempo definido,
+              independente de uso. TTL é o mecanismo principal de invalidação temporal e
+              atua junto com LRU/LFU, não no lugar deles.
+            </li>
+          </ul>
+
+          <h3>Cache em diferentes camadas da aplicação</h3>
+          <ul>
+            <li>
+              <strong>Cache do navegador:</strong> controlado por cabeçalhos HTTP
+              <code>Cache-Control</code>, <code>ETag</code> e <code>Last-Modified</code>.
+              Evita requisições ao servidor para assets estáticos (JS, CSS, imagens) e
+              respostas que não mudaram. Um HIT de navegador custa zero — a requisição
+              nem sai do dispositivo do usuário.
+            </li>
+            <li>
+              <strong>CDN:</strong> caches geograficamente distribuídos próximos aos
+              usuários. Ideais para assets estáticos, respostas de APIs públicas e conteúdo
+              com TTL definido. Reduzem latência ao servir da borda em vez do servidor
+              de origem e absorvem picos de tráfego massivos.
+            </li>
+            <li>
+              <strong>Cache de aplicação — Redis/Memcached:</strong> compartilhado entre
+              instâncias, persiste além do ciclo de vida de uma requisição. Usado para
+              sessões de usuário, resultados de queries custosas, responses de APIs externas,
+              resultados de computações pesadas e dados de configuração lidos com frequência.
+            </li>
+            <li>
+              <strong>Cache in-process:</strong> estruturas em memória no próprio processo
+              da aplicação (HashMap, Map). Latência zero de rede, mas não compartilhado entre
+              instâncias. Adequado para dados de lookup imutáveis carregados na inicialização
+              (tabelas de configuração, enumerações de domínio).
+            </li>
+          </ul>
+        </section>
+
+        <!-- 4. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Dados lidos muito mais do que escritos:</strong> páginas de produto em
+              e-commerce, perfis de usuário, configurações de sistema — qualquer dado com
+              proporção de leitura para escrita alta. O cache retorna o valor muitas vezes
+              por cada vez que é atualizado.
+            </li>
+            <li>
+              <strong>Operações custosas e repetitivas:</strong> queries com múltiplos
+              joins, agregações sobre grandes volumes, chamadas a APIs externas com
+              latência alta. Se o resultado serve mais de uma requisição, cacheá-lo
+              divide o custo de produção entre todos os consumidores.
+            </li>
+            <li>
+              <strong>Conteúdo estático ou semi-estático:</strong> assets de frontend
+              (JS, CSS, imagens), respostas de catálogos, listagens que mudam poucas
+              vezes por dia. TTL de horas ou dias maximiza o hit rate sem risco de
+              exibir dados desatualizados de forma crítica.
+            </li>
+            <li>
+              <strong>Proteção da origem contra picos:</strong> quando o banco ou
+              serviço de origem não tem capacidade para o pico máximo de requisições,
+              o cache absorve a carga e serve os dados sem aumentar a capacidade da origem.
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>Dados que mudam a cada requisição:</strong> saldos em tempo real,
+              preços que flutuam por segundo, posições de ativos financeiros. Cachear
+              introduz uma janela de inconsistência que pode ter consequências reais.
+            </li>
+            <li>
+              <strong>Dados com consistência forte obrigatória:</strong> em transações
+              bancárias simultâneas, o saldo após um débito deve ser refletido
+              imediatamente para a próxima operação. Consistência eventual não é
+              aceitável em operações financeiras críticas.
+            </li>
+            <li>
+              <strong>Quando a invalidação é mais complexa que o problema original:</strong>
+              se o dado está relacionado a dezenas de outras entidades e qualquer mudança
+              em qualquer uma delas invalida o cache, a lógica de invalidação vira um
+              sistema por si só. Nesses casos, otimizar a query original pode ser mais
+              direto.
+            </li>
+            <li>
+              <strong>Dados únicos por usuário com volume de usuários muito alto:</strong>
+              cachear dados altamente personalizados pode consumir mais memória do que o
+              benefício gerado, já que cada usuário tem sua própria entrada de cache com
+              hit rate próximo de um.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 5. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Redução drástica de latência: dados servidos da memória chegam ordens de magnitude mais rápido do que da origem.</li>
+            <li>Throughput maior com o mesmo hardware: o banco processa menos queries, podendo atender mais operações de escrita e queries não cacheadas.</li>
+            <li>Proteção da origem: o cache absorve picos de leitura, protegendo banco de dados e APIs de sobrecarga.</li>
+            <li>Redução de custo em APIs pagas por requisição: rate limits e custos por chamada são diluídos pelo hit rate do cache.</li>
+            <li>Disponibilidade parcial: alguns sistemas são configurados para servir dados do cache mesmo quando a origem está indisponível (stale-while-revalidate).</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Consistência eventual: há uma janela entre a atualização da origem e a atualização do cache onde o dado servido está desatualizado.</li>
+            <li>Complexidade de invalidação: definir quando e como invalidar o cache é um dos problemas mais difíceis em engenharia de software. Invalidar cedo demais anula o benefício; tarde demais serve dados stale.</li>
+            <li>Cold start: na primeira requisição ou após reinício, o cache está vazio e todas as requisições chegam à origem simultaneamente.</li>
+            <li>Infraestrutura adicional: Redis/Memcached têm custo operacional e financeiro, e precisam ser monitorados, mantidos e operados.</li>
+            <li>Bugs difíceis de reproduzir: comportamento que depende do estado do cache é difícil de testar, especialmente quando o comportamento varia entre hit e miss.</li>
+          </ul>
+        </section>
+
+        <!-- 6. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Cache stampede (thundering herd)</h3>
+          <p>
+            Quando o TTL de uma chave popular expira, todas as requisições que chegam
+            simultaneamente naquele instante encontram um MISS e disparam a operação
+            custosa ao mesmo tempo — exatamente o problema que o cache deveria evitar,
+            agora amplificado. O banco pode receber dezenas ou centenas de queries
+            idênticas num curto intervalo, saturando sob a carga repentina.
+          </p>
+          <p>
+            Soluções: <strong>jitter no TTL</strong> (expirar em TTL + valor aleatório,
+            distribuindo as expirações no tempo para evitar que todas as chaves populares
+            expirem juntas), <strong>mutex ou lock</strong> (a primeira requisição em MISS
+            adquire um lock e popula o cache; as demais aguardam ou recebem o dado
+            stale temporariamente) e <strong>probabilistic early expiration</strong>
+            (revalidar o cache proativamente antes de expirar, com probabilidade crescente
+            conforme o TTL se aproxima de zero).
+          </p>
+
+          <h3>2. Dados stale por invalidação esquecida</h3>
+          <p>
+            O dado é atualizado no banco mas o cache continua servindo a versão antiga.
+            Isso acontece quando a invalidação é tratada como detalhe de implementação
+            em vez de parte do contrato da operação de escrita. Com Cache-Aside, cada
+            operação de escrita precisa invalidar explicitamente as chaves afetadas —
+            e essa disciplina precisa ser mantida conforme novas operações são adicionadas
+            ao longo do tempo.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Regra prática:</strong> use TTL como safety net (garante que dados
+            stale eventualmente expiram) e invalidação explícita na escrita como
+            mecanismo principal (garante que a expiração acontece no momento certo).
+            Nunca dependa apenas de um dos dois isoladamente.
+          </p>
+
+          <h3>3. Cache como fonte de verdade</h3>
+          <p>
+            Em Write-Behind mal implementado, as escritas vão ao cache mas o banco
+            não é atualizado de forma confiável. Se o cache cai — por reinício, falha
+            de hardware ou eviction agressivo — os dados são perdidos permanentemente.
+            Cache é uma camada de aceleração, não de persistência. Trate-o como
+            descartável: o sistema deve funcionar corretamente (mais devagar) sem ele.
+          </p>
+
+          <h3>4. Chaves de cache sem namespace</h3>
+          <p>
+            Um Redis compartilhado entre ambientes (dev, staging, prod) ou entre
+            features diferentes pode ter colisão de chaves. A chave <code>user:123</code>
+            no ambiente de dev aponta para dados de teste; em prod, para o usuário real.
+            A chave <code>product:list</code> de uma feature pode sobrescrever a de outra
+            feature diferente.
+          </p>
+          <p>
+            A solução é prefixar todas as chaves com namespace:
+            <code>prod:catalog:product:list</code>, <code>dev:auth:user:123</code>.
+            Defina a convenção de nomenclatura, documente-a e aplique de forma consistente
+            em todo o código que interage com o cache.
+          </p>
+        </section>
+
+        <!-- 7. RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Arquiteturas e padrões relacionados</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../escalabilidade-horizontal-vertical/">Escalabilidade Horizontal vs Vertical</a></li>
+            <li><a href="../load-balancing/">Load Balancing</a></li>
+            <li><a href="../cqrs/">CQRS</a></li>
+            <li><a href="../event-driven/">Event-Driven Architecture</a></li>
+            <li><a href="../sql-vs-nosql/">SQL vs NoSQL</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Escalabilidade horizontal</strong> e caching são complementares: o
+            cache reduz a carga na origem, adiando ou eliminando a necessidade de escalar
+            o banco verticalmente. Quando o scale out da camada de aplicação é feito,
+            o cache distribuído (Redis centralizado) garante que todas as instâncias
+            compartilhem o mesmo estado em vez de cada uma manter sua própria cópia
+            desincronizada.
+          </p>
+          <p>
+            No <strong>CQRS</strong>, o Read Model frequentemente usa cache: as projeções
+            de leitura são dados pré-computados e otimizados para consulta, podendo ser
+            armazenadas em Redis. A atualização do Read Model via eventos de domínio é uma
+            forma estruturada de invalidação — o evento sinaliza que a projeção precisa
+            ser recalculada.
+          </p>
+          <p>
+            A <strong>Event-Driven Architecture</strong> oferece um mecanismo natural para
+            invalidação de cache: quando um evento de domínio é publicado
+            (<em>ProdutoAtualizado</em>, <em>EstoqueAlterado</em>), consumidores
+            especializados podem invalidar ou recomputar as entradas de cache afetadas,
+            desacoplando a invalidação da operação de escrita original.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="5757575757"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

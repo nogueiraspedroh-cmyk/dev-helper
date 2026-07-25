@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clean Architecture — Arquiteturas | Biblioteca Dev Helper</title>
+  <meta name="description" content="Entenda a Clean Architecture: regra de dependência, camadas concêntricas, boundaries, DTOs entre camadas e distinção com Hexagonal e Onion." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Clean Architecture</span>
+        </nav>
+        <span class="artigo__categoria">Arquitetura</span>
+        <h1 class="artigo__titulo">Clean Architecture</h1>
+        <p class="artigo__subtitulo">
+          Organiza o sistema em camadas concêntricas onde as dependências
+          <em>só apontam para dentro</em> — frameworks e bancos de dados ficam
+          na borda externa, entidades de negócio no núcleo — e boundaries
+          explícitos isolam cada camada por meio de inversão de dependência.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Tornar os detalhes de implementação — frameworks, banco de dados,
+            UI, dispositivos — substituíveis sem afetar a lógica de negócio.</strong>
+            A Clean Architecture, descrita por Robert C. Martin em 2012, formula a
+            <em>regra da dependência</em>: o código-fonte de uma camada interna nunca
+            pode mencionar nada de uma camada externa. As dependências só apontam
+            para dentro.
+          </p>
+          <p>
+            O ponto central não é o diagrama de círculos em si, mas a regra que ele
+            representa: <strong>entidades de negócio não conhecem casos de uso;
+            casos de uso não conhecem controllers; controllers não conhecem o banco de
+            dados</strong>. Cada cruzamento de fronteira usa uma abstração — uma interface
+            ou um DTO — de modo que a camada interna define o contrato e a externa o
+            implementa.
+          </p>
+          <p>
+            A Clean Architecture é convergente com a
+            <a href="../arquitetura-hexagonal/">Arquitetura Hexagonal</a> e com a
+            <a href="../onion-architecture/">Onion Architecture</a>: todas compartilham
+            a ideia de domínio isolado no centro e infraestrutura nas bordas. A diferença
+            está na granularidade: a Clean Architecture detalha explicitamente a separação
+            entre <em>entidades</em> (regras de negócio puras) e <em>casos de uso</em>
+            (regras de aplicação), e torna os <em>boundaries</em> (interfaces de cruzamento
+            de fronteira) um elemento formal do modelo.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            O problema que a Clean Architecture ataca é o acoplamento ao detalhe:
+          </p>
+          <ul>
+            <li>
+              <strong>Acoplamento ao framework:</strong> quando as entidades herdam de
+              classes do framework (ActiveRecord, JPA Entity), mudar de ORM requer
+              reescrever o domínio. O framework deveria ser um detalhe substituível,
+              não a base da arquitetura.
+            </li>
+            <li>
+              <strong>Acoplamento ao banco de dados:</strong> regras de negócio que
+              dependem de SQL, de esquemas específicos ou de transações de banco tornam
+              o domínio intestável sem infraestrutura real.
+            </li>
+            <li>
+              <strong>Acoplamento à UI:</strong> lógica de negócio espalhada em
+              controllers, componentes de UI ou handlers HTTP que precisam ser
+              replicados ao adicionar um novo canal de entrada (CLI, fila, API GraphQL).
+            </li>
+            <li>
+              <strong>Testabilidade comprometida:</strong> quando uma regra de negócio
+              simples ("o desconto máximo é 30%") só pode ser verificada subindo um
+              servidor HTTP com banco de dados, o custo de testar é alto e o ciclo
+              de feedback é lento.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+          <p>
+            A Clean Architecture é representada como círculos concêntricos. Cada
+            círculo externo é um detalhe; cada círculo interno é uma política. A regra
+            é simples: <strong>nunca um círculo interno pode depender de um círculo
+            externo</strong>.
+          </p>
+          <div class="code-bloco">
+<pre><code>  ╔═══════════════════════════════════════════════════════════════════╗
+  ║  FRAMEWORKS &amp; DRIVERS (borda mais externa)                        ║
+  ║  Web, banco de dados, UI, dispositivos, serviços externos         ║
+  ║  ┌─────────────────────────────────────────────────────────────┐  ║
+  ║  │  ADAPTADORES DE INTERFACE                                   │  ║
+  ║  │  Controllers, Presenters, Gateways, Serializers             │  ║
+  ║  │  ┌───────────────────────────────────────────────────────┐  │  ║
+  ║  │  │  CASOS DE USO (Application Business Rules)            │  │  ║
+  ║  │  │  Use Case Interactors, Application Services           │  │  ║
+  ║  │  │  ┌─────────────────────────────────────────────────┐  │  │  ║
+  ║  │  │  │  ENTIDADES (Enterprise Business Rules)          │  │  │  ║
+  ║  │  │  │  Entidades, Value Objects, Regras de Negócio    │  │  │  ║
+  ║  │  │  │  Puras — sem dependência de nada externo        │  │  │  ║
+  ║  │  │  └─────────────────────────────────────────────────┘  │  │  ║
+  ║  │  └───────────────────────────────────────────────────────┘  │  ║
+  ║  └─────────────────────────────────────────────────────────────┘  ║
+  ╚═══════════════════════════════════════════════════════════════════╝
+
+  Regra da dependência: as setas apontam APENAS para dentro.
+  Entidades não conhecem Casos de Uso.
+  Casos de Uso não conhecem Controllers.
+  Controllers não conhecem Frameworks diretamente (usam interfaces).
+</code></pre>
+          </div>
+
+          <h3>As quatro camadas</h3>
+          <ul>
+            <li>
+              <strong>Entidades:</strong> encapsulam as regras de negócio mais gerais e
+              de alto nível da empresa. São os objetos que existiriam mesmo sem nenhum
+              software — as políticas que valem para qualquer sistema que implemente
+              esse domínio. Não dependem de nada externo.
+            </li>
+            <li>
+              <strong>Casos de uso:</strong> contêm as regras de negócio específicas
+              da aplicação. Orquestram o fluxo de dados de e para as entidades, e
+              direcionam as entidades a usarem suas regras de negócio para atingir o
+              objetivo do caso de uso. Conhecem entidades, mas não conhecem controllers
+              nem banco de dados.
+            </li>
+            <li>
+              <strong>Adaptadores de interface:</strong> convertem dados entre o formato
+              mais conveniente para os casos de uso e entidades e o formato mais
+              conveniente para algum agente externo como banco de dados ou web.
+              Controllers, Presenters e Gateways vivem aqui.
+            </li>
+            <li>
+              <strong>Frameworks e drivers:</strong> a camada mais externa. Aqui ficam
+              os detalhes: o framework web, o banco de dados, serviços de e-mail. Você
+              não deve escrever muito código aqui — apenas código de ligação que
+              comunica para dentro com a próxima camada.
+            </li>
+          </ul>
+
+          <h3>Boundaries e DTOs</h3>
+          <p>
+            Quando os dados cruzam a fronteira entre camadas, eles devem fazê-lo por
+            meio de estruturas simples de dados — <em>DTOs</em> (Data Transfer Objects)
+            — e nunca por meio de entidades da camada interna. Isso garante que a camada
+            externa não arraste dependências para dentro.
+          </p>
+          <p>
+            O cruzamento acontece por meio de um <em>boundary</em>: uma interface
+            definida pela camada interna que a camada externa implementa. O caso de uso
+            define a interface do repositório que precisa; a infraestrutura implementa
+            essa interface. O caso de uso nunca importa a implementação concreta.
+          </p>
+        </section>
+
+        <!-- 4. COMO FUNCIONA -->
+        <section class="artigo__secao">
+          <h2>Como funciona — a regra da dependência na prática</h2>
+          <p>
+            O trecho abaixo mostra a regra da dependência aplicada a um caso de uso
+            simples. A interface do repositório é definida dentro da camada de casos
+            de uso; a implementação concreta fica na infraestrutura e aponta para
+            dentro — nunca o contrário.
+          </p>
+          <div class="code-bloco">
+<pre><code>// ── ENTIDADE (camada mais interna) ───────────────────────────
+// Sem imports externos. Só regras de negócio puras.
+class Pedido {
+  constructor(
+    readonly id: string,
+    readonly itens: ItemPedido[],
+  ) {}
+
+  calcularTotal(): number {
+    return this.itens.reduce((acc, item) =&gt; acc + item.subtotal(), 0);
+  }
+
+  validar(): void {
+    if (this.itens.length === 0) {
+      throw new Error('Pedido deve ter ao menos um item');
+    }
+  }
+}
+
+// ── CASO DE USO (conhece Entidade; define sua própria interface) ──
+// OutputBoundary é definido aqui — a camada externa o implementa.
+interface CriarPedidoOutputBoundary {
+  apresentar(resultado: { pedidoId: string; total: number }): void;
+}
+
+interface PedidoRepository {
+  salvar(pedido: Pedido): Promise&lt;void&gt;;
+}
+
+class CriarPedidoUseCase {
+  constructor(
+    private readonly repo: PedidoRepository,
+    private readonly output: CriarPedidoOutputBoundary,
+  ) {}
+
+  async executar(dto: { itens: { produtoId: string; quantidade: number; preco: number }[] }): Promise&lt;void&gt; {
+    const pedido = new Pedido(
+      crypto.randomUUID(),
+      dto.itens.map(i =&gt; new ItemPedido(i.produtoId, i.quantidade, i.preco)),
+    );
+    pedido.validar();
+    await this.repo.salvar(pedido);
+    this.output.apresentar({ pedidoId: pedido.id, total: pedido.calcularTotal() });
+  }
+}
+
+// ── ADAPTADOR DE INTERFACE (Controller) ──────────────────────
+// Conhece o caso de uso; não conhece Entidade diretamente.
+class CriarPedidoController {
+  constructor(private readonly useCase: CriarPedidoUseCase) {}
+
+  async handle(req: Request): Promise&lt;void&gt; {
+    await this.useCase.executar({ itens: req.body.itens });
+  }
+}
+
+// ── INFRAESTRUTURA (borda externa) implementa interface interna ──
+// A dependência aponta para DENTRO: Infra conhece o Caso de Uso.
+class PostgresPedidoRepository implements PedidoRepository {
+  async salvar(pedido: Pedido): Promise&lt;void&gt; {
+    // acessa o banco; o Caso de Uso não sabe desse detalhe
+  }
+}</code></pre>
+          </div>
+          <p>
+            O ponto crítico: <code>PedidoRepository</code> e
+            <code>CriarPedidoOutputBoundary</code> são interfaces declaradas dentro
+            da camada de casos de uso. <code>PostgresPedidoRepository</code> fica na
+            infraestrutura e importa o caso de uso — a dependência aponta para dentro.
+            O caso de uso nunca importa <code>PostgresPedidoRepository</code>.
+          </p>
+        </section>
+
+        <!-- 5. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Sistemas com domínio de negócio rico e longevidade alta:</strong>
+              quanto mais complexas as regras de negócio e maior o ciclo de vida do
+              sistema, mais o investimento nos boundaries se paga. A capacidade de
+              substituir o banco de dados, o framework ou o canal de entrada sem tocar
+              no domínio tem valor crescente com o tempo.
+            </li>
+            <li>
+              <strong>Quando a testabilidade é prioridade:</strong> a separação explícita
+              de entidades e casos de uso permite testar toda a lógica de negócio com
+              implementações in-memory dos repositórios — sem banco, sem HTTP, com
+              execução em milissegundos.
+            </li>
+            <li>
+              <strong>Múltiplos canais de entrada:</strong> o mesmo conjunto de casos
+              de uso pode ser acionado por HTTP, CLI, mensageria ou testes sem modificação,
+              pois cada canal é apenas um adaptador de interface diferente.
+            </li>
+            <li>
+              <strong>Equipes que precisam de fronteiras claras:</strong> a separação
+              formal entre camadas — reforçada por boundaries — permite que equipes
+              diferentes trabalhem em camadas diferentes com acoplamento mínimo.
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>CRUDs simples sem lógica de domínio:</strong> criar entidades,
+              casos de uso, boundaries e DTOs para uma aplicação que apenas persiste e
+              lê registros sem regras complexas é over-engineering com custo real. Uma
+              Arquitetura em Camadas simples ou até MVC direto é mais produtivo.
+            </li>
+            <li>
+              <strong>Projetos de vida curta ou equipes pequenas sem experiência:</strong>
+              a Clean Architecture exige que a equipe entenda inversão de dependência,
+              DTOs de boundary e a distinção entre entidade e caso de uso. Sem esse
+              entendimento, o resultado costuma ser uma Arquitetura em Camadas com
+              nomes diferentes e mappers redundantes sem propósito claro.
+            </li>
+            <li>
+              <strong>Quando os mappers de boundary se tornam o maior volume de código:</strong>
+              um sinal de que a arquitetura pode estar sendo aplicada com granularidade
+              excessiva — mapear 1:1 cada campo entre camadas adjacentes sem
+              transformação real não agrega valor.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 6. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Independência de framework: o domínio não depende de nenhuma biblioteca externa — frameworks são detalhes substituíveis.</li>
+            <li>Testabilidade total do domínio sem infraestrutura real: entidades e casos de uso são testados com mocks simples das interfaces.</li>
+            <li>Independência de banco de dados: trocar de PostgreSQL para MongoDB (ou para in-memory) é trocar o adaptador de repositório, sem tocar no domínio.</li>
+            <li>Independência de UI: a mesma lógica de negócio serve HTTP, CLI, testes e filas — cada um com seu próprio adaptador.</li>
+            <li>Fronteiras formais (boundaries) explicitam os contratos entre camadas — servem como documentação viva da arquitetura.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Volume de código maior: interfaces de boundary, DTOs de entrada/saída e mappers entre camadas multiplicam o número de arquivos mesmo em funcionalidades simples.</li>
+            <li>Curva de aprendizado: a distinção entre entidade, caso de uso, adaptador e framework — e a inversão de dependência que atravessa tudo — não é intuitiva para quem vê pela primeira vez.</li>
+            <li>Risco de over-engineering para domínios simples: aplicar quatro camadas concêntricas com boundaries formais em um CRUD básico gera custo sem benefício equivalente.</li>
+            <li>Mappers redundantes: com granularidade excessiva, os conversores de DTO entre camadas adjacentes se tornam o maior volume de código do projeto sem agregar lógica de negócio.</li>
+          </ul>
+        </section>
+
+        <!-- 7. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Mapear 1:1 pastas às quatro camadas e criar mappers redundantes</h3>
+          <p>
+            A armadilha mais comum é criar quatro diretórios (<code>entities/</code>,
+            <code>use-cases/</code>, <code>adapters/</code>, <code>frameworks/</code>)
+            e converter mecanicamente cada objeto entre camadas, mesmo quando não há
+            transformação real. Se o DTO de entrada do caso de uso é estruturalmente
+            idêntico ao payload da requisição HTTP, um mapper que copia campo por campo
+            sem transformação não agrega valor — agrega apenas volume e complexidade de
+            manutenção.
+          </p>
+          <p>
+            A regra da dependência é o que importa, não a quantidade de diretórios.
+            A estrutura de pastas deve refletir as fronteiras reais de dependência, não
+            imitar o diagrama de círculos de forma literal.
+          </p>
+
+          <h3>2. Inverter a dependência no sentido errado</h3>
+          <p>
+            O erro mais grave e mais silencioso: o caso de uso importa a implementação
+            concreta do repositório em vez de importar a interface. Isso acontece quando
+            a interface <code>PedidoRepository</code> é declarada no pacote de
+            infraestrutura e o caso de uso importa esse pacote. A dependência deveria
+            ser o contrário: a interface vive dentro do pacote de casos de uso, e a
+            infraestrutura importa o caso de uso para implementar a interface.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Teste rápido:</strong> se você deletar a pasta de infraestrutura,
+            o código de entidades e casos de uso ainda deve compilar sem erros. Se não
+            compilar, há dependência invertida no sentido errado em algum ponto.
+          </p>
+
+          <h3>3. Over-engineering para CRUD</h3>
+          <p>
+            Aplicar Clean Architecture a um serviço que cria, lê, atualiza e deleta
+            registros sem regras de negócio complexas gera um custo real de
+            desenvolvimento e manutenção sem benefício equivalente. O princípio "o
+            detalhe não deve influenciar a política" só tem valor quando existe política
+            (regra de negócio) a proteger. Para CRUDs, considere uma abordagem mais
+            simples e refatore conforme a complexidade do domínio crescer.
+          </p>
+
+          <h3>4. Ignorar a camada de entidades e colocar tudo nos casos de uso</h3>
+          <p>
+            Quando todas as regras de negócio ficam nos interactors de caso de uso e
+            as entidades são apenas estruturas de dados sem comportamento, o resultado
+            é um domínio anêmico — o mesmo problema da
+            <a href="../arquitetura-em-camadas/">Arquitetura em Camadas</a> mal aplicada.
+            As entidades devem encapsular as regras mais gerais e estáveis do negócio;
+            os casos de uso orquestram essas entidades para atingir objetivos específicos
+            da aplicação.
+          </p>
+        </section>
+
+        <!-- 8. ARQUITETURAS E PADRÕES RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Arquiteturas e padrões relacionados</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../arquitetura-hexagonal/">Arquitetura Hexagonal (Ports &amp; Adapters)</a></li>
+            <li><a href="../onion-architecture/">Onion Architecture</a></li>
+            <li><a href="../arquitetura-em-camadas/">Arquitetura em Camadas</a></li>
+            <li><a href="../mvc/">MVC</a></li>
+            <li><a href="../adapter/">Adapter (GoF)</a></li>
+          </ul>
+          <p class="mt-1">
+            A <strong>Arquitetura Hexagonal</strong> é a arquitetura mais próxima da
+            Clean Architecture e ambas são frequentemente confundidas. A diferença
+            central está na granularidade: a Hexagonal fala em <em>portas</em> (interfaces)
+            e <em>adaptadores</em> (implementações), sem distinguir formalmente entre
+            entidades e casos de uso dentro do núcleo. A Clean Architecture adiciona essa
+            distinção explícita e formaliza os <em>boundaries</em> como elemento da
+            arquitetura. Na prática, as duas são compatíveis e convergentes — uma
+            implementação hexagonal bem estruturada tipicamente respeita a regra da
+            dependência da Clean Architecture.
+          </p>
+          <p>
+            A <strong>Onion Architecture</strong> (Jeffrey Palermo, 2008) é a precursora
+            mais direta da Clean Architecture. Compartilha a ideia de domínio no centro,
+            dependências apontando para dentro e infraestrutura na casca externa. A
+            diferença principal é que a Onion enfatiza o <em>domain model rico</em> no
+            núcleo (entidades com comportamento, serviços de domínio) e tende a ser menos
+            prescritiva sobre a separação entre entidades e casos de uso do que a Clean
+            Architecture.
+          </p>
+          <p>
+            A <strong>Arquitetura em Camadas</strong> é a forma mais simples de separar
+            responsabilidades horizontalmente. A Clean Architecture a refina ao inverter
+            explicitamente a dependência na fronteira entre domínio e infraestrutura —
+            em vez de a infraestrutura ficar "abaixo" como dependência natural, ela fica
+            "fora" e implementa interfaces definidas pelo domínio.
+          </p>
+          <p>
+            O padrão <strong>Adapter</strong> (GoF) é o mecanismo de implementação dos
+            adaptadores de interface: cada gateway, controller ou presenter é um Adapter
+            que converte entre o formato da camada interna e o formato do agente externo.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="9494949494"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

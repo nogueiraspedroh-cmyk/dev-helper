@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conversor de Fuso Horário — Horas entre Fusos IANA — Dev Helper</title>
+  <meta name="description" content="Converta um horário de referência entre fusos horários (IANA) usando a API nativa do navegador, com suporte a horário de verão. Adicione ou remova fusos da lista." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../../biblioteca/">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Conversor de Fuso Horário</h1>
+        <p>Escolha uma <strong>data e hora de referência</strong> e o <strong>fuso de origem</strong>; veja o horário equivalente em vários fusos ao redor do mundo. Usa a API nativa do navegador (<code>Intl.DateTimeFormat</code>), com <strong>horário de verão</strong> automático.</p>
+      </header>
+
+      <div class="tool__controls">
+        <label class="tool__label" for="tz-date">Data</label>
+        <input type="date" id="tz-date" class="tool__input-inline" />
+
+        <label class="tool__label" for="tz-time">Hora</label>
+        <input type="time" id="tz-time" class="tool__input-inline" />
+
+        <label class="tool__label" for="tz-source">Fuso de origem</label>
+        <select id="tz-source" class="tool__select">
+          <option value="America/Sao_Paulo" selected>America/Sao_Paulo</option>
+          <option value="America/New_York">America/New_York</option>
+          <option value="America/Los_Angeles">America/Los_Angeles</option>
+          <option value="Europe/London">Europe/London</option>
+          <option value="Europe/Lisbon">Europe/Lisbon</option>
+          <option value="Europe/Berlin">Europe/Berlin</option>
+          <option value="Africa/Johannesburg">Africa/Johannesburg</option>
+          <option value="Asia/Dubai">Asia/Dubai</option>
+          <option value="Asia/Kolkata">Asia/Kolkata</option>
+          <option value="Asia/Shanghai">Asia/Shanghai</option>
+          <option value="Asia/Tokyo">Asia/Tokyo</option>
+          <option value="Australia/Sydney">Australia/Sydney</option>
+          <option value="UTC">UTC</option>
+        </select>
+
+        <div class="tool__actions tool__actions--mt">
+          <button id="tz-now" class="button--secondary" type="button">Agora</button>
+        </div>
+      </div>
+
+      <p id="tz-error" class="error-msg" role="alert" hidden></p>
+
+      <section class="tool__output">
+        <div class="tool__controls">
+          <label class="tool__label" for="tz-add-select">Adicionar fuso à lista</label>
+          <select id="tz-add-select" class="tool__select">
+            <option value="America/Sao_Paulo">America/Sao_Paulo</option>
+            <option value="America/Argentina/Buenos_Aires">America/Argentina/Buenos_Aires</option>
+            <option value="America/Bogota">America/Bogota</option>
+            <option value="America/Mexico_City">America/Mexico_City</option>
+            <option value="America/New_York">America/New_York</option>
+            <option value="America/Chicago">America/Chicago</option>
+            <option value="America/Denver">America/Denver</option>
+            <option value="America/Los_Angeles">America/Los_Angeles</option>
+            <option value="Europe/London">Europe/London</option>
+            <option value="Europe/Lisbon">Europe/Lisbon</option>
+            <option value="Europe/Madrid">Europe/Madrid</option>
+            <option value="Europe/Paris">Europe/Paris</option>
+            <option value="Europe/Berlin">Europe/Berlin</option>
+            <option value="Europe/Moscow">Europe/Moscow</option>
+            <option value="Africa/Johannesburg">Africa/Johannesburg</option>
+            <option value="Asia/Dubai">Asia/Dubai</option>
+            <option value="Asia/Kolkata">Asia/Kolkata</option>
+            <option value="Asia/Shanghai">Asia/Shanghai</option>
+            <option value="Asia/Singapore">Asia/Singapore</option>
+            <option value="Asia/Tokyo">Asia/Tokyo</option>
+            <option value="Australia/Sydney">Australia/Sydney</option>
+            <option value="Pacific/Auckland">Pacific/Auckland</option>
+            <option value="UTC">UTC</option>
+          </select>
+          <div class="tool__actions tool__actions--mt">
+            <button id="tz-add-btn" class="button" type="button">Adicionar</button>
+          </div>
+        </div>
+
+        <table class="info-table">
+          <thead>
+            <tr><th scope="col">Fuso</th><th scope="col">Data e hora local</th><th scope="col">Offset</th><th scope="col"></th></tr>
+          </thead>
+          <tbody id="tz-tbody"></tbody>
+        </table>
+      </section>
+    </article>
+
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="3838383838"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <section>
+      <h2>Como funciona</h2>
+      <p>
+        A ferramenta interpreta a data e a hora que você informou como o <strong>horário de parede</strong>
+        no <strong>fuso de origem</strong> escolhido, converte esse momento para o instante universal
+        (UTC) e então exibe o horário correspondente em cada fuso da lista. Tudo com a API
+        <code>Intl.DateTimeFormat</code> nativa, sem bibliotecas externas.
+      </p>
+
+      <h2>Sobre os fusos (IANA) e horário de verão</h2>
+      <p>
+        Os fusos usam os identificadores <strong>IANA</strong> (como <code>America/Sao_Paulo</code> ou
+        <code>Asia/Tokyo</code>). Esses identificadores carregam as regras históricas de cada região,
+        incluindo <strong>horário de verão</strong> (DST). Por isso o <em>offset</em> exibido pode
+        variar conforme a data escolhida — por exemplo, Nova York aparece como <code>UTC-05:00</code> no
+        inverno e <code>UTC-04:00</code> no verão.
+      </p>
+
+      <h2>Perguntas frequentes (FAQ)</h2>
+
+      <h3>Posso adicionar outros fusos?</h3>
+      <p>
+        Sim. Use o seletor "Adicionar fuso à lista" para incluir mais fusos, e o botão "Remover" em
+        cada linha para tirar os que não interessam.
+      </p>
+
+      <h3>Os horários levam em conta o horário de verão?</h3>
+      <p>
+        Sim. Como usamos os identificadores IANA e a API nativa do navegador, as transições de horário
+        de verão são aplicadas automaticamente conforme a data de referência.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/tools/fuso-horario.js"></script>
+</body>
+</html>

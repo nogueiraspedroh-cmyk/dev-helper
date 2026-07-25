@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "entries": {
+    "79a93d4a2f8f50b95f852280616242fee1855dc99a3c75211917f55e72e95fae": {
+      "last_emitted_at_ms": 1784994699515,
+      "message": "Use parallel execution for independent tasks. Use run_in_background for long operations (npm install, builds, tests)."
+    },
+    "445ed27a3872b681d98190bae61ccb84954e1bc4e140df5370be958dee776b3a": {
+      "last_emitted_at_ms": 1784994687217,
+      "message": "Verify changes work after editing. Test functionality before marking complete."
+    },
+    "466399dafa2d20f60587180bad0a07358eb7f2bce724df0ff682f038ad33f5ad": {
+      "last_emitted_at_ms": 1784994483803,
+      "message": "Read multiple files in parallel when possible for faster analysis."
+    },
+    "3ac1abde763bdb1cefa62c653089c6c3216a28ef98fe1595508cee7e7fef1e28": {
+      "last_emitted_at_ms": 1784993976212,
+      "message": "Spawning agent: dev-typescript (inherit) [BACKGROUND] | Task: Fase B Lote 2: 11 tools EN"
+    },
+    "b0884f9b32a40625835024bd29da1ef81156143c731efe818f245af5b4f0be9b": {
+      "last_emitted_at_ms": 1784993677395,
+      "message": "Spawning agent: code-reviewer (inherit) [BACKGROUND] | Task: Review Fase B Lote 1 diff"
+    },
+    "808cb04420bcb368ab4716038ddd950b51198d0402b6cf8e965d66ca42ebccbe": {
+      "last_emitted_at_ms": 1784993401666,
+      "message": "[SLOP WARNING] Detected fallback/workaround language in this tool input. Do not make potential slop: avoid ad-hoc fallback layers, workaround shims, or environment-specific patches unless explicitly justified. For architecture concerns, consult the architect for a concrete design first. If this seems environment-specific, ask the user to confirm constraints before proceeding.\n\nVerify changes work after editing. Test functionality before marking complete."
+    },
+    "29b9e3188817dde5d2f7fcbf17cf12d61d58aa901f11468b0c696e617f57e38f": {
+      "last_emitted_at_ms": 1784992708895,
+      "message": "Spawning agent: dev-typescript (inherit) [BACKGROUND] | Task: Fase B Lote 1: 8 tools EN"
+    },
+    "d3fa4457bb12760d9427f17e6c6e16cfac1c2303e35f4f9447e0324b19fd7b1e": {
+      "last_emitted_at_ms": 1784992051673,
+      "message": "Spawning agent: documentador-fluxos (inherit) [BACKGROUND] | Task: Document i18n Fase A flow"
+    },
+    "c60443f0007276d9cd3997171737a0d97a24852d17ba88dc1f0bb7527cfbb13b": {
+      "last_emitted_at_ms": 1784991757617,
+      "message": "Spawning agent: dev-typescript (inherit) [BACKGROUND] | Task: Fix i18n review blockers"
+    },
+    "a77286681926847742fdadf074ecaba33836a23dd92bdea01e556e70894f4cac": {
+      "last_emitted_at_ms": 1784991471370,
+      "message": "Spawning agent: code-reviewer (inherit) [BACKGROUND] | Task: Review Fase A i18n diff"
+    },
+    "0be113605694fd5614061630c0334a423e981669612954e5f635a4d59434a293": {
+      "last_emitted_at_ms": 1784991142754,
+      "message": "Spawning agent: dev-typescript (inherit) [BACKGROUND] | Task: Create en/ pilot pages"
+    }
+  },
+  "updated_at": "2026-07-25T15:51:39.515Z"
+}

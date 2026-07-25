@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Observer — Design Patterns | Biblioteca Dev Helper</title>
+  <meta name="description" content="Aprenda o padrão Observer (GoF) em profundidade: intenção, problema, solução, push vs pull, Pub/Sub, exemplos em TypeScript e PHP, quando usar, quando evitar e armadilhas comuns." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Observer</span>
+        </nav>
+        <span class="artigo__categoria">Padrão Comportamental (GoF)</span>
+        <h1 class="artigo__titulo">Observer</h1>
+        <p class="artigo__subtitulo">
+          Define uma dependência um-para-muitos entre objetos: quando o sujeito muda
+          de estado, todos os seus observadores são notificados e atualizados automaticamente
+          — sem que o sujeito precise conhecer cada um deles.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Estabelecer uma relação de dependência um-para-muitos</strong> de forma
+            que, quando o <em>sujeito</em> (Subject / Observable) altera seu estado interno,
+            todos os <em>observadores</em> registrados são notificados automaticamente. O
+            sujeito não conhece os tipos concretos dos observadores — ele se comunica somente
+            pela interface <code>Observer</code>.
+          </p>
+          <p>
+            Catalogado pelo GoF (1994) como padrão comportamental, o Observer é a base
+            conceitual de sistemas de eventos, data-binding em frameworks de UI (React,
+            Vue, Angular), streams reativos (RxJS, ReactiveX) e qualquer mecanismo de
+            notificação onde o produtor de dados não deve acoplamento direto aos seus
+            consumidores.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Imagine uma estação meteorológica que mede temperatura, umidade e pressão.
+            Múltiplos displays precisam exibir esses dados: um painel atual, um gráfico
+            histórico e um display de alertas. A abordagem ingênua acoplaria a estação
+            a cada display diretamente:
+          </p>
+          <div class="code-bloco">
+<pre><code>// Abordagem ingênua — NÃO faça isso:
+class EstacaoMeteorologica {
+  private painelAtual: PainelAtual;
+  private graficoHistorico: GraficoHistorico;
+  private displayAlertas: DisplayAlertas;
+
+  atualizar(temp: number, umid: number, pressao: number): void {
+    this.painelAtual.mostrar(temp, umid, pressao);
+    this.graficoHistorico.registrar(temp, umid, pressao);
+    this.displayAlertas.verificar(temp, umid, pressao);
+    // Cada novo display exige modificar esta classe.
+  }
+}</code></pre>
+          </div>
+          <p>
+            Adicionar ou remover um display exige modificar <code>EstacaoMeteorologica</code>
+            — violação do Princípio Aberto/Fechado. Os displays também não podem ser
+            registrados ou removidos em runtime. O Observer resolve ambos os problemas:
+            a estação não conhece os displays, apenas publica mudanças; os displays se
+            registram e cancelam inscrição de forma independente.
+          </p>
+        </section>
+
+        <!-- 3. SOLUÇÃO -->
+        <section class="artigo__secao">
+          <h2>Solução</h2>
+          <p>O Observer organiza o código em três participantes:</p>
+          <ol>
+            <li>
+              <strong>Subject (Observable):</strong> mantém uma lista de observadores
+              e oferece métodos para registrá-los (<code>subscribe</code>) e removê-los
+              (<code>unsubscribe</code>). Quando seu estado muda, chama <code>notify</code>
+              para percorrer a lista e avisar cada observador.
+            </li>
+            <li>
+              <strong>Observer (interface):</strong> declara o método de atualização
+              que o Subject chama. Ex.: <code>update(data)</code>.
+            </li>
+            <li>
+              <strong>ConcreteObserver:</strong> implementa <code>Observer</code> e
+              reage à notificação conforme sua responsabilidade — exibir dados, registrar
+              em log, enviar alerta.
+            </li>
+          </ol>
+
+          <h3>Push vs Pull</h3>
+          <p>
+            Existem duas abordagens para o que o Subject envia na notificação:
+          </p>
+          <ul>
+            <li>
+              <strong>Push:</strong> o Subject envia os dados atuais diretamente no
+              argumento da notificação — <code>update(temp, umid, pressao)</code>. É
+              mais direto, mas acopla a assinatura do <code>Observer</code> ao formato
+              exato dos dados do Subject. Quando o estado crescer, a interface do Observer
+              muda.
+            </li>
+            <li>
+              <strong>Pull:</strong> o Subject notifica sem dados (ou com uma referência
+              a si mesmo) — <code>update(subject)</code>. Cada Observer pede ao Subject
+              apenas o que precisa. Mais flexível: novos dados podem ser adicionados ao
+              Subject sem quebrar a assinatura do Observer. O custo é que o Observer
+              precisa conhecer a interface do Subject para fazer o pull.
+            </li>
+          </ul>
+
+          <h3>Observer vs Pub/Sub</h3>
+          <p>
+            Observer e Publish/Subscribe são frequentemente confundidos, mas diferem no
+            acoplamento:
+          </p>
+          <ul>
+            <li>
+              <strong>Observer:</strong> o Subject conhece diretamente os seus Observers
+              (mantém a lista). Há acoplamento direto Subject ↔ Observer, mas não entre
+              Observers.
+            </li>
+            <li>
+              <strong>Pub/Sub:</strong> introduz um <em>broker</em> (barramento de eventos,
+              event bus) entre publicadores e assinantes. Publicadores e assinantes não se
+              conhecem — comunicam-se apenas pelo canal/tópico. O desacoplamento é total,
+              mas a rastreabilidade do fluxo é menor.
+            </li>
+          </ul>
+          <p>
+            Use Observer quando o número de observadores é gerenciável e a relação
+            Subject–Observer é direta. Use Pub/Sub quando a comunicação precisa cruzar
+            módulos ou serviços sem acoplamento direto.
+          </p>
+        </section>
+
+        <!-- 4. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+          <div class="code-bloco">
+<pre><code>         «interface»
+           Observer
+    ┌──────────────────────────┐
+    │ + update(data: T): void  │
+    └──────────────────────────┘
+              ▲
+   ┌──────────┴─────────────────────┐
+   │                                │
+PainelAtual               GraficoHistorico
+(ConcreteObserver)        (ConcreteObserver)
+
+
+           Subject
+  ┌───────────────────────────────────────────┐
+  │ - observers: Observer[]                   │
+  │ + subscribe(o: Observer): void            │
+  │ + unsubscribe(o: Observer): void          │
+  │ # notify(): void                          │
+  └───────────────────────────────────────────┘
+              ▲
+  EstacaoMeteorologica (ConcreteSubject)
+  ┌───────────────────────────────────────────┐
+  │ - temperatura: number                     │
+  │ - umidade: number                         │
+  │ + setMedicao(t, u): void                  │
+  │   → chama this.notify()                   │
+  └───────────────────────────────────────────┘
+
+
+Fluxo de notificação (modelo push):
+
+  estacao.setMedicao(25, 60)
+    → notify()
+      → painel.update({ temperatura: 25, umidade: 60 })
+      → grafico.update({ temperatura: 25, umidade: 60 })
+      → alertas.update({ temperatura: 25, umidade: 60 })
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. EXEMPLOS DE CÓDIGO -->
+        <section class="artigo__secao">
+          <h2>Exemplos de código</h2>
+
+          <h3>Exemplo 1 — Estação meteorológica com múltiplos displays</h3>
+          <p>
+            Implementação completa com Subject genérico, registro/cancelamento de
+            inscrição e notificação. Usa modelo push com um objeto de dados tipado.
+          </p>
+
+          <!-- GRUPO DE ABAS 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 1 — estação meteorológica">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Interfaces ────────────────────────────────────────────────
+interface DadosMeteo {
+  temperatura: number;
+  umidade: number;
+}
+
+interface Observer&lt;T&gt; {
+  update(data: T): void;
+}
+
+// ── Subject genérico ──────────────────────────────────────────
+class Subject&lt;T&gt; {
+  private readonly observers: Set&lt;Observer&lt;T&gt;&gt; = new Set();
+
+  subscribe(observer: Observer&lt;T&gt;): void {
+    this.observers.add(observer);
+  }
+
+  unsubscribe(observer: Observer&lt;T&gt;): void {
+    this.observers.delete(observer);
+  }
+
+  protected notify(data: T): void {
+    for (const observer of this.observers) {
+      observer.update(data);
+    }
+  }
+}
+
+// ── ConcreteSubject ───────────────────────────────────────────
+class EstacaoMeteorologica extends Subject&lt;DadosMeteo&gt; {
+  private temperatura = 0;
+  private umidade = 0;
+
+  setMedicao(temperatura: number, umidade: number): void {
+    this.temperatura = temperatura;
+    this.umidade = umidade;
+    this.notify({ temperatura: this.temperatura, umidade: this.umidade });
+  }
+}
+
+// ── ConcreteObservers ─────────────────────────────────────────
+class PainelAtual implements Observer&lt;DadosMeteo&gt; {
+  update(data: DadosMeteo): void {
+    console.log(
+      `[Painel] Temp: ${data.temperatura}C  Umidade: ${data.umidade}%`
+    );
+  }
+}
+
+class DisplayAlertas implements Observer&lt;DadosMeteo&gt; {
+  update(data: DadosMeteo): void {
+    if (data.temperatura &gt; 35) {
+      console.log("[ALERTA] Temperatura critica:", data.temperatura + "C");
+    }
+    if (data.umidade &lt; 30) {
+      console.log("[ALERTA] Umidade baixa:", data.umidade + "%");
+    }
+  }
+}
+
+class GraficoHistorico implements Observer&lt;DadosMeteo&gt; {
+  private readonly historico: DadosMeteo[] = [];
+
+  update(data: DadosMeteo): void {
+    this.historico.push(data);
+    console.log(`[Grafico] Registros: ${this.historico.length}`);
+  }
+
+  getDados(): readonly DadosMeteo[] {
+    return this.historico;
+  }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+const estacao = new EstacaoMeteorologica();
+const painel = new PainelAtual();
+const alertas = new DisplayAlertas();
+const grafico = new GraficoHistorico();
+
+estacao.subscribe(painel);
+estacao.subscribe(alertas);
+estacao.subscribe(grafico);
+
+estacao.setMedicao(25, 60);
+// [Painel] Temp: 25C  Umidade: 60%
+// [Grafico] Registros: 1
+
+estacao.setMedicao(38, 25);
+// [Painel] Temp: 38C  Umidade: 25%
+// [ALERTA] Temperatura critica: 38C
+// [ALERTA] Umidade baixa: 25%
+// [Grafico] Registros: 2
+
+// Cancelar inscrição do painel — não recebe mais notificações.
+estacao.unsubscribe(painel);
+estacao.setMedicao(20, 70);
+// [Grafico] Registros: 3  (painel não foi notificado)</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Interfaces ────────────────────────────────────────────────
+// PHP possui SplSubject e SplObserver nativos; aqui usamos
+// interfaces manuais para maior clareza e tipagem explícita.
+
+interface DadosMeteo
+{
+    public function getTemperatura(): float;
+    public function getUmidade(): float;
+}
+
+interface ObserverMeteo
+{
+    public function update(DadosMeteo $data): void;
+}
+
+// ── Value Object ──────────────────────────────────────────────
+final class Medicao implements DadosMeteo
+{
+    public function __construct(
+        private readonly float $temperatura,
+        private readonly float $umidade
+    ) {}
+
+    public function getTemperatura(): float { return $this-&gt;temperatura; }
+    public function getUmidade(): float     { return $this-&gt;umidade; }
+}
+
+// ── ConcreteSubject ───────────────────────────────────────────
+class EstacaoMeteorologica
+{
+    /** @var ObserverMeteo[] */
+    private array $observers = [];
+
+    public function subscribe(ObserverMeteo $observer): void
+    {
+        $this-&gt;observers[] = $observer;
+    }
+
+    public function unsubscribe(ObserverMeteo $observer): void
+    {
+        $this-&gt;observers = array_filter(
+            $this-&gt;observers,
+            fn($o) =&gt; $o !== $observer
+        );
+    }
+
+    public function setMedicao(float $temperatura, float $umidade): void
+    {
+        $dados = new Medicao($temperatura, $umidade);
+        foreach ($this-&gt;observers as $observer) {
+            $observer-&gt;update($dados);
+        }
+    }
+}
+
+// ── ConcreteObservers ─────────────────────────────────────────
+class PainelAtual implements ObserverMeteo
+{
+    public function update(DadosMeteo $data): void
+    {
+        printf(
+            "[Painel] Temp: %.1fC  Umidade: %.1f%%\n",
+            $data-&gt;getTemperatura(),
+            $data-&gt;getUmidade()
+        );
+    }
+}
+
+class DisplayAlertas implements ObserverMeteo
+{
+    public function update(DadosMeteo $data): void
+    {
+        if ($data-&gt;getTemperatura() &gt; 35) {
+            echo "[ALERTA] Temperatura critica: " . $data-&gt;getTemperatura() . "C\n";
+        }
+        if ($data-&gt;getUmidade() &lt; 30) {
+            echo "[ALERTA] Umidade baixa: " . $data-&gt;getUmidade() . "%\n";
+        }
+    }
+}
+
+class GraficoHistorico implements ObserverMeteo
+{
+    /** @var DadosMeteo[] */
+    private array $historico = [];
+
+    public function update(DadosMeteo $data): void
+    {
+        $this-&gt;historico[] = $data;
+        echo "[Grafico] Registros: " . count($this-&gt;historico) . "\n";
+    }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+$estacao = new EstacaoMeteorologica();
+$painel  = new PainelAtual();
+$alertas = new DisplayAlertas();
+$grafico = new GraficoHistorico();
+
+$estacao-&gt;subscribe($painel);
+$estacao-&gt;subscribe($alertas);
+$estacao-&gt;subscribe($grafico);
+
+$estacao-&gt;setMedicao(25, 60);
+// [Painel] Temp: 25.0C  Umidade: 60.0%
+// [Grafico] Registros: 1
+
+$estacao-&gt;setMedicao(38, 25);
+// [Painel] Temp: 38.0C  Umidade: 25.0%
+// [ALERTA] Temperatura critica: 38C
+// [ALERTA] Umidade baixa: 25%
+// [Grafico] Registros: 2
+
+// Cancelar inscrição do painel.
+$estacao-&gt;unsubscribe($painel);
+$estacao-&gt;setMedicao(20, 70);
+// [Grafico] Registros: 3</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 1) -->
+
+          <h3>Exemplo 2 — Sistema de eventos tipado (modelo pull)</h3>
+          <p>
+            No modelo pull, o Subject notifica apenas que algo mudou (passando uma referência
+            a si mesmo). Cada Observer consulta os dados que precisa. Este padrão é mais
+            flexível quando o Subject tem estado rico e diferentes Observers precisam de
+            subconjuntos distintos de informação.
+          </p>
+
+          <!-- GRUPO DE ABAS 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 2 — modelo pull">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// Modelo pull: o Observer recebe referência ao Subject e
+// "puxa" apenas os dados que precisa.
+
+interface PedidoObserver {
+  onPedidoAtualizado(pedido: Pedido): void;
+}
+
+class Pedido {
+  private readonly observers: Set&lt;PedidoObserver&gt; = new Set();
+
+  private _status: string = "rascunho";
+  private _itens: string[] = [];
+
+  subscribe(o: PedidoObserver): void    { this.observers.add(o); }
+  unsubscribe(o: PedidoObserver): void  { this.observers.delete(o); }
+
+  get status(): string            { return this._status; }
+  get itens(): readonly string[]  { return this._itens; }
+  get total(): number             { return this._itens.length * 50; } // R$50/item (simplificado)
+
+  adicionarItem(item: string): void {
+    this._itens.push(item);
+    this.notificar();
+  }
+
+  avancarStatus(novoStatus: string): void {
+    this._status = novoStatus;
+    this.notificar();
+  }
+
+  private notificar(): void {
+    for (const o of this.observers) {
+      o.onPedidoAtualizado(this); // passa `this` — o Observer puxa o que precisar
+    }
+  }
+}
+
+// Observer que só liga para o status:
+class LogDeStatus implements PedidoObserver {
+  onPedidoAtualizado(pedido: Pedido): void {
+    console.log(`[Log] Status atual: ${pedido.status}`);
+  }
+}
+
+// Observer que só liga para o total:
+class CalculadoraTotais implements PedidoObserver {
+  onPedidoAtualizado(pedido: Pedido): void {
+    console.log(`[Total] R$${pedido.total.toFixed(2)} (${pedido.itens.length} itens)`);
+  }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+const pedido = new Pedido();
+pedido.subscribe(new LogDeStatus());
+pedido.subscribe(new CalculadoraTotais());
+
+pedido.adicionarItem("Teclado");
+// [Log] Status atual: rascunho
+// [Total] R$50.00 (1 itens)
+
+pedido.adicionarItem("Mouse");
+// [Log] Status atual: rascunho
+// [Total] R$100.00 (2 itens)
+
+pedido.avancarStatus("confirmado");
+// [Log] Status atual: confirmado
+// [Total] R$100.00 (2 itens)</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// Modelo pull em PHP — Observer recebe referência ao Subject.
+
+interface PedidoObserver
+{
+    public function onPedidoAtualizado(Pedido $pedido): void;
+}
+
+class Pedido
+{
+    /** @var PedidoObserver[] */
+    private array $observers = [];
+
+    private string $status = 'rascunho';
+    /** @var string[] */
+    private array $itens = [];
+
+    public function subscribe(PedidoObserver $o): void
+    {
+        $this-&gt;observers[] = $o;
+    }
+
+    public function unsubscribe(PedidoObserver $o): void
+    {
+        $this-&gt;observers = array_filter($this-&gt;observers, fn($obs) =&gt; $obs !== $o);
+    }
+
+    public function getStatus(): string     { return $this-&gt;status; }
+    public function getItens(): array       { return $this-&gt;itens; }
+    public function getTotal(): float       { return count($this-&gt;itens) * 50.0; }
+
+    public function adicionarItem(string $item): void
+    {
+        $this-&gt;itens[] = $item;
+        $this-&gt;notificar();
+    }
+
+    public function avancarStatus(string $novoStatus): void
+    {
+        $this-&gt;status = $novoStatus;
+        $this-&gt;notificar();
+    }
+
+    private function notificar(): void
+    {
+        foreach ($this-&gt;observers as $o) {
+            $o-&gt;onPedidoAtualizado($this);
+        }
+    }
+}
+
+class LogDeStatus implements PedidoObserver
+{
+    public function onPedidoAtualizado(Pedido $pedido): void
+    {
+        echo "[Log] Status atual: " . $pedido-&gt;getStatus() . "\n";
+    }
+}
+
+class CalculadoraTotais implements PedidoObserver
+{
+    public function onPedidoAtualizado(Pedido $pedido): void
+    {
+        printf(
+            "[Total] R$%.2f (%d itens)\n",
+            $pedido-&gt;getTotal(),
+            count($pedido-&gt;getItens())
+        );
+    }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+$pedido = new Pedido();
+$pedido-&gt;subscribe(new LogDeStatus());
+$pedido-&gt;subscribe(new CalculadoraTotais());
+
+$pedido-&gt;adicionarItem('Teclado');
+// [Log] Status atual: rascunho
+// [Total] R$50.00 (1 itens)
+
+$pedido-&gt;adicionarItem('Mouse');
+// [Log] Status atual: rascunho
+// [Total] R$100.00 (2 itens)
+
+$pedido-&gt;avancarStatus('confirmado');
+// [Log] Status atual: confirmado
+// [Total] R$100.00 (2 itens)</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 2) -->
+
+        </section><!-- /.artigo__secao (exemplos) -->
+
+        <!-- 6. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Quando uma mudança em um objeto exige atualizar outros</strong> e
+              você não sabe quantos ou quais serão em tempo de projeto. Sistemas de
+              notificação, feeds de dados ao vivo, pipelines de processamento.
+            </li>
+            <li>
+              <strong>Quando os observadores precisam ser registrados e removidos
+              dinamicamente</strong> em runtime — módulos que entram e saem do sistema
+              sem exigir recompilação.
+            </li>
+            <li>
+              <strong>Para implementar MVC/MVP:</strong> o Model é o Subject; Views são
+              Observers que se atualizam automaticamente quando o Model muda. É a base de
+              data-binding em Angular, Vue e similares.
+            </li>
+            <li>
+              <strong>Quando você quer desacoplar o produtor de dados de seus consumidores</strong>
+              sem introduzir um broker intermediário (use Pub/Sub para isso).
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>Quando a ordem de notificação importa e é crítica:</strong> o Observer
+              não garante ordem de notificação por padrão. Se o Observer B depende de que o
+              Observer A já processou a notificação, o padrão puro não garante isso — é
+              necessária lógica adicional.
+            </li>
+            <li>
+              <strong>Quando os observadores são poucos, fixos e conhecidos:</strong> uma
+              chamada direta é mais simples e rastreável do que montar a infra do Observer.
+            </li>
+            <li>
+              <strong>Quando notificações em cascata são prováveis:</strong> se um Observer
+              modifica o Subject durante o <code>update</code>, disparando novas notificações,
+              o sistema pode entrar em loops ou comportamentos imprevisíveis.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Desacopla o Subject dos seus Observers — o Subject não precisa conhecer os tipos concretos.</li>
+            <li>Observadores podem ser adicionados e removidos em runtime sem alterar o Subject.</li>
+            <li>Segue o Princípio Aberto/Fechado — novos Observers não exigem modificar o Subject.</li>
+            <li>Base natural para sistemas reativos, data-binding e event-driven architecture.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Vazamento de memória: Observers não removidos mantêm o Subject (e si mesmos) vivos — armadilha clássica em linguagens com GC.</li>
+            <li>Ordem de notificação indeterminada: dependências entre Observers são difíceis de gerenciar.</li>
+            <li>Atualizações em cascata: um Observer que modifica o Subject pode disparar notificações inesperadas.</li>
+            <li>Difícil rastrear o fluxo de dados: com muitos Observers, entender "quem disparou o quê" requer ferramentas de debug específicas.</li>
+          </ul>
+        </section>
+
+        <!-- 8. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Vazamento de memória por não cancelar inscrição</h3>
+          <p>
+            A armadilha mais frequente: registrar um Observer e esquecer de chamar
+            <code>unsubscribe</code> quando ele não é mais necessário. Enquanto o Subject
+            existir, ele mantém uma referência forte ao Observer — impedindo que o GC
+            colete o objeto. Em ambientes de longa vida (servidores, SPAs), o acúmulo de
+            Observers "mortos" causa vazamento de memória.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Solução:</strong> use <code>Set</code> (facilita remoção por referência),
+            retorne uma função de cancelamento (<em>disposable</em>) no <code>subscribe</code>,
+            ou use <code>WeakRef</code> para Observers opcionais. Em TypeScript com RxJS, use
+            <code>takeUntil</code> e <code>unsubscribe</code> no ciclo de vida do componente.
+          </p>
+
+          <h3>2. Atualizações em cascata</h3>
+          <p>
+            Se um Observer chama um método do Subject que dispara outra rodada de notificações,
+            o resultado pode ser um loop infinito ou uma ordem de atualização imprevisível.
+            A regra prática: Observers não devem modificar o estado do Subject durante o
+            <code>update</code>. Se precisar, use um mecanismo de fila de eventos (next tick,
+            microtask, setTimeout) para processar a mudança fora do ciclo atual de notificação.
+          </p>
+
+          <h3>3. Notificações excessivas</h3>
+          <p>
+            Um Subject que notifica a cada pequena mudança (ex.: cada keystroke em um campo
+            de texto) pode sobrecarregar Observers lentos. Técnicas de mitigação: debounce
+            (agrupa mudanças em um intervalo de tempo), dirty flag (notifica só se o valor
+            realmente mudou) ou notificação em lote (acumula mudanças e notifica uma vez no
+            final do ciclo).
+          </p>
+
+          <h3>4. Confundir Observer com Pub/Sub</h3>
+          <p>
+            Observer implica conhecimento direto: o Subject mantém a lista de Observers e
+            os chama diretamente. Pub/Sub usa um broker intermediário (EventEmitter, Message
+            Bus) que desacopla completamente publicadores de assinantes. Use Observer quando
+            o acoplamento direto é aceitável; use Pub/Sub quando precisar de desacoplamento
+            entre módulos ou serviços independentes.
+          </p>
+        </section>
+
+        <!-- 9. PADRÕES RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Padrões relacionados</h2>
+          <p>
+            O Observer se relaciona com outros padrões comportamentais e estruturais:
+          </p>
+          <!--
+            Disciplina de links: só linka artigos já publicados.
+            Strategy existe → link real.
+            State e Template Method agora existem → links reais.
+            Mediator publicado → link real.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../strategy/">Strategy</a></li>
+            <li><a href="../state/">State</a></li>
+            <li><a href="../mediator/">Mediator</a></li>
+          </ul>
+          <p class="mt-1">
+            O <strong>Strategy</strong> e o Observer compartilham o uso de interfaces para
+            desacoplamento, mas com propósitos diferentes: Strategy troca algoritmos no
+            contexto; Observer distribui notificações de estado para múltiplos receptores.
+            O <strong>State</strong> também gerencia notificações implícitas quando o objeto
+            muda de estado — em algumas implementações, o Estado notifica um Observer ou
+            usa um Subject para propagar a mudança. O <strong>Mediator</strong> centraliza
+            a comunicação entre objetos, eliminando referências diretas entre eles — é uma
+            alternativa ao Observer quando muitos objetos precisam se comunicar de forma
+            bidirecional, pois o Observer ainda acopla o Subject aos seus Observers pela
+            lista de registros.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="8484848484"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

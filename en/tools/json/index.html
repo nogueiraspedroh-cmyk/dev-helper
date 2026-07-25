@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JSON Formatter and Validator — Dev Helper</title>
+  <meta name="description" content="Format, validate and minify JSON directly in your browser. Supports 2-space, 4-space or tab indentation." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../tools/json/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!--
+    AdSense — biblioteca carregada UMA vez por página.
+    Substitua ca-pub-0000000000000000 pelo seu pub-ID real antes do deploy.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../../../biblioteca/">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>JSON Formatter and Validator</h1>
+        <p>Paste your JSON below to format, minify or validate the syntax.</p>
+      </header>
+
+      <div class="tool__controls">
+        <!-- Textarea de entrada -->
+        <textarea
+          id="json-input"
+          class="tool__input"
+          placeholder='Paste your JSON here, for example: {"name":"Dev Helper","version":1}'
+          spellcheck="false"
+          autocorrect="off"
+          autocapitalize="off"
+        ></textarea>
+
+        <!-- Linha de ações -->
+        <div class="tool__actions">
+          <button id="btn-format" class="button" type="button">Format</button>
+          <button id="btn-minify" class="button--secondary" type="button">Minify</button>
+          <button id="btn-clear" class="button--secondary" type="button">Clear</button>
+          <button id="btn-copy" class="button--secondary" type="button">Copy</button>
+
+          <label class="tool__label" for="indent-select">Indent:</label>
+          <select id="indent-select" class="tool__select">
+            <option value="2" selected>2 spaces</option>
+            <option value="4">4 spaces</option>
+            <option value="tab">Tab</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Área de saída -->
+      <div class="tool__output">
+        <textarea
+          id="json-output"
+          class="result"
+          placeholder="The result will appear here..."
+          readonly
+          spellcheck="false"
+          autocorrect="off"
+          autocapitalize="off"
+        ></textarea>
+
+        <!-- Mensagem de erro de sintaxe -->
+        <p id="json-error" class="error-msg" role="alert" hidden></p>
+      </div>
+    </article>
+
+    <!-- Bloco de anúncio — abaixo do resultado da ferramenta -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="1111111111"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Conteúdo real — exigido pelo AdSense -->
+    <section>
+      <h2>What is JSON and what is this tool for?</h2>
+      <p>
+        <strong>JSON</strong> (JavaScript Object Notation) is a lightweight data-interchange format,
+        widely used in REST APIs, configuration files and communication between services.
+        Its syntax is readable by humans and easily parsed by machines — which has made it
+        the de facto standard for structured data on the web.
+      </p>
+      <p>
+        This tool allows three main operations directly in your browser:
+      </p>
+      <ul>
+        <li>
+          <strong>Format (pretty-print):</strong> adds line breaks and configurable
+          indentation (2 spaces, 4 spaces or tab), making the JSON readable for debugging
+          and code review.
+        </li>
+        <li>
+          <strong>Minify:</strong> removes spaces, line breaks and unnecessary
+          characters, reducing payload size before saving or transmitting.
+        </li>
+        <li>
+          <strong>Validate syntax:</strong> identifies formatting errors — unclosed braces,
+          trailing commas, missing quotes — and displays the parser's error message
+          with the approximate position of the problem.
+        </li>
+      </ul>
+
+      <h2>Frequently Asked Questions (FAQ)</h2>
+
+      <h3>What is the difference between formatting and minifying?</h3>
+      <p>
+        Formatting adds indentation and line breaks to make it easier for humans to read.
+        Minifying does the opposite: it produces a compact string, with no extra spaces, ideal
+        for production (smaller payload size, lower bandwidth usage).
+      </p>
+
+      <h3>What does a JSON syntax error mean?</h3>
+      <p>
+        A syntax error means the text does not follow the rules of the JSON format. Common
+        causes: using single quotes instead of double quotes, including a trailing comma after
+        the last item in an object or array, leaving braces/brackets unmatched, or including
+        comments (JSON does not support comments, unlike JavaScript).
+      </p>
+
+      <h3>Can I use tab as indentation?</h3>
+      <p>
+        Yes. Select the <em>Tab</em> option in the indent selector before clicking
+        <em>Format</em>. Choosing between spaces and tab is a team preference —
+        the resulting JSON is equally valid with either option.
+      </p>
+
+      <h3>Does the tool support very large JSON?</h3>
+      <p>
+        Yes, within the browser's memory limits. For very large files
+        (above a few megabytes), processing may be slower. No artificial size
+        limit is imposed by the tool.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/tools-en/json.js"></script>
+</body>
+</html>

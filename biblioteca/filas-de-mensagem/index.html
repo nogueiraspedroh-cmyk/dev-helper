@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Filas de Mensagem — Dev Helper Biblioteca</title>
+  <meta name="description" content="Entenda filas de mensagem: desacoplamento de produtores e consumidores, semânticas de entrega (at-most-once, at-least-once, exactly-once), Dead Letter Queue, RabbitMQ vs Kafka e as armadilhas do consumer não idempotente." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Filas de Mensagem</span>
+        </nav>
+        <span class="artigo__categoria">System Design</span>
+        <h1 class="artigo__titulo">Filas de Mensagem</h1>
+        <p class="artigo__subtitulo">
+          Desacoplam produtores de consumidores, absorvem picos de carga e garantem
+          entrega de mensagens mesmo quando o consumidor está temporariamente
+          indisponível. O intermediário (broker) assume a responsabilidade de
+          armazenar e entregar — liberando o produtor para seguir em frente.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Separar o momento em que o produtor gera uma mensagem do
+            momento em que o consumidor a processa.</strong> Filas de mensagem
+            introduzem um intermediário durável (o broker) que armazena a mensagem
+            até que o consumidor esteja pronto para processá-la, eliminando o
+            acoplamento temporal entre os dois lados.
+          </p>
+          <p>
+            Sem filas, o produtor precisa que o consumidor esteja disponível,
+            saudável e rápido no exato momento da chamada. Com filas, o produtor
+            entrega ao broker e segue em frente. O consumidor processa no seu
+            próprio ritmo — podendo estar offline, em manutenção ou simplesmente
+            mais lento que o produtor por um período. O broker absorve essa diferença.
+          </p>
+          <p>
+            O resultado prático é um sistema mais resiliente: falhas transientes
+            do consumidor não causam perda de mensagens; picos de carga do produtor
+            não se propagam diretamente para o consumidor; e múltiplos consumidores
+            podem processar o mesmo volume em paralelo sem coordenação explícita
+            entre eles.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Chamadas síncronas diretas entre serviços criam dependências de
+            disponibilidade, latência e capacidade que se tornam cada vez mais
+            custosas à medida que o sistema cresce:
+          </p>
+          <ul>
+            <li>
+              <strong>Acoplamento temporal:</strong> se o serviço de e-mail está
+              fora do ar no momento em que o usuário finaliza o cadastro, a
+              requisição HTTP falha e o usuário recebe um erro — mesmo que o
+              cadastro em si tenha sido bem-sucedido. O produtor (cadastro) está
+              acoplado à disponibilidade do consumidor (e-mail).
+            </li>
+            <li>
+              <strong>Propagação de picos:</strong> uma promoção relâmpago multiplica
+              pedidos por dez em poucos minutos. Se a geração de PDF do comprovante
+              é síncrona, o serviço de PDF recebe o mesmo pico e pode colapsar —
+              degradando o fluxo principal de pagamento junto.
+            </li>
+            <li>
+              <strong>Velocidades assimétricas:</strong> o produtor gera eventos na
+              velocidade do usuário; o consumidor processa na velocidade do banco ou
+              de uma API externa mais lenta. Sem buffer, o consumidor precisa ter
+              capacidade para o pico máximo do produtor em tempo real.
+            </li>
+            <li>
+              <strong>Reprocessamento de falhas:</strong> quando um processamento
+              falha em uma chamada síncrona, a lógica de retry fica no produtor.
+              Com filas, o broker gerencia retentativas e o histórico de falhas é
+              visível na Dead Letter Queue.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. COMO FUNCIONA -->
+        <section class="artigo__secao">
+          <h2>Como funciona</h2>
+
+          <h3>Conceitos fundamentais</h3>
+          <p>
+            Os papéis e componentes centrais de qualquer sistema de mensageria:
+          </p>
+          <div class="code-bloco">
+<pre><code>  QUEUE (point-to-point) — cada mensagem vai para exatamente um consumer
+
+  ┌──────────┐   publica    ┌───────────────────┐   consome    ┌────────────┐
+  │ Producer │─────────────►│   Broker / Queue  │─────────────►│ Consumer A │
+  └──────────┘              │                   │              └────────────┘
+                            │  [msg1][msg2][msg3]│
+  ┌──────────┐   publica    │                   │   consome    ┌────────────┐
+  │ Producer │─────────────►│                   │─────────────►│ Consumer B │
+  └──────────┘              └───────────────────┘              └────────────┘
+
+  Consumer A e B competem pela mesma mensagem (Competing Consumers).
+  msg1 → Consumer A, msg2 → Consumer B, msg3 → Consumer A.
+  Scale-out: adicionar Consumer C aumenta o throughput sem mudar o producer.
+
+  TOPIC / PUB-SUB — cada mensagem vai para TODOS os subscribers
+
+  ┌──────────┐  publica   ┌──────────┐  entrega  ┌─────────────┐
+  │ Producer │───────────►│  Topic   │───────────►│ Subscriber 1│
+  └──────────┘            └──────────┘     │      └─────────────┘
+                                           │      ┌─────────────┐
+                                           └─────►│ Subscriber 2│
+                                                  └─────────────┘
+  Semântica de broadcast/evento: todos os subscribers recebem a mesma cópia.
+</code></pre>
+          </div>
+          <ul>
+            <li><strong>Producer:</strong> quem publica a mensagem no broker. Não sabe quem vai consumir nem quando.</li>
+            <li><strong>Consumer:</strong> quem processa a mensagem. Pode haver múltiplos consumidores competindo (fila) ou múltiplos subscribers independentes (tópico).</li>
+            <li><strong>Broker:</strong> o intermediário que armazena e entrega. Exemplos: RabbitMQ, Apache Kafka, Amazon SQS, Google Pub/Sub, Azure Service Bus.</li>
+            <li><strong>Queue (point-to-point):</strong> cada mensagem é consumida por exatamente um consumer. Semântica de trabalho distribuído — ideal para tarefas.</li>
+            <li><strong>Topic / Pub-Sub:</strong> mensagem publicada chega a todos os subscribers registrados. Semântica de evento — ideal para notificações e integrações.</li>
+          </ul>
+
+          <h3>Padrões de entrega</h3>
+          <p>
+            A semântica de entrega define o que acontece quando uma mensagem é
+            publicada e o que o consumer pode esperar receber:
+          </p>
+          <div class="code-bloco">
+<pre><code>  AT-MOST-ONCE (no máximo uma vez)
+    Producer publica → Broker armazena → Consumer recebe → ACK antes de processar
+    Resultado: mensagem pode se perder (se consumer cair após ACK, antes de processar).
+    Nunca duplicada. Fire-and-forget. Uso: métricas, logs não-críticos.
+
+  AT-LEAST-ONCE (pelo menos uma vez)
+    Producer publica → Broker armazena → Consumer processa → ACK após processar
+    Resultado: mensagem entregue ao menos uma vez.
+    Pode ser duplicada se consumer cair após processar mas antes do ACK.
+    Uso: a maioria dos sistemas. Consumer DEVE ser idempotente.
+
+  EXACTLY-ONCE (exatamente uma vez)
+    Sem perda, sem duplicata. Requer coordenação:
+      - Transactional Outbox: producer persiste no banco + tabela outbox
+        na mesma transação; worker lê outbox e publica no broker.
+      - Two-Phase Commit: coordenação distribuída entre banco e broker.
+      - Idempotency keys: consumer detecta e ignora duplicatas por chave única.
+    Uso: transações financeiras, débitos em conta. Alto custo operacional.
+</code></pre>
+          </div>
+          <p class="artigo__aviso">
+            <strong>Regra prática:</strong> projete consumers idempotentes e use
+            semântica at-least-once. Exactly-once é caro para implementar e operar
+            — na maioria dos casos, idempotência no consumer resolve o problema de
+            duplicatas com muito menos complexidade.
+          </p>
+
+          <h3>Dead Letter Queue (DLQ)</h3>
+          <p>
+            Quando uma mensagem falha no processamento N vezes consecutivas (limite
+            configurável), o broker a move para uma fila separada chamada Dead Letter
+            Queue (DLQ) em vez de continuar retentando indefinidamente.
+          </p>
+          <div class="code-bloco">
+<pre><code>  Fila principal
+  [msg-ok][msg-ok][msg-veneno][msg-ok]
+                      │
+                      │ falha 3x (maxReceiveCount = 3)
+                      ▼
+  Dead Letter Queue
+  [msg-veneno]  ← visível para monitoramento e reprocessamento manual
+
+  Benefícios:
+    - Evita que uma "poison message" bloqueie a fila principal indefinidamente.
+    - Cria visibilidade sobre mensagens que não puderam ser processadas.
+    - Permite reprocessamento manual após correção do bug no consumer.
+    - Alertas no DLQ sinalizam problemas no consumer sem afetar o fluxo principal.
+</code></pre>
+          </div>
+
+          <h3>RabbitMQ vs Kafka</h3>
+          <p>
+            Os dois brokers mais comuns têm filosofias fundamentalmente distintas:
+          </p>
+          <div class="code-bloco">
+<pre><code>  RABBITMQ — broker inteligente, consumer passivo
+
+  Producer → Exchange → Binding → Queue → Consumer
+                          │
+                   roteamento flexível:
+                   Direct, Topic, Fanout, Headers
+
+  - Mensagem deletada do broker após ACK do consumer.
+  - Broker controla qual consumer recebe qual mensagem.
+  - Ideal para: work queues, RPC assíncrono, roteamento complexo.
+  - Quando consumer está offline: mensagem fica na fila aguardando.
+
+  KAFKA — log distribuído durável, consumer inteligente
+
+  Producer → Topic (particionado) → Consumer Group
+                    │
+               offset controlado pelo consumer
+
+  - Mensagem RETIDA por tempo configurável (ex.: 7 dias), não deletada.
+  - Consumer controla o próprio offset (posição de leitura).
+  - Replay: consumer pode reler mensagens antigas reposicionando o offset.
+  - Ideal para: event streaming, audit log, event sourcing, alto throughput.
+  - Particionamento: mensagens com a mesma partition key vão para a mesma
+    partição, garantindo ordem dentro de uma partition key.
+</code></pre>
+          </div>
+          <p>
+            A escolha entre os dois não é de performance apenas — é de modelo
+            mental. RabbitMQ pensa em <em>tarefas a executar</em>; Kafka pensa em
+            <em>eventos que aconteceram</em>. Um pedido de "gerar PDF" é uma tarefa
+            (RabbitMQ). Um evento "pedido criado" que múltiplos serviços precisam
+            consumir de forma independente é um evento (Kafka).
+          </p>
+        </section>
+
+        <!-- 4. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Tarefas demoradas fora do fluxo HTTP:</strong> envio de
+              e-mail, geração de PDF, redimensionamento de imagem, notificações push.
+              O usuário não deve esperar por essas operações — elas vão para a fila
+              e o response HTTP é imediato.
+            </li>
+            <li>
+              <strong>Absorção de picos de carga:</strong> quando o producer pode
+              gerar mensagens muito mais rápido do que o consumer consegue processar
+              em tempo real, a fila funciona como buffer. Os consumers processam no
+              seu ritmo sem colapsar e o backlog é consumido gradualmente.
+            </li>
+            <li>
+              <strong>Comunicação entre microsserviços desacoplados:</strong> em vez
+              de chamadas HTTP síncronas que criam dependências de disponibilidade,
+              serviços publicam eventos no broker e outros serviços consomem de forma
+              independente — podendo evoluir, escalar e falhar de forma isolada.
+            </li>
+            <li>
+              <strong>Audit log e event sourcing:</strong> Kafka retém mensagens por
+              tempo configurável, tornando o log de eventos o registro canônico de
+              tudo que aconteceu no sistema. Projeções e relatórios podem ser
+              reconstruídos a partir do offset zero.
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>Quando o producer precisa da resposta do consumer imediatamente:</strong>
+              filas são assíncronas por natureza. Se o fluxo exige saber o resultado
+              do processamento antes de continuar (ex.: validar um cartão de crédito),
+              use RPC síncrono (REST, gRPC) — não fila.
+            </li>
+            <li>
+              <strong>Volume tão baixo que a fila é overhead operacional puro:</strong>
+              um sistema que envia 10 e-mails por dia não precisa de broker, consumer,
+              DLQ, monitoramento de lag e alertas. Uma chamada síncrona com retry
+              simples resolve com zero infraestrutura adicional.
+            </li>
+            <li>
+              <strong>Quando exactly-once é crítico e o custo não pode ser pago:</strong>
+              se a semântica de exactly-once é obrigatória (débito financeiro, geração
+              de número de nota fiscal) mas a equipe não tem experiência para implementar
+              Transactional Outbox ou idempotency keys corretamente, o risco de duplicatas
+              silenciosas é alto. Nesse caso, avalie uma transação síncrona com
+              idempotência no banco antes de introduzir mensageria.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 5. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Desacoplamento temporal: producer e consumer não precisam estar online ao mesmo tempo.</li>
+            <li>Resiliência: falhas transientes do consumer não causam perda de mensagens — elas ficam no broker aguardando.</li>
+            <li>Absorção de picos: o broker funciona como buffer entre velocidades assimétricas de produção e consumo.</li>
+            <li>Scale-out de processamento: adicionar consumers aumenta o throughput de forma horizontal sem mudar o producer.</li>
+            <li>Visibilidade de falhas: DLQ torna mensagens problemáticas visíveis e reprocessáveis sem perda.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Complexidade operacional: broker, consumers, DLQ, monitoramento de lag, alertas e estratégia de retry precisam ser configurados, operados e monitorados.</li>
+            <li>Debugging mais difícil: rastrear o caminho de uma mensagem do producer ao consumer atravessa broker, filas, offsets e logs distribuídos.</li>
+            <li>Latência adicional: o processamento é assíncrono — o resultado não está disponível imediatamente após a publicação.</li>
+            <li>Idempotência obrigatória: com semântica at-least-once, consumers devem ser projetados para receber duplicatas sem corromper dados.</li>
+          </ul>
+        </section>
+
+        <!-- 6. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Consumer não idempotente com at-least-once</h3>
+          <p>
+            A semântica at-least-once é a padrão na maioria dos brokers. Isso
+            significa que duplicatas são possíveis — e vão acontecer em produção,
+            especialmente em reinicializações de consumer, deploys e falhas de rede.
+            Um consumer que debita R$ 100,00 de uma conta sem verificar se aquela
+            transação já foi processada vai debitar duas vezes quando a mensagem
+            for entregue duplicada. A idempotência deve ser projetada desde o início:
+            uma chave única por mensagem (idempotency key) armazenada no banco e
+            verificada antes de processar é o mecanismo mais simples e robusto.
+          </p>
+
+          <h3>2. Fila sem DLQ configurada</h3>
+          <p>
+            Sem DLQ, uma "poison message" — uma mensagem que o consumer nunca
+            consegue processar com sucesso (dados corrompidos, schema inesperado,
+            dependência externa indisponível) — entra em loop de retry indefinido.
+            Dependendo da configuração de visibilidade do broker, ela pode bloquear
+            o processamento de mensagens seguintes ou consumir recursos do consumer
+            em retentativas inúteis. Toda fila de produção deve ter uma DLQ
+            configurada antes de receber tráfego real.
+          </p>
+
+          <h3>3. Retry infinito antes de ter DLQ — a poison message trava o consumer</h3>
+          <p>
+            Mesmo com DLQ configurada, o <code>maxReceiveCount</code> (número de
+            tentativas antes de ir para DLQ) precisa ser calibrado. Um valor muito
+            alto (ex.: 100 tentativas) significa que uma poison message vai consumir
+            recursos e tempo antes de ir para a DLQ. Um valor muito baixo (ex.: 1)
+            significa que erros transientes legítimos vão para a DLQ sem ter chance
+            de se recuperar. O valor típico fica entre 3 e 10, com backoff
+            exponencial entre as tentativas.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Regra prática:</strong> configure DLQ e <code>maxReceiveCount</code>
+            antes do primeiro deploy em produção. Adicionar DLQ depois de ter mensagens
+            em loop é mais trabalhoso e pode exigir reprocessamento manual do backlog.
+          </p>
+
+          <h3>4. Tratar Kafka como fila RabbitMQ</h3>
+          <p>
+            Kafka não deleta mensagens após consumo — ele retém por tempo configurável
+            (padrão: 7 dias). O consumer controla sua própria posição (offset) no
+            log. Isso significa que se o consumer group é deletado e recriado, o
+            offset padrão pode ser <code>earliest</code> (início do log) ou
+            <code>latest</code> (apenas novas mensagens), dependendo da configuração.
+            Um consumer group recém-criado com <code>auto.offset.reset=earliest</code>
+            em um tópico com 7 dias de mensagens vai reprocessar tudo desde o início.
+            Entender offsets, consumer groups e a semântica de retenção é
+            pré-requisito para operar Kafka corretamente.
+          </p>
+        </section>
+
+        <!-- 7. RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Arquiteturas e padrões relacionados</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../event-driven/">Event-Driven Architecture</a></li>
+            <li><a href="../rest-vs-graphql-vs-grpc/">REST vs GraphQL vs gRPC</a></li>
+            <li><a href="../cqrs/">CQRS</a></li>
+            <li><a href="../escalabilidade-horizontal-vertical/">Escalabilidade Horizontal vs Vertical</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Event-Driven Architecture</strong> usa filas e brokers como
+            infraestrutura central. Um broker de mensagens (Kafka, RabbitMQ) é o
+            mecanismo de transporte dos eventos em uma EDA. A diferença está na
+            camada conceitual: EDA define o estilo arquitetural (componentes
+            comunicam-se por eventos, não por chamadas diretas); a fila é a
+            implementação técnica desse estilo. É possível ter EDA com RabbitMQ,
+            Kafka, SNS/SQS ou qualquer outro broker.
+          </p>
+          <p>
+            <strong>REST vs GraphQL vs gRPC</strong> define estilos de comunicação
+            síncrona ponto-a-ponto. Filas de mensagem são o complemento assíncrono:
+            quando o produtor não pode ou não deve aguardar a resposta do consumidor,
+            a fila substitui a chamada direta. Em microsserviços, é comum usar gRPC
+            ou REST para operações síncronas (consultas, validações) e filas para
+            operações assíncronas (tarefas, notificações, propagação de eventos).
+          </p>
+          <p>
+            <strong>CQRS</strong> usa filas para propagar Commands e eventos entre
+            o Write Model e o Read Model. No grau completo (bancos separados), o
+            CommandHandler publica um evento de domínio no broker após persistir a
+            escrita; um consumer do lado de leitura recebe o evento e atualiza o
+            Read Model. A fila é o mecanismo que torna a consistência eventual
+            gerenciável e auditável.
+          </p>
+          <p>
+            <strong>Escalabilidade Horizontal</strong> e o padrão Competing Consumers
+            são diretamente complementares. Adicionar instâncias de um consumer que
+            lê da mesma fila distribui o trabalho horizontalmente sem coordenação
+            explícita — o broker garante que cada mensagem seja entregue a exatamente
+            um consumer. Esse é um dos casos mais simples e efetivos de scale-out:
+            o throughput de processamento cresce linearmente com o número de consumers.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="5959595959"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

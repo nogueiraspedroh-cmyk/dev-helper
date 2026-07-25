@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conversor YAML ↔ JSON — Dev Helper</title>
+  <meta name="description" content="Converta YAML em JSON e JSON em YAML no navegador, com um parser YAML simplificado escrito à mão. Suporta mapas, listas, escalares, aninhamento por indentação, comentários e aspas." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../../biblioteca/">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Conversor YAML ↔ JSON</h1>
+        <p>Converta <strong>YAML → JSON</strong> e <strong>JSON → YAML</strong> nos dois sentidos. O parser YAML é <strong>simplificado e escrito à mão</strong> (sem bibliotecas externas) — veja abaixo exatamente o que é suportado.</p>
+      </header>
+
+      <div class="tool__controls">
+        <fieldset class="tool__fieldset">
+          <legend class="tool__legend">Direção</legend>
+          <label class="tool__radio-label"><input type="radio" name="yj-mode" value="auto" checked /> Automático</label>
+          <label class="tool__radio-label"><input type="radio" name="yj-mode" value="yaml2json" /> YAML → JSON</label>
+          <label class="tool__radio-label"><input type="radio" name="yj-mode" value="json2yaml" /> JSON → YAML</label>
+        </fieldset>
+
+        <label class="tool__label" for="yj-input">Entrada (YAML ou JSON)</label>
+        <textarea id="yj-input" class="tool__input" spellcheck="false" placeholder="app:&#10;  nome: exemplo&#10;  porta: 8080&#10;  tags:&#10;    - web&#10;    - api"></textarea>
+
+        <div class="tool__actions tool__actions--mt">
+          <button id="yj-convert" class="button" type="button">Converter</button>
+          <button id="yj-clear" class="button--secondary" type="button">Limpar</button>
+          <span id="yj-mode-info" class="tool__hint"></span>
+        </div>
+
+        <p id="yj-error" class="error-msg" role="alert" hidden></p>
+
+        <div class="tool__output">
+          <label class="tool__label" for="yj-output">Resultado</label>
+          <textarea id="yj-output" class="result" readonly spellcheck="false" aria-label="Resultado da conversão"></textarea>
+          <div class="tool__actions tool__actions--mt">
+            <button id="yj-copy" class="button--secondary" type="button">Copiar</button>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="2424242424"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <section>
+      <h2>Sobre o parser YAML simplificado</h2>
+      <p>
+        YAML é um formato de serialização de dados muito usado em arquivos de configuração
+        (Docker Compose, Kubernetes, CI/CD, etc.). O padrão completo é grande e cheio de recursos
+        avançados. Para manter este site <strong>100% estático e sem dependências</strong>, o parser
+        aqui é uma implementação própria que cobre o <strong>subconjunto mais comum</strong> do YAML —
+        o suficiente para a maioria dos arquivos de config do dia a dia.
+      </p>
+
+      <h2>O que é suportado</h2>
+      <ul>
+        <li><strong>Mapas</strong> (<code>chave: valor</code>) e <strong>listas</strong> (<code>- item</code>).</li>
+        <li><strong>Aninhamento por indentação</strong> usando <strong>espaços</strong>.</li>
+        <li>Escalares: <strong>string, número (inteiro e decimal), booleano</strong> (<code>true</code>/<code>false</code>) e <strong>null</strong> (<code>null</code> ou <code>~</code>).</li>
+        <li><strong>Aspas simples e duplas</strong> em valores e chaves, com escapes básicos nas aspas duplas (<code>\n</code>, <code>\t</code>, <code>\"</code>, <code>\\</code>).</li>
+        <li><strong>Comentários</strong> com <code>#</code> (inclusive no fim da linha).</li>
+        <li>Forma compacta <code>- chave: valor</code> para listas de objetos.</li>
+        <li>Coleções vazias <code>[]</code> e <code>{}</code>.</li>
+      </ul>
+
+      <h2>O que NÃO é suportado</h2>
+      <ul>
+        <li><strong>Âncoras e aliases</strong> (<code>&amp;</code>, <code>*</code>).</li>
+        <li><strong>Tags</strong> (<code>!!str</code>, <code>!!int</code>, etc.).</li>
+        <li><strong>Múltiplos documentos</strong> no mesmo arquivo (o separador <code>---</code> é ignorado; use um documento por vez).</li>
+        <li><strong>Blocos literais e dobrados</strong> (<code>|</code> e <code>&gt;</code>).</li>
+        <li><strong>Coleções inline não-vazias</strong> (<code>[1, 2, 3]</code> ou <code>{a: 1}</code>) — use a forma em bloco, indentada.</li>
+        <li><strong>Tabs</strong> na indentação (o YAML padrão também não permite) — use espaços.</li>
+      </ul>
+      <p>
+        Se a entrada usar um recurso não suportado, a ferramenta exibe uma <strong>mensagem de erro
+        legível</strong> em vez de produzir um resultado silenciosamente errado.
+      </p>
+
+      <h2>Perguntas frequentes (FAQ)</h2>
+
+      <h3>Por que não usar uma biblioteca YAML pronta?</h3>
+      <p>
+        O site é estático e sem etapa de build ou dependências externas (além do necessário para
+        anúncios). Um parser próprio e enxuto mantém essa promessa e roda inteiramente no seu navegador.
+      </p>
+
+      <h3>Uma string que parece número é preservada?</h3>
+      <p>
+        Sim. Ao gerar YAML a partir de JSON, valores de texto que se pareceriam com números, booleanos
+        ou <code>null</code> são automaticamente colocados entre aspas, para que a leitura de volta
+        continue tratando-os como texto.
+      </p>
+
+      <h3>Recebi um erro de indentação. O que fazer?</h3>
+      <p>
+        Confira se você está usando <strong>espaços</strong> (não tabs) e se os níveis estão alinhados
+        de forma consistente. A mensagem de erro indica a linha problemática.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/tools/yaml-json.js"></script>
+</body>
+</html>

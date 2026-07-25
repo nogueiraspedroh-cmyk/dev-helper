@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gerador e Validador de Conta Bancária — Dev Helper</title>
+  <meta name="description" content="Gere e valide números fictícios de conta bancária (agência, conta e DV) para testes de software. Suporte a Banco do Brasil, Bradesco e Caixa Econômica Federal com cálculo de dígito verificador por módulo 11." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="en" href="../../en/tools/conta-bancaria/" />
+
+  <!--
+    AdSense — biblioteca carregada UMA vez por página.
+    Substitua ca-pub-0000000000000000 pelo seu pub-ID real antes do deploy.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../../biblioteca/">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Gerador e Validador de Conta Bancária</h1>
+        <p>Gere e valide dados fictícios de conta bancária (agência, operação e conta com dígito verificador) para testes de software.</p>
+      </header>
+
+      <!-- AVISO DE COMPLIANCE — visível e destacado -->
+      <div class="conta-aviso" role="note" aria-label="Aviso importante">
+        <strong>Aviso:</strong> os dados gerados são <strong>fictícios e destinados exclusivamente a testes de software</strong>. Não correspondem a contas reais em nenhuma instituição financeira. O dígito verificador (DV) segue a regra de <strong>módulo 11 publicamente documentada</strong> de cada banco, que <strong>pode diferir da variante interna/oficial</strong> de cada instituição — não há vetor de teste oficial público. Veja detalhes no FAQ.
+      </div>
+
+      <!-- ── SEÇÃO: GERAR ─────────────────────────────────────────────────── -->
+      <section class="tool__section">
+        <h2 class="tool__section-title">Gerar conta</h2>
+
+        <div class="tool__controls">
+          <div class="tool__actions">
+            <label class="tool__label" for="banco-select">Banco:</label>
+            <select id="banco-select" class="tool__select">
+              <option value="bb">Banco do Brasil</option>
+              <option value="bradesco">Bradesco</option>
+              <option value="caixa">Caixa Econômica Federal</option>
+            </select>
+          </div>
+
+          <div class="tool__actions">
+            <button id="btn-gerar-conta" class="button" type="button">Gerar conta</button>
+          </div>
+        </div>
+
+        <!-- Área de resultado do gerador -->
+        <div class="tool__output" id="conta-resultado" hidden>
+          <div class="conta-resultado-grid">
+            <div class="cartao-campo">
+              <span class="cartao-campo__label">Banco</span>
+              <span id="out-banco" class="cartao-campo__valor"></span>
+            </div>
+            <div class="cartao-campo">
+              <span class="cartao-campo__label">Agência (com DV)</span>
+              <span id="out-agencia" class="cartao-campo__valor cartao-campo__valor--mono"></span>
+            </div>
+            <div class="cartao-campo" id="row-operacao" hidden>
+              <span class="cartao-campo__label">Operação</span>
+              <span id="out-operacao" class="cartao-campo__valor cartao-campo__valor--mono"></span>
+            </div>
+            <div class="cartao-campo">
+              <span class="cartao-campo__label">Conta (com DV)</span>
+              <span id="out-conta" class="cartao-campo__valor cartao-campo__valor--mono"></span>
+            </div>
+          </div>
+
+          <div class="tool__actions tool__actions--mt">
+            <button id="btn-copiar-conta" class="button--secondary" type="button">Copiar dados</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── SEÇÃO: VALIDAR ───────────────────────────────────────────────── -->
+      <section class="tool__section">
+        <h2 class="tool__section-title">Validar conta</h2>
+
+        <p class="conta-validar-aviso">Informe o banco, a agência (com DV) e a conta (com DV). A ferramenta recalcula o DV pela regra documentada e informa se confere. Isso <strong>não</strong> verifica a existência da conta em nenhum banco.</p>
+
+        <div class="tool__controls">
+          <div class="tool__actions">
+            <label class="tool__label" for="valid-banco-select">Banco:</label>
+            <select id="valid-banco-select" class="tool__select">
+              <option value="bb">Banco do Brasil</option>
+              <option value="bradesco">Bradesco</option>
+              <option value="caixa">Caixa Econômica Federal</option>
+            </select>
+          </div>
+
+          <div class="tool__actions">
+            <label class="tool__label conta-valid-label" for="valid-agencia">Agência:</label>
+            <input
+              id="valid-agencia"
+              class="tool__input-inline conta-valid-input"
+              type="text"
+              placeholder="Ex.: 1234-5 ou 1234X"
+              maxlength="10"
+              spellcheck="false"
+              autocorrect="off"
+              autocapitalize="off"
+            />
+          </div>
+
+          <!-- Campo de operação — visível apenas para a Caixa -->
+          <div class="tool__actions" id="row-valid-operacao" hidden>
+            <label class="tool__label conta-valid-label" for="valid-operacao">Operação:</label>
+            <input
+              id="valid-operacao"
+              class="tool__input-inline conta-valid-input"
+              type="text"
+              placeholder="Ex.: 001, 013, 023"
+              maxlength="3"
+              spellcheck="false"
+              autocorrect="off"
+              autocapitalize="off"
+            />
+          </div>
+
+          <div class="tool__actions">
+            <label class="tool__label conta-valid-label" for="valid-conta">Conta:</label>
+            <input
+              id="valid-conta"
+              class="tool__input-inline conta-valid-input"
+              type="text"
+              placeholder="Ex.: 12345678-9 ou 12345678-X"
+              maxlength="15"
+              spellcheck="false"
+              autocorrect="off"
+              autocapitalize="off"
+            />
+          </div>
+
+          <div class="tool__actions">
+            <button id="btn-validar-conta" class="button" type="button">Validar</button>
+            <button id="btn-limpar-conta" class="button--secondary" type="button">Limpar</button>
+          </div>
+        </div>
+
+        <div class="tool__output">
+          <p id="result-validar-conta" class="result-validar"></p>
+        </div>
+      </section>
+    </article>
+
+    <!-- Bloco de anúncio — abaixo da área de resultado da ferramenta -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="7777777777"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Conteúdo real — exigido pelo AdSense -->
+    <section>
+      <h2>O que é agência e conta bancária?</h2>
+      <p>
+        A <strong>agência</strong> é a identificação da unidade de atendimento do banco onde a conta foi aberta.
+        No Brasil, é representada por um número de 4 dígitos, geralmente acompanhado de um <em>dígito verificador</em>
+        (DV) — um número extra calculado a partir dos dígitos anteriores, que permite detectar erros de digitação.
+      </p>
+      <p>
+        A <strong>conta corrente ou poupança</strong> é o número que identifica a conta do cliente dentro da agência.
+        Também possui um dígito verificador, calculado de forma similar. Alguns bancos adicionam um código de
+        <strong>operação</strong> (ou produto) que classifica o tipo de conta (ex.: conta corrente, poupança,
+        conta universitária).
+      </p>
+
+      <h2>O que é o algoritmo de módulo 11?</h2>
+      <p>
+        O <strong>módulo 11</strong> é um algoritmo de soma de verificação utilizado por vários bancos brasileiros
+        para calcular o dígito verificador de agências e contas. O algoritmo percorre os dígitos da direita para a
+        esquerda, multiplicando cada um por um peso crescente (começando em 2). A soma desses produtos é dividida
+        por 11 e o resto da divisão determina o DV.
+      </p>
+      <p>O cálculo funciona da seguinte forma:</p>
+      <ol>
+        <li>Percorra os dígitos da direita para a esquerda.</li>
+        <li>Multiplique cada dígito por um peso crescente, começando em 2 (2, 3, 4, …), ciclando conforme a regra do banco.</li>
+        <li>Some todos os produtos.</li>
+        <li>Calcule o resto da divisão por 11 (soma % 11).</li>
+        <li>O DV é 11 menos o resto. Casos especiais (resto 0, resultando em DV 11, e resto 1, resultando em DV 10) são tratados de forma específica por cada banco.</li>
+      </ol>
+
+      <h2>Regras de DV por banco (implementadas nesta ferramenta)</h2>
+      <p>
+        Cada banco tem sua própria variação do módulo 11. As regras abaixo são as adotadas nesta ferramenta,
+        baseadas em documentação pública de terceiros. Elas podem diferir das regras internas oficiais de cada
+        instituição (que não são publicamente documentadas com vetores de teste oficiais).
+      </p>
+      <ul>
+        <li>
+          <strong>Banco do Brasil:</strong> conta com até 8 dígitos + 1 DV; agência com 4 dígitos + 1 DV.
+          Pesos 2..9 (conta) e 2..5 (agência) ciclando da direita. DV = 11 − resto; se DV = 10 → "X"; se DV = 11 → 0.
+        </li>
+        <li>
+          <strong>Bradesco:</strong> conta com 7 dígitos + 1 DV; agência com 4 dígitos + 1 DV.
+          Pesos 2..7 (conta) e 2..5 (agência) ciclando da direita. DV = 11 − resto; se DV = 11 → 0; se DV = 10 → "P".
+        </li>
+        <li>
+          <strong>Caixa Econômica Federal:</strong> conta com 8 dígitos + 1 DV, calculado sobre a concatenação
+          de operação (3 dígitos) + conta. Pesos 2..9 ciclando. DV = 11 − resto; se DV = 10 ou 11 → 0.
+          A agência usa 4 dígitos sem DV (formato mais comum; pode variar por tipo de conta/convênio).
+          <em>Esta é a regra menos padronizada publicamente entre as implementadas.</em>
+        </li>
+      </ul>
+
+      <h2>Perguntas frequentes (FAQ)</h2>
+
+      <h3>Os dados gerados são de contas reais?</h3>
+      <p>
+        Não. As agências, operações e contas geradas por esta ferramenta são <strong>completamente fictícias</strong>.
+        Os números são gerados aleatoriamente, e o DV é calculado pela regra documentada para cada banco. Eles são
+        úteis apenas para testes de software, preenchimento de formulários de desenvolvimento e validação de sistemas.
+        Não use esses dados em transações, cadastros ou documentos reais.
+      </p>
+
+      <h3>O DV gerado é idêntico ao que o banco real calcularia?</h3>
+      <p>
+        <strong>Não necessariamente.</strong> O dígito verificador segue a regra de módulo 11
+        <em>publicamente documentada</em> de cada banco, baseada em material de terceiros.
+        Cada banco pode ter variações internas, tabelas de exceção ou regras específicas por tipo de produto
+        que não são publicamente documentadas com vetores de teste oficiais. Esta ferramenta é adequada para
+        testes de software que implementam essa mesma regra pública, mas pode não ser compatível com todos
+        os sistemas bancários em produção.
+      </p>
+
+      <h3>O que é a "operação" na Caixa Econômica Federal?</h3>
+      <p>
+        A Caixa usa um código de 3 dígitos chamado "operação" (ou "produto") que identifica o tipo de conta.
+        Por exemplo: <code>001</code> para Conta Corrente Pessoa Física, <code>013</code> para Conta Poupança
+        Pessoa Física, <code>023</code> para Caixa Fácil. Este código faz parte do cálculo do DV da conta e
+        deve ser informado corretamente na validação.
+      </p>
+
+      <h3>Por que o DV pode ser "X" ou "P"?</h3>
+      <p>
+        No módulo 11, quando o resultado do cálculo seria 10, alguns bancos não podem representar esse valor
+        com um único dígito. O Banco do Brasil adota a letra <code>X</code> (assim como o CPF não usa, mas
+        cheques e contas BB sim) e o Bradesco adota a letra <code>P</code> nessa situação. Outros bancos
+        simplesmente usam 0 quando o DV seria 10 ou 11.
+      </p>
+
+      <h3>Posso usar esses dados em sistemas de homologação de bancos?</h3>
+      <p>
+        Depende do sistema. Se o sistema de homologação do banco validar o DV pela mesma regra pública de
+        módulo 11 documentada aqui, provavelmente sim. Mas muitos sistemas bancários realizam verificações
+        adicionais (existência da conta, faixa de agências válidas, tipo de operação), portanto o resultado
+        pode variar. Esta ferramenta não substitui ambientes de sandbox oficiais fornecidos pelos bancos.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/tools/conta-bancaria.js"></script>
+</body>
+</html>

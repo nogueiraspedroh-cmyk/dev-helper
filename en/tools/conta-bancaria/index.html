@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bank Account (Brazil) Generator and Validator — Dev Helper</title>
+  <meta name="description" content="Generate and validate fictitious Brazilian bank account numbers (branch, account and check digit) for software testing. Supports Banco do Brasil, Bradesco and Caixa Econômica Federal with modulo-11 check digit calculation." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../tools/conta-bancaria/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!--
+    AdSense — biblioteca carregada UMA vez por página.
+    Substitua ca-pub-0000000000000000 pelo seu pub-ID real antes do deploy.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../../../biblioteca/">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Bank Account (Brazil) Generator and Validator</h1>
+        <p>Generate and validate fictitious Brazilian bank account data (branch, operation and account with check digit) for software testing.</p>
+      </header>
+
+      <!-- COMPLIANCE NOTICE — visible and highlighted -->
+      <div class="conta-aviso" role="note" aria-label="Important notice">
+        <strong>Notice:</strong> the generated data is <strong>fictitious and intended exclusively for software testing</strong>. It does not correspond to real accounts at any financial institution. The check digit (DV) follows the <strong>publicly documented modulo-11 rule</strong> of each bank, which <strong>may differ from each institution's internal/official variant</strong> — there is no official public test vector. See details in the FAQ.
+      </div>
+
+      <!-- ── SECTION: GENERATE ─────────────────────────────────────────────── -->
+      <section class="tool__section">
+        <h2 class="tool__section-title">Generate account</h2>
+
+        <div class="tool__controls">
+          <div class="tool__actions">
+            <label class="tool__label" for="banco-select">Bank:</label>
+            <select id="banco-select" class="tool__select">
+              <option value="bb">Banco do Brasil</option>
+              <option value="bradesco">Bradesco</option>
+              <option value="caixa">Caixa Econômica Federal</option>
+            </select>
+          </div>
+
+          <div class="tool__actions">
+            <button id="btn-gerar-conta" class="button" type="button">Generate account</button>
+          </div>
+        </div>
+
+        <!-- Generator result area -->
+        <div class="tool__output" id="conta-resultado" hidden>
+          <div class="conta-resultado-grid">
+            <div class="cartao-campo">
+              <span class="cartao-campo__label">Bank</span>
+              <span id="out-banco" class="cartao-campo__valor"></span>
+            </div>
+            <div class="cartao-campo">
+              <span class="cartao-campo__label">Branch (with DV)</span>
+              <span id="out-agencia" class="cartao-campo__valor cartao-campo__valor--mono"></span>
+            </div>
+            <div class="cartao-campo" id="row-operacao" hidden>
+              <span class="cartao-campo__label">Operation</span>
+              <span id="out-operacao" class="cartao-campo__valor cartao-campo__valor--mono"></span>
+            </div>
+            <div class="cartao-campo">
+              <span class="cartao-campo__label">Account (with DV)</span>
+              <span id="out-conta" class="cartao-campo__valor cartao-campo__valor--mono"></span>
+            </div>
+          </div>
+
+          <div class="tool__actions tool__actions--mt">
+            <button id="btn-copiar-conta" class="button--secondary" type="button">Copy data</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── SECTION: VALIDATE ───────────────────────────────────────────────── -->
+      <section class="tool__section">
+        <h2 class="tool__section-title">Validate account</h2>
+
+        <p class="conta-validar-aviso">Enter the bank, the branch (with DV) and the account (with DV). The tool recalculates the DV using the documented rule and tells you whether it matches. This does <strong>not</strong> verify that the account exists at any bank.</p>
+
+        <div class="tool__controls">
+          <div class="tool__actions">
+            <label class="tool__label" for="valid-banco-select">Bank:</label>
+            <select id="valid-banco-select" class="tool__select">
+              <option value="bb">Banco do Brasil</option>
+              <option value="bradesco">Bradesco</option>
+              <option value="caixa">Caixa Econômica Federal</option>
+            </select>
+          </div>
+
+          <div class="tool__actions">
+            <label class="tool__label conta-valid-label" for="valid-agencia">Branch:</label>
+            <input
+              id="valid-agencia"
+              class="tool__input-inline conta-valid-input"
+              type="text"
+              placeholder="E.g.: 1234-5 or 1234X"
+              maxlength="10"
+              spellcheck="false"
+              autocorrect="off"
+              autocapitalize="off"
+            />
+          </div>
+
+          <!-- Operation field — visible only for Caixa -->
+          <div class="tool__actions" id="row-valid-operacao" hidden>
+            <label class="tool__label conta-valid-label" for="valid-operacao">Operation:</label>
+            <input
+              id="valid-operacao"
+              class="tool__input-inline conta-valid-input"
+              type="text"
+              placeholder="E.g.: 001, 013, 023"
+              maxlength="3"
+              spellcheck="false"
+              autocorrect="off"
+              autocapitalize="off"
+            />
+          </div>
+
+          <div class="tool__actions">
+            <label class="tool__label conta-valid-label" for="valid-conta">Account:</label>
+            <input
+              id="valid-conta"
+              class="tool__input-inline conta-valid-input"
+              type="text"
+              placeholder="E.g.: 12345678-9 or 12345678-X"
+              maxlength="15"
+              spellcheck="false"
+              autocorrect="off"
+              autocapitalize="off"
+            />
+          </div>
+
+          <div class="tool__actions">
+            <button id="btn-validar-conta" class="button" type="button">Validate</button>
+            <button id="btn-limpar-conta" class="button--secondary" type="button">Clear</button>
+          </div>
+        </div>
+
+        <div class="tool__output">
+          <p id="result-validar-conta" class="result-validar"></p>
+        </div>
+      </section>
+    </article>
+
+    <!-- Ad block — below the tool's result area -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="7777777777"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Real content — required by AdSense -->
+    <section>
+      <h2>What are a bank branch and account?</h2>
+      <p>
+        The <strong>branch</strong> (agência) is the identification of the bank unit where the
+        account was opened. In Brazil, it is represented by a 4-digit number, usually followed
+        by a <em>check digit</em> (DV) — an extra number calculated from the preceding digits,
+        which allows typing errors to be detected.
+      </p>
+      <p>
+        The <strong>checking or savings account</strong> is the number that identifies the
+        customer's account within the branch. It also has a check digit, calculated in a similar
+        way. Some banks add an <strong>operation</strong> (or product) code that classifies the
+        type of account (e.g., checking account, savings account, student account).
+      </p>
+
+      <h2>What is the modulo-11 algorithm?</h2>
+      <p>
+        <strong>Modulo 11</strong> is a checksum algorithm used by several Brazilian banks to
+        calculate the check digit of branches and accounts. The algorithm walks through the
+        digits from right to left, multiplying each one by an increasing weight (starting at 2).
+        The sum of these products is divided by 11, and the remainder of the division determines
+        the DV.
+      </p>
+      <p>The calculation works as follows:</p>
+      <ol>
+        <li>Walk through the digits from right to left.</li>
+        <li>Multiply each digit by an increasing weight, starting at 2 (2, 3, 4, …), cycling according to the bank's rule.</li>
+        <li>Sum all the products.</li>
+        <li>Calculate the remainder of the division by 11 (sum % 11).</li>
+        <li>The DV is 11 minus the remainder. Special cases (remainder 0, resulting in DV 11, and remainder 1, resulting in DV 10) are handled specifically by each bank.</li>
+      </ol>
+
+      <h2>DV rules by bank (as implemented in this tool)</h2>
+      <p>
+        Each bank has its own variation of modulo 11. The rules below are the ones adopted in
+        this tool, based on publicly available third-party documentation. They may differ from
+        each institution's official internal rules (which are not publicly documented with
+        official test vectors).
+      </p>
+      <ul>
+        <li>
+          <strong>Banco do Brasil:</strong> account with up to 8 digits + 1 DV; branch with 4
+          digits + 1 DV. Weights 2..9 (account) and 2..5 (branch) cycling from the right. DV = 11
+          − remainder; if DV = 10 → "X"; if DV = 11 → 0.
+        </li>
+        <li>
+          <strong>Bradesco:</strong> account with 7 digits + 1 DV; branch with 4 digits + 1 DV.
+          Weights 2..7 (account) and 2..5 (branch) cycling from the right. DV = 11 − remainder;
+          if DV = 11 → 0; if DV = 10 → "P".
+        </li>
+        <li>
+          <strong>Caixa Econômica Federal:</strong> account with 8 digits + 1 DV, calculated on
+          the concatenation of operation (3 digits) + account. Weights 2..9 cycling. DV = 11 −
+          remainder; if DV = 10 or 11 → 0. The branch uses 4 digits with no DV (most common
+          format; may vary by account type/agreement).
+          <em>This is the least publicly standardized rule among those implemented.</em>
+        </li>
+      </ul>
+
+      <h2>Frequently Asked Questions (FAQ)</h2>
+
+      <h3>Is the generated data from real accounts?</h3>
+      <p>
+        No. The branches, operations and accounts generated by this tool are
+        <strong>completely fictitious</strong>. The numbers are generated randomly, and the DV
+        is calculated using the documented rule for each bank. They are useful only for software
+        testing, filling development forms and validating systems. Do not use this data in
+        transactions, registrations or real documents.
+      </p>
+
+      <h3>Is the generated DV identical to what a real bank would calculate?</h3>
+      <p>
+        <strong>Not necessarily.</strong> The check digit follows each bank's
+        <em>publicly documented</em> modulo-11 rule, based on third-party material. Each bank
+        may have internal variations, exception tables or product-specific rules that are not
+        publicly documented with official test vectors. This tool is suitable for software tests
+        that implement this same public rule, but may not be compatible with every production
+        banking system.
+      </p>
+
+      <h3>What is the "operation" at Caixa Econômica Federal?</h3>
+      <p>
+        Caixa uses a 3-digit code called "operation" (or "product") that identifies the type of
+        account. For example: <code>001</code> for an individual checking account,
+        <code>013</code> for an individual savings account, <code>023</code> for Caixa Fácil.
+        This code is part of the account's DV calculation and must be entered correctly during
+        validation.
+      </p>
+
+      <h3>Why can the DV be "X" or "P"?</h3>
+      <p>
+        In modulo 11, when the result of the calculation would be 10, some banks cannot
+        represent that value with a single digit. Banco do Brasil adopts the letter
+        <code>X</code> (similar to how it's used for other Brazilian documents) and Bradesco
+        adopts the letter <code>P</code> in that situation. Other banks simply use 0 when the DV
+        would be 10 or 11.
+      </p>
+
+      <h3>Can I use this data in bank homologation/sandbox systems?</h3>
+      <p>
+        It depends on the system. If the bank's homologation system validates the DV using the
+        same public modulo-11 rule documented here, it probably will. But many banking systems
+        perform additional checks (account existence, valid branch range, operation type), so
+        the result may vary. This tool does not replace official sandbox environments provided
+        by the banks.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/tools-en/conta-bancaria.js"></script>
+</body>
+</html>

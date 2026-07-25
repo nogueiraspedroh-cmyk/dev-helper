@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Organização por Feature vs Camada — Estruturas de Projeto | Biblioteca Dev Helper</title>
+  <meta name="description" content="Entenda a diferença entre organizar código por camada técnica (controllers/, services/, repositories/) e por feature/módulo (users/, orders/). Quando usar cada abordagem, armadilhas e posição intermediária." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Feature vs Camada</span>
+        </nav>
+        <span class="artigo__categoria">Estruturas de Projeto</span>
+        <h1 class="artigo__titulo">Organização por Feature vs Camada</h1>
+        <p class="artigo__subtitulo">
+          Como agrupar os arquivos de um projeto: por <em>tipo técnico</em>
+          — todos os controllers juntos, todos os services juntos — ou por
+          <em>funcionalidade</em> — tudo relativo a usuários numa pasta, tudo
+          relativo a pedidos em outra. A escolha molda como o código cresce,
+          como equipes se organizam e com que frequência você edita cinco
+          diretórios para implementar uma única funcionalidade.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Definir o critério primário de agrupamento de arquivos</strong>
+            num projeto: as camadas técnicas que um arquivo habita (camada técnica)
+            ou o domínio de negócio ao qual pertence (feature). A escolha determina
+            onde um desenvolvedor procura e onde cria código novo — e, portanto,
+            qual tipo de coesão o projeto maximiza.
+          </p>
+          <p>
+            Nenhuma das duas abordagens é universalmente correta. A tensão entre
+            elas é real e a posição intermediária — feature com camadas internas —
+            é a mais adotada em projetos de médio e grande porte.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Sem um critério claro de agrupamento, projetos crescem de forma caótica:
+            arquivos relacionados ficam distantes, o desenvolvedor precisa navegar em
+            múltiplos diretórios para entender uma única funcionalidade, e a
+            arquitetura real do sistema se torna invisível na estrutura de pastas.
+          </p>
+          <p>
+            As duas abordagens resolvem esse problema de formas distintas — e cada
+            uma cria seus próprios pontos de fricção à medida que o projeto cresce.
+          </p>
+        </section>
+
+        <!-- 3. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+
+          <p>
+            O diagrama abaixo mostra as mesmas funcionalidades — usuários, pedidos
+            e pagamentos — organizadas das duas formas:
+          </p>
+
+          <div class="code-bloco">
+<pre><code>  ── POR CAMADA TÉCNICA ──────────────┬── POR FEATURE ──────────────────────
+                                      │
+  src/                                │  src/
+  ├── controllers/                    │  ├── users/
+  │     ├── UserController.ts         │  │     ├── UserController.ts
+  │     ├── OrderController.ts        │  │     ├── UserService.ts
+  │     └── PaymentController.ts      │  │     ├── UserRepository.ts
+  │                                   │  │     └── User.entity.ts
+  ├── services/                       │  │
+  │     ├── UserService.ts            │  ├── orders/
+  │     ├── OrderService.ts           │  │     ├── OrderController.ts
+  │     └── PaymentService.ts         │  │     ├── OrderService.ts
+  │                                   │  │     ├── OrderRepository.ts
+  ├── repositories/                   │  │     └── Order.entity.ts
+  │     ├── UserRepository.ts         │  │
+  │     ├── OrderRepository.ts        │  └── payments/
+  │     └── PaymentRepository.ts      │        ├── PaymentController.ts
+  │                                   │        ├── PaymentService.ts
+  └── entities/                       │        ├── PaymentRepository.ts
+        ├── User.entity.ts            │        └── Payment.entity.ts
+        ├── Order.entity.ts           │
+        └── Payment.entity.ts         │
+</code></pre>
+          </div>
+
+          <p>
+            Para adicionar a funcionalidade de pagamento completa: na organização
+            por camada, você abre quatro diretórios diferentes. Na organização por
+            feature, você trabalha dentro de <code>payments/</code>.
+          </p>
+        </section>
+
+        <!-- 4. COMO FUNCIONA -->
+        <section class="artigo__secao">
+          <h2>Como funciona cada abordagem</h2>
+
+          <h3>Organização por camada técnica</h3>
+          <p>
+            O critério de agrupamento é o papel técnico do arquivo. Todos os
+            controllers ficam juntos independente do domínio que servem; todos os
+            services ficam juntos; todos os repositórios ficam juntos.
+          </p>
+          <p>
+            Isso maximiza <em>coesão técnica</em>: é fácil ver "todos os pontos de
+            entrada HTTP" ou "todas as queries ao banco". É também o modelo que
+            frameworks como Ruby on Rails e Laravel popularizaram — e onde a maioria
+            dos desenvolvedores aprende arquitetura pela primeira vez.
+          </p>
+
+          <h3>Organização por feature</h3>
+          <p>
+            O critério de agrupamento é o domínio de negócio. Todos os arquivos
+            que servem a funcionalidade de "pedidos" ficam em <code>orders/</code>,
+            independente de seu papel técnico. Isso maximiza <em>coesão funcional</em>:
+            entender, modificar ou deletar uma funcionalidade é uma operação localizada
+            em um único diretório.
+          </p>
+          <p>
+            É o modelo natural quando o sistema cresce e times diferentes passam a
+            ser responsáveis por partes diferentes do domínio. O time de pagamentos
+            trabalha em <code>payments/</code>; o time de pedidos trabalha em
+            <code>orders/</code>. A estrutura de pastas reflete a estrutura de times.
+          </p>
+
+          <h3>Posição intermediária: feature com camadas internas</h3>
+          <p>
+            A abordagem mais adotada em projetos de médio e grande porte combina as
+            duas: o nível superior organiza por feature, e dentro de cada feature
+            as camadas técnicas aparecem como subdiretórios:
+          </p>
+          <div class="code-bloco">
+<pre><code>  src/
+  ├── users/
+  │     ├── http/               ← camada de entrada (controllers, DTOs)
+  │     │     ├── UserController.ts
+  │     │     └── CreateUserDto.ts
+  │     ├── application/        ← casos de uso / serviços de aplicação
+  │     │     └── UserService.ts
+  │     ├── domain/             ← entidades e regras de negócio
+  │     │     └── User.ts
+  │     └── infra/              ← repositório, ORM, adaptadores externos
+  │           └── UserRepository.ts
+  │
+  └── orders/
+        ├── http/
+        ├── application/
+        ├── domain/
+        └── infra/
+</code></pre>
+          </div>
+          <p>
+            O resultado é que a feature é a unidade de descoberta (onde procurar)
+            e a camada é a unidade de responsabilidade (o que cada arquivo pode fazer).
+          </p>
+        </section>
+
+        <!-- 5. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar cada abordagem</h2>
+
+          <h3>Prefira organização por camada quando:</h3>
+          <ul>
+            <li>
+              <strong>O projeto é um CRUD simples ou pequeno:</strong> poucas features,
+              poucos arquivos por camada — a estrutura plana por camada é mais rápida
+              de navegar do que subdiretórios por feature.
+            </li>
+            <li>
+              <strong>A equipe é pequena e trabalha em tudo:</strong> sem divisão por
+              times responsáveis por features, a separação por camada reflete melhor
+              a forma de trabalho.
+            </li>
+            <li>
+              <strong>O framework já impõe essa estrutura:</strong> frameworks como
+              Rails (app/models, app/controllers, app/views) e Laravel (Controllers,
+              Models, Requests) levam naturalmente à organização por camada. Lutar
+              contra a convenção do framework costuma gerar mais fricção do que valor.
+            </li>
+          </ul>
+
+          <h3>Prefira organização por feature quando:</h3>
+          <ul>
+            <li>
+              <strong>As funcionalidades crescem em número e complexidade:</strong>
+              quando há 10+ features com 5+ arquivos cada, a estrutura por camada
+              gera pastas com dezenas de arquivos sem relação entre si.
+            </li>
+            <li>
+              <strong>Times diferentes são responsáveis por partes diferentes:</strong>
+              a estrutura por feature alinha o código com a estrutura de ownership —
+              reduz conflitos de merge e facilita code review focado.
+            </li>
+            <li>
+              <strong>A arquitetura separa domínio de infraestrutura:</strong>
+              quando o projeto usa
+              <a href="../arquitetura-em-camadas/">Arquitetura em Camadas</a>,
+              Clean Architecture ou Hexagonal, a feature com camadas internas é a
+              estrutura natural — cada feature é quase um módulo independente.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 6. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+
+          <h3>Por camada — Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Familiar para quem vem de frameworks como Rails, Laravel ou Spring MVC.</li>
+            <li>Fácil de ver todos os pontos de entrada HTTP de uma vez, ou todos os repositórios.</li>
+            <li>Estrutura plana e simples para projetos pequenos.</li>
+          </ul>
+
+          <h3>Por camada — Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>À medida que o projeto cresce, cada pasta fica com dezenas de arquivos sem relação entre si.</li>
+            <li>Implementar uma feature exige abrir múltiplos diretórios simultaneamente.</li>
+            <li>A estrutura não revela o que o sistema faz — revela apenas como é implementado.</li>
+            <li>Dificulta deletar ou isolar uma feature — os arquivos estão espalhados por camadas.</li>
+          </ul>
+
+          <h3>Por feature — Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Implementar uma feature é uma operação localizada num único diretório.</li>
+            <li>A estrutura de pastas comunica o que o sistema faz, não apenas como.</li>
+            <li>Facilita deletar ou mover uma feature para outro serviço.</li>
+            <li>Alinha-se naturalmente com a estrutura de times e ownership.</li>
+          </ul>
+
+          <h3>Por feature — Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Sem disciplina, features começam a importar umas das outras livremente — criando dependências circulares.</li>
+            <li>Compartilhamento de código entre features (utilitários, tipos comuns) exige uma pasta <code>shared/</code> ou <code>common/</code> com critérios claros.</li>
+            <li>A visão "todos os controllers" ou "todos os services" requer navegar por múltiplas pastas.</li>
+          </ul>
+        </section>
+
+        <!-- 7. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Feature pura que vira silo</h3>
+          <p>
+            Sem boundaries explícitos, features em organização por feature começam a
+            importar umas das outras diretamente — o <code>OrderService</code> importa
+            o <code>UserRepository</code>, que por sua vez precisa do
+            <code>PaymentService</code>. O resultado é um emaranhado de dependências
+            cruzadas que impede qualquer uma das features de ser isolada ou testada
+            individualmente.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Regra prática:</strong> features só se comunicam por interfaces
+            públicas explícitas (DTOs, eventos, contratos de serviço), nunca por
+            imports diretos de arquivos internos de outra feature. Ferramentas de
+            lint como <code>eslint-plugin-boundaries</code> ou as restrições de módulo
+            do Nx podem enforçar isso automaticamente.
+          </p>
+
+          <h3>2. Camada pura que obriga editar 5 diretórios para 1 feature</h3>
+          <p>
+            A "camada técnica" começa simples, mas com 20+ features cada pasta fica
+            com 60+ arquivos. Adicionar "cadastro de fornecedor" significa criar um
+            arquivo em <code>controllers/</code>, um em <code>services/</code>, um em
+            <code>repositories/</code> e um em <code>entities/</code> — quatro commits
+            em quatro diretórios distintos para uma única funcionalidade coesa.
+          </p>
+          <p>
+            O sinal de que a estrutura por camada não escala mais: pull requests
+            que tocam mais de três diretórios para uma única funcionalidade de negócio.
+          </p>
+
+          <h3>3. A pasta "shared/" sem critério</h3>
+          <p>
+            Ao adotar organização por feature, é inevitável que código genuinamente
+            compartilhado precise de um lar. A pasta <code>shared/</code> (ou
+            <code>common/</code>) resolve isso — mas sem um critério de admissão claro,
+            ela se torna um segundo <code>utils/</code> genérico onde tudo que não
+            tem um dono óbvio vai parar.
+          </p>
+          <p>
+            Critério útil: algo entra em <code>shared/</code> apenas quando é usado
+            por duas ou mais features e não pertence semanticamente a nenhuma delas.
+            Se pertence semanticamente a uma feature mas é usada por outra, o design
+            de boundaries pode estar errado — talvez a dependência deva ser invertida.
+          </p>
+
+          <h3>4. Estrutura que não reflete a arquitetura</h3>
+          <p>
+            Uma estrutura por camada com pastas <code>controllers/</code>,
+            <code>services/</code> e <code>repositories/</code> pode dar uma falsa
+            sensação de arquitetura bem definida. Se o <code>UserController</code>
+            acessa o <code>OrderRepository</code> diretamente, a estrutura de pastas
+            é cosmética — não há uma <a href="../arquitetura-em-camadas/">Arquitetura
+            em Camadas</a> real, apenas nomes de diretórios que imitam camadas.
+          </p>
+        </section>
+
+        <!-- 8. PADRÕES E ARQUITETURAS RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Tópicos relacionados</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../arquitetura-em-camadas/">Arquitetura em Camadas</a></li>
+            <li><a href="../monolito-vs-monorepo/">Monorepo vs Multi-repo</a></li>
+            <li><a href="../estrutura-de-pastas/">Boas Práticas de Estrutura de Pastas</a></li>
+          </ul>
+          <p class="mt-1">
+            A <strong>Arquitetura em Camadas</strong> define as <em>regras de dependência</em>
+            entre partes do sistema; a organização por feature ou por camada define
+            <em>onde os arquivos ficam</em>. As duas decisões se influenciam mas são
+            independentes: você pode ter uma Arquitetura em Camadas com organização
+            por feature (cada feature tem suas próprias camadas internas) ou com
+            organização por camada técnica (camadas planas globais).
+          </p>
+          <p>
+            A decisão de <strong>monorepo vs multi-repo</strong> é outro eixo
+            independente: ela define onde o código vive em termos de repositórios Git,
+            enquanto feature vs camada define como ele é organizado dentro de cada
+            projeto.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="4545454545"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

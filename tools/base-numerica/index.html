@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conversor de Base Numérica — Binário, Octal, Decimal, Hexadecimal — Dev Helper</title>
+  <meta name="description" content="Converta um número entre binário, octal, decimal e hexadecimal ao mesmo tempo — edite qualquer campo e os outros se atualizam. Suporta números grandes com BigInt e valida dígitos por base." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../../biblioteca/">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Conversor de Base Numérica</h1>
+        <p>Converta um número entre <strong>binário</strong>, <strong>octal</strong>, <strong>decimal</strong> e <strong>hexadecimal</strong> ao mesmo tempo. Edite qualquer campo e os outros se atualizam ao vivo. Suporta <strong>números grandes</strong> sem perda de precisão (BigInt).</p>
+      </header>
+
+      <div class="tool__controls">
+        <label class="tool__label" for="bn-bin">Binário (base 2)</label>
+        <input type="text" id="bn-bin" class="tool__input-inline" spellcheck="false" autocomplete="off" placeholder="ex.: 11111111" />
+
+        <label class="tool__label" for="bn-oct">Octal (base 8)</label>
+        <input type="text" id="bn-oct" class="tool__input-inline" spellcheck="false" autocomplete="off" placeholder="ex.: 377" />
+
+        <label class="tool__label" for="bn-dec">Decimal (base 10)</label>
+        <input type="text" id="bn-dec" class="tool__input-inline" spellcheck="false" autocomplete="off" placeholder="ex.: 255" />
+
+        <label class="tool__label" for="bn-hex">Hexadecimal (base 16)</label>
+        <input type="text" id="bn-hex" class="tool__input-inline" spellcheck="false" autocomplete="off" placeholder="ex.: ff" />
+
+        <p id="bn-error" class="error-msg" role="alert" hidden></p>
+
+        <div class="tool__actions tool__actions--mt">
+          <button id="bn-clear" class="button--secondary" type="button">Limpar</button>
+        </div>
+      </div>
+    </article>
+
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="2727272727"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <section>
+      <h2>Bases numéricas na programação</h2>
+      <p>
+        O mesmo número pode ser escrito em diferentes <strong>bases</strong>. O
+        <strong>decimal</strong> (base 10) é o do dia a dia; o <strong>binário</strong> (base 2) é a
+        língua nativa dos computadores; o <strong>hexadecimal</strong> (base 16) é compacto e comum em
+        cores, endereços de memória e bytes; o <strong>octal</strong> (base 8) aparece, por exemplo, em
+        permissões de arquivos Unix (<code>chmod 755</code>). Converter entre eles é uma tarefa
+        frequente de quem programa.
+      </p>
+
+      <h2>Como usar</h2>
+      <p>
+        Digite o número em qualquer um dos quatro campos. Os outros três são preenchidos
+        automaticamente. Cada campo aceita apenas os <strong>dígitos válidos</strong> da sua base — se
+        você digitar, por exemplo, um <code>2</code> no campo binário ou um <code>g</code> no
+        hexadecimal, uma mensagem de erro legível aparece. Também é aceito o sinal de menos para
+        números negativos, e <code>_</code> ou espaço como separadores visuais.
+      </p>
+
+      <h2>Números grandes</h2>
+      <p>
+        A conversão usa <strong>BigInt</strong>, o tipo de inteiro de precisão arbitrária do
+        JavaScript. Isso significa que números com dezenas de dígitos são convertidos <strong>sem
+        arredondamento</strong> — algo que aconteceria se usássemos o tipo numérico comum, limitado a
+        cerca de 15–16 dígitos significativos.
+      </p>
+
+      <h2>Perguntas frequentes (FAQ)</h2>
+
+      <h3>Trabalha com números fracionários?</h3>
+      <p>
+        Não. A ferramenta converte <strong>inteiros</strong> (incluindo negativos). Frações em bases
+        diferentes envolvem regras adicionais e ficam fora do escopo aqui.
+      </p>
+
+      <h3>O hexadecimal sai em maiúsculas ou minúsculas?</h3>
+      <p>
+        A saída usa <strong>minúsculas</strong> (<code>ff</code>), mas na entrada tanto faz — você pode
+        digitar <code>FF</code> ou <code>ff</code>.
+      </p>
+
+      <h3>Por que o campo ficou vazio quando apaguei tudo?</h3>
+      <p>
+        Ao limpar um campo, os demais são zerados para evitar mostrar um valor "preso" que não
+        corresponde mais ao que você digitou. Use "Limpar" para reiniciar todos de uma vez.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/tools/base-numerica.js"></script>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>XML Formatter and Adjuster — Dev Helper</title>
+  <meta name="description" content="Format, minify and check the syntax (well-formedness) of XML documents directly in your browser. Supports attributes, comments, CDATA and configurable indentation." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../tools/xml/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!--
+    AdSense — biblioteca carregada UMA vez por página.
+    Substitua ca-pub-0000000000000000 pelo seu pub-ID real antes do deploy.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../../../biblioteca/">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>XML Formatter and Adjuster</h1>
+        <p>Paste your XML below to format, minify or check the syntax (well-formedness).</p>
+      </header>
+
+      <div class="tool__controls">
+        <!-- Textarea de entrada -->
+        <textarea
+          id="xml-input"
+          class="tool__input"
+          placeholder="Paste your XML here, for example: &lt;order id=&quot;1&quot;&gt;&lt;item&gt;Keyboard&lt;/item&gt;&lt;/order&gt;"
+          spellcheck="false"
+          autocorrect="off"
+          autocapitalize="off"
+        ></textarea>
+
+        <!-- Linha de ações -->
+        <div class="tool__actions">
+          <button id="btn-format" class="button" type="button">Format</button>
+          <button id="btn-minify" class="button--secondary" type="button">Minify</button>
+          <button id="btn-clear" class="button--secondary" type="button">Clear</button>
+          <button id="btn-copy" class="button--secondary" type="button">Copy</button>
+
+          <label class="tool__label" for="indent-select">Indent:</label>
+          <select id="indent-select" class="tool__select">
+            <option value="2" selected>2 spaces</option>
+            <option value="4">4 spaces</option>
+            <option value="tab">Tab</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Área de saída -->
+      <div class="tool__output">
+        <textarea
+          id="xml-output"
+          class="result"
+          placeholder="The result will appear here..."
+          readonly
+          spellcheck="false"
+          autocorrect="off"
+          autocapitalize="off"
+        ></textarea>
+
+        <!-- Mensagem de erro de sintaxe -->
+        <p id="xml-error" class="error-msg" role="alert" hidden></p>
+      </div>
+    </article>
+
+    <!-- Bloco de anúncio — abaixo do resultado da ferramenta -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="7474747474"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Conteúdo real — exigido pelo AdSense -->
+    <section>
+      <h2>What is XML and what is this tool for?</h2>
+      <p>
+        <strong>XML</strong> (eXtensible Markup Language) is a markup format used to
+        structure data hierarchically and readably — present in configuration files,
+        feeds (RSS/Atom), Office documents, SOAP, sitemaps and legacy integrations between systems.
+        Unlike JSON, XML describes structure through <strong>tags</strong> and
+        <strong>attributes</strong>, and allows text content to be mixed with elements.
+      </p>
+      <p>
+        This tool processes the XML entirely in your browser, with its own parser (it doesn't use
+        the browser's <code>DOMParser</code>), offering three main operations:
+      </p>
+      <ul>
+        <li>
+          <strong>Format (pretty-print):</strong> adds configurable indentation (2 spaces,
+          4 spaces or tab) and one tag per line, making a minified or system-generated
+          XML easier to read.
+        </li>
+        <li>
+          <strong>Minify:</strong> removes unnecessary spaces and line breaks between tags,
+          reducing the size of the document.
+        </li>
+        <li>
+          <strong>Check syntax (well-formedness):</strong> identifies unclosed tags,
+          unquoted attributes, invalid entities and other structural problems, with a
+          readable error message indicating the approximate position.
+        </li>
+      </ul>
+      <p>
+        Elements with <strong>mixed content</strong> (text and tags in the same element, such as
+        <code>&lt;p&gt;Hello &lt;b&gt;world&lt;/b&gt;!&lt;/p&gt;</code>) are not reindented
+        internally — adding line breaks in that case would change the original text, so the
+        tool preserves that piece exactly as it is.
+      </p>
+
+      <h2>Frequently Asked Questions (FAQ)</h2>
+
+      <h3>Does the tool validate against an XSD or DTD?</h3>
+      <p>
+        No. This tool only checks whether the document is <strong>well-formed</strong>
+        — tags correctly opened/closed, valid attributes, a single root element, etc. It doesn't
+        validate the <em>semantic structure</em> against an XSD or DTD schema (that would
+        require loading and interpreting a separate schema file, outside the scope of this
+        tool).
+      </p>
+
+      <h3>Does the tool expand entities declared in a DOCTYPE?</h3>
+      <p>
+        No. If the document has a <code>&lt;!DOCTYPE ...&gt;</code> declaration — including
+        one with an internal subset defining custom entities — it's preserved as opaque text
+        between the XML declaration and the root element, but it is <strong>not processed</strong>.
+        Expanding DOCTYPE entities is a classic attack surface (XXE) and was
+        deliberately left out of scope for this tool.
+      </p>
+
+      <h3>Which entities are supported in the text?</h3>
+      <p>
+        The five basic XML entities (<code>&amp;lt;</code>, <code>&amp;gt;</code>,
+        <code>&amp;amp;</code>, <code>&amp;quot;</code>, <code>&amp;apos;</code>) and numeric
+        entities (<code>&amp;#65;</code> or <code>&amp;#x41;</code>). Any other named entity
+        (which would require a DOCTYPE to be resolved) is reported as an error.
+      </p>
+
+      <h3>What does a "well-formedness" error mean?</h3>
+      <p>
+        It indicates that the text doesn't follow the structural rules of XML — for example, an
+        opening tag without its matching closing tag, more than one root element in the
+        document, an unquoted attribute, or unclosed attribute quotes.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/tools-en/xml.js"></script>
+</body>
+</html>

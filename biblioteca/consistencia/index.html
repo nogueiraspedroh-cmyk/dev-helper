@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Consistência Eventual vs Forte — Dev Helper Biblioteca</title>
+  <meta name="description" content="Consistência em sistemas distribuídos: eventual vs forte, modelos intermediários (Read-Your-Writes, Monotonic Reads, Causal), CAP Theorem, PACELC e armadilhas de leitura de réplicas." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: carregado uma vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Consistência Eventual vs Forte</span>
+        </nav>
+        <span class="artigo__categoria">System Design</span>
+        <h1 class="artigo__titulo">Consistência Eventual vs Forte</h1>
+        <p class="artigo__subtitulo">
+          Em sistemas distribuídos, dados replicados podem ficar temporariamente
+          desincronizados entre nós. Consistência define quão "atual" é a leitura
+          que um cliente recebe após uma escrita — e a escolha entre modelos tem
+          consequências diretas em disponibilidade, latência e complexidade do código.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Consistência define a garantia sobre o valor que um cliente lê
+            após uma escrita ter sido confirmada em algum nó do sistema distribuído.</strong>
+            Em um banco de dados com réplicas, a escrita ocorre no primário mas as
+            leituras podem servir de qualquer réplica — e réplicas assíncronas podem
+            estar atrás. A questão é: o quanto de "atrás" é aceitável para o seu caso
+            de uso?
+          </p>
+          <p>
+            Este não é um problema técnico com uma resposta certa: é um tradeoff de
+            negócio. Um sistema de saldo bancário e um feed de timeline do Twitter têm
+            respostas completamente diferentes para "quão stale pode ser uma leitura?".
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Quando um sistema distribui dados entre múltiplos nós para ganhar
+            disponibilidade e performance, toda escrita precisa ser propagada para as
+            réplicas. Essa propagação tem custo: leva tempo, pode falhar e cria um
+            intervalo durante o qual réplicas diferentes têm versões diferentes do dado.
+          </p>
+          <ul>
+            <li>
+              <strong>Se você espera que todas as réplicas confirmem antes de responder
+              ao cliente</strong> (consistência forte): a escrita é mais lenta, pois
+              depende da réplica mais lenta do conjunto. Se qualquer réplica estiver
+              inacessível, você pode precisar recusar a escrita ou a leitura.
+            </li>
+            <li>
+              <strong>Se você confirma ao cliente assim que o primário aceita</strong>
+              (consistência eventual): a escrita é rápida, mas leituras imediatas de
+              réplicas podem retornar o valor antigo por alguns milissegundos — ou
+              segundos em alta carga.
+            </li>
+            <li>
+              <strong>O problema é que ambos os comportamentos parecem corretos no
+              ambiente de desenvolvimento</strong> (banco local, latência zero entre
+              nós) e só ficam visíveis em produção, sob carga, com réplicas reais.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. COMO FUNCIONA -->
+        <section class="artigo__secao">
+          <h2>Como funciona</h2>
+
+          <h3>Consistência Forte (Strong Consistency)</h3>
+          <p>
+            Após uma escrita ser confirmada, qualquer leitura subsequente em qualquer
+            nó do sistema retorna o valor atualizado. Para isso, o sistema precisa de
+            algum mecanismo de coordenação: ou a escrita é síncrona para todas as
+            réplicas (todas confirmam antes do cliente receber ok), ou usa um protocolo
+            de consenso como <strong>Raft</strong> (usado no etcd, CockroachDB, TiDB)
+            ou <strong>Paxos</strong> (usado no Google Spanner, Zookeeper).
+          </p>
+          <p>
+            O custo é latência de escrita: você paga o RTT para as réplicas mais
+            lentas ou geograficamente distantes a cada escrita. Em sistemas multi-região
+            com réplicas na Europa e na Ásia, isso pode significar 150–300 ms de
+            latência de escrita garantida.
+          </p>
+
+          <h3>Consistência Eventual (Eventual Consistency)</h3>
+          <p>
+            Após uma escrita no nó primário, as réplicas receberão a atualização
+            eventualmente — sem garantia de quando. Em condições normais de rede, o lag
+            costuma ser de alguns milissegundos a poucos segundos. Em alta carga ou
+            problemas de rede, pode ser mais.
+          </p>
+          <p>
+            O sistema confirma a escrita ao cliente assim que o primário aceita, sem
+            esperar as réplicas. Leituras de réplicas podem retornar o valor antigo até
+            a propagação completar. Isso permite maior disponibilidade e menor latência
+            de escrita, ao custo de leituras potencialmente stale.
+          </p>
+
+          <h3>Modelos intermediários</h3>
+          <p>
+            Entre os extremos existem garantias mais específicas que permitem tradeoffs
+            mais precisos:
+          </p>
+          <ul>
+            <li>
+              <strong>Read-Your-Writes (read-after-write):</strong> você sempre lê o
+              que você acabou de escrever, mesmo que outros clientes ainda vejam o valor
+              antigo. Implementado via sticky reads (o cliente sempre lê do primário após
+              escrever) ou tokens de causalidade (o cliente carrega a versão mínima que
+              o servidor deve ter para atender a leitura).
+            </li>
+            <li>
+              <strong>Monotonic Reads:</strong> uma vez que o cliente leu um valor, ele
+              nunca lerá um valor mais antigo. Importante em sistemas onde o usuário
+              faz múltiplas leituras — ver dados "voltarem no tempo" é confuso e gera
+              bugs difíceis de reproduzir.
+            </li>
+            <li>
+              <strong>Consistência Causal:</strong> operações que têm relação causal
+              (B depende de A) são vistas na ordem correta por todos os nós. "Você
+              curtiu um post que eu não vi ainda" é uma violação de consistência causal.
+              Mais forte que eventual, mais fraca que forte.
+            </li>
+          </ul>
+
+          <!-- SVG: Timeline comparando eventual vs forte -->
+          <figure class="artigo__figura">
+            <svg viewBox="0 0 760 310" width="100%" role="img" aria-label="Diagrama de linha do tempo comparando Consistência Eventual (esquerda) e Consistência Forte (direita). No eventual: escrita no Nó A, propagação assíncrona com seta tracejada, Nó B retorna valor antigo durante lag e valor novo após sincronização. No forte: escrita bloqueia no Nó A enquanto sincroniza Nó B, ack volta, escrita confirma, qualquer leitura retorna valor novo garantido.">
+              <defs>
+                <marker id="con-arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                  <polygon points="0 0, 8 3, 0 6" fill="#59616e" />
+                </marker>
+                <marker id="con-arr-ok" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                  <polygon points="0 0, 8 3, 0 6" fill="#10b981" />
+                </marker>
+                <marker id="con-arr-err" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                  <polygon points="0 0, 8 3, 0 6" fill="#ef4444" />
+                </marker>
+                <marker id="con-arr-pri" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                  <polygon points="0 0, 8 3, 0 6" fill="#4f46e5" />
+                </marker>
+              </defs>
+
+              <!-- ══ METADE ESQUERDA: CONSISTÊNCIA EVENTUAL ════════════════════ -->
+              <rect x="8" y="8" width="364" height="28" rx="5" fill="#4f46e5" />
+              <text x="190" y="24" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#ffffff">Consistência Eventual</text>
+              <text x="190" y="34" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#c7d2fe"> </text>
+
+              <!-- Node boxes -->
+              <rect x="22" y="44" width="80" height="26" rx="4" fill="#f0f2f5" stroke="#4f46e5" stroke-width="1.5" />
+              <text x="62" y="57" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="700" fill="#4f46e5">Nó A</text>
+              <text x="62" y="67" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">(primário)</text>
+
+              <rect x="272" y="44" width="80" height="26" rx="4" fill="#f0f2f5" stroke="#4f46e5" stroke-width="1.5" />
+              <text x="312" y="57" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="700" fill="#4f46e5">Nó B</text>
+              <text x="312" y="67" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">(réplica)</text>
+
+              <!-- Lifelines -->
+              <line x1="62" y1="70" x2="62" y2="288" stroke="#4f46e5" stroke-width="1" stroke-dasharray="4,3" />
+              <line x1="312" y1="70" x2="312" y2="288" stroke="#4f46e5" stroke-width="1" stroke-dasharray="4,3" />
+
+              <!-- t=0: Write v=2 on Nó A -->
+              <rect x="36" y="84" width="52" height="22" rx="3" fill="#4f46e5" />
+              <text x="62" y="95" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" font-weight="700" fill="#ffffff">WRITE v=2</text>
+              <text x="62" y="104" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#c7d2fe">t=0ms</text>
+
+              <!-- Client reads from B immediately → stale -->
+              <rect x="286" y="108" width="52" height="22" rx="3" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5" />
+              <text x="312" y="119" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" font-weight="700" fill="#ef4444">READ v=1</text>
+              <text x="312" y="128" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#ef4444">stale! t=10ms</text>
+
+              <!-- Async propagation arrow (diagonal dashed — arrives later) -->
+              <line x1="68" y1="100" x2="280" y2="152" stroke="#59616e" stroke-width="1.5" stroke-dasharray="6,4" marker-end="url(#con-arr)" />
+              <text x="170" y="122" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e" transform="rotate(12,170,122)">propagação assíncrona ~50ms</text>
+
+              <!-- Propagation arrives at B -->
+              <rect x="296" y="152" width="32" height="16" rx="3" fill="#10b981" />
+              <text x="312" y="163" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" font-weight="600" fill="#ffffff">sync</text>
+
+              <!-- Read from B after sync → fresh -->
+              <rect x="286" y="180" width="52" height="22" rx="3" fill="#d1fae5" stroke="#10b981" stroke-width="1.5" />
+              <text x="312" y="191" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" font-weight="700" fill="#059669">READ v=2</text>
+              <text x="312" y="200" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#059669">atual! t=60ms</text>
+
+              <!-- Time axis label -->
+              <line x1="15" y1="82" x2="15" y2="210" stroke="#e3e6ea" stroke-width="1" />
+              <line x1="12" y1="82" x2="18" y2="82" stroke="#e3e6ea" stroke-width="1" />
+              <line x1="12" y1="210" x2="18" y2="210" stroke="#e3e6ea" stroke-width="1" />
+              <text x="8" y="148" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e" transform="rotate(-90,8,148)">tempo</text>
+
+              <!-- Summary box -->
+              <rect x="22" y="220" width="352" height="60" rx="4" fill="#eef2ff" stroke="#4f46e5" stroke-width="1" />
+              <text x="198" y="237" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="700" fill="#4f46e5">Alta disponibilidade · Baixa latência de escrita</text>
+              <text x="198" y="252" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">Leitura imediata pode retornar valor stale</text>
+              <text x="198" y="266" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">Use quando: timeline, feeds, likes, catálogo, feature flags</text>
+              <text x="198" y="280" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#4f46e5">CAP: mantém A (disponibilidade) em caso de partição</text>
+
+              <!-- Vertical divider -->
+              <line x1="380" y1="8" x2="380" y2="298" stroke="#e3e6ea" stroke-width="1.5" stroke-dasharray="5,4" />
+
+              <!-- ══ METADE DIREITA: CONSISTÊNCIA FORTE ══════════════════════════ -->
+              <rect x="392" y="8" width="360" height="28" rx="5" fill="#1f2530" />
+              <text x="572" y="24" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#e6e9f0">Consistência Forte</text>
+              <text x="572" y="34" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#a0aab8"> </text>
+
+              <!-- Node boxes -->
+              <rect x="406" y="44" width="80" height="26" rx="4" fill="#f0f2f5" stroke="#1f2530" stroke-width="1.5" />
+              <text x="446" y="57" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="700" fill="#1f2530">Nó A</text>
+              <text x="446" y="67" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">(primário)</text>
+
+              <rect x="658" y="44" width="80" height="26" rx="4" fill="#f0f2f5" stroke="#1f2530" stroke-width="1.5" />
+              <text x="698" y="57" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="700" fill="#1f2530">Nó B</text>
+              <text x="698" y="67" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">(réplica)</text>
+
+              <!-- Lifelines -->
+              <line x1="446" y1="70" x2="446" y2="288" stroke="#1f2530" stroke-width="1" stroke-dasharray="4,3" />
+              <line x1="698" y1="70" x2="698" y2="288" stroke="#1f2530" stroke-width="1" stroke-dasharray="4,3" />
+
+              <!-- t=0: Write request on Nó A — BLOCKED waiting for replicas -->
+              <rect x="420" y="84" width="52" height="22" rx="3" fill="#1f2530" />
+              <text x="446" y="95" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" font-weight="700" fill="#e6e9f0">WRITE v=2</text>
+              <text x="446" y="104" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#a0aab8">t=0ms</text>
+
+              <!-- Waiting block on Nó A lifeline (blocked during sync) -->
+              <rect x="440" y="106" width="12" height="50" rx="2" fill="#e5e7eb" stroke="#1f2530" stroke-width="1" />
+              <text x="406" y="131" text-anchor="end" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">aguarda</text>
+              <text x="406" y="141" text-anchor="end" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">réplicas</text>
+
+              <!-- Sync write sent to B (solid arrow) -->
+              <line x1="452" y1="112" x2="690" y2="112" stroke="#1f2530" stroke-width="1.5" marker-end="url(#con-arr)" />
+              <text x="574" y="108" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#1f2530">escrita síncrona</text>
+
+              <!-- Nó B commits -->
+              <rect x="682" y="118" width="32" height="18" rx="3" fill="#4f46e5" />
+              <text x="698" y="131" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" font-weight="600" fill="#ffffff">commit</text>
+
+              <!-- Nó B acks back to A -->
+              <line x1="682" y1="145" x2="454" y2="145" stroke="#10b981" stroke-width="1.5" marker-end="url(#con-arr-ok)" />
+              <text x="574" y="141" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#10b981">ack confirmado</text>
+
+              <!-- Write confirmed on A (end of wait block) -->
+              <rect x="420" y="156" width="52" height="22" rx="3" fill="#d1fae5" stroke="#10b981" stroke-width="1.5" />
+              <text x="446" y="167" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" font-weight="700" fill="#059669">WRITE OK</text>
+              <text x="446" y="176" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#059669">t=75ms</text>
+
+              <!-- Reads after confirmation — both nodes guaranteed -->
+              <rect x="672" y="182" width="52" height="22" rx="3" fill="#d1fae5" stroke="#10b981" stroke-width="1.5" />
+              <text x="698" y="193" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" font-weight="700" fill="#059669">READ v=2</text>
+              <text x="698" y="202" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#059669">garantido ✓</text>
+
+              <rect x="420" y="208" width="52" height="22" rx="3" fill="#d1fae5" stroke="#10b981" stroke-width="1.5" />
+              <text x="446" y="219" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" font-weight="700" fill="#059669">READ v=2</text>
+              <text x="446" y="228" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#059669">garantido ✓</text>
+
+              <!-- Summary box right -->
+              <rect x="406" y="242" width="340" height="48" rx="4" fill="#f0f2f5" stroke="#1f2530" stroke-width="1" />
+              <text x="576" y="258" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="700" fill="#1f2530">Qualquer read retorna valor atualizado</text>
+              <text x="576" y="272" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">Latência de escrita = RTT das réplicas (+50–300 ms multi-região)</text>
+              <text x="576" y="286" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">Use quando: saldo, estoque, votação, inventário crítico</text>
+            </svg>
+            <figcaption>Consistência Eventual (esquerda): escrita confirma rápido, réplica pode retornar valor antigo por alguns milissegundos. Consistência Forte (direita): escrita só confirma após todas as réplicas sincronizarem — latência maior, mas qualquer leitura em qualquer nó retorna o valor atualizado.</figcaption>
+          </figure>
+
+          <h3>CAP Theorem</h3>
+          <p>
+            O Teorema CAP (Brewer, 2000) afirma que em caso de <strong>Partição de
+            rede</strong> (P — nós não conseguem se comunicar), um sistema distribuído
+            precisa escolher entre:
+          </p>
+          <ul>
+            <li>
+              <strong>Consistência (C):</strong> toda leitura retorna o valor mais
+              recente escrito, ou um erro. O sistema recusa servir leituras de nós
+              que possam estar desatualizados durante a partição.
+            </li>
+            <li>
+              <strong>Disponibilidade (A):</strong> toda requisição recebe resposta
+              (possivelmente com dado desatualizado). O sistema continua operando
+              mesmo que os nós estejam em diferentes lados da partição.
+            </li>
+          </ul>
+          <p>
+            Consistência forte → sistema escolhe C, sacrificando A durante partição.
+            Consistência eventual → sistema escolhe A, mantendo disponibilidade mas
+            podendo retornar dados stale.
+          </p>
+
+          <h3>PACELC — o teorema mais completo</h3>
+          <p>
+            O CAP só fala de partições. O <strong>PACELC</strong> (Daniel Abadi, 2012)
+            adiciona: mesmo sem partição, há tradeoff entre <strong>Latência (L)</strong>
+            e <strong>Consistência (C)</strong>.
+          </p>
+          <div class="code-bloco">
+<pre><code>PACELC: se Partição → escolha entre A e C
+        senão (Else) → tradeoff entre L e C
+
+Exemplos:
+  DynamoDB:   PA/EL  — prioriza disponibilidade e baixa latência
+  Cassandra:  PA/EL  — idem; consistência configurável por operação
+  PostgreSQL: PC/EC  — prioriza consistência; mais latência em writes
+  Spanner:    PC/EC  — consistência forte global; alta latência relativa
+  MongoDB:    PA/EC  — disponível em partição; configurável (w:majority)
+</code></pre>
+          </div>
+          <p>
+            Muitos bancos NoSQL permitem configurar o nível por operação (DynamoDB
+            <code>ConsistentRead</code>, Cassandra <code>ConsistencyLevel</code>),
+            permitindo tradeoffs diferentes para leituras diferentes na mesma aplicação.
+          </p>
+        </section>
+
+        <!-- 4. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar cada modelo</h2>
+          <ul>
+            <li>
+              <strong>Consistência forte:</strong> saldo bancário, inventário de
+              e-commerce com estoque crítico, sistemas de votação, reserva de assentos,
+              qualquer operação onde ler dado antigo tem consequência real de negócio
+              (vender o mesmo assento duas vezes, autorizar saque de valor que não existe).
+            </li>
+            <li>
+              <strong>Consistência eventual:</strong> timeline de redes sociais,
+              contadores de views e likes (lag de segundos é aceitável), catálogo de
+              produtos (ver preço de ontem por alguns ms é inofensivo), feature flags,
+              recomendações, buscas — qualquer dado onde stale tem impacto desprezível.
+            </li>
+            <li>
+              <strong>Read-Your-Writes:</strong> perfil do usuário — você acabou de
+              atualizar seu avatar e quer ver a mudança. Para outros usuários, eventual
+              é OK, mas para você mesmo a garantia é importante.
+            </li>
+            <li>
+              <strong>Causal Consistency:</strong> threads de comentários (a resposta
+              ao comentário deve aparecer depois do comentário original), feeds de
+              atividade social onde a ordem causal importa para o contexto.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 5. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Consistência Forte — Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Semântica simples: você nunca precisa pensar em "será que esse dado está atualizado?".</li>
+            <li>Essencial para operações financeiras e de inventário crítico.</li>
+            <li>Facilita o raciocínio sobre o código: não há necessidade de lógica de "eventual retry" ou "compensação por stale read".</li>
+          </ul>
+          <h3>Consistência Forte — Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Maior latência de escrita: o sistema espera confirmação de todas (ou maioria das) réplicas.</li>
+            <li>Menor disponibilidade durante partições: se réplicas ficam inacessíveis, o sistema pode recusar operações.</li>
+            <li>Não escala bem geograficamente: replicação síncrona entre regiões adiciona 100–300 ms de latência de escrita.</li>
+          </ul>
+          <h3>Consistência Eventual — Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Alta disponibilidade: o sistema continua operando mesmo com réplicas temporariamente inacessíveis.</li>
+            <li>Baixa latência de escrita: confirma sem esperar réplicas.</li>
+            <li>Escala bem geograficamente: réplicas assíncronas em qualquer região sem impacto na latência de escrita.</li>
+          </ul>
+          <h3>Consistência Eventual — Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Complexidade no código de aplicação: você precisa lidar com a possibilidade de leituras stale.</li>
+            <li>Leituras imprevisíveis: em alta carga o lag pode ser segundos — o design deve tolerar isso explicitamente.</li>
+            <li>Conflitos em escritas concorrentes: dois nós que aceitaram escritas conflitantes precisam de estratégia de resolução (LWW — Last Write Wins, CRDT, ou resolução manual).</li>
+          </ul>
+        </section>
+
+        <!-- 6. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Assumir consistência forte em banco com réplicas assíncronas</h3>
+          <p>
+            O erro mais comum: o código escreve no banco e imediatamente faz uma leitura
+            — mas a leitura vai para uma réplica de leitura (read replica) que ainda não
+            processou a escrita. O usuário vê o dado antigo. Isso parece um bug intermitente
+            porque o lag varia e em desenvolvimento (banco local sem réplicas) o bug nunca
+            aparece.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Prática:</strong> em operações onde Read-Your-Writes é necessário,
+            leia do primário (não da réplica) imediatamente após escrever. ORMs modernos
+            têm configuração para isso (ex.: <code>after_write_primary_reads</code> no
+            Prisma, <code>read_preference=primary</code> no MongoDB, ou simplesmente
+            usar a mesma conexão do write).
+          </p>
+
+          <h3>2. Tratar "eventual" como "imediato na prática"</h3>
+          <p>
+            Em desenvolvimento com um banco local, a propagação é instantânea. Em
+            produção, com réplicas reais e carga real, o lag pode ser de segundos.
+            Arquiteturas que assumem "eventual demora menos de 100 ms" funcionam
+            bem na maioria do tempo e falham silenciosamente quando a carga aumenta
+            ou a rede piora. O design deve tolerar lag de segundos, não de
+            milissegundos.
+          </p>
+
+          <h3>3. Não documentar o modelo de consistência da API</h3>
+          <p>
+            Se o seu endpoint de leitura usa consistência eventual, documente isso
+            explicitamente. O chamador precisa saber que pode receber dados de até
+            X segundos atrás, para poder decidir se isso é aceitável para o seu
+            caso de uso. Consistência não documentada gera surpresas em produção
+            e bugs difíceis de diagnosticar em integrações.
+          </p>
+
+          <h3>4. Confundir consistência com durabilidade</h3>
+          <p>
+            Consistência define quão atual é a leitura que você recebe. Durabilidade
+            define se uma escrita sobrevive a falhas (crash do servidor, falha de disco).
+            São dimensões ortogonais: um sistema pode ter consistência eventual e alta
+            durabilidade (DynamoDB com replicação em 3 zonas) ou consistência forte com
+            durabilidade configurável (MongoDB com <code>w:1</code> vs <code>w:majority</code>).
+            Confundir os dois leva a decisões de arquitetura equivocadas.
+          </p>
+        </section>
+
+        <!-- 7. RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Arquiteturas e padrões relacionados</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../replicacao-de-banco/">Replicação de Banco de Dados</a></li>
+            <li><a href="../sql-vs-nosql/">SQL vs NoSQL</a></li>
+            <li><a href="../cqrs/">CQRS</a></li>
+            <li><a href="../filas-de-mensagem/">Filas de Mensagem</a></li>
+            <li><a href="../sharding/">Sharding</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Replicação de Banco</strong> é o mecanismo físico que implementa
+            os modelos de consistência: replicação síncrona habilita consistência
+            forte; replicação assíncrona resulta em consistência eventual. Entender
+            consistência é essencial para configurar replicação corretamente.
+          </p>
+          <p>
+            <strong>CQRS</strong> separa explicitamente o modelo de escrita (consistência
+            forte no Command Store) do modelo de leitura (consistência eventual nas
+            projeções/read models). Isso torna o tradeoff de consistência explícito na
+            arquitetura em vez de implícito na configuração do banco.
+          </p>
+          <p>
+            <strong>SQL vs NoSQL</strong> tem forte relação com consistência: bancos
+            SQL tradicionais oferecem consistência forte por padrão (ACID); bancos NoSQL
+            historicamente priorizaram disponibilidade e consistência eventual (BASE),
+            embora muitos modernos (CockroachDB, Spanner, DynamoDB com transações)
+            ofereçam consistência forte configurável.
+          </p>
+          <p>
+            <strong>Sharding</strong> adiciona outra dimensão: consistência entre shards
+            diferentes é especialmente difícil — uma transação que cruza dois shards
+            não tem uma réplica única de verdade, exigindo protocolos de commit
+            distribuídos para garantir consistência forte.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="7373737373"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

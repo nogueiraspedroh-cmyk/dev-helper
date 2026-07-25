@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SQL vs NoSQL — Dev Helper Biblioteca</title>
+  <meta name="description" content="Entenda os trade-offs entre bancos relacionais (SQL) e não-relacionais (NoSQL): os quatro modelos NoSQL, CAP Theorem, ACID vs BASE e quando cada tipo de banco resolve melhor o problema." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>SQL vs NoSQL</span>
+        </nav>
+        <span class="artigo__categoria">System Design</span>
+        <h1 class="artigo__titulo">SQL vs NoSQL</h1>
+        <p class="artigo__subtitulo">
+          A escolha do tipo de banco de dados impacta modelagem, consistência, escala e
+          operação. Bancos relacionais e não-relacionais não são opostos — são ferramentas
+          com trade-offs distintos que se adequam a problemas diferentes.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Escolher o banco de dados certo é uma decisão de modelo, não de
+            escala.</strong> SQL (relacional) e NoSQL (não-relacional) resolvem problemas
+            diferentes: SQL brilha em dados estruturados com relacionamentos complexos e
+            necessidade de consistência transacional; NoSQL oferece flexibilidade de
+            modelagem, performance especializada ou escala horizontal para casos de uso
+            específicos.
+          </p>
+          <p>
+            A falsa dicotomia "SQL vs NoSQL" leva a decisões ruins. A pergunta correta é:
+            qual modelo de dados reflete melhor a estrutura do problema? Quais garantias de
+            consistência o domínio exige? Qual padrão de acesso domina — leituras por
+            chave primária, queries ad-hoc, traversal de grafos, séries temporais? A resposta
+            define qual banco — ou combinação de bancos — é a ferramenta adequada.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Sistemas com requisitos diferentes de dados frequentemente usam o mesmo banco
+            para tudo porque é o padrão estabelecido na equipe, não porque é a melhor
+            ferramenta. Isso gera atritos concretos:
+          </p>
+          <ul>
+            <li>
+              <strong>Modelagem forçada:</strong> dados hierárquicos e variáveis (um produto
+              com atributos diferentes por categoria) modelados em tabelas relacionais exigem
+              schemas complexos com joins profundos ou o anti-pattern de colunas genéricas
+              (<code>attr1</code>, <code>attr2</code>, <code>attr3</code>).
+            </li>
+            <li>
+              <strong>Performance inadequada ao padrão de acesso:</strong> um banco relacional
+              lendo dados por chave primária para uma API de sessão faz joins e index scans
+              desnecessários. Um banco de documentos tentando fazer joins entre coleções
+              diferentes na aplicação é lento e difícil de manter.
+            </li>
+            <li>
+              <strong>Escala inadequada ao modelo:</strong> escalar horizontalmente um banco
+              relacional ACID é complexo. Usar um banco NoSQL eventually consistent para um
+              sistema financeiro que exige consistência forte introduz riscos de integridade.
+            </li>
+            <li>
+              <strong>Schema rígido travando iteração rápida:</strong> em fases iniciais de
+              produto, o schema muda frequentemente. Migrations em SQL com dados em produção
+              podem ser lentas e arriscadas; um banco de documentos permite evoluir o schema
+              por documento sem bloquear o sistema.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. COMO FUNCIONA -->
+        <section class="artigo__secao">
+          <h2>Como funciona</h2>
+
+          <h3>SQL — bancos relacionais</h3>
+          <p>
+            Bancos relacionais organizam dados em tabelas com schema rígido, relações
+            declaradas entre tabelas (chaves estrangeiras) e SQL como linguagem padrão
+            de consulta. A propriedade fundamental é <strong>ACID</strong>:
+          </p>
+          <ul>
+            <li><strong>Atomicity:</strong> uma transação é tudo ou nada — ou todas as operações são aplicadas ou nenhuma é.</li>
+            <li><strong>Consistency:</strong> uma transação leva o banco de um estado válido a outro estado válido, respeitando todas as restrições definidas.</li>
+            <li><strong>Isolation:</strong> transações concorrentes se comportam como se fossem executadas sequencialmente — cada uma enxerga o banco em estado consistente.</li>
+            <li><strong>Durability:</strong> uma vez confirmada, a transação persiste mesmo diante de falhas de sistema.</li>
+          </ul>
+          <p>
+            Exemplos: <strong>PostgreSQL</strong> (padrão para aplicações modernas),
+            <strong>MySQL/MariaDB</strong> (amplamente usado em web), <strong>SQLite</strong>
+            (embedded, sem servidor), <strong>SQL Server</strong>, <strong>Oracle</strong>.
+          </p>
+
+          <h3>NoSQL — quatro modelos principais</h3>
+          <p>
+            "NoSQL" não é um único tipo de banco — é um rótulo para bancos não-relacionais
+            com modelos de dados radicalmente diferentes, cada um otimizado para um padrão
+            de uso específico.
+          </p>
+
+          <h3>Diagrama comparativo: a mesma entidade em SQL e Documento</h3>
+          <div class="code-bloco">
+<pre><code>  PEDIDO — SQL (relacional)               PEDIDO — Documento (MongoDB)
+
+  tabela: pedidos                         documento na coleção "pedidos":
+  ┌────┬────────────┬────────┐            {
+  │ id │ cliente_id │ status │              "_id": "ped-001",
+  ├────┼────────────┼────────┤              "cliente_id": "cli-42",
+  │  1 │     42     │  pago  │              "status": "pago",
+  └────┴────────────┴────────┘              "itens": [
+                                              { "produto": "Teclado", "qtd": 1, "preco": 350 },
+  tabela: itens_pedido                        { "produto": "Mouse",   "qtd": 2, "preco": 89  }
+  ┌────┬───────────┬─────────┬───┬───────┐  ],
+  │ id │ pedido_id │ produto │qtd│ preco │  "total": 528,
+  ├────┼───────────┼─────────┼───┼───────┤  "criado_em": "2026-06-30T10:00:00Z"
+  │  1 │     1     │ Teclado │ 1 │  350  │}
+  │  2 │     1     │ Mouse   │ 2 │   89  │
+  └────┴───────────┴─────────┴───┴───────┘  Pedido e itens chegam juntos.
+                                             Uma leitura, sem JOIN.
+  JOIN necessário para reconstruir           Schema flexível por documento.
+  o pedido com seus itens.
+</code></pre>
+          </div>
+
+          <h3>Documento (MongoDB, CouchDB)</h3>
+          <p>
+            Armazena dados em formato JSON/BSON. Schema flexível — cada documento pode
+            ter campos diferentes. Ideal para dados hierárquicos que chegam e são lidos
+            como uma unidade (pedido com itens, artigo com comentários, perfil com
+            endereços). Queries dentro de um documento são eficientes; queries que
+            precisam de dados de múltiplas coleções exigem lookup (semelhante a joins)
+            ou desnormalização prévia.
+          </p>
+
+          <h3>Chave-Valor (Redis, DynamoDB)</h3>
+          <p>
+            Máxima simplicidade: um valor associado a uma chave. Sem schema, sem relações,
+            sem queries complexas — apenas <em>get</em>, <em>set</em> e <em>delete</em>.
+            Latência extremamente baixa porque a estrutura de dados é simples e o acesso
+            é direto. Ideal para sessões de usuário, cache, filas simples e feature flags.
+            Redis adiciona estruturas ricas (listas, sets, hashes, sorted sets) que o
+            tornam versátil além do simples chave-valor.
+          </p>
+
+          <h3>Coluna larga (Cassandra, HBase)</h3>
+          <p>
+            Organiza dados em famílias de colunas — tabelas com colunas dinâmicas que
+            podem variar por linha. Otimizado para escrita massiva e leitura por range de
+            chave de partição ou range temporal. Distribui dados horizontalmente por
+            design, com replicação automática entre nós. Usado em IoT (telemetria de
+            dispositivos), analytics de eventos em alta vazão e time-series (logs,
+            métricas, rastreamento de atividade).
+          </p>
+
+          <h3>Grafo (Neo4j, Amazon Neptune)</h3>
+          <p>
+            Modela entidades como nós e relacionamentos como arestas. Relacionamentos são
+            cidadãos de primeira classe — armazenados explicitamente com propriedades —
+            e traversal de grafos profundos é eficiente por design. Consultas que em SQL
+            exigiriam múltiplos self-joins recursivos são expressas de forma direta na
+            linguagem de query do banco de grafos (Cypher, Gremlin). Usado em redes
+            sociais (amigos de amigos), sistemas de recomendação (usuários que compraram
+            X também compraram Y) e detecção de fraude por relacionamentos.
+          </p>
+
+          <h3>CAP Theorem — consistência, disponibilidade e tolerância a partição</h3>
+          <p>
+            O teorema CAP estabelece que um banco distribuído pode garantir apenas dois dos
+            três propriedades simultaneamente:
+          </p>
+          <ul>
+            <li><strong>Consistency (C):</strong> todas as leituras refletem a escrita mais recente.</li>
+            <li><strong>Availability (A):</strong> toda requisição recebe uma resposta (mesmo que não seja a mais recente).</li>
+            <li><strong>Partition Tolerance (P):</strong> o sistema continua funcionando mesmo que mensagens entre nós sejam perdidas ou atrasadas.</li>
+          </ul>
+          <p>
+            Em sistemas distribuídos, falhas de rede (partição) são inevitáveis — P é
+            obrigatório. A escolha real é entre C e A durante uma partição. Bancos
+            relacionais tradicionais (não distribuídos) priorizam CA: em um único nó,
+            não há partição. NoSQL distribuídos frequentemente escolhem AP (Cassandra,
+            DynamoDB com consistência eventual) ou CP (MongoDB, Redis Cluster).
+          </p>
+
+          <h3>ACID vs BASE</h3>
+          <p>
+            ACID (bancos relacionais) garante consistência forte e transações completas.
+            BASE é o modelo de muitos NoSQL distribuídos:
+          </p>
+          <ul>
+            <li><strong>Basically Available:</strong> o sistema responde sempre, mesmo com dados possivelmente desatualizados.</li>
+            <li><strong>Soft state:</strong> o estado do sistema pode mudar com o tempo, mesmo sem novas escritas (por replicação em andamento).</li>
+            <li><strong>Eventually consistent:</strong> após um período de tempo sem novas escritas, todos os nós convergem para o mesmo valor.</li>
+          </ul>
+        </section>
+
+        <!-- 4. QUANDO USAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar SQL</h2>
+          <ul>
+            <li>
+              <strong>Dados com relacionamentos complexos entre entidades:</strong> pedidos,
+              clientes, produtos, faturas — entidades que se cruzam de formas variadas e
+              precisam de joins para consultas de negócio.
+            </li>
+            <li>
+              <strong>Transações que cruzam múltiplas entidades:</strong> débito em uma
+              conta e crédito em outra, reserva de estoque e criação de pedido
+              simultaneamente. ACID garante que ou tudo acontece ou nada acontece.
+            </li>
+            <li>
+              <strong>Queries ad-hoc e relatórios:</strong> SQL permite consultas
+              arbitrárias sobre os dados sem necessidade de índices pré-definidos. Ideal
+              para analytics, relatórios operacionais e exploração de dados.
+            </li>
+            <li>
+              <strong>Domínio bem compreendido com schema estável:</strong> quando o modelo
+              de dados é conhecido e muda com pouca frequência, o schema rígido é uma
+              proteção contra inconsistências, não um obstáculo.
+            </li>
+          </ul>
+
+          <h2>Quando usar NoSQL Documento</h2>
+          <ul>
+            <li>Schema variável ou em evolução rápida — campos diferentes por entidade, produto em fase inicial com modelo em mutação.</li>
+            <li>Dados hierárquicos que chegam e são lidos como uma unidade, sem necessidade de joins frequentes.</li>
+            <li>Equipes que trabalham com objetos JSON na aplicação e querem evitar a impedância objeto-relacional.</li>
+          </ul>
+
+          <h2>Quando usar NoSQL Chave-Valor</h2>
+          <ul>
+            <li>Cache de resultados de queries ou de respostas de APIs (Redis).</li>
+            <li>Sessões de usuário, tokens de autenticação, estados temporários.</li>
+            <li>Feature flags, configurações lidas com altíssima frequência.</li>
+            <li>Filas simples e estruturas de dados em tempo real (leaderboards com Redis Sorted Sets).</li>
+          </ul>
+
+          <h2>Quando usar NoSQL Coluna Larga</h2>
+          <ul>
+            <li>Séries temporais com volume massivo: telemetria de IoT, métricas de infraestrutura, logs de eventos.</li>
+            <li>Sistemas com taxa de escrita muito alta e leitura por range temporal.</li>
+            <li>Dados que precisam ser distribuídos globalmente com replicação multi-região por design.</li>
+          </ul>
+
+          <h2>Quando usar NoSQL Grafo</h2>
+          <ul>
+            <li>Redes sociais onde a pergunta é "quem conhece quem" e traversal de N graus é frequente.</li>
+            <li>Sistemas de recomendação baseados em relacionamentos entre usuários, produtos e comportamentos.</li>
+            <li>Detecção de fraude por análise de padrões em redes de transações.</li>
+            <li>Knowledge graphs e sistemas de permissões baseados em hierarquias complexas.</li>
+          </ul>
+        </section>
+
+        <!-- 5. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+
+          <h3>SQL — Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>ACID completo: transações com consistência forte, sem risco de dados parcialmente escritos.</li>
+            <li>Linguagem padrão: SQL é universalmente conhecido e suportado por ferramentas de BI, analytics e ORM.</li>
+            <li>Integridade referencial declarativa: chaves estrangeiras e constraints são aplicadas pelo banco, não pela aplicação.</li>
+            <li>Queries ad-hoc sem índices pré-definidos: é possível consultar qualquer combinação de campos com SQL.</li>
+            <li>Maturidade e ecossistema: décadas de otimizações, ferramentas, conhecimento e suporte disponíveis.</li>
+          </ul>
+
+          <h3>SQL — Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Impedância objeto-relacional: mapear objetos hierárquicos para tabelas planas exige ORMs ou queries complexas.</li>
+            <li>Schema rígido: alterações de schema em produção com dados existentes exigem migrations cuidadosas.</li>
+            <li>Scale horizontal complexo: sharding em bancos relacionais não é trivial — a maioria escala verticalmente até um limite.</li>
+            <li>Performance para padrões simples de acesso: um SELECT por chave primária em PostgreSQL é mais lento que um GET em Redis para os mesmos dados.</li>
+          </ul>
+
+          <h3>NoSQL — Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Flexibilidade de schema: adapte o modelo de dados sem migrations bloqueantes.</li>
+            <li>Performance especializada: cada tipo de NoSQL é otimizado para seu padrão de acesso específico.</li>
+            <li>Scale horizontal por design: Cassandra, DynamoDB e MongoDB foram projetados para distribuição em múltiplos nós.</li>
+            <li>Modelos de dados expressivos: grafos, documentos hierárquicos, séries temporais — modelados diretamente sem impedância.</li>
+          </ul>
+
+          <h3>NoSQL — Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Consistência eventual: muitos NoSQL distribuídos não garantem que uma leitura após uma escrita reflete o dado mais recente.</li>
+            <li>Sem transações cross-coleção (em geral): operações atômicas entre múltiplas entidades são mais complexas ou impossíveis dependendo do banco.</li>
+            <li>Menor expressividade de query: sem SQL completo, queries complexas precisam ser planejadas na modelagem ou feitas na aplicação.</li>
+            <li>Ecossistema menor: menos ferramentas, menos profissionais experientes, menos respostas em fóruns para problemas específicos.</li>
+          </ul>
+        </section>
+
+        <!-- 6. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Usar NoSQL para escapar de modelagem</h3>
+          <p>
+            Schema flexível não é ausência de modelagem — é modelagem diferida que vira
+            dívida técnica. Documentos sem estrutura definida resultam em campos com nomes
+            inconsistentes, tipos diferentes para o mesmo campo em documentos distintos
+            e lógica de normalização espalhada pela aplicação. Ao usar um banco de
+            documentos, o schema ainda precisa ser definido e aplicado — a diferença é
+            que quem o aplica é a aplicação, não o banco.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Regra prática:</strong> trate o schema de um banco NoSQL como código:
+            versione-o, documente-o e valide-o na camada de aplicação. A flexibilidade
+            do banco não é uma licença para criar documentos arbitrários.
+          </p>
+
+          <h3>2. Joins no código por falta de planejamento</h3>
+          <p>
+            O anti-pattern mais comum em bancos de documentos: dados são desnormalizados
+            de forma insuficiente — ou não desnormalizados — e a aplicação faz múltiplas
+            queries a diferentes coleções para reconstruir uma entidade, depois junta os
+            resultados no código. O resultado é mais lento e mais frágil do que o JOIN
+            SQL original, sem os benefícios da desnormalização.
+          </p>
+          <p>
+            Modelagem em bancos de documentos deve partir do padrão de acesso, não do
+            modelo de domínio: defina quais dados chegam juntos em uma leitura e
+            desnormalize-os no mesmo documento.
+          </p>
+
+          <h3>3. Supor que NoSQL escala e SQL não</h3>
+          <p>
+            PostgreSQL com replicação de leitura, connection pooling (PgBouncer), particionamento
+            de tabelas e índices bem planejados atende cargas enormes — a maioria das aplicações
+            nunca vai precisar de mais do que isso. A decisão entre SQL e NoSQL é de modelo de
+            dados e padrão de acesso, não de capacidade de escala. Usar Cassandra para um sistema
+            com 1000 usuários porque "NoSQL escala" é over-engineering sem benefício.
+          </p>
+
+          <h3>4. Misturar consistência forte e eventual sem perceber</h3>
+          <p>
+            Bancos NoSQL com replicação eventual podem retornar dados desatualizados em
+            leituras imediatamente após escritas. Ler de uma réplica de leitura em um
+            PostgreSQL com replicação assíncrona tem o mesmo problema — mas em SQL, a
+            consistência forte é o padrão e a eventual é opt-in. Em muitos NoSQL, a
+            consistência eventual é o padrão e a forte é opt-in (e mais cara em latência).
+            Conheça o padrão de consistência do seu banco e configure-o explicitamente
+            para cada operação crítica.
+          </p>
+        </section>
+
+        <!-- 7. RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Arquiteturas e padrões relacionados</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../caching/">Caching</a></li>
+            <li><a href="../cqrs/">CQRS</a></li>
+            <li><a href="../escalabilidade-horizontal-vertical/">Escalabilidade Horizontal vs Vertical</a></li>
+            <li><a href="../event-driven/">Event-Driven Architecture</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Caching</strong> é frequentemente aplicado sobre bancos SQL para
+            reduzir a carga de queries custosas: os resultados são armazenados em Redis
+            e servidos diretamente sem tocar o banco para requisições subsequentes.
+            Redis (NoSQL Chave-Valor) e PostgreSQL (SQL) são usados em conjunto na
+            maioria dos sistemas modernos — não como concorrentes, mas como camadas
+            complementares.
+          </p>
+          <p>
+            O <strong>CQRS</strong> permite que o modelo de escrita e o modelo de leitura
+            usem bancos diferentes. O Write Model pode persistir em PostgreSQL (consistência
+            ACID para as transações de negócio) enquanto o Read Model é projetado em
+            MongoDB ou Redis (performance de leitura otimizada para o padrão de consulta).
+            Essa combinação é um dos casos de uso mais concretos para a escolha deliberada
+            de múltiplos tipos de banco no mesmo sistema.
+          </p>
+          <p>
+            Em <strong>Event-Driven Architecture</strong>, o event store (onde os eventos
+            são persistidos de forma durável) frequentemente usa um banco relacional ou um
+            banco especializado em append-only — enquanto as projeções derivadas dos eventos
+            podem viver em qualquer tipo de banco adequado ao padrão de leitura: Elasticsearch
+            para full-text, Redis para cache, Cassandra para séries temporais.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="5656565656"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

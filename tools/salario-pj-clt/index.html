@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculadora de Salário PJ vs CLT — Dev Helper</title>
+  <meta name="description" content="Compare remuneração CLT e PJ lado a lado: total anual líquido estimado com INSS, IRRF, 13º, férias, FGTS, impostos do Simples e benefícios personalizados." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="en" href="../../en/tools/salario-pj-clt/" />
+
+  <!--
+    AdSense — biblioteca carregada UMA vez por página.
+    Substitua ca-pub-0000000000000000 pelo seu pub-ID real antes do deploy.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../../biblioteca/">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Calculadora de Salário PJ vs CLT</h1>
+        <p>Compare o total anual estimado de uma remuneração <strong>CLT</strong> e <strong>PJ</strong>, incluindo descontos, 13º, férias, FGTS, impostos e benefícios.</p>
+      </header>
+
+      <!-- AVISO DE COMPLIANCE — visível e destacado -->
+      <div class="conta-aviso" role="note" aria-label="Aviso importante">
+        <strong>Aviso:</strong> os resultados são <strong>estimativas aproximadas</strong> para fins de comparação e aprendizado. As tabelas de INSS, IRRF, FGTS e Simples Nacional usadas são <strong>ilustrativas e podem estar desatualizadas</strong>. Esta ferramenta <strong>não substitui consultoria trabalhista, tributária ou contábil</strong>. Não a utilize como base única para decisões de carreira, contratação ou tributação.
+      </div>
+
+      <!-- ── SEÇÃO: MODO ────────────────────────────────────────────────────── -->
+      <section class="tool__section">
+        <fieldset class="tool__fieldset">
+          <legend class="tool__legend">O que exibir</legend>
+          <label class="tool__radio-label">
+            <input type="radio" name="salario-modo" value="comparativo" checked />
+            Comparativo (CLT e PJ lado a lado)
+          </label>
+          <label class="tool__radio-label">
+            <input type="radio" name="salario-modo" value="clt" />
+            Somente CLT
+          </label>
+          <label class="tool__radio-label">
+            <input type="radio" name="salario-modo" value="pj" />
+            Somente PJ
+          </label>
+        </fieldset>
+      </section>
+
+      <!-- ── SEÇÃO: ENTRADAS CLT / PJ ───────────────────────────────────────── -->
+      <section class="tool__section">
+        <h2 class="tool__section-title">Dados da remuneração</h2>
+
+        <div class="salario-entradas">
+          <!-- CLT -->
+          <div class="salario-entrada-grupo">
+            <h3 class="salario-entrada-grupo__titulo">CLT</h3>
+            <div class="tool__actions">
+              <label class="tool__label" for="clt-salario">Salário bruto mensal (R$):</label>
+              <input id="clt-salario" class="tool__input-inline salario-input" type="number" min="0" step="any" placeholder="Ex.: 8000" autocomplete="off" spellcheck="false" />
+            </div>
+          </div>
+
+          <!-- PJ -->
+          <div class="salario-entrada-grupo">
+            <h3 class="salario-entrada-grupo__titulo">PJ</h3>
+            <div class="tool__actions">
+              <label class="tool__label" for="pj-faturamento">Faturamento mensal / NF (R$):</label>
+              <input id="pj-faturamento" class="tool__input-inline salario-input" type="number" min="0" step="any" placeholder="Ex.: 11000" autocomplete="off" spellcheck="false" />
+            </div>
+            <div class="tool__actions tool__actions--mt">
+              <label class="tool__label" for="pj-pro-labore">Pró-labore mensal (R$):</label>
+              <input id="pj-pro-labore" class="tool__input-inline salario-input salario-input--curto" type="number" min="0" step="any" placeholder="Ex.: 2500 (padrão: salário mínimo se vazio)" autocomplete="off" spellcheck="false" />
+            </div>
+            <div class="tool__actions tool__actions--mt">
+              <label class="tool__label" for="pj-aliquota">Alíquota de impostos (%):</label>
+              <input id="pj-aliquota" class="tool__input-inline salario-input salario-input--curto" type="number" min="0" max="100" step="any" value="6" autocomplete="off" spellcheck="false" />
+            </div>
+            <div class="tool__actions tool__actions--mt">
+              <label class="tool__label" for="pj-custos">Custos fixos mensais (R$, opcional):</label>
+              <input id="pj-custos" class="tool__input-inline salario-input salario-input--curto" type="number" min="0" step="any" placeholder="Ex.: 200 (contador)" autocomplete="off" spellcheck="false" />
+            </div>
+          </div>
+        </div>
+
+        <p class="conta-validar-aviso">
+          Todo sócio PJ precisa declarar um <strong>pró-labore</strong> mensal, sobre o qual incide INSS — se você não informar um valor, assumimos o <strong>salário mínimo</strong> como padrão e calculamos o INSS (11%) automaticamente. A alíquota de impostos PJ é <strong>editável</strong> — por padrão usamos <strong>6%</strong>, próximo à faixa inicial do Simples Nacional (Anexo III, serviços). Ajuste-a para refletir seu anexo/faixa reais. Use os "custos fixos" para contador, coworking e afins.
+        </p>
+      </section>
+
+      <!-- ── SEÇÃO: BENEFÍCIOS ──────────────────────────────────────────────── -->
+      <section class="tool__section">
+        <h2 class="tool__section-title">Benefícios (opcional)</h2>
+        <p class="conta-validar-aviso">
+          Adicione benefícios com valor mensal e escolha se cada um vale para <strong>CLT</strong>, <strong>PJ</strong> ou <strong>ambos</strong>. Eles entram no total anual do(s) regime(s) correspondente(s). Ex.: vale-refeição, vale-alimentação, plano de saúde, plano odontológico, auxílio-creche, PLR.
+        </p>
+        <div id="salario-beneficios" class="salario-beneficios"></div>
+        <button type="button" id="btn-add-beneficio" class="button--secondary">+ Adicionar benefício</button>
+      </section>
+
+      <!-- Botões de ação -->
+      <div class="tool__actions">
+        <button id="btn-calcular-salario" class="button" type="button">Calcular</button>
+        <button id="btn-limpar-salario" class="button--secondary" type="button">Limpar</button>
+      </div>
+
+      <!-- Mensagem de erro de entrada -->
+      <p id="salario-erro" class="error-msg" role="alert" hidden></p>
+
+      <!-- ── SEÇÃO: RESULTADO ───────────────────────────────────────────────── -->
+      <section class="tool__section tool__output" id="salario-resultado" hidden>
+        <h2 class="tool__section-title">Resultado estimado (anual)</h2>
+        <div id="salario-resultado-corpo"></div>
+      </section>
+
+    </article>
+
+    <!-- Bloco de anúncio — abaixo da área de resultado da ferramenta -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="1010101010"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Conteúdo real — exigido pelo AdSense -->
+    <section>
+      <h2>CLT vs PJ: qual regime rende mais?</h2>
+      <p>
+        Uma das dúvidas mais comuns na carreira de tecnologia é comparar uma proposta
+        <strong>CLT</strong> (Consolidação das Leis do Trabalho) com uma proposta
+        <strong>PJ</strong> (Pessoa Jurídica). A comparação não pode ser feita apenas pelo
+        valor "cheio" mensal: o regime CLT embute uma série de direitos e descontos
+        (INSS, Imposto de Renda, 13º salário, férias com adicional de 1/3 e FGTS) que
+        alteram significativamente o valor que efetivamente chega ao bolso ao longo de um
+        ano. Já o PJ costuma ter um valor bruto maior, mas paga a própria tributação e
+        não recebe automaticamente 13º, férias ou FGTS.
+      </p>
+      <p>
+        Esta calculadora estima o <strong>total anual</strong> de cada regime para que a
+        comparação seja feita na mesma base — o ano inteiro, não só um mês isolado.
+      </p>
+
+      <h2>Como o cálculo CLT é estimado</h2>
+      <p>O total anual CLT é montado a partir do salário bruto mensal informado:</p>
+      <ul>
+        <li><strong>INSS:</strong> desconto previdenciário calculado pela tabela progressiva do empregado, com alíquotas por faixa (7,5% a 14%) e limite no teto de contribuição.</li>
+        <li><strong>IRRF:</strong> Imposto de Renda Retido na Fonte, calculado sobre a base (salário menos INSS) usando a tabela mensal com a parcela a deduzir de cada faixa.</li>
+        <li><strong>13º salário:</strong> um salário extra por ano; nesta estimativa, o líquido do 13º é considerado equivalente ao de um mês normal.</li>
+        <li><strong>Férias + 1/3:</strong> além do salário do mês de férias, o trabalhador recebe um adicional de 1/3. A ferramenta estima o líquido desse adicional.</li>
+        <li><strong>FGTS:</strong> 8% depositados pelo empregador sobre 13 salários (12 meses + 13º). Não é desconto — é dinheiro do trabalhador, por isso entra no pacote anual.</li>
+      </ul>
+
+      <h2>Como o cálculo PJ é estimado</h2>
+      <p>O total anual PJ parte do faturamento mensal (valor da nota fiscal):</p>
+      <ul>
+        <li><strong>Pró-labore e INSS:</strong> todo sócio PJ precisa declarar um pró-labore mensal. Se você não informar um valor, a ferramenta assume o <strong>salário mínimo (R$ 1.412,00, referência 2024)</strong> como padrão. Sobre o pró-labore incide INSS de <strong>11%</strong>, limitado ao mesmo teto de contribuição usado no cálculo CLT — o valor é descontado do líquido mensal PJ.</li>
+        <li><strong>Impostos:</strong> uma alíquota editável (padrão 6%, próxima à faixa inicial do Simples Nacional — Anexo III de serviços) incide sobre o faturamento. Ajuste-a conforme seu anexo e faixa reais.</li>
+        <li><strong>Custos fixos:</strong> despesas mensais como contador, coworking ou ferramentas podem ser informadas para descontar do líquido.</li>
+        <li><strong>Sem 13º, férias e FGTS automáticos:</strong> o PJ não recebe esses direitos por padrão. Para se equiparar, muitos profissionais provisionam parte do faturamento por conta própria.</li>
+      </ul>
+
+      <h2>Benefícios entram na conta</h2>
+      <p>
+        Vale-refeição, vale-alimentação, plano de saúde, plano odontológico, auxílio-creche,
+        PLR e outros benefícios têm peso real na comparação. A ferramenta permite adicioná-los
+        com valor mensal e marcar se valem para CLT, PJ ou ambos — cada um é somado (× 12) ao
+        total anual do regime correspondente. Muitos benefícios são típicos do vínculo CLT,
+        mas você pode replicá-los no PJ (por exemplo, contratando um plano de saúde por conta
+        própria) marcando-os como "ambos" ou "só PJ".
+      </p>
+
+      <h2>Perguntas frequentes (FAQ)</h2>
+
+      <h3>Os valores calculados são exatos?</h3>
+      <p>
+        <strong>Não.</strong> São estimativas aproximadas para fins de comparação. As tabelas
+        de INSS, IRRF, FGTS e Simples Nacional são ilustrativas e podem estar desatualizadas
+        em relação à legislação vigente. Diversos fatores reais não são modelados (dependentes
+        no IRRF, deduções, pró-labore, anexos e fatores R do Simples, benefícios com
+        coparticipação etc.). Para números precisos, consulte um contador.
+      </p>
+
+      <h3>A ferramenta considera dependentes no Imposto de Renda?</h3>
+      <p>
+        Não nesta versão. A base do IRRF é calculada apenas como salário menos INSS, sem
+        dedução por dependentes nem uso do desconto simplificado. Isso torna o IRRF estimado
+        ligeiramente maior do que o de quem tem dependentes a deduzir.
+      </p>
+
+      <h3>Por que a alíquota PJ é editável e começa em 6%?</h3>
+      <p>
+        Porque a tributação real de um PJ depende do regime (Simples Nacional, Lucro Presumido),
+        do anexo, da faixa de faturamento e do fator R. 6% é a alíquota inicial do Anexo III do
+        Simples (serviços), usada como ponto de partida. Ajuste o campo para refletir sua
+        situação. O INSS sobre o pró-labore é calculado separadamente (11%, campo próprio),
+        então não é preciso embuti-lo nessa alíquota.
+      </p>
+
+      <h3>O 13º e as férias do PJ não aparecem. Por quê?</h3>
+      <p>
+        Porque, por padrão, o PJ não tem 13º salário, férias remuneradas nem FGTS — são direitos
+        do vínculo CLT. Um profissional PJ que queira o equivalente precisa provisionar esses
+        valores do próprio faturamento. Você pode simular isso ajustando o faturamento ou usando
+        os campos de benefícios.
+      </p>
+
+      <h3>Os valores digitados ficam salvos?</h3>
+      <p>
+        Só durante a sessão atual da página. Ao recarregar, os valores são descartados —
+        anote ou copie o resultado da comparação antes de sair, se precisar dele depois.
+      </p>
+
+      <h3>O que significa a "média/mês" no resultado?</h3>
+      <p>
+        É o total anual estimado dividido por 12. Serve para comparar, num único número mensal,
+        regimes que distribuem a remuneração de formas diferentes ao longo do ano (o CLT
+        concentra parte em 13º e férias; o PJ é mais linear).
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/tools/salario-pj-clt.js"></script>
+</body>
+</html>

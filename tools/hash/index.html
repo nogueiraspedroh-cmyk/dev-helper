@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gerador de Hash — MD5, SHA-1, SHA-256, SHA-384, SHA-512 — Dev Helper</title>
+  <meta name="description" content="Gere hashes MD5, SHA-1, SHA-256, SHA-384 e SHA-512 de qualquer texto direto no navegador. SHA via Web Crypto nativa; MD5 em JavaScript puro. Copie cada hash com um clique." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!--
+    AdSense — biblioteca carregada UMA vez por página.
+    Substitua ca-pub-0000000000000000 pelo seu pub-ID real antes do deploy.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../../biblioteca/">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Gerador de Hash</h1>
+        <p>Digite um texto para gerar seus hashes <strong>MD5</strong>, <strong>SHA-1</strong>, <strong>SHA-256</strong>, <strong>SHA-384</strong> e <strong>SHA-512</strong> — calculados ao vivo.</p>
+      </header>
+
+      <!-- AVISO — MD5 e SHA-1 não servem para segurança -->
+      <div class="conta-aviso" role="note" aria-label="Aviso importante">
+        <strong>Atenção:</strong> <strong>MD5</strong> e <strong>SHA-1</strong> são considerados
+        <strong>criptograficamente quebrados</strong> — servem apenas para checksums e
+        compatibilidade com sistemas legados, <strong>nunca</strong> para senhas ou assinaturas.
+        Para segurança, prefira SHA-256 ou superior. Como a Web Crypto do navegador
+        <strong>não</strong> implementa MD5, o MD5 aqui é calculado por uma implementação própria
+        em JavaScript (os SHA usam a <code>crypto.subtle</code> nativa).
+      </div>
+
+      <div class="tool__controls">
+        <textarea
+          id="hash-input"
+          class="tool__input"
+          placeholder="Digite ou cole o texto para gerar os hashes..."
+          spellcheck="false"
+          autocorrect="off"
+          autocapitalize="off"
+        ></textarea>
+      </div>
+
+      <!-- Mensagem de erro -->
+      <p id="hash-error" class="error-msg" role="alert" hidden></p>
+
+      <!-- Resultados -->
+      <section class="tool__output">
+        <div class="hash-grid">
+          <div class="hash-item">
+            <span class="hash-item__label">MD5</span>
+            <input id="hash-out-md5" class="tool__result-input hash-item__input" type="text" readonly spellcheck="false" aria-label="Hash MD5" />
+            <button id="btn-hash-copy-md5" class="button--secondary hash-item__copy" type="button">Copiar</button>
+          </div>
+          <div class="hash-item">
+            <span class="hash-item__label">SHA-1</span>
+            <input id="hash-out-sha1" class="tool__result-input hash-item__input" type="text" readonly spellcheck="false" aria-label="Hash SHA-1" />
+            <button id="btn-hash-copy-sha1" class="button--secondary hash-item__copy" type="button">Copiar</button>
+          </div>
+          <div class="hash-item">
+            <span class="hash-item__label">SHA-256</span>
+            <input id="hash-out-sha256" class="tool__result-input hash-item__input" type="text" readonly spellcheck="false" aria-label="Hash SHA-256" />
+            <button id="btn-hash-copy-sha256" class="button--secondary hash-item__copy" type="button">Copiar</button>
+          </div>
+          <div class="hash-item">
+            <span class="hash-item__label">SHA-384</span>
+            <input id="hash-out-sha384" class="tool__result-input hash-item__input" type="text" readonly spellcheck="false" aria-label="Hash SHA-384" />
+            <button id="btn-hash-copy-sha384" class="button--secondary hash-item__copy" type="button">Copiar</button>
+          </div>
+          <div class="hash-item">
+            <span class="hash-item__label">SHA-512</span>
+            <input id="hash-out-sha512" class="tool__result-input hash-item__input" type="text" readonly spellcheck="false" aria-label="Hash SHA-512" />
+            <button id="btn-hash-copy-sha512" class="button--secondary hash-item__copy" type="button">Copiar</button>
+          </div>
+        </div>
+      </section>
+    </article>
+
+    <!-- Bloco de anúncio — abaixo do resultado da ferramenta -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="1717171717"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Conteúdo real — exigido pelo AdSense -->
+    <section>
+      <h2>O que é uma função de hash?</h2>
+      <p>
+        Uma <strong>função de hash</strong> transforma uma entrada de qualquer tamanho (um texto,
+        um arquivo) em uma sequência de tamanho fixo — o <em>digest</em>. A mesma entrada sempre
+        produz o mesmo hash, e uma pequena mudança na entrada muda completamente o resultado
+        (efeito avalanche). Um bom hash criptográfico é <strong>unidirecional</strong>: é inviável
+        recuperar a entrada original a partir do digest. Hashes são usados para verificar
+        integridade de arquivos, indexar dados, armazenar senhas (com <em>salt</em> e algoritmos
+        próprios como bcrypt/argon2) e assinar conteúdo.
+      </p>
+
+      <h2>Os algoritmos desta ferramenta</h2>
+      <ul>
+        <li><strong>MD5</strong> — 128 bits. Rápido, porém com colisões conhecidas desde 2004.
+          Use apenas para <em>checksums</em> não-críticos e integração com sistemas legados.</li>
+        <li><strong>SHA-1</strong> — 160 bits. Também quebrado (colisão prática demonstrada em 2017,
+          "SHAttered"). Evite em contextos de segurança.</li>
+        <li><strong>SHA-256</strong> — 256 bits, da família SHA-2. Amplamente usado e considerado
+          seguro; é o hash do Bitcoin e de certificados TLS.</li>
+        <li><strong>SHA-384</strong> e <strong>SHA-512</strong> — variantes de SHA-2 com digests
+          maiores, úteis quando se deseja margem extra de segurança.</li>
+      </ul>
+
+      <h2>Como o cálculo é feito</h2>
+      <p>
+        Os hashes SHA são calculados pela <strong>Web Crypto API</strong> (<code>crypto.subtle.digest</code>),
+        nativa dos navegadores modernos e implementada em código otimizado. O <strong>MD5</strong>,
+        que a Web Crypto propositalmente <strong>não</strong> oferece (por ser um algoritmo legado),
+        é calculado por uma implementação em JavaScript puro incluída nesta página, seguindo a
+        RFC 1321. Em ambos os casos, o texto é primeiro convertido para bytes <strong>UTF-8</strong>,
+        de modo que acentos e emojis produzem o mesmo hash que ferramentas de linha de comando.
+      </p>
+
+      <h2>Perguntas frequentes (FAQ)</h2>
+
+      <h3>Posso usar MD5 ou SHA-1 para guardar senhas?</h3>
+      <p>
+        Não. MD5 e SHA-1 estão quebrados e, além disso, hashes de propósito geral são rápidos demais
+        para senhas (facilitam ataques de força bruta). Para senhas, use algoritmos desenhados para
+        isso, como <strong>bcrypt</strong>, <strong>scrypt</strong> ou <strong>argon2</strong>, sempre
+        com <em>salt</em>.
+      </p>
+
+      <h3>Por que o hash de um acento é diferente do que eu esperava?</h3>
+      <p>
+        O resultado depende da codificação dos bytes. Esta ferramenta usa <strong>UTF-8</strong>,
+        o padrão da web. Se outra ferramenta usar Latin-1 ou UTF-16, o hash do mesmo texto será
+        diferente porque os bytes de entrada são diferentes.
+      </p>
+
+      <h3>Consigo gerar o hash de um arquivo?</h3>
+      <p>
+        Esta versão trabalha com texto. Para arquivos, o mesmo conceito se aplica lendo os bytes do
+        arquivo; podemos adicionar suporte a upload local (sem envio) em uma próxima versão.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/tools/hash.js"></script>
+</body>
+</html>

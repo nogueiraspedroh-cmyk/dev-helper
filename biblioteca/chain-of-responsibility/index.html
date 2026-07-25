@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chain of Responsibility — Design Patterns | Biblioteca Dev Helper</title>
+  <meta name="description" content="Aprenda o padrão Chain of Responsibility (GoF) em profundidade: intenção, problema, solução, estrutura, exemplos em TypeScript e PHP, quando usar, quando evitar e armadilhas comuns." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Chain of Responsibility</span>
+        </nav>
+        <span class="artigo__categoria">Padrão Comportamental (GoF)</span>
+        <h1 class="artigo__titulo">Chain of Responsibility</h1>
+        <p class="artigo__subtitulo">
+          Encadeia handlers em uma corrente sequencial, dando a cada um a chance de
+          processar uma requisição ou passá-la ao próximo — desacoplando quem envia
+          a requisição de quem a processa.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Evitar o acoplamento entre remetente e receptor</strong> de uma
+            requisição, dando a mais de um objeto a oportunidade de tratá-la. Os
+            handlers são encadeados; cada um pode processar a requisição e encerrar
+            a corrente, ou passá-la ao próximo handler sem que o remetente saiba
+            quantos handlers existem ou qual deles agirá.
+          </p>
+          <p>
+            Catalogado pelo GoF (1994) como padrão comportamental, o Chain of
+            Responsibility (CoR) aparece em pipelines de middleware HTTP (autenticação
+            → autorização → throttle → handler de rota), em fluxos de aprovação
+            hierárquica (funcionário → gerente → diretor → CEO), em sistemas de log
+            (debug → info → warning → error) e em filtros de eventos de UI. A corrente
+            é montada em runtime com <code>setNext()</code>, o que permite alterar,
+            reordenar ou estender os handlers sem modificar o remetente.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Imagine um sistema de aprovação de despesas corporativas. Diferentes
+            valores exigem aprovação de diferentes níveis hierárquicos. A abordagem
+            ingênua centraliza toda a lógica num único ponto:
+          </p>
+          <div class="code-bloco">
+<pre><code>// Abordagem ingênua — NÃO faça isso:
+function aprovarDespesa(valor: number, aprovador: string): boolean {
+  if (aprovador === 'chefe' &amp;&amp; valor &lt;= 1000) {
+    console.log('Chefe aprovou');
+    return true;
+  } else if (aprovador === 'gerente' &amp;&amp; valor &lt;= 5000) {
+    console.log('Gerente aprovou');
+    return true;
+  } else if (aprovador === 'diretor' &amp;&amp; valor &lt;= 20000) {
+    console.log('Diretor aprovou');
+    return true;
+  }
+  console.log('Rejeitado');
+  return false;
+}
+// Problema: remetente precisa saber QUEM aprovar; adicionar um nível
+// exige modificar esta função; condicionais crescem indefinidamente.</code></pre>
+          </div>
+          <p>
+            Problemas imediatos: o remetente precisa conhecer todos os aprovadores
+            possíveis e suas regras; adicionar um novo nível de aprovação exige
+            modificar a função central; a lógica de cada nível está misturada num
+            único bloco; não há como reordenar ou substituir um aprovador sem
+            alterar o código que os usa.
+          </p>
+          <p>
+            O Chain of Responsibility resolve isso transformando cada aprovador em
+            um handler com a mesma interface, encadeados via <code>setNext()</code>.
+            O remetente envia para o primeiro handler e não sabe — nem precisa saber
+            — quem processará a requisição.
+          </p>
+        </section>
+
+        <!-- 3. SOLUÇÃO -->
+        <section class="artigo__secao">
+          <h2>Solução</h2>
+          <p>O Chain of Responsibility organiza o código em dois elementos centrais:</p>
+          <ol>
+            <li>
+              <strong>Handler (interface/classe abstrata):</strong> declara o método
+              de tratamento (ex.: <code>handle(requisicao)</code>) e o método de
+              encadeamento (<code>setNext(handler)</code>). A classe base abstrata
+              implementa <code>setNext()</code> e o repasse padrão: se não processar,
+              delega ao próximo. O handler concreto só precisa implementar sua própria
+              lógica de decisão.
+            </li>
+            <li>
+              <strong>ConcreteHandler:</strong> implementa a lógica de verificação —
+              decide se processa a requisição (e encerra a corrente) ou chama
+              <code>super.handle()</code> para passar ao próximo. Ex.:
+              <code>ChefeHandler</code> que aprova apenas se valor &le; 1000.
+            </li>
+          </ol>
+          <p>
+            A corrente é montada pelo cliente encadeando handlers com
+            <code>setNext()</code>. Geralmente retorna <code>this</code> para permitir
+            encadeamento fluente:
+            <code>chefe.setNext(gerente).setNext(diretor)</code>.
+          </p>
+        </section>
+
+        <!-- 4. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+          <div class="code-bloco">
+<pre><code>          «interface» Handler
+  ┌────────────────────────────────────────┐
+  │ + setNext(h: Handler): Handler         │
+  │ + handle(req: Requisicao): string|null │
+  └────────────────────────────────────────┘
+               ▲
+    HandlerBase (classe abstrata)
+  ┌────────────────────────────────────────┐
+  │ - proximo: Handler | null              │
+  │ + setNext(h: Handler): Handler         │
+  │   → this.proximo = h; return h         │
+  │ + handle(req): string|null             │
+  │   → this.proximo?.handle(req) ?? null  │
+  └────────────────────────────────────────┘
+               ▲
+   ┌───────────┴────────────┬──────────────────┐
+   │                        │                  │
+ChefeHandler         GerenteHandler      DiretorHandler
+  │ handle(req):             │ handle(req):      │ handle(req):
+  │  se valor &lt;= 1000        │  se valor &lt;= 5000 │  se valor &lt;= 20000
+  │    → processa            │    → processa     │    → processa
+  │  senão                   │  senão            │  senão
+  │    → super.handle(req)   │    → super        │    → super
+
+
+Montagem da corrente (cliente):
+
+  chefe.setNext(gerente).setNext(diretor)
+
+  Fluxo para valor = 3500:
+
+  chefe.handle(3500)
+    → 3500 &gt; 1000 → passa para gerente
+    gerente.handle(3500)
+      → 3500 &lt;= 5000 → GERENTE APROVA ✓ (corrente encerrada)
+
+  Fluxo para valor = 50000:
+
+  chefe → gerente → diretor → null (sem handler) → rejeitado
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. EXEMPLOS DE CÓDIGO -->
+        <section class="artigo__secao">
+          <h2>Exemplos de código</h2>
+
+          <h3>Exemplo 1 — Pipeline de aprovação de despesas</h3>
+          <p>
+            Implementação completa com interface <code>Handler</code>, classe base
+            abstrata que encapsula o repasse e handlers concretos para cada nível
+            de aprovação. Note o encadeamento fluente via <code>setNext()</code>
+            retornando o próximo handler.
+          </p>
+
+          <!-- GRUPO DE ABAS 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 1 — aprovação de despesas">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Interface Handler ─────────────────────────────────────────
+interface Handler {
+  setNext(handler: Handler): Handler;
+  handle(valor: number): string | null;
+}
+
+// ── Classe base abstrata — implementa setNext e repasse padrão ─
+abstract class HandlerBase implements Handler {
+  private proximo: Handler | null = null;
+
+  setNext(handler: Handler): Handler {
+    this.proximo = handler;
+    return handler; // retorna o próximo → encadeamento fluente
+  }
+
+  handle(valor: number): string | null {
+    // Comportamento padrão: passa ao próximo ou retorna null
+    return this.proximo ? this.proximo.handle(valor) : null;
+  }
+}
+
+// ── Handlers concretos ────────────────────────────────────────
+class ChefeHandler extends HandlerBase {
+  handle(valor: number): string | null {
+    if (valor &lt;= 1_000) {
+      return `Chefe aprovou R$${valor}`;
+    }
+    return super.handle(valor); // passa ao próximo
+  }
+}
+
+class GerenteHandler extends HandlerBase {
+  handle(valor: number): string | null {
+    if (valor &lt;= 5_000) {
+      return `Gerente aprovou R$${valor}`;
+    }
+    return super.handle(valor);
+  }
+}
+
+class DiretorHandler extends HandlerBase {
+  handle(valor: number): string | null {
+    if (valor &lt;= 20_000) {
+      return `Diretor aprovou R$${valor}`;
+    }
+    return super.handle(valor);
+  }
+}
+
+// Handler final: captura o que escapou da corrente
+class RejeitadoHandler extends HandlerBase {
+  handle(valor: number): string | null {
+    return `REJEITADO — R$${valor} acima do limite de R$20.000`;
+  }
+}
+
+// ── Montagem da corrente ──────────────────────────────────────
+const chefe   = new ChefeHandler();
+const gerente = new GerenteHandler();
+const diretor = new DiretorHandler();
+const fim     = new RejeitadoHandler();
+
+// Encadeamento fluente: chefe → gerente → diretor → fim
+chefe.setNext(gerente).setNext(diretor).setNext(fim);
+
+// ── Uso ──────────────────────────────────────────────────────
+const despesas = [500, 3_500, 15_000, 50_000];
+
+for (const valor of despesas) {
+  const resultado = chefe.handle(valor);
+  console.log(resultado);
+}
+// Chefe aprovou R$500
+// Gerente aprovou R$3500
+// Diretor aprovou R$15000
+// REJEITADO — R$50000 acima do limite de R$20.000</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Interface Handler ─────────────────────────────────────────
+interface Handler
+{
+    public function setNext(Handler $handler): Handler;
+    public function handle(int $valor): ?string;
+}
+
+// ── Classe base abstrata — implementa setNext e repasse padrão ─
+abstract class HandlerBase implements Handler
+{
+    private ?Handler $proximo = null;
+
+    public function setNext(Handler $handler): Handler
+    {
+        $this-&gt;proximo = $handler;
+        return $handler; // retorna o próximo → encadeamento fluente
+    }
+
+    public function handle(int $valor): ?string
+    {
+        return $this-&gt;proximo?-&gt;handle($valor);
+    }
+}
+
+// ── Handlers concretos ────────────────────────────────────────
+class ChefeHandler extends HandlerBase
+{
+    public function handle(int $valor): ?string
+    {
+        if ($valor &lt;= 1_000) {
+            return "Chefe aprovou R\${$valor}";
+        }
+        return parent::handle($valor);
+    }
+}
+
+class GerenteHandler extends HandlerBase
+{
+    public function handle(int $valor): ?string
+    {
+        if ($valor &lt;= 5_000) {
+            return "Gerente aprovou R\${$valor}";
+        }
+        return parent::handle($valor);
+    }
+}
+
+class DiretorHandler extends HandlerBase
+{
+    public function handle(int $valor): ?string
+    {
+        if ($valor &lt;= 20_000) {
+            return "Diretor aprovou R\${$valor}";
+        }
+        return parent::handle($valor);
+    }
+}
+
+// Handler final: captura o que escapou da corrente
+class RejeitadoHandler extends HandlerBase
+{
+    public function handle(int $valor): ?string
+    {
+        return "REJEITADO — R\${$valor} acima do limite de R\$20.000";
+    }
+}
+
+// ── Montagem da corrente ──────────────────────────────────────
+$chefe   = new ChefeHandler();
+$gerente = new GerenteHandler();
+$diretor = new DiretorHandler();
+$fim     = new RejeitadoHandler();
+
+// Encadeamento fluente: chefe → gerente → diretor → fim
+$chefe-&gt;setNext($gerente)-&gt;setNext($diretor)-&gt;setNext($fim);
+
+// ── Uso ──────────────────────────────────────────────────────
+$despesas = [500, 3_500, 15_000, 50_000];
+
+foreach ($despesas as $valor) {
+    echo $chefe-&gt;handle($valor) . "\n";
+}
+// Chefe aprovou R$500
+// Gerente aprovou R$3500
+// Diretor aprovou R$15000
+// REJEITADO — R$50000 acima do limite de R$20.000</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 1) -->
+
+          <h3>Exemplo 2 — Middleware HTTP: autenticação → autorização → throttle</h3>
+          <p>
+            O padrão é idêntico ao de frameworks HTTP como Express.js ou Laravel.
+            Cada middleware decide processar (e passar ao próximo) ou interromper
+            a corrente retornando uma resposta de erro. A corrente é montada na
+            configuração da aplicação, independente das rotas.
+          </p>
+
+          <!-- GRUPO DE ABAS 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 2 — middleware HTTP">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Tipos de requisição/resposta HTTP simplificados ───────────
+interface Requisicao {
+  path: string;
+  token?: string;
+  perfil?: 'admin' | 'usuario';
+  ip: string;
+}
+
+interface Resposta {
+  status: number;
+  corpo: string;
+}
+
+// ── Interface do middleware ───────────────────────────────────
+interface Middleware {
+  setNext(m: Middleware): Middleware;
+  processar(req: Requisicao): Resposta;
+}
+
+// ── Classe base abstrata ──────────────────────────────────────
+abstract class MiddlewareBase implements Middleware {
+  private proximo: Middleware | null = null;
+
+  setNext(m: Middleware): Middleware {
+    this.proximo = m;
+    return m;
+  }
+
+  protected passarAdiante(req: Requisicao): Resposta {
+    return this.proximo
+      ? this.proximo.processar(req)
+      : { status: 204, corpo: 'OK (sem handler final)' };
+  }
+
+  abstract processar(req: Requisicao): Resposta;
+}
+
+// ── Middleware 1: autenticação ────────────────────────────────
+class AutenticacaoMiddleware extends MiddlewareBase {
+  processar(req: Requisicao): Resposta {
+    if (!req.token) {
+      return { status: 401, corpo: 'Não autenticado — token ausente' };
+    }
+    console.log('[Auth] token válido');
+    return this.passarAdiante(req);
+  }
+}
+
+// ── Middleware 2: autorização ─────────────────────────────────
+class AutorizacaoMiddleware extends MiddlewareBase {
+  constructor(private readonly perfilExigido: 'admin' | 'usuario') {
+    super();
+  }
+
+  processar(req: Requisicao): Resposta {
+    if (req.perfil !== this.perfilExigido &amp;&amp; req.perfil !== 'admin') {
+      return { status: 403, corpo: `Acesso negado — exige perfil "${this.perfilExigido}"` };
+    }
+    console.log(`[Authz] perfil "${req.perfil}" autorizado`);
+    return this.passarAdiante(req);
+  }
+}
+
+// ── Middleware 3: throttle por IP ─────────────────────────────
+class ThrottleMiddleware extends MiddlewareBase {
+  private readonly contadores = new Map&lt;string, number&gt;();
+  private readonly limite: number;
+
+  constructor(requisicoesPorMinuto: number) {
+    super();
+    this.limite = requisicoesPorMinuto;
+  }
+
+  processar(req: Requisicao): Resposta {
+    const count = (this.contadores.get(req.ip) ?? 0) + 1;
+    this.contadores.set(req.ip, count);
+    if (count &gt; this.limite) {
+      return { status: 429, corpo: `Limite excedido para IP ${req.ip}` };
+    }
+    console.log(`[Throttle] ${req.ip}: ${count}/${this.limite}`);
+    return this.passarAdiante(req);
+  }
+}
+
+// ── Handler final: rota ───────────────────────────────────────
+class RotaHandler extends MiddlewareBase {
+  processar(req: Requisicao): Resposta {
+    return { status: 200, corpo: `GET ${req.path} — OK` };
+  }
+}
+
+// ── Montagem da corrente ──────────────────────────────────────
+const auth     = new AutenticacaoMiddleware();
+const authz    = new AutorizacaoMiddleware('admin');
+const throttle = new ThrottleMiddleware(3);
+const rota     = new RotaHandler();
+
+auth.setNext(authz).setNext(throttle).setNext(rota);
+
+// ── Uso ──────────────────────────────────────────────────────
+const reqs: Requisicao[] = [
+  { path: '/admin', ip: '10.0.0.1' },                          // sem token
+  { path: '/admin', token: 'abc', perfil: 'usuario', ip: '10.0.0.2' }, // sem perfil
+  { path: '/admin', token: 'xyz', perfil: 'admin', ip: '10.0.0.3' },   // ok
+  { path: '/admin', token: 'xyz', perfil: 'admin', ip: '10.0.0.3' },   // ok
+  { path: '/admin', token: 'xyz', perfil: 'admin', ip: '10.0.0.3' },   // ok
+  { path: '/admin', token: 'xyz', perfil: 'admin', ip: '10.0.0.3' },   // throttle
+];
+
+for (const req of reqs) {
+  const res = auth.processar(req);
+  console.log(`${res.status} — ${res.corpo}\n`);
+}
+// 401 — Não autenticado — token ausente
+// 403 — Acesso negado — exige perfil "admin"
+// [Auth] → [Authz] → [Throttle] → 200 — GET /admin — OK
+// ... (repetido)
+// 429 — Limite excedido para IP 10.0.0.3</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Tipos simplificados ───────────────────────────────────────
+class Requisicao
+{
+    public function __construct(
+        public readonly string $path,
+        public readonly string $ip,
+        public readonly ?string $token = null,
+        public readonly ?string $perfil = null  // 'admin' | 'usuario'
+    ) {}
+}
+
+class Resposta
+{
+    public function __construct(
+        public readonly int $status,
+        public readonly string $corpo
+    ) {}
+}
+
+// ── Interface do middleware ───────────────────────────────────
+interface Middleware
+{
+    public function setNext(Middleware $m): Middleware;
+    public function processar(Requisicao $req): Resposta;
+}
+
+// ── Classe base abstrata ──────────────────────────────────────
+abstract class MiddlewareBase implements Middleware
+{
+    private ?Middleware $proximo = null;
+
+    public function setNext(Middleware $m): Middleware
+    {
+        $this-&gt;proximo = $m;
+        return $m;
+    }
+
+    protected function passarAdiante(Requisicao $req): Resposta
+    {
+        return $this-&gt;proximo
+            ? $this-&gt;proximo-&gt;processar($req)
+            : new Resposta(204, 'OK (sem handler final)');
+    }
+
+    abstract public function processar(Requisicao $req): Resposta;
+}
+
+// ── Middleware 1: autenticação ────────────────────────────────
+class AutenticacaoMiddleware extends MiddlewareBase
+{
+    public function processar(Requisicao $req): Resposta
+    {
+        if ($req-&gt;token === null) {
+            return new Resposta(401, 'Não autenticado — token ausente');
+        }
+        echo "[Auth] token válido\n";
+        return $this-&gt;passarAdiante($req);
+    }
+}
+
+// ── Middleware 2: autorização ─────────────────────────────────
+class AutorizacaoMiddleware extends MiddlewareBase
+{
+    public function __construct(private readonly string $perfilExigido) {}
+
+    public function processar(Requisicao $req): Resposta
+    {
+        if ($req-&gt;perfil !== $this-&gt;perfilExigido &amp;&amp; $req-&gt;perfil !== 'admin') {
+            return new Resposta(
+                403,
+                "Acesso negado — exige perfil \"{$this-&gt;perfilExigido}\""
+            );
+        }
+        echo "[Authz] perfil \"{$req-&gt;perfil}\" autorizado\n";
+        return $this-&gt;passarAdiante($req);
+    }
+}
+
+// ── Middleware 3: throttle por IP ─────────────────────────────
+class ThrottleMiddleware extends MiddlewareBase
+{
+    /** @var array&lt;string, int&gt; */
+    private array $contadores = [];
+
+    public function __construct(private readonly int $limite) {}
+
+    public function processar(Requisicao $req): Resposta
+    {
+        $this-&gt;contadores[$req-&gt;ip] = ($this-&gt;contadores[$req-&gt;ip] ?? 0) + 1;
+        $count = $this-&gt;contadores[$req-&gt;ip];
+        if ($count &gt; $this-&gt;limite) {
+            return new Resposta(429, "Limite excedido para IP {$req-&gt;ip}");
+        }
+        echo "[Throttle] {$req-&gt;ip}: {$count}/{$this-&gt;limite}\n";
+        return $this-&gt;passarAdiante($req);
+    }
+}
+
+// ── Handler final: rota ───────────────────────────────────────
+class RotaHandler extends MiddlewareBase
+{
+    public function processar(Requisicao $req): Resposta
+    {
+        return new Resposta(200, "GET {$req-&gt;path} — OK");
+    }
+}
+
+// ── Montagem da corrente ──────────────────────────────────────
+$auth     = new AutenticacaoMiddleware();
+$authz    = new AutorizacaoMiddleware('admin');
+$throttle = new ThrottleMiddleware(3);
+$rota     = new RotaHandler();
+
+$auth-&gt;setNext($authz)-&gt;setNext($throttle)-&gt;setNext($rota);
+
+// ── Uso ──────────────────────────────────────────────────────
+$reqs = [
+    new Requisicao('/admin', '10.0.0.1'),
+    new Requisicao('/admin', '10.0.0.2', 'abc', 'usuario'),
+    new Requisicao('/admin', '10.0.0.3', 'xyz', 'admin'),
+    new Requisicao('/admin', '10.0.0.3', 'xyz', 'admin'),
+    new Requisicao('/admin', '10.0.0.3', 'xyz', 'admin'),
+    new Requisicao('/admin', '10.0.0.3', 'xyz', 'admin'), // throttle
+];
+
+foreach ($reqs as $req) {
+    $res = $auth-&gt;processar($req);
+    echo "{$res-&gt;status} — {$res-&gt;corpo}\n\n";
+}</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 2) -->
+
+        </section><!-- /.artigo__secao (exemplos) -->
+
+        <!-- 6. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Quando mais de um objeto pode processar uma requisição e o
+              processador não é conhecido a priori:</strong> o remetente não deve
+              embutir lógica de roteamento. A corrente decide dinamicamente quem
+              age, baseado no estado da requisição.
+            </li>
+            <li>
+              <strong>Quando você quer enviar uma requisição para um de vários
+              objetos sem especificar o receptor explicitamente:</strong> pipelines
+              de middleware, filtros de eventos, fluxos de validação em estágios.
+            </li>
+            <li>
+              <strong>Quando o conjunto de handlers deve ser configurável em
+              runtime:</strong> a corrente é montada pelo cliente; handlers podem
+              ser adicionados, removidos ou reordenados sem modificar o remetente
+              nem os handlers existentes.
+            </li>
+            <li>
+              <strong>Para implementar pipelines de validação ou pré-processamento
+              onde cada etapa é autônoma:</strong> cada handler conhece apenas
+              a sua regra e o contrato de repasse — não conhece os outros.
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>Quando a garantia de processamento é obrigatória:</strong> o
+              CoR não garante que a requisição será processada — ela pode cair no
+              vazio se nenhum handler a aceitar. Se o processamento é obrigatório,
+              use um handler final de fallback ou escolha outro padrão.
+            </li>
+            <li>
+              <strong>Quando a corrente é muito longa ou aninhada:</strong> correntes
+              longas são difíceis de depurar — rastrear por qual handler a requisição
+              passou exige logging explícito em cada elo. O stack trace pode ser
+              profundo e a origem do problema, obscura.
+            </li>
+            <li>
+              <strong>Quando há exatamente um handler possível e ele é conhecido
+              estaticamente:</strong> nesse caso, uma chamada direta ou Strategy
+              é mais simples e mais legível.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Desacopla o remetente dos receptores — o remetente conhece apenas o primeiro handler da corrente.</li>
+            <li>Respeita o Princípio da Responsabilidade Única: cada handler tem uma regra de tratamento.</li>
+            <li>Respeita o Princípio Aberto/Fechado: novos handlers podem ser inseridos sem modificar os existentes ou o remetente.</li>
+            <li>A corrente é configurável em runtime — handlers podem ser reordenados, adicionados ou removidos dinamicamente.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Não garante processamento — a requisição pode cair no vazio se nenhum handler agir (requer handler de fallback intencional).</li>
+            <li>Dificulta a depuração: o fluxo de execução não é óbvio apenas lendo o código que monta a corrente.</li>
+            <li>Correntes longas podem ter impacto de performance — cada handler acrescenta uma chamada de método.</li>
+            <li>A responsabilidade pode se tornar difusa: quando muitos handlers têm regras sobrepostas, é difícil saber qual processará.</li>
+          </ul>
+        </section>
+
+        <!-- 8. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Requisição que cai no vazio (sem handler final)</h3>
+          <p>
+            O erro mais comum: montar a corrente sem um handler de fallback no final.
+            Se nenhum handler da corrente aceitar a requisição, ela retorna
+            <code>null</code> silenciosamente — e o código que chamou pode não
+            estar preparado para isso, causando <code>NullPointerException</code>
+            ou comportamento indefinido.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Regra prática:</strong> sempre adicione um handler final explícito
+            que trate o caso "nenhum handler anterior quis processar". Pode ser um
+            logger de warning, um lançador de exceção ou uma resposta de erro padrão.
+            Nunca confie em <code>null</code> implícito como indicador de "não tratado".
+          </p>
+
+          <h3>2. Corrente que não encerra (loop)</h3>
+          <p>
+            Se um handler chamar <code>super.handle()</code> sem verificar a condição
+            — ou se um handler for acidentalmente adicionado ao final de sua própria
+            corrente — o CoR pode entrar em loop infinito ou em recursão profunda.
+            Garanta que cada ConcreteHandler tem uma condição clara para encerrar a
+            corrente e que nenhum handler referencia a si mesmo como próximo.
+          </p>
+
+          <h3>3. Responsabilidade difusa — handlers que "ouvem" em vez de "filtrar"</h3>
+          <p>
+            Um antipadrão frequente: handlers que sempre chamam <code>super.handle()</code>
+            independentemente do resultado — processam E repassam. Isso transforma o
+            CoR num Observer disfarçado, onde todos os handlers executam sempre. O
+            Princípio da Responsabilidade Única do CoR é: ou você trata e encerra, ou
+            não trata e passa. Se o domínio exige que todos tratem, use Observer ou
+            uma lista de listeners.
+          </p>
+
+          <h3>4. Chain of Responsibility vs Strategy — distinção de intenção</h3>
+          <p>
+            A confusão surge porque ambos encapsulam comportamento em objetos com
+            interface comum. A diferença é estrutural e de intenção:
+          </p>
+          <ul>
+            <li>
+              <strong>Strategy:</strong> exatamente <em>um</em> algoritmo é escolhido
+              pelo contexto e aplicado. Não há corrente, não há repasse. O contexto
+              decide qual Strategy usar — e só aquela executa.
+            </li>
+            <li>
+              <strong>Chain of Responsibility:</strong> <em>zero ou mais</em> handlers
+              processam a requisição sequencialmente, cada um podendo encerrar ou
+              continuar. Nenhum conhece os outros. O conjunto que processará é
+              determinado em runtime pelo estado da requisição.
+            </li>
+          </ul>
+
+          <h3>5. Distinção com Decorator</h3>
+          <p>
+            Estruturalmente similares: ambos encadeiam objetos com a mesma interface.
+            A diferença é que o <strong>Decorator sempre delega ao próximo</strong>
+            (acrescentando comportamento antes ou depois, nunca interrompendo) e tem
+            como intenção adicionar responsabilidades ao objeto decorado. O
+            <strong>CoR pode interromper a corrente sem delegar</strong> — quando
+            processa a requisição, os handlers seguintes não são chamados. Se o objeto
+            sempre passa adiante E adiciona comportamento, é Decorator. Se pode
+            encerrar a corrente sem passar, é CoR.
+          </p>
+        </section>
+
+        <!-- 9. PADRÕES RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Padrões relacionados</h2>
+          <p>
+            O Chain of Responsibility é frequentemente combinado ou comparado com
+            padrões que também lidam com despacho de ações e composição de comportamento:
+          </p>
+          <!--
+            Disciplina de links: só linka artigos já publicados.
+            Command e Decorator existem → links reais.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../command/">Command</a></li>
+            <li><a href="../decorator/">Decorator</a></li>
+            <li><a href="../visitor/">Visitor</a></li>
+          </ul>
+          <p class="mt-1">
+            O <strong>Command</strong> e o CoR frequentemente aparecem juntos: o
+            Command encapsula a requisição como objeto, e o CoR decide qual handler
+            a processará — o Command carrega os dados da ação; o CoR roteia quem age
+            sobre eles. O <strong>Decorator</strong> é o padrão de maior semelhança
+            estrutural: ambos encadeiam objetos com a mesma interface. A diferença
+            central é que o Decorator <em>sempre</em> delega ao próximo e adiciona
+            comportamento sem interromper a cadeia, enquanto o CoR pode
+            <em>encerrar</em> a corrente ao processar a requisição — os dois têm
+            intenções opostas quanto ao fluxo de controle. O <strong>Visitor</strong>
+            pode ser usado para processar os nós de uma corrente CoR sem modificar
+            as classes de handler, separando a lógica de traversal da lógica de
+            tratamento.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="4242424242"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

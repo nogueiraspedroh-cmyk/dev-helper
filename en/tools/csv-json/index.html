@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CSV ↔ JSON Converter — Dev Helper</title>
+  <meta name="description" content="Convert CSV to JSON and JSON to CSV in your browser. Handles quotes, escapes and commas inside quoted fields (RFC 4180), configurable delimiter and first row as header." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../tools/csv-json/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense — biblioteca carregada UMA vez por página. Substitua o pub-ID placeholder antes do deploy. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../../../biblioteca/">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>CSV ↔ JSON Converter</h1>
+        <p>Convert <strong>CSV → JSON</strong> and <strong>JSON → CSV</strong> both ways. The parser handles quotes, escapes (<code>""</code>) and commas/line breaks inside quoted fields (basic RFC 4180).</p>
+      </header>
+
+      <div class="tool__controls">
+        <fieldset class="tool__fieldset">
+          <legend class="tool__legend">Direction</legend>
+          <label class="tool__radio-label"><input type="radio" name="cj-mode" value="auto" checked /> Automatic</label>
+          <label class="tool__radio-label"><input type="radio" name="cj-mode" value="csv2json" /> CSV → JSON</label>
+          <label class="tool__radio-label"><input type="radio" name="cj-mode" value="json2csv" /> JSON → CSV</label>
+        </fieldset>
+
+        <div class="tool__actions">
+          <label class="tool__label" for="cj-delim">Delimiter</label>
+          <select id="cj-delim" class="tool__select">
+            <option value="comma">Comma ( , )</option>
+            <option value="semicolon">Semicolon ( ; )</option>
+            <option value="tab">Tab</option>
+          </select>
+          <label class="tool__checkbox-label"><input type="checkbox" id="cj-header" checked /> <span>First row is header</span></label>
+        </div>
+
+        <label class="tool__label" for="cj-input">Input (CSV or JSON)</label>
+        <textarea id="cj-input" class="tool__input" spellcheck="false" placeholder="name,age&#10;Alice,30&#10;Bob,25"></textarea>
+
+        <div class="tool__actions tool__actions--mt">
+          <button id="cj-convert" class="button" type="button">Convert</button>
+          <button id="cj-clear" class="button--secondary" type="button">Clear</button>
+          <span id="cj-mode-info" class="tool__hint"></span>
+        </div>
+
+        <p id="cj-error" class="error-msg" role="alert" hidden></p>
+
+        <div class="tool__output">
+          <label class="tool__label" for="cj-output">Result</label>
+          <textarea id="cj-output" class="result" readonly spellcheck="false" aria-label="Conversion result"></textarea>
+          <div class="tool__actions tool__actions--mt">
+            <button id="cj-copy" class="button--secondary" type="button">Copy</button>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="2323232323"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <section>
+      <h2>What does this tool do?</h2>
+      <p>
+        CSV (<em>Comma-Separated Values</em>) and JSON (<em>JavaScript Object Notation</em>) are two
+        ubiquitous formats for exchanging tabular data. Spreadsheets, database exports and
+        reports usually come out as CSV; APIs and configuration files speak JSON. This tool
+        converts between the two both ways, directly in your browser.
+      </p>
+
+      <h2>How CSV is parsed</h2>
+      <p>
+        The parser follows the essentials of <strong>RFC 4180</strong>: fields can be wrapped in double
+        quotes, and inside them commas, line breaks and escaped quotes (<code>""</code>) are
+        handled correctly. You can choose the <strong>delimiter</strong> (comma, semicolon
+        or tab) and indicate whether the <strong>first row is the header</strong>. With a header, the
+        result is an array of objects; without one, an array of arrays.
+      </p>
+
+      <h2>How JSON becomes CSV</h2>
+      <p>
+        For the reverse path, the JSON needs to be an <strong>array</strong>: either of objects (the keys
+        become the header columns, merging the keys from every item) or of arrays (each array
+        becomes a row). Values with a comma, quotes or a line break are automatically escaped
+        with double quotes.
+      </p>
+
+      <h2>Frequently Asked Questions (FAQ)</h2>
+
+      <h3>Do CSV numbers become numbers in the JSON?</h3>
+      <p>
+        No — CSV values are kept as <strong>text</strong> on purpose, to guarantee that
+        a round trip (CSV → JSON → CSV) preserves the content exactly, without risking losing leading
+        zeros (for example, a ZIP code <code>01000</code>) or rounding large numbers.
+      </p>
+
+      <h3>What happens with a malformed CSV?</h3>
+      <p>
+        If, for example, there are quotes that open but never close, the tool shows a readable
+        error message instead of generating an incorrect result or crashing the page.
+      </p>
+
+      <h3>Can I convert JSON with objects that have different keys?</h3>
+      <p>
+        Yes. When generating the CSV, the tool gathers the <strong>union of all keys</strong> in the order
+        they appear; items missing a given key end up with an empty cell.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/tools-en/csv-json.js"></script>
+</body>
+</html>

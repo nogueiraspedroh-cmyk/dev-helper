@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Facade — Design Patterns | Biblioteca Dev Helper</title>
+  <meta name="description" content="Aprenda o padrão Facade (GoF) em profundidade: intenção, problema, solução, estrutura, exemplos em TypeScript e PHP, quando usar, quando evitar e armadilhas comuns." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Facade</span>
+        </nav>
+        <span class="artigo__categoria">Padrão Estrutural (GoF)</span>
+        <h1 class="artigo__titulo">Facade</h1>
+        <p class="artigo__subtitulo">
+          Fornece uma interface unificada e simplificada para um conjunto de interfaces
+          de um subsistema, tornando o subsistema mais fácil de usar — sem esconder
+          nem vedar o acesso direto ao subsistema quando necessário.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Simplificar o acesso a um subsistema complexo</strong> expondo uma
+            interface de alto nível que orquestra as interações entre os componentes
+            internos. O cliente usa a Facade para os casos de uso comuns e acessa o
+            subsistema diretamente apenas quando precisa de controle fino.
+          </p>
+          <p>
+            O Facade pertence à categoria de <strong>padrões estruturais</strong> no
+            catálogo do GoF (1994). É um dos padrões mais intuitivos — provavelmente
+            você já o aplicou sem saber: sempre que criou uma classe de serviço que
+            orquestra repositórios, validators e notificadores, você criou uma Facade.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Considere o processo de finalizar uma compra (<em>checkout</em>) em um
+            e-commerce. Este fluxo envolve múltiplos subsistemas: verificação de estoque,
+            processamento de pagamento, cálculo de frete, geração do pedido, envio de
+            e-mail de confirmação e atualização de relatórios. Cada subsistema tem suas
+            próprias classes, dependências e regras.
+          </p>
+          <p>
+            Sem uma Facade, o código do controller ou do caso de uso precisaria conhecer
+            e orquestrar cada subsistema diretamente — com todas as suas nuances de ordem
+            de chamada e tratamento de erros. Isso cria um acoplamento alto entre o código
+            cliente e os detalhes de implementação dos subsistemas.
+          </p>
+          <p>
+            Com o crescimento do sistema, qualquer mudança interna em um subsistema
+            (ex.: migrar o gateway de pagamento) exige alterar todos os clientes que
+            o conhecem diretamente.
+          </p>
+
+          <h3>Facade não é uma barreira impenetrável</h3>
+          <p>
+            Um equívoco comum: a Facade esconde completamente o subsistema, impedindo
+            acesso direto. Não é isso. A Facade <em>simplifica</em> o caso comum — para
+            necessidades avançadas, o subsistema continua acessível diretamente.
+            A Facade é uma porta de entrada conveniente, não um muro.
+          </p>
+        </section>
+
+        <!-- 3. SOLUÇÃO -->
+        <section class="artigo__secao">
+          <h2>Solução</h2>
+          <p>O Facade organiza o código em dois grupos principais:</p>
+          <ol>
+            <li>
+              <strong>Facade:</strong> classe de alto nível que conhece quais classes
+              do subsistema são responsáveis por cada parte do trabalho. Ela delega
+              as solicitações dos clientes aos objetos apropriados do subsistema,
+              gerenciando a ordem de chamadas e ocultando a complexidade de orquestração.
+              Ex.: <code>CheckoutFacade</code> com o método <code>finalizarPedido()</code>.
+            </li>
+            <li>
+              <strong>Subsystem classes:</strong> as classes que implementam a
+              funcionalidade real. Elas não conhecem a Facade — a Facade é que as
+              conhece. Ex.: <code>ServicoEstoque</code>, <code>ServicoPagamento</code>,
+              <code>ServicoFrete</code>, <code>ServicoEmail</code>.
+            </li>
+          </ol>
+          <p>
+            A Facade pode ter uma ou várias interfaces de entrada — métodos de alto
+            nível que representam os casos de uso mais comuns. Cada método orquestra
+            a sequência correta de chamadas aos subsistemas.
+          </p>
+
+          <h3>Facade e Singleton</h3>
+          <p>
+            Fachadas são frequentemente implementadas como Singletons — faz sentido
+            ter apenas uma instância da camada de orquestração. Em aplicações com
+            containers de injeção de dependência (NestJS, Laravel, Spring), o container
+            já cuida do ciclo de vida; em aplicações mais simples, é comum ver a Facade
+            como um Singleton explícito ou como um módulo (em Node.js/TypeScript, módulos
+            são naturalmente singletons por cache de importação).
+          </p>
+        </section>
+
+        <!-- 4. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+          <div class="code-bloco">
+<pre><code>  Código cliente
+       │
+       │  facade.finalizarPedido(pedido)
+       ▼
+  CheckoutFacade
+  ┌────────────────────────────────────────────────────┐
+  │ - estoque: ServicoEstoque                          │
+  │ - pagamento: ServicoPagamento                      │
+  │ - frete: ServicoFrete                              │
+  │ - email: ServicoEmail                              │
+  │                                                    │
+  │ + finalizarPedido(pedido): ResultadoCheckout       │
+  │   1. estoque.verificar(pedido.itens)               │
+  │   2. pagamento.processar(pedido.pagamento)         │
+  │   3. frete.calcularEAgendar(pedido.endereco)       │
+  │   4. email.enviarConfirmacao(pedido.cliente)       │
+  └────────────────────────────────────────────────────┘
+       │          │          │          │
+       ▼          ▼          ▼          ▼
+  Subsistemas (independentes, não se conhecem entre si)
+  ServicoEstoque  ServicoPagamento  ServicoFrete  ServicoEmail
+
+
+  Nota: os subsistemas ainda são acessíveis diretamente
+  quando necessário — a Facade não os esconde.
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. EXEMPLOS DE CÓDIGO -->
+        <section class="artigo__secao">
+          <h2>Exemplos de código</h2>
+
+          <h3>Exemplo 1 — Facade de checkout de pedido</h3>
+          <p>
+            A Facade orquestra os subsistemas de estoque, pagamento, frete e e-mail
+            numa única chamada de alto nível. O código cliente não precisa conhecer
+            a ordem nem os detalhes de cada subsistema.
+          </p>
+
+          <!-- GRUPO DE ABAS 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 1 — facade de checkout">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Subsistemas — cada um com sua própria responsabilidade ───
+
+class ServicoEstoque {
+  verificar(itens: string[]): boolean {
+    console.log(`[Estoque] Verificando ${itens.length} item(ns)...`);
+    return true; // simulação: sempre disponível
+  }
+
+  reservar(itens: string[]): void {
+    console.log(`[Estoque] ${itens.length} item(ns) reservado(s).`);
+  }
+}
+
+class ServicoPagamento {
+  processar(valorCentavos: number, metodoPagamento: string): string {
+    console.log(`[Pagamento] Processando R$${(valorCentavos / 100).toFixed(2)} via ${metodoPagamento}...`);
+    return `TXN-${Date.now()}`; // ID da transação
+  }
+}
+
+class ServicoFrete {
+  calcularEAgendar(cep: string): { prazo: number; valorCentavos: number } {
+    console.log(`[Frete] Calculando para CEP ${cep}...`);
+    return { prazo: 5, valorCentavos: 1490 }; // 5 dias, R$14,90
+  }
+}
+
+class ServicoEmail {
+  enviarConfirmacao(email: string, transacaoId: string): void {
+    console.log(`[Email] Confirmação enviada para ${email}. Transação: ${transacaoId}`);
+  }
+}
+
+// ── Tipos de domínio ─────────────────────────────────────────
+
+interface DadosPedido {
+  itens: string[];
+  valorCentavos: number;
+  metodoPagamento: string;
+  cep: string;
+  emailCliente: string;
+}
+
+interface ResultadoCheckout {
+  transacaoId: string;
+  prazoEntregaDias: number;
+  freteValorCentavos: number;
+}
+
+// ── Facade ───────────────────────────────────────────────────
+
+class CheckoutFacade {
+  constructor(
+    private readonly estoque: ServicoEstoque,
+    private readonly pagamento: ServicoPagamento,
+    private readonly frete: ServicoFrete,
+    private readonly email: ServicoEmail
+  ) {}
+
+  // Interface de alto nível — orquestra toda a sequência:
+  finalizarPedido(pedido: DadosPedido): ResultadoCheckout {
+    // 1. Verifica disponibilidade
+    if (!this.estoque.verificar(pedido.itens)) {
+      throw new Error("Um ou mais itens estão indisponíveis.");
+    }
+
+    // 2. Processa pagamento
+    const transacaoId = this.pagamento.processar(
+      pedido.valorCentavos,
+      pedido.metodoPagamento
+    );
+
+    // 3. Reserva estoque e agenda entrega
+    this.estoque.reservar(pedido.itens);
+    const entrega = this.frete.calcularEAgendar(pedido.cep);
+
+    // 4. Notifica o cliente
+    this.email.enviarConfirmacao(pedido.emailCliente, transacaoId);
+
+    return {
+      transacaoId,
+      prazoEntregaDias: entrega.prazo,
+      freteValorCentavos: entrega.valorCentavos,
+    };
+  }
+}
+
+// ── Uso — o cliente usa apenas a Facade ──────────────────────
+const facade = new CheckoutFacade(
+  new ServicoEstoque(),
+  new ServicoPagamento(),
+  new ServicoFrete(),
+  new ServicoEmail()
+);
+
+const resultado = facade.finalizarPedido({
+  itens: ["Livro GoF", "Caderno"],
+  valorCentavos: 9800,
+  metodoPagamento: "cartao_credito",
+  cep: "01310-100",
+  emailCliente: "dev@exemplo.com",
+});
+
+console.log(`Pedido finalizado! Transação: ${resultado.transacaoId}`);
+console.log(`Entrega em ${resultado.prazoEntregaDias} dias.`);
+console.log(`Frete: R$${(resultado.freteValorCentavos / 100).toFixed(2)}`);
+// [Estoque] Verificando 2 item(ns)...
+// [Pagamento] Processando R$98.00 via cartao_credito...
+// [Estoque] 2 item(ns) reservado(s).
+// [Frete] Calculando para CEP 01310-100...
+// [Email] Confirmação enviada para dev@exemplo.com. Transação: TXN-...
+// Pedido finalizado! Transação: TXN-...
+// Entrega em 5 dias.
+// Frete: R$14.90</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Subsistemas ───────────────────────────────────────────────
+
+class ServicoEstoque
+{
+    /** @param string[] $itens */
+    public function verificar(array $itens): bool
+    {
+        echo '[Estoque] Verificando ' . count($itens) . ' item(ns)...' . PHP_EOL;
+        return true; // simulação: sempre disponível
+    }
+
+    /** @param string[] $itens */
+    public function reservar(array $itens): void
+    {
+        echo '[Estoque] ' . count($itens) . ' item(ns) reservado(s).' . PHP_EOL;
+    }
+}
+
+class ServicoPagamento
+{
+    public function processar(int $valorCentavos, string $metodoPagamento): string
+    {
+        $valor = number_format($valorCentavos / 100, 2);
+        echo "[Pagamento] Processando R\${$valor} via {$metodoPagamento}..." . PHP_EOL;
+        return 'TXN-' . time();
+    }
+}
+
+class ServicoFrete
+{
+    /** @return array{prazo: int, valorCentavos: int} */
+    public function calcularEAgendar(string $cep): array
+    {
+        echo "[Frete] Calculando para CEP {$cep}..." . PHP_EOL;
+        return ['prazo' =&gt; 5, 'valorCentavos' =&gt; 1490]; // 5 dias, R$14,90
+    }
+}
+
+class ServicoEmail
+{
+    public function enviarConfirmacao(string $email, string $transacaoId): void
+    {
+        echo "[Email] Confirmação enviada para {$email}. Transação: {$transacaoId}" . PHP_EOL;
+    }
+}
+
+// ── Facade ───────────────────────────────────────────────────
+
+class CheckoutFacade
+{
+    public function __construct(
+        private readonly ServicoEstoque   $estoque,
+        private readonly ServicoPagamento $pagamento,
+        private readonly ServicoFrete     $frete,
+        private readonly ServicoEmail     $email
+    ) {}
+
+    /**
+     * @param array{
+     *   itens: string[],
+     *   valorCentavos: int,
+     *   metodoPagamento: string,
+     *   cep: string,
+     *   emailCliente: string
+     * } $pedido
+     * @return array{transacaoId: string, prazoEntregaDias: int, freteValorCentavos: int}
+     */
+    public function finalizarPedido(array $pedido): array
+    {
+        // 1. Verifica disponibilidade
+        if (!$this-&gt;estoque-&gt;verificar($pedido['itens'])) {
+            throw new \RuntimeException('Um ou mais itens estão indisponíveis.');
+        }
+
+        // 2. Processa pagamento
+        $transacaoId = $this-&gt;pagamento-&gt;processar(
+            $pedido['valorCentavos'],
+            $pedido['metodoPagamento']
+        );
+
+        // 3. Reserva estoque e agenda entrega
+        $this-&gt;estoque-&gt;reservar($pedido['itens']);
+        $entrega = $this-&gt;frete-&gt;calcularEAgendar($pedido['cep']);
+
+        // 4. Notifica o cliente
+        $this-&gt;email-&gt;enviarConfirmacao($pedido['emailCliente'], $transacaoId);
+
+        return [
+            'transacaoId'         =&gt; $transacaoId,
+            'prazoEntregaDias'    =&gt; $entrega['prazo'],
+            'freteValorCentavos'  =&gt; $entrega['valorCentavos'],
+        ];
+    }
+}
+
+// ── Uso — o cliente usa apenas a Facade ──────────────────────
+$facade = new CheckoutFacade(
+    new ServicoEstoque(),
+    new ServicoPagamento(),
+    new ServicoFrete(),
+    new ServicoEmail()
+);
+
+$resultado = $facade-&gt;finalizarPedido([
+    'itens'           =&gt; ['Livro GoF', 'Caderno'],
+    'valorCentavos'   =&gt; 9800,
+    'metodoPagamento' =&gt; 'cartao_credito',
+    'cep'             =&gt; '01310-100',
+    'emailCliente'    =&gt; 'dev@exemplo.com',
+]);
+
+echo "Pedido finalizado! Transação: {$resultado['transacaoId']}" . PHP_EOL;
+echo "Entrega em {$resultado['prazoEntregaDias']} dias." . PHP_EOL;
+printf("Frete: R$%.2f\n", $resultado['freteValorCentavos'] / 100);
+// [Estoque] Verificando 2 item(ns)...
+// [Pagamento] Processando R$98.00 via cartao_credito...
+// [Estoque] 2 item(ns) reservado(s).
+// [Frete] Calculando para CEP 01310-100...
+// [Email] Confirmação enviada para dev@exemplo.com. Transação: TXN-...
+// Pedido finalizado! Transação: TXN-...
+// Entrega em 5 dias.
+// Frete: R$14.90</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 1) -->
+
+        </section><!-- /.artigo__secao (exemplos) -->
+
+        <!-- 6. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Para simplificar o acesso a um subsistema complexo:</strong> quando
+              o código cliente precisa interagir com muitas classes de um subsistema em
+              uma sequência específica, a Facade encapsula essa orquestração.
+            </li>
+            <li>
+              <strong>Para criar camadas de abstração entre subsistemas:</strong> em
+              arquiteturas em camadas (ex.: Clean Architecture, Hexagonal), a Facade é
+              a fronteira entre a camada de aplicação e os subsistemas de infraestrutura.
+            </li>
+            <li>
+              <strong>Para reduzir dependências transitivas:</strong> sem Facade, cada
+              cliente do subsistema teria que importar e conhecer todas as classes internas.
+              Com Facade, os clientes importam apenas ela.
+            </li>
+            <li>
+              <strong>Para isolar a complexidade de bibliotecas de terceiros:</strong>
+              uma Facade sobre uma SDK externa protege o código da aplicação de mudanças
+              na API da biblioteca (semelhante ao Adapter, mas com foco em simplificação
+              de múltiplas chamadas, não em compatibilidade de interface).
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>Quando o subsistema já é simples:</strong> uma Facade sobre um
+              único serviço com um ou dois métodos é burocracia sem benefício.
+            </li>
+            <li>
+              <strong>Quando se torna um "God Object":</strong> se a Facade acumula
+              lógica de negócio em vez de apenas orquestrar, ela viola o Princípio da
+              Responsabilidade Única. A Facade deve delegar — não decidir.
+            </li>
+            <li>
+              <strong>Quando engessa a flexibilidade:</strong> se os clientes sempre
+              precisam de controle fino sobre os subsistemas, a camada de abstração da
+              Facade atrapalha mais do que ajuda.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Simplifica o uso do subsistema para os casos de uso mais comuns.</li>
+            <li>Reduz o acoplamento entre clientes e os detalhes internos do subsistema.</li>
+            <li>Facilita a substituição ou evolução interna do subsistema — os clientes da Facade não precisam mudar.</li>
+            <li>Melhora a legibilidade: o método <code>finalizarPedido()</code> comunica o fluxo de negócio sem expor a mecânica interna.</li>
+            <li>Ponto único para adicionar cross-cutting concerns (logging, métricas, transações) ao fluxo orquestrado.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Pode tornar-se um "God Object" se absorver lógica de negócio além da orquestração.</li>
+            <li>Pode esconder complexidade que o cliente às vezes precisa ver e controlar.</li>
+            <li>Uma Facade que cobre apenas parte do subsistema força o cliente a conhecer tanto a Facade quanto o subsistema diretamente — inconsistência de abstração.</li>
+          </ul>
+        </section>
+
+        <!-- 8. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Facade vira God Object com lógica de negócio</h3>
+          <p>
+            A armadilha mais frequente: ao longo do tempo, regras de negócio migram para
+            dentro da Facade ("se o pedido for acima de R$200, frete grátis", "se for
+            cliente premium, aplica desconto"). A Facade passa a acumular responsabilidades
+            que pertencem ao domínio. Mantenha a Facade como orquestradora pura — as
+            regras de negócio pertencem a entidades e serviços de domínio, não à camada
+            de fachada.
+          </p>
+
+          <h3>2. Confundir Facade com Adapter</h3>
+          <p>
+            O <strong>Adapter</strong> converte a interface de uma única classe para
+            outra interface esperada pelo cliente. A <strong>Facade</strong> provê uma
+            interface simplificada para um conjunto de classes. A Facade não precisa
+            que as interfaces internas sejam incompatíveis — ela simplifica, não adapta.
+          </p>
+
+          <h3>3. Facade que não esconde nada</h3>
+          <p class="artigo__aviso">
+            <strong>Atenção:</strong> uma Facade que é só um pass-through (apenas
+            repassa chamadas sem nenhuma orquestração ou simplificação) é uma camada
+            de indireção desnecessária. Se o método da Facade é apenas
+            <code>return this.servico.metodo(params)</code>, sem adicionar nenhuma
+            coordenação, remova a Facade e acesse o serviço diretamente.
+          </p>
+
+          <h3>4. Testar a Facade em vez dos subsistemas</h3>
+          <p>
+            Testes unitários devem testar os subsistemas individualmente — não a Facade
+            inteira. A Facade deve ter um teste de integração (ou de orquestração) que
+            verifica a sequência de chamadas com mocks dos subsistemas. Não escreva
+            testes unitários que executam os subsistemas reais pela Facade — isso
+            mistura níveis de teste e torna os testes frágeis.
+          </p>
+        </section>
+
+        <!-- 9. PADRÕES RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Padrões relacionados</h2>
+          <p>
+            O Facade interage com outros padrões estruturais e de criação:
+          </p>
+          <!--
+            Disciplina de links: só linka artigos já publicados.
+            Ao publicar um artigo novo, troque o <span> pelo <a href="../slug/">.
+            Adapter, Decorator e Singleton existem → links reais.
+            Mediator publicado → link real.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../adapter/">Adapter</a></li>
+            <li><a href="../decorator/">Decorator</a></li>
+            <li><a href="../singleton/">Singleton</a></li>
+            <li><a href="../mediator/">Mediator</a></li>
+          </ul>
+          <p class="mt-1">
+            O <strong>Adapter</strong> muda a interface de uma classe para outra; a
+            Facade provê uma interface simplificada para um subsistema — as intenções
+            são distintas, mas ambas criam um ponto de entrada único. O
+            <strong>Decorator</strong> acrescenta responsabilidades a um objeto mantendo
+            a mesma interface; a Facade pode internamente compor Decorators sobre os
+            subsistemas, mas a Facade em si não precisa manter a interface dos subsistemas.
+            O <strong>Singleton</strong> é frequentemente combinado com a Facade: faz
+            sentido que exista apenas uma instância da camada de orquestração na aplicação.
+            O <strong>Mediator</strong> também centraliza a comunicação entre objetos, mas
+            com foco diferente: o Mediator gerencia a interação <em>bidirecional</em>
+            entre componentes que se conhecem mutuamente (reduzindo dependências cruzadas);
+            a Facade gerencia o acesso <em>unidirecional</em> de clientes externos a um
+            subsistema que não conhece o cliente.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="8383838383"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

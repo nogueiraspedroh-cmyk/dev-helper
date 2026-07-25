@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flyweight — Design Patterns | Biblioteca Dev Helper</title>
+  <meta name="description" content="Aprenda o padrão Flyweight (GoF) em profundidade: intenção, problema, solução, estrutura, exemplos em TypeScript e PHP, quando usar, quando evitar e armadilhas comuns." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Flyweight</span>
+        </nav>
+        <span class="artigo__categoria">Padrão Estrutural (GoF)</span>
+        <h1 class="artigo__titulo">Flyweight</h1>
+        <p class="artigo__subtitulo">
+          Compartilha estado intrínseco imutável entre grandes quantidades de objetos
+          semelhantes, externalizando o estado extrínseco dependente de contexto —
+          reduzindo drasticamente o uso de memória quando há milhares de instâncias quase
+          idênticas.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Compartilhar objetos de granularidade fina</strong> para suportar
+            grandes quantidades deles de forma eficiente. O Flyweight separa o estado
+            do objeto em duas partes: o <em>estado intrínseco</em> (imutável, independente
+            do contexto, compartilhado entre muitas instâncias) e o <em>estado extrínseco</em>
+            (variável, dependente do contexto, fornecido pelo cliente no momento do uso).
+          </p>
+          <p>
+            Catalogado pelo GoF (1994) como padrão estrutural, o Flyweight é indicado
+            exclusivamente em cenários onde a quantidade de objetos é tão grande que o
+            custo de memória se torna proibitivo. Uma fábrica central
+            (<code>FlyweightFactory</code>) funciona como cache: retorna a mesma instância
+            para objetos com o mesmo estado intrínseco, em vez de criar um novo objeto
+            a cada vez. O cliente passa o estado extrínseco como argumento no momento em
+            que usa o Flyweight — nunca o armazenando dentro do objeto compartilhado.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Imagine um jogo de partículas onde explosões criam milhares de fragmentos
+            simultaneamente. A abordagem ingênua cria um objeto completo para cada
+            partícula:
+          </p>
+          <div class="code-bloco">
+<pre><code>// Abordagem ingênua — NÃO faça isso com 100 000 partículas:
+class Particula {
+  tipo: string;       // "fogo" | "fumaca" | "estilhaco"
+  cor: string;        // "#FF4500"
+  textura: string;    // dados do sprite — pode ter kilobytes
+  x: number;
+  y: number;
+  velocidadeX: number;
+  velocidadeY: number;
+}
+
+// 100 000 instâncias × (tipo + cor + textura) = memória esgotada
+const particulas: Particula[] = [];
+for (let i = 0; i &lt; 100_000; i++) {
+  particulas.push({
+    tipo: 'fogo', cor: '#FF4500', textura: spriteFogo, // repetido 100 000×
+    x: Math.random() * 800, y: Math.random() * 600,
+    velocidadeX: Math.random(), velocidadeY: Math.random(),
+  });
+}</code></pre>
+          </div>
+          <p>
+            O problema é óbvio: <code>tipo</code>, <code>cor</code> e
+            <code>textura</code> são idênticos para todas as partículas do mesmo tipo.
+            Estamos replicando esses dados 100 000 vezes, enquanto apenas <code>x</code>,
+            <code>y</code>, <code>velocidadeX</code> e <code>velocidadeY</code> variam
+            por instância. O Flyweight resolve isso compartilhando o que é comum e
+            recebendo o que varia como argumento.
+          </p>
+          <p>
+            A distinção central do padrão:
+          </p>
+          <ul>
+            <li>
+              <strong>Estado intrínseco</strong> — imutável, independente do contexto:
+              tipo de partícula, cor, dados de textura/sprite. É o que pode ser
+              compartilhado com segurança porque nunca muda por instância.
+            </li>
+            <li>
+              <strong>Estado extrínseco</strong> — variável, dependente do contexto:
+              posição x/y, velocidade, tempo de vida. É fornecido pelo cliente
+              (<code>ParticulaContext</code>) a cada operação — nunca fica armazenado
+              dentro do Flyweight.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. SOLUÇÃO -->
+        <section class="artigo__secao">
+          <h2>Solução</h2>
+          <p>O Flyweight organiza o código em três participantes:</p>
+          <ol>
+            <li>
+              <strong>Flyweight:</strong> armazena exclusivamente o estado intrínseco.
+              Seus métodos recebem o estado extrínseco como parâmetro — nunca o guardam
+              como campo. Ex.: <code>TipoParticula</code> com <code>tipo</code>,
+              <code>cor</code> e <code>textura</code>.
+            </li>
+            <li>
+              <strong>FlyweightFactory:</strong> mantém um cache (<code>Map</code>)
+              de instâncias Flyweight indexadas pela chave do estado intrínseco.
+              Retorna uma instância existente se a chave já existe, ou cria e armazena
+              uma nova. É o elemento central do padrão — sem ela, o compartilhamento
+              não acontece. É frequentemente implementada como Singleton.
+            </li>
+            <li>
+              <strong>Context (cliente):</strong> armazena o estado extrínseco e uma
+              referência ao Flyweight compartilhado. Ex.: <code>ParticulaContext</code>
+              com <code>x</code>, <code>y</code>, <code>velocidadeX</code>,
+              <code>velocidadeY</code> e uma referência a <code>TipoParticula</code>.
+              A quantidade de Contexts pode ser enorme; a quantidade de Flyweights
+              é pequena (uma por valor único de estado intrínseco).
+            </li>
+          </ol>
+          <p>
+            A economia de memória vem do número de instâncias Flyweight criadas.
+            Se há 3 tipos de partícula e 100 000 partículas, existem apenas
+            <strong>3 objetos Flyweight</strong> — não 100 000.
+          </p>
+        </section>
+
+        <!-- 4. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+          <div class="code-bloco">
+<pre><code>       TipoParticula (Flyweight)
+  ┌──────────────────────────────────────────┐
+  │ + tipo: string       ← intrínseco        │
+  │ + cor: string        ← intrínseco        │
+  │ + textura: string    ← intrínseco        │
+  │                                          │
+  │ + renderizar(x, y, vx, vy): void         │
+  │   ↑ estado extrínseco vem como argumento │
+  └──────────────────────────────────────────┘
+              ▲ criado e cacheado por
+  ┌──────────────────────────────────────────┐
+  │    TipoParticulaFactory (Factory)        │
+  │                                          │
+  │ - cache: Map&lt;string, TipoParticula&gt;      │
+  │ + obter(tipo, cor, textura):             │
+  │     TipoParticula                        │
+  │   → retorna do cache ou cria novo        │
+  │ + contarInstancias(): number             │
+  └──────────────────────────────────────────┘
+              ▲ referenciado por
+  ┌──────────────────────────────────────────┐
+  │    ParticulaContext (Context)            │
+  │                                          │
+  │ - x: number          ← extrínseco        │
+  │ - y: number          ← extrínseco        │
+  │ - velocidadeX: number ← extrínseco       │
+  │ - velocidadeY: number ← extrínseco       │
+  │ - tipo: TipoParticula ← flyweight ref    │
+  │                                          │
+  │ + mover(): void                          │
+  │ + renderizar(): void                     │
+  │   → this.tipo.renderizar(x, y, vx, vy)  │
+  └──────────────────────────────────────────┘
+
+
+Contagem de instâncias (exemplo com 100 000 partículas):
+
+  Sem Flyweight:  100 000 objetos Particula completos
+  Com Flyweight:       3 objetos TipoParticula (fogo, fumaça, estilhaço)
+                + 100 000 objetos ParticulaContext (leve — só números)
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. EXEMPLOS DE CÓDIGO -->
+        <section class="artigo__secao">
+          <h2>Exemplos de código</h2>
+
+          <h3>Exemplo 1 — Partículas num jogo com FlyweightFactory e contagem de instâncias</h3>
+          <p>
+            O exemplo abaixo demonstra a separação entre estado intrínseco
+            (<code>TipoParticula</code>) e extrínseco (<code>ParticulaContext</code>),
+            a factory com cache e a contagem de instâncias criadas — evidenciando a
+            economia de memória.
+          </p>
+
+          <!-- GRUPO DE ABAS 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 1 — partículas num jogo">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Flyweight — armazena APENAS estado intrínseco ─────────────
+class TipoParticula {
+  constructor(
+    readonly tipo: string,      // intrínseco: imutável
+    readonly cor: string,       // intrínseco: imutável
+    readonly textura: string    // intrínseco: sprite/dados pesados
+  ) {}
+
+  // Estado extrínseco (x, y, vx, vy) chega como argumento — nunca é campo.
+  renderizar(x: number, y: number, vx: number, vy: number): void {
+    console.log(
+      `[${this.tipo}] cor=${this.cor} @ (${x.toFixed(1)},${y.toFixed(1)})` +
+      ` vel=(${vx.toFixed(2)},${vy.toFixed(2)})`
+    );
+  }
+}
+
+// ── FlyweightFactory — cache de instâncias por chave intrínseca ─
+class TipoParticulaFactory {
+  private static readonly cache = new Map&lt;string, TipoParticula&gt;();
+
+  static obter(tipo: string, cor: string, textura: string): TipoParticula {
+    const chave = `${tipo}|${cor}`;
+    if (!TipoParticulaFactory.cache.has(chave)) {
+      console.log(`  [Factory] Criando novo Flyweight: "${chave}"`);
+      TipoParticulaFactory.cache.set(chave, new TipoParticula(tipo, cor, textura));
+    }
+    return TipoParticulaFactory.cache.get(chave)!;
+  }
+
+  static contarInstancias(): number {
+    return TipoParticulaFactory.cache.size;
+  }
+}
+
+// ── Context — armazena estado extrínseco + referência ao Flyweight
+class ParticulaContext {
+  private tipo: TipoParticula;
+
+  constructor(
+    tipoNome: string,
+    cor: string,
+    textura: string,
+    private x: number,
+    private y: number,
+    private velocidadeX: number,
+    private velocidadeY: number
+  ) {
+    // Obtém (ou cria) o Flyweight compartilhado
+    this.tipo = TipoParticulaFactory.obter(tipoNome, cor, textura);
+  }
+
+  mover(dt: number): void {
+    this.x += this.velocidadeX * dt;
+    this.y += this.velocidadeY * dt;
+  }
+
+  renderizar(): void {
+    // Passa estado extrínseco como argumento — não está no Flyweight
+    this.tipo.renderizar(this.x, this.y, this.velocidadeX, this.velocidadeY);
+  }
+}
+
+// ── Simulação ─────────────────────────────────────────────────
+const TOTAL = 10_000;
+const TIPOS = [
+  { tipo: 'fogo',      cor: '#FF4500', textura: 'sprite_fogo.png'     },
+  { tipo: 'fumaca',    cor: '#808080', textura: 'sprite_fumaca.png'   },
+  { tipo: 'estilhaco', cor: '#C0C0C0', textura: 'sprite_estilhaco.png'},
+];
+
+console.log(`Criando ${TOTAL} partículas de ${TIPOS.length} tipos:`);
+
+const particulas: ParticulaContext[] = [];
+for (let i = 0; i &lt; TOTAL; i++) {
+  const t = TIPOS[i % TIPOS.length];
+  particulas.push(new ParticulaContext(
+    t.tipo, t.cor, t.textura,
+    Math.random() * 800,
+    Math.random() * 600,
+    (Math.random() - 0.5) * 5,
+    (Math.random() - 0.5) * 5
+  ));
+}
+
+// Resultado:
+//   [Factory] Criando novo Flyweight: "fogo|#FF4500"
+//   [Factory] Criando novo Flyweight: "fumaca|#808080"
+//   [Factory] Criando novo Flyweight: "estilhaco|#C0C0C0"
+
+console.log(`\nInstâncias TipoParticula (Flyweight): ${TipoParticulaFactory.contarInstancias()}`);
+console.log(`Instâncias ParticulaContext (Context): ${TOTAL}`);
+// Instâncias TipoParticula (Flyweight): 3
+// Instâncias ParticulaContext (Context): 10000
+
+// Renderiza as primeiras 3 para demonstrar
+particulas.slice(0, 3).forEach(p =&gt; p.renderizar());
+// [fogo]      cor=#FF4500 @ (327.4,198.6) vel=( 2.13,-1.07)
+// [fumaca]    cor=#808080 @ (542.1,391.2) vel=(-0.87, 3.45)
+// [estilhaco] cor=#C0C0C0 @ ( 12.9,544.8) vel=( 1.22,-2.98)</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Flyweight — armazena APENAS estado intrínseco ─────────────
+class TipoParticula
+{
+    public function __construct(
+        public readonly string $tipo,
+        public readonly string $cor,
+        public readonly string $textura
+    ) {}
+
+    // Estado extrínseco chega como argumento — nunca é propriedade.
+    public function renderizar(
+        float $x, float $y, float $vx, float $vy
+    ): void {
+        printf(
+            "[%s] cor=%s @ (%.1f,%.1f) vel=(%.2f,%.2f)\n",
+            $this-&gt;tipo, $this-&gt;cor, $x, $y, $vx, $vy
+        );
+    }
+}
+
+// ── FlyweightFactory — cache de instâncias por chave intrínseca ─
+class TipoParticulaFactory
+{
+    /** @var array&lt;string, TipoParticula&gt; */
+    private static array $cache = [];
+
+    public static function obter(
+        string $tipo, string $cor, string $textura
+    ): TipoParticula {
+        $chave = "{$tipo}|{$cor}";
+        if (!isset(self::$cache[$chave])) {
+            echo "  [Factory] Criando novo Flyweight: \"{$chave}\"\n";
+            self::$cache[$chave] = new TipoParticula($tipo, $cor, $textura);
+        }
+        return self::$cache[$chave];
+    }
+
+    public static function contarInstancias(): int
+    {
+        return count(self::$cache);
+    }
+}
+
+// ── Context — armazena estado extrínseco + referência ao Flyweight
+class ParticulaContext
+{
+    private TipoParticula $tipo;
+
+    public function __construct(
+        string $tipoNome,
+        string $cor,
+        string $textura,
+        private float $x,
+        private float $y,
+        private float $velocidadeX,
+        private float $velocidadeY
+    ) {
+        $this-&gt;tipo = TipoParticulaFactory::obter($tipoNome, $cor, $textura);
+    }
+
+    public function mover(float $dt): void
+    {
+        $this-&gt;x += $this-&gt;velocidadeX * $dt;
+        $this-&gt;y += $this-&gt;velocidadeY * $dt;
+    }
+
+    public function renderizar(): void
+    {
+        $this-&gt;tipo-&gt;renderizar(
+            $this-&gt;x, $this-&gt;y,
+            $this-&gt;velocidadeX, $this-&gt;velocidadeY
+        );
+    }
+}
+
+// ── Simulação ─────────────────────────────────────────────────
+const TOTAL = 10000;
+$tipos = [
+    ['tipo' =&gt; 'fogo',      'cor' =&gt; '#FF4500', 'textura' =&gt; 'sprite_fogo.png'],
+    ['tipo' =&gt; 'fumaca',    'cor' =&gt; '#808080', 'textura' =&gt; 'sprite_fumaca.png'],
+    ['tipo' =&gt; 'estilhaco', 'cor' =&gt; '#C0C0C0', 'textura' =&gt; 'sprite_estilhaco.png'],
+];
+
+echo "Criando " . TOTAL . " partículas de " . count($tipos) . " tipos:\n";
+
+$particulas = [];
+for ($i = 0; $i &lt; TOTAL; $i++) {
+    $t = $tipos[$i % count($tipos)];
+    $particulas[] = new ParticulaContext(
+        $t['tipo'], $t['cor'], $t['textura'],
+        (float)(mt_rand(0, 8000) / 10),
+        (float)(mt_rand(0, 6000) / 10),
+        (mt_rand(-500, 500) / 100),
+        (mt_rand(-500, 500) / 100)
+    );
+}
+
+// [Factory] Criando novo Flyweight: "fogo|#FF4500"
+// [Factory] Criando novo Flyweight: "fumaca|#808080"
+// [Factory] Criando novo Flyweight: "estilhaco|#C0C0C0"
+
+echo "\nInstâncias TipoParticula (Flyweight): "
+    . TipoParticulaFactory::contarInstancias() . "\n";
+echo "Instâncias ParticulaContext (Context): " . TOTAL . "\n";
+// Instâncias TipoParticula (Flyweight): 3
+// Instâncias ParticulaContext (Context): 10000
+
+// Renderiza as 3 primeiras para demonstrar
+foreach (array_slice($particulas, 0, 3) as $p) {
+    $p-&gt;renderizar();
+}</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 1) -->
+
+          <h3>Exemplo 2 — Caracteres tipográficos num editor de texto</h3>
+          <p>
+            O exemplo clássico do GoF: um editor com 500 000 caracteres. O estado
+            intrínseco é a forma do glifo (família, peso, tamanho da fonte — imutável
+            para todos os "A" na mesma fonte). O estado extrínseco é a posição de cada
+            caractere na página (linha, coluna — único por instância). Sem Flyweight:
+            500 000 objetos com dados de fonte repetidos. Com Flyweight: um objeto
+            por glifo único, compartilhado por todas as ocorrências.
+          </p>
+
+          <!-- GRUPO DE ABAS 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 2 — glifos tipográficos">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Flyweight: dados da fonte (intrínseco) ─────────────────────
+class Glifo {
+  constructor(
+    readonly caractere: string,
+    readonly familia: string,   // ex.: "Helvetica"
+    readonly peso: string,      // ex.: "regular" | "bold"
+    readonly tamanho: number    // ex.: 12 (pt)
+  ) {}
+
+  // Posição (extrínseca) vem como argumento
+  desenhar(linha: number, coluna: number): void {
+    console.log(
+      `'${this.caractere}' [${this.familia} ${this.peso} ${this.tamanho}pt]` +
+      ` → linha ${linha}, col ${coluna}`
+    );
+  }
+}
+
+// ── FlyweightFactory ──────────────────────────────────────────
+class GlifoFactory {
+  private readonly cache = new Map&lt;string, Glifo&gt;();
+
+  obter(
+    caractere: string,
+    familia: string,
+    peso: string,
+    tamanho: number
+  ): Glifo {
+    const chave = `${caractere}|${familia}|${peso}|${tamanho}`;
+    if (!this.cache.has(chave)) {
+      this.cache.set(chave, new Glifo(caractere, familia, peso, tamanho));
+    }
+    return this.cache.get(chave)!;
+  }
+
+  contarGlifos(): number { return this.cache.size; }
+}
+
+// ── Context: posição de cada caractere no documento ───────────
+class CaractereNoDocumento {
+  private readonly glifo: Glifo;
+
+  constructor(
+    caractere: string,
+    familia: string,
+    peso: string,
+    tamanho: number,
+    private readonly linha: number,
+    private readonly coluna: number,
+    factory: GlifoFactory
+  ) {
+    this.glifo = factory.obter(caractere, familia, peso, tamanho);
+  }
+
+  renderizar(): void {
+    this.glifo.desenhar(this.linha, this.coluna);
+  }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+const factory = new GlifoFactory();
+const texto   = 'Hello'; // cada letra ocorre em múltiplas posições
+
+// Simula duas linhas com o mesmo texto — mesmos glifos, posições distintas
+const documento: CaractereNoDocumento[] = [];
+for (let linha = 0; linha &lt; 2; linha++) {
+  for (let col = 0; col &lt; texto.length; col++) {
+    documento.push(new CaractereNoDocumento(
+      texto[col], 'Helvetica', 'regular', 12,
+      linha, col, factory
+    ));
+  }
+}
+
+// "Hello" × 2 linhas = 10 instâncias de CaractereNoDocumento
+// mas apenas 5 glifos únicos (H,e,l,o — 'l' reutilizado 4×)
+console.log(`Glifos únicos (Flyweight): ${factory.contarGlifos()}`); // 4
+console.log(`Contextos (instâncias):    ${documento.length}`);       // 10
+
+// Renderiza linha 0
+documento.filter((_, i) =&gt; i &lt; texto.length).forEach(c =&gt; c.renderizar());
+// 'H' [Helvetica regular 12pt] → linha 0, col 0
+// 'e' [Helvetica regular 12pt] → linha 0, col 1
+// 'l' [Helvetica regular 12pt] → linha 0, col 2
+// 'l' [Helvetica regular 12pt] → linha 0, col 3  ← mesmo Glifo 'l'
+// 'o' [Helvetica regular 12pt] → linha 0, col 4</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Flyweight: dados da fonte (intrínseco) ─────────────────────
+class Glifo
+{
+    public function __construct(
+        public readonly string $caractere,
+        public readonly string $familia,
+        public readonly string $peso,
+        public readonly int $tamanho
+    ) {}
+
+    public function desenhar(int $linha, int $coluna): void
+    {
+        printf(
+            "'%s' [%s %s %dpt] → linha %d, col %d\n",
+            $this-&gt;caractere, $this-&gt;familia,
+            $this-&gt;peso, $this-&gt;tamanho,
+            $linha, $coluna
+        );
+    }
+}
+
+// ── FlyweightFactory ──────────────────────────────────────────
+class GlifoFactory
+{
+    /** @var array&lt;string, Glifo&gt; */
+    private array $cache = [];
+
+    public function obter(
+        string $caractere,
+        string $familia,
+        string $peso,
+        int $tamanho
+    ): Glifo {
+        $chave = "{$caractere}|{$familia}|{$peso}|{$tamanho}";
+        if (!isset($this-&gt;cache[$chave])) {
+            $this-&gt;cache[$chave] = new Glifo($caractere, $familia, $peso, $tamanho);
+        }
+        return $this-&gt;cache[$chave];
+    }
+
+    public function contarGlifos(): int
+    {
+        return count($this-&gt;cache);
+    }
+}
+
+// ── Context: posição de cada caractere no documento ───────────
+class CaractereNoDocumento
+{
+    private Glifo $glifo;
+
+    public function __construct(
+        string $caractere,
+        string $familia,
+        string $peso,
+        int $tamanho,
+        private readonly int $linha,
+        private readonly int $coluna,
+        GlifoFactory $factory
+    ) {
+        $this-&gt;glifo = $factory-&gt;obter($caractere, $familia, $peso, $tamanho);
+    }
+
+    public function renderizar(): void
+    {
+        $this-&gt;glifo-&gt;desenhar($this-&gt;linha, $this-&gt;coluna);
+    }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+$factory = new GlifoFactory();
+$texto   = 'Hello';
+
+$documento = [];
+for ($linha = 0; $linha &lt; 2; $linha++) {
+    for ($col = 0; $col &lt; strlen($texto); $col++) {
+        $documento[] = new CaractereNoDocumento(
+            $texto[$col], 'Helvetica', 'regular', 12,
+            $linha, $col, $factory
+        );
+    }
+}
+
+echo "Glifos únicos (Flyweight): " . $factory-&gt;contarGlifos() . "\n"; // 4
+echo "Contextos (instâncias):    " . count($documento) . "\n";         // 10
+
+// Renderiza linha 0
+foreach (array_slice($documento, 0, strlen($texto)) as $c) {
+    $c-&gt;renderizar();
+}
+// 'H' [Helvetica regular 12pt] → linha 0, col 0
+// 'e' [Helvetica regular 12pt] → linha 0, col 1
+// 'l' [Helvetica regular 12pt] → linha 0, col 2
+// 'l' [Helvetica regular 12pt] → linha 0, col 3  ← mesmo Glifo 'l'
+// 'o' [Helvetica regular 12pt] → linha 0, col 4</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 2) -->
+
+        </section><!-- /.artigo__secao (exemplos) -->
+
+        <!-- 6. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Quando o número de objetos é muito grande e o custo de memória
+              é mensurável:</strong> Flyweight só compensa depois de perfilar. O critério
+              é objetivo: existe um gargalo real de memória causado por objetos quase
+              idênticos em quantidade massiva (milhares ou mais).
+            </li>
+            <li>
+              <strong>Quando grande parte do estado de cada objeto é idêntica entre
+              instâncias:</strong> se os objetos diferem apenas em alguns campos
+              numéricos (posição, tempo de vida), mas compartilham dados pesados
+              (sprites, esquemas de cor, regras de negócio), o estado intrínseco
+              compartilhável é substancial.
+            </li>
+            <li>
+              <strong>Quando a identidade dos objetos não importa para o cliente:</strong>
+              o cliente não pode distinguir um Flyweight reutilizado de um novo objeto —
+              e não precisa. Se a identidade de instância é relevante (ex.: dois
+              objetos "iguais" têm ciclos de vida independentes), Flyweight não é
+              adequado.
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>Antes de perfilar:</strong> Flyweight introduz complexidade real —
+              estado extrínseco se torna responsabilidade do cliente, o código fica mais
+              difícil de entender e depurar. Aplicar sem evidência de problema de memória
+              é over-engineering clássico.
+            </li>
+            <li>
+              <strong>Quando o estado intrínseco é pequeno ou não repetitivo:</strong>
+              se cada objeto tem dados únicos, não há o que compartilhar. O padrão não
+              traz benefício algum.
+            </li>
+            <li>
+              <strong>Quando o número de objetos é razoável:</strong> centenas de objetos
+              com dados duplicados não justificam a complexidade. A regra prática:
+              se a memória ocupada não é um problema mensurável, não aplique.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Redução drástica no uso de memória quando há muitos objetos com estado intrínseco compartilhável.</li>
+            <li>Pode melhorar a performance de cache de CPU ao reduzir o número de objetos distintos percorridos.</li>
+            <li>A FlyweightFactory centraliza a criação e o compartilhamento — o cliente não precisa gerenciar o cache manualmente.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>O estado extrínseco passa a ser responsabilidade do cliente — quem chama o Flyweight deve fornecer e gerenciar esses dados, aumentando o acoplamento.</li>
+            <li>Aumenta a complexidade do código: o que era um único objeto vira um par Flyweight + Context, mais a factory.</li>
+            <li>Pode introduzir bugs sutis se estado mutável vazar para o Flyweight compartilhado (viola a premissa de imutabilidade intrínseca).</li>
+            <li>O benefício de memória pode ser anulado pelo overhead de gerenciar e passar o estado extrínseco em cada operação.</li>
+          </ul>
+        </section>
+
+        <!-- 8. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Estado intrínseco mutável</h3>
+          <p>
+            A premissa fundamental do Flyweight é que o estado intrínseco é
+            <strong>imutável</strong>. Se um Flyweight compartilhado for mutado por
+            um cliente, todos os outros Contexts que o referenciam serão afetados —
+            um bug sutil e difícil de rastrear. A proteção em TypeScript é usar
+            <code>readonly</code> em todos os campos e não expor setters.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Regra:</strong> se você sentir a necessidade de modificar um
+            campo do Flyweight, provavelmente esse campo é extrínseco e pertence
+            ao Context — não ao Flyweight.
+          </p>
+
+          <h3>2. Aplicar antes de perfilar (over-engineering)</h3>
+          <p>
+            O Flyweight é um padrão de otimização de memória — não de design. Aplicá-lo
+            antes de identificar um gargalo real é custo sem benefício: a separação
+            entre intrínseco e extrínseco torna o código significativamente mais
+            complexo. Use um profiler para confirmar que o uso de memória por objetos
+            repetidos é o problema real antes de refatorar.
+          </p>
+
+          <h3>3. Estado extrínseco que vira intrínseco acidentalmente</h3>
+          <p>
+            A distinção entre intrínseco e extrínseco nem sempre é óbvia. Um campo como
+            <code>cor</code> pode ser intrínseco (todos os "A" em negrito são azuis) ou
+            extrínseco (cada caractere pode ter cor independente). Classificar
+            incorretamente significa que o Flyweight terá estado que deveria variar por
+            instância — tornando o compartilhamento incorreto.
+          </p>
+          <p>
+            A pergunta diagnóstica: <em>"se dois objetos têm este valor diferente, eles
+            ainda podem compartilhar a mesma instância Flyweight?"</em>. Se não, o campo
+            é extrínseco.
+          </p>
+
+          <h3>4. Objetos Flyweight usados por múltiplas threads</h3>
+          <p>
+            Porque os Flyweights são compartilhados e (por design) imutáveis, eles são
+            naturalmente thread-safe para leitura. O risco é a própria
+            <code>FlyweightFactory</code>: a criação e inserção no cache deve ser
+            protegida em ambientes multithreaded (mutex, sincronização) para evitar
+            que dois threads criem o mesmo Flyweight simultaneamente.
+          </p>
+        </section>
+
+        <!-- 9. PADRÕES RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Padrões relacionados</h2>
+          <p>
+            O Flyweight interage com padrões que também lidam com compartilhamento,
+            composição de objetos e criação centralizada:
+          </p>
+          <!--
+            Disciplina de links: só linka artigos já publicados.
+            Composite e Singleton existem → links reais.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../composite/">Composite</a></li>
+            <li><a href="../singleton/">Singleton</a></li>
+            <li><span class="artigo__padrao-pendente">Visitor (em breve)</span></li>
+          </ul>
+          <p class="mt-1">
+            O <strong>Composite</strong> frequentemente usa Flyweight: quando uma árvore
+            Composite contém muitas folhas repetidas (ex.: caracteres num documento,
+            tiles num mapa), as folhas podem ser implementadas como Flyweights para
+            economizar memória — a árvore cresce, mas o número de objetos únicos não.
+            O <strong>Singleton</strong> é o padrão mais próximo da
+            <code>FlyweightFactory</code>: a factory é frequentemente implementada como
+            Singleton para garantir que o cache de Flyweights seja único em toda a
+            aplicação. O <strong>Visitor</strong> pode ser combinado com Flyweight para
+            percorrer e operar sobre as instâncias sem precisar que cada uma tenha o
+            comportamento de visitação embutido — o Visitor recebe o estado extrínseco
+            do Context e o Flyweight compartilhado como parâmetros.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="4141414141"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

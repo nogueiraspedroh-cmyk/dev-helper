@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Decorator — Design Patterns | Biblioteca Dev Helper</title>
+  <meta name="description" content="Aprenda o padrão Decorator (GoF) em profundidade: intenção, problema, solução, estrutura, exemplos em TypeScript e PHP, quando usar, quando evitar e armadilhas comuns." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Decorator</span>
+        </nav>
+        <span class="artigo__categoria">Padrão Estrutural (GoF)</span>
+        <h1 class="artigo__titulo">Decorator</h1>
+        <p class="artigo__subtitulo">
+          Anexa responsabilidades adicionais a um objeto dinamicamente, envolvendo-o em
+          um wrapper que implementa a mesma interface — uma alternativa flexível à herança
+          para estender comportamento.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Adicionar responsabilidades a um objeto de forma dinâmica</strong>,
+            sem alterar sua classe. O Decorator envolve o objeto original em um wrapper
+            que implementa a mesma interface — delegando as chamadas ao objeto interno e
+            adicionando comportamento antes, depois ou ao redor da delegação.
+            Decorators podem ser empilhados em qualquer ordem e combinação.
+          </p>
+          <p>
+            Catalogado pelo GoF (1994) como padrão estrutural, o Decorator é a resposta
+            elegante ao problema da <em>explosão de subclasses</em>: quando você precisa
+            de combinações variadas de comportamento, criar uma subclasse para cada
+            combinação escala de forma insustentável.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Considere um sistema de notificações que precisa suportar funcionalidades
+            opcionais: adicionar timestamp à mensagem, registrar a notificação em um log,
+            e criptografar o conteúdo antes de enviar. Essas funcionalidades podem ser
+            combinadas livremente — com ou sem timestamp, com ou sem log, com ou sem
+            criptografia.
+          </p>
+          <p>
+            Pela abordagem de herança, você precisaria de uma subclasse para cada
+            combinação: <code>NotificadorComTimestamp</code>,
+            <code>NotificadorComLog</code>, <code>NotificadorComTimestampELog</code>,
+            <code>NotificadorComCriptografia</code>,
+            <code>NotificadorComTimestampECriptografia</code>, e assim por diante.
+            Com apenas três funcionalidades opcionais, são até 8 combinações possíveis
+            (2³). Com quatro, são 16. O crescimento é exponencial.
+          </p>
+          <p>
+            Além disso, herança é estática — a combinação de comportamentos é fixada em
+            tempo de compilação, não pode ser alterada em runtime conforme as necessidades
+            mudam.
+          </p>
+
+          <h3>Decorator vs Adapter: a diferença-chave</h3>
+          <p>
+            É importante não confundir os dois padrões. O <strong>Adapter</strong> muda a
+            interface de um objeto — seu objetivo é compatibilidade entre interfaces
+            incompatíveis. O <strong>Decorator</strong> mantém exatamente a mesma
+            interface do objeto que envolve — seu objetivo é adicionar comportamento ao
+            mesmo contrato. Se você vê um wrapper que muda a interface, é Adapter; se
+            mantém a interface e acrescenta funcionalidade, é Decorator.
+          </p>
+        </section>
+
+        <!-- 3. SOLUÇÃO -->
+        <section class="artigo__secao">
+          <h2>Solução</h2>
+          <p>O Decorator organiza o código em quatro participantes:</p>
+          <ol>
+            <li>
+              <strong>Component (interface):</strong> define o contrato compartilhado
+              entre o objeto concreto e todos os decorators. Ex.: interface
+              <code>Notificador</code> com o método <code>enviar(mensagem)</code>.
+            </li>
+            <li>
+              <strong>ConcreteComponent:</strong> a implementação base, sem decorações.
+              Ex.: <code>NotificadorEmail</code> — envia o e-mail e só.
+            </li>
+            <li>
+              <strong>Decorator (classe base abstrata, opcional):</strong> implementa
+              Component e mantém uma referência a outro Component (o objeto envolvido).
+              Delega todas as chamadas ao objeto interno. Em TypeScript, pode ser uma
+              classe abstrata ou simplesmente cada decorator concreto manter a referência.
+            </li>
+            <li>
+              <strong>ConcreteDecorator:</strong> estende o Decorator e adiciona
+              comportamento antes, depois ou ao redor da chamada delegada.
+              Ex.: <code>NotificadorComTimestamp</code>, <code>NotificadorComLog</code>.
+            </li>
+          </ol>
+          <p>
+            A chave é que o resultado de um decorator é ele mesmo um Component — o que
+            permite empilhar decorators livremente:
+            <code>new NotificadorComLog(new NotificadorComTimestamp(new NotificadorEmail()))</code>.
+          </p>
+        </section>
+
+        <!-- 4. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+          <div class="code-bloco">
+<pre><code>         «interface»
+          Notificador
+    ┌──────────────────────────┐
+    │ + enviar(msg): void      │
+    └──────────────────────────┘
+          ▲          ▲
+          │          │ implementa (e envolve outro Notificador)
+NotificadorEmail  NotificadorDecorator (base abstrata)
+(ConcreteComp.)   ┌──────────────────────────────────┐
+                  │ # wrapped: Notificador            │
+                  │ + enviar(msg): void               │
+                  │   → delega para this.wrapped      │
+                  └──────────────────────────────────┘
+                                ▲
+                    ┌───────────┴────────────────┐
+                    │                            │
+          NotificadorComTimestamp     NotificadorComLog
+          (ConcreteDecorator)         (ConcreteDecorator)
+          enviar(msg):                enviar(msg):
+            msg = "[ts] " + msg        this.wrapped.enviar(msg)
+            this.wrapped.enviar(msg)   registrarLog(msg)
+
+
+Empilhamento (da direita para a esquerda no código):
+
+  new NotificadorComLog(
+    new NotificadorComTimestamp(
+      new NotificadorEmail()
+    )
+  )
+
+  → enviar("Olá") chama:
+    1. NotificadorComLog.enviar       → registra no log
+    2. NotificadorComTimestamp.enviar → prepend timestamp
+    3. NotificadorEmail.enviar        → envia o e-mail
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. EXEMPLOS DE CÓDIGO -->
+        <section class="artigo__secao">
+          <h2>Exemplos de código</h2>
+
+          <h3>Exemplo 1 — Notificador com camadas opcionais</h3>
+          <p>
+            Cada decorator adiciona uma responsabilidade. A combinação e a ordem são
+            definidas em tempo de execução — sem criar subclasses para cada combinação.
+          </p>
+
+          <!-- GRUPO DE ABAS 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 1 — notificador decorado">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Component ─────────────────────────────────────────────────
+interface Notificador {
+  enviar(mensagem: string): void;
+}
+
+// ── ConcreteComponent ─────────────────────────────────────────
+class NotificadorEmail implements Notificador {
+  enviar(mensagem: string): void {
+    console.log(`[EMAIL] ${mensagem}`);
+  }
+}
+
+// ── Decorators ────────────────────────────────────────────────
+
+// Adiciona timestamp à mensagem antes de delegar.
+class NotificadorComTimestamp implements Notificador {
+  constructor(private readonly wrapped: Notificador) {}
+
+  enviar(mensagem: string): void {
+    const ts = new Date().toISOString();
+    this.wrapped.enviar(`[${ts}] ${mensagem}`);
+  }
+}
+
+// Registra a mensagem em log antes de delegar.
+class NotificadorComLog implements Notificador {
+  private readonly historico: string[] = [];
+
+  constructor(private readonly wrapped: Notificador) {}
+
+  enviar(mensagem: string): void {
+    this.historico.push(mensagem);
+    console.log(`[LOG] Mensagem registrada. Total: ${this.historico.length}`);
+    this.wrapped.enviar(mensagem);
+  }
+
+  getHistorico(): readonly string[] {
+    return this.historico;
+  }
+}
+
+// Simula criptografia simples antes de delegar.
+class NotificadorComCriptografia implements Notificador {
+  constructor(private readonly wrapped: Notificador) {}
+
+  enviar(mensagem: string): void {
+    // Simulação: invertemos a string como "criptografia"
+    const cifrada = mensagem.split("").reverse().join("");
+    this.wrapped.enviar(`[ENC:${cifrada}]`);
+  }
+}
+
+// ── Uso — compondo decorators em runtime ──────────────────────
+const base = new NotificadorEmail();
+
+// Apenas com timestamp:
+const comTimestamp = new NotificadorComTimestamp(base);
+comTimestamp.enviar("Sua fatura chegou");
+// [EMAIL] [2026-06-25T...] Sua fatura chegou
+
+// Com log + timestamp (log é o mais externo):
+const loggerDecorado = new NotificadorComLog(
+  new NotificadorComTimestamp(base)
+);
+loggerDecorado.enviar("Pedido confirmado");
+// [LOG] Mensagem registrada. Total: 1
+// [EMAIL] [2026-06-25T...] Pedido confirmado
+
+// Todos os três, na ordem: log → criptografia → timestamp → email
+const completo = new NotificadorComLog(
+  new NotificadorComCriptografia(
+    new NotificadorComTimestamp(base)
+  )
+);
+completo.enviar("Ola");
+// [LOG] Mensagem registrada. Total: 1
+// [EMAIL] [2026-06-25T...] [ENC:alO]</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Component ─────────────────────────────────────────────────
+interface Notificador
+{
+    public function enviar(string $mensagem): void;
+}
+
+// ── ConcreteComponent ─────────────────────────────────────────
+class NotificadorEmail implements Notificador
+{
+    public function enviar(string $mensagem): void
+    {
+        echo "[EMAIL] {$mensagem}" . PHP_EOL;
+    }
+}
+
+// ── Decorators ────────────────────────────────────────────────
+
+// Adiciona timestamp à mensagem antes de delegar.
+class NotificadorComTimestamp implements Notificador
+{
+    public function __construct(private readonly Notificador $wrapped) {}
+
+    public function enviar(string $mensagem): void
+    {
+        $ts = (new \DateTimeImmutable())-&gt;format(\DateTimeInterface::ATOM);
+        $this-&gt;wrapped-&gt;enviar("[{$ts}] {$mensagem}");
+    }
+}
+
+// Registra a mensagem em log antes de delegar.
+class NotificadorComLog implements Notificador
+{
+    /** @var string[] */
+    private array $historico = [];
+
+    public function __construct(private readonly Notificador $wrapped) {}
+
+    public function enviar(string $mensagem): void
+    {
+        $this-&gt;historico[] = $mensagem;
+        $total = count($this-&gt;historico);
+        echo "[LOG] Mensagem registrada. Total: {$total}" . PHP_EOL;
+        $this-&gt;wrapped-&gt;enviar($mensagem);
+    }
+
+    /** @return string[] */
+    public function getHistorico(): array
+    {
+        return $this-&gt;historico;
+    }
+}
+
+// Simula criptografia simples antes de delegar.
+class NotificadorComCriptografia implements Notificador
+{
+    public function __construct(private readonly Notificador $wrapped) {}
+
+    public function enviar(string $mensagem): void
+    {
+        $cifrada = strrev($mensagem);
+        $this-&gt;wrapped-&gt;enviar("[ENC:{$cifrada}]");
+    }
+}
+
+// ── Uso — compondo decorators em runtime ──────────────────────
+$base = new NotificadorEmail();
+
+// Apenas com timestamp:
+$comTimestamp = new NotificadorComTimestamp($base);
+$comTimestamp-&gt;enviar('Sua fatura chegou');
+// [EMAIL] [2026-06-25T...] Sua fatura chegou
+
+// Com log + timestamp:
+$loggerDecorado = new NotificadorComLog(
+    new NotificadorComTimestamp($base)
+);
+$loggerDecorado-&gt;enviar('Pedido confirmado');
+// [LOG] Mensagem registrada. Total: 1
+// [EMAIL] [2026-06-25T...] Pedido confirmado
+
+// Todos os três:
+$completo = new NotificadorComLog(
+    new NotificadorComCriptografia(
+        new NotificadorComTimestamp($base)
+    )
+);
+$completo-&gt;enviar('Ola');
+// [LOG] Mensagem registrada. Total: 1
+// [EMAIL] [2026-06-25T...] [ENC:alO]</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 1) -->
+
+          <h3>Exemplo 2 — Preço de bebida com adicionais (exemplo clássico GoF)</h3>
+          <p>
+            O exemplo do café com adicionais é canônico na literatura sobre Decorator.
+            Cada adicional (leite, caramelo, chantilly) é um decorator que soma seu
+            preço ao total do componente envolvido. O resultado final acumula
+            corretamente todos os valores.
+          </p>
+
+          <!-- GRUPO DE ABAS 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 2 — bebida com adicionais">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Component ─────────────────────────────────────────────────
+interface Bebida {
+  descricao(): string;
+  preco(): number; // em centavos
+}
+
+// ── ConcreteComponents ────────────────────────────────────────
+class Espresso implements Bebida {
+  descricao(): string { return "Espresso"; }
+  preco(): number     { return 300; } // R$3,00
+}
+
+class Americano implements Bebida {
+  descricao(): string { return "Americano"; }
+  preco(): number     { return 200; } // R$2,00
+}
+
+// ── Decorators de adicional ───────────────────────────────────
+class ComLeite implements Bebida {
+  constructor(private readonly bebida: Bebida) {}
+  descricao(): string { return `${this.bebida.descricao()}, Leite`; }
+  preco(): number     { return this.bebida.preco() + 50; } // +R$0,50
+}
+
+class ComCaramelo implements Bebida {
+  constructor(private readonly bebida: Bebida) {}
+  descricao(): string { return `${this.bebida.descricao()}, Caramelo`; }
+  preco(): number     { return this.bebida.preco() + 75; } // +R$0,75
+}
+
+class ComChantilly implements Bebida {
+  constructor(private readonly bebida: Bebida) {}
+  descricao(): string { return `${this.bebida.descricao()}, Chantilly`; }
+  preco(): number     { return this.bebida.preco() + 100; } // +R$1,00
+}
+
+// ── Uso ───────────────────────────────────────────────────────
+const simples = new Espresso();
+console.log(`${simples.descricao()}: R$${(simples.preco() / 100).toFixed(2)}`);
+// Espresso: R$3.00
+
+const capuccino = new ComChantilly(new ComLeite(new Espresso()));
+console.log(`${capuccino.descricao()}: R$${(capuccino.preco() / 100).toFixed(2)}`);
+// Espresso, Leite, Chantilly: R$4.50
+// (300 + 50 + 100 = 450 centavos = R$4,50 ✓)
+
+const especial = new ComCaramelo(new ComChantilly(new ComLeite(new Americano())));
+console.log(`${especial.descricao()}: R$${(especial.preco() / 100).toFixed(2)}`);
+// Americano, Leite, Chantilly, Caramelo: R$4.25
+// (200 + 50 + 100 + 75 = 425 centavos = R$4,25 ✓)</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Component ─────────────────────────────────────────────────
+interface Bebida
+{
+    public function descricao(): string;
+    public function preco(): int; // em centavos
+}
+
+// ── ConcreteComponents ────────────────────────────────────────
+class Espresso implements Bebida
+{
+    public function descricao(): string { return 'Espresso'; }
+    public function preco(): int        { return 300; } // R$3,00
+}
+
+class Americano implements Bebida
+{
+    public function descricao(): string { return 'Americano'; }
+    public function preco(): int        { return 200; } // R$2,00
+}
+
+// ── Decorators de adicional ───────────────────────────────────
+class ComLeite implements Bebida
+{
+    public function __construct(private readonly Bebida $bebida) {}
+    public function descricao(): string { return $this-&gt;bebida-&gt;descricao() . ', Leite'; }
+    public function preco(): int        { return $this-&gt;bebida-&gt;preco() + 50; } // +R$0,50
+}
+
+class ComCaramelo implements Bebida
+{
+    public function __construct(private readonly Bebida $bebida) {}
+    public function descricao(): string { return $this-&gt;bebida-&gt;descricao() . ', Caramelo'; }
+    public function preco(): int        { return $this-&gt;bebida-&gt;preco() + 75; } // +R$0,75
+}
+
+class ComChantilly implements Bebida
+{
+    public function __construct(private readonly Bebida $bebida) {}
+    public function descricao(): string { return $this-&gt;bebida-&gt;descricao() . ', Chantilly'; }
+    public function preco(): int        { return $this-&gt;bebida-&gt;preco() + 100; } // +R$1,00
+}
+
+// ── Uso ───────────────────────────────────────────────────────
+$simples = new Espresso();
+printf("%s: R$%.2f\n", $simples-&gt;descricao(), $simples-&gt;preco() / 100);
+// Espresso: R$3.00
+
+$capuccino = new ComChantilly(new ComLeite(new Espresso()));
+printf("%s: R$%.2f\n", $capuccino-&gt;descricao(), $capuccino-&gt;preco() / 100);
+// Espresso, Leite, Chantilly: R$4.50
+// (300 + 50 + 100 = 450 centavos = R$4,50 ✓)
+
+$especial = new ComCaramelo(new ComChantilly(new ComLeite(new Americano())));
+printf("%s: R$%.2f\n", $especial-&gt;descricao(), $especial-&gt;preco() / 100);
+// Americano, Leite, Chantilly, Caramelo: R$4.25
+// (200 + 50 + 100 + 75 = 425 centavos = R$4,25 ✓)</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 2) -->
+
+        </section><!-- /.artigo__secao (exemplos) -->
+
+        <!-- 6. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Quando você precisa adicionar responsabilidades a objetos de forma dinâmica</strong>
+              e reversível, sem modificar a classe original.
+            </li>
+            <li>
+              <strong>Para evitar a explosão de subclasses</strong> em cenários onde
+              comportamentos são opcionais e combinados livremente (ex.: middleware de
+              logging + autenticação + cache).
+            </li>
+            <li>
+              <strong>Quando a extensão via herança é impraticável</strong> porque a
+              classe é <code>final</code>, ou porque as combinações possíveis são demais
+              para modelar estaticamente.
+            </li>
+            <li>
+              <strong>Pipelines e middlewares:</strong> a pilha de middlewares em Express,
+              Laravel, ASP.NET e similares é uma aplicação direta do Decorator — cada
+              middleware é um decorator sobre o handler seguinte.
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>Quando há um único comportamento adicional fixo:</strong> subclasse
+              simples ou composição direta é mais legível do que criar a estrutura completa
+              de Decorator.
+            </li>
+            <li>
+              <strong>Quando a ordem dos decorators é sensível e não documentada:</strong>
+              pilhas de decorators podem gerar comportamentos inesperados se montadas na
+              ordem errada. Se isso for frequente, considere um Builder para construir a
+              pilha de forma controlada.
+            </li>
+            <li>
+              <strong>Quando você precisa referenciar o componente concreto:</strong>
+              código que faz downcasting para obter o <code>ConcreteComponent</code> de
+              dentro da pilha de decorators quebra o encapsulamento e invalida o padrão.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Estende o comportamento de objetos sem alterar a classe original (Princípio Aberto/Fechado).</li>
+            <li>Combina responsabilidades em runtime — muito mais flexível do que herança estática.</li>
+            <li>Evita hierarquias de classes enormes para cobrir todas as combinações possíveis.</li>
+            <li>Cada decorator tem uma única responsabilidade — mais fácil de testar isoladamente.</li>
+            <li>Os decorators podem ser reutilizados em diferentes combinações e sobre diferentes components.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Pilhas profundas de decorators tornam a depuração difícil — rastrear qual decorator gerou um comportamento inesperado exige inspecionar toda a cadeia.</li>
+            <li>A ordem dos decorators importa e pode ser contraintuitiva.</li>
+            <li>Interfaces grandes (muitos métodos) são trabalhosas de decorar — cada decorator precisa implementar todos os métodos, mesmo que só sobreponha um.</li>
+            <li>Pode ser difícil remover um decorator específico do meio de uma pilha.</li>
+          </ul>
+        </section>
+
+        <!-- 8. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Confundir Decorator com Adapter</h3>
+          <p>
+            A distinção essencial: o <strong>Decorator</strong> mantém a mesma interface
+            do objeto que envolve. Se o wrapper retorna uma interface diferente da do
+            objeto envolvido, é um Adapter, não um Decorator. Quando você percebe que
+            o wrapper está "traduzindo" chamadas para uma API diferente, reveja se o
+            padrão correto não seria Adapter.
+          </p>
+
+          <h3>2. Decorators com estado compartilhado</h3>
+          <p class="artigo__aviso">
+            <strong>Atenção:</strong> cada instância de decorator tem seu próprio estado
+            (como o <code>historico</code> do <code>NotificadorComLog</code>). Se o mesmo
+            decorator for reutilizado em contextos diferentes sem ser reinstanciado, o
+            estado acumulado de um contexto pode vazar para outro. Prefira decorators
+            stateless sempre que possível; quando estado for necessário, documente
+            claramente o ciclo de vida esperado.
+          </p>
+
+          <h3>3. Interfaces grandes são difíceis de decorar</h3>
+          <p>
+            Se a interface Component tem 10 métodos, cada decorator deve implementar
+            todos os 10 — mesmo que queira sobrepor apenas 1. Isso gera código repetitivo
+            de delegação. A solução clássica é criar uma classe base abstrata de Decorator
+            que delega todos os métodos ao <code>wrapped</code>, deixando os decorators
+            concretos sobrescrever apenas o que precisam.
+          </p>
+
+          <h3>4. A ordem importa mais do que parece</h3>
+          <p>
+            No Exemplo 1, <code>new NotificadorComLog(new NotificadorComTimestamp(base))</code>
+            registra no log a mensagem <em>sem</em> timestamp (porque o log é o mais externo).
+            Inverter a ordem — <code>new NotificadorComTimestamp(new NotificadorComLog(base))</code>
+            — faria o log registrar a mensagem <em>com</em> timestamp. Nem sempre é óbvio
+            qual ordem é a desejada. Documente a ordem esperada e, se necessário, use um
+            Builder para garantir a montagem correta.
+          </p>
+        </section>
+
+        <!-- 9. PADRÕES RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Padrões relacionados</h2>
+          <p>
+            O Decorator interage com vários padrões, especialmente os outros estruturais:
+          </p>
+          <!--
+            Disciplina de links: só linka artigos já publicados.
+            Ao publicar um artigo novo, troque o <span> pelo <a href="../slug/">.
+            Adapter, Facade e Strategy existem → links reais.
+            Composite e Proxy — pendentes.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../adapter/">Adapter</a></li>
+            <li><a href="../facade/">Facade</a></li>
+            <li><a href="../strategy/">Strategy</a></li>
+            <li><a href="../composite/">Composite</a></li>
+            <li><a href="../proxy/">Proxy</a></li>
+          </ul>
+          <p class="mt-1">
+            O <strong>Adapter</strong> muda a interface; o Decorator mantém a interface e
+            adiciona comportamento — é a diferença fundamental entre os dois. A
+            <strong>Facade</strong> simplifica o acesso a um subsistema; um Facade pode
+            ser internamente construído com Decorators sobre os componentes do subsistema.
+            O <strong>Strategy</strong> também varia comportamento, mas por substituição:
+            troca o algoritmo inteiro por um diferente (o contexto escolhe qual Strategy
+            usar). O Decorator acumula comportamentos em camadas — não substitui, adiciona.
+            O <strong>Composite</strong> compartilha a mesma estrutura recursiva (um objeto
+            que contém outros do mesmo tipo), mas com o propósito de tratar um grupo de
+            objetos como um só, não de adicionar responsabilidades. O <strong>Proxy</strong>
+            também envolve um objeto mantendo a mesma interface, mas com o objetivo de
+            controlar o acesso (lazy loading, cache, segurança) — não de adicionar
+            responsabilidades de negócio.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="8282828282"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

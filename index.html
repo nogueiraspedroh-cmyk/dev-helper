@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dev Helper</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="index.html" />
+  <link rel="alternate" hreflang="en" href="en/index.html" />
+
+  <!--
+    AdSense — carrega a biblioteca UMA vez por página (no <head>).
+    Troque "ca-pub-0000000000000000" pelo SEU código de editor (pub-ID),
+    que aparece no painel do AdSense. O atributo `async` evita travar o
+    carregamento da página enquanto o script do Google baixa.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="index.html">Início</a></li>
+        <li><a href="biblioteca/">Biblioteca</a></li>
+        <li><a href="pages/sobre.html">Sobre</a></li>
+        <li><a href="pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <noscript>
+    <p class="noscript-note">JavaScript está desabilitado — o menu lateral não aparece, mas você pode navegar direto pela <a href="biblioteca/">Biblioteca</a> ou pelas ferramentas listadas abaixo.</p>
+  </noscript>
+
+  <main class="container container--home">
+    <!-- Hero "search-first": mesmo princípio de biblioteca-search (campo de
+         busca como elemento dominante do topo), adaptado ao painel escuro
+         --ink que é a identidade "terminal" do site — ver comentário
+         ".home-hero" em css/styles.css. O <h1>/prompt/subtítulo mantêm a
+         identidade visual, só ficam mais compactos; os 5 chips viram um
+         atalho secundário abaixo da busca, sem competir com ela. -->
+    <section class="hero home-hero">
+      <p class="hero__prompt">~/dev-helper — ferramentas para devs</p>
+      <h1 class="hero__title home-hero__title">Abra e use.<br>Sem instalar nada.</h1>
+      <p class="hero__sub home-hero__sub">CPF, CNPJ, JSON, SQL, senhas, endereços e mais — gerados e validados na hora, prontos para copiar.</p>
+      <div class="home-hero__field">
+        <svg class="home-hero__icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+        <input type="search" id="home-busca" class="hero__search-input" placeholder="Buscar ferramenta ou artigo…" aria-label="Buscar ferramenta ou artigo da biblioteca" autocomplete="off" />
+      </div>
+      <div class="hero__chips">
+        <a class="hero__chip" href="tools/cpf-cnpj/">CPF / CNPJ</a>
+        <a class="hero__chip" href="tools/json/">JSON</a>
+        <a class="hero__chip" href="tools/jwt/">JWT</a>
+        <a class="hero__chip" href="tools/uuid/">UUID</a>
+        <a class="hero__chip" href="tools/pix/">PIX</a>
+      </div>
+    </section>
+
+    <p class="home-busca__vazio" id="home-busca-vazio" role="status" aria-live="polite" hidden>
+      Nenhuma ferramenta ou artigo encontrado.
+    </p>
+
+    <!-- Resultados de artigos da Biblioteca para a busca da home (js/main.js,
+         bloco `if (buscaHomeInput)`). Vazio/hidden por padrão para não
+         empurrar o catálogo para baixo nem duplicar os 55 artigos na home —
+         só aparece quando a busca encontra pelo menos 1 artigo. -->
+    <section class="home-biblioteca-resultados" id="home-biblioteca-resultados" hidden>
+      <h2 class="home-biblioteca-resultados__title">Artigos da Biblioteca</h2>
+      <div class="tool-grid" id="home-biblioteca-resultados-grid"></div>
+    </section>
+
+    <!-- Catálogo de ferramentas agrupado por categoria.
+         Para adicionar uma categoria nova, copie um bloco .catalog__category inteiro
+         e insira-o na posição desejada dentro de .catalog.
+         Para adicionar uma ferramenta em uma categoria existente, copie um .tool-row
+         inteiro (ícone <svg class="tool-row__icon"> + <span class="tool-row__text">
+         com <span class="tool-row__title"> e <span class="tool-row__desc">) e cole
+         dentro do .tool-grid da categoria correspondente. .tool-row é exclusivo da
+         home — NÃO é a mesma classe .tool-card usada pela Biblioteca
+         (biblioteca/index.html). Título curto (1-3 palavras, sem truncar/ellipsis
+         — mesmo label usado em js/main.js/TOOLS) + uma descrição curta de até
+         ~50 caracteres logo abaixo.
+         Lembre-se de adicionar a mesma ferramenta em js/main.js (array TOOLS)
+         para que ela apareça também na sidebar injetada em todas as páginas
+         (a sidebar continua com as 35 ferramentas em lista única, com busca —
+         ela NÃO replica estas 6 categorias; ver js/main.js/buildSidebarMarkup).
+
+         Categorias atuais (6 — a antiga "Computação & Produtividade", que
+         concentrava 27 das 35 ferramentas, foi quebrada em 4 categorias
+         menores por eixo de tarefa do usuário; decisão registrada no flow
+         .claude-work/flows/2026-07-20-fase-2-estrutural-ux-ui.md):
+           1. Documentos & Localização    — CPF/CNPJ ✓, CEP ✓, Endereço ✓
+           2. Financeiro                  — Cartão ✓, Conta bancária ✓, Conversor de Moeda ✓, Salário PJ vs CLT ✓, PIX ✓
+           3. Texto & Dados               — JSON ✓, SQL ✓, CSV↔JSON ✓, YAML↔JSON ✓,
+              JSON→TypeScript ✓, Diff ✓, Markdown ✓, Regex ✓, Contador de Caracteres ✓,
+              Mock Data ✓, Escopo de Projeto ✓
+           4. Segurança & Codificação     — Senha ✓, Hash ✓, JWT ✓, UUID ✓, Base64/URL ✓
+           5. Web, Rede & Automação       — CIDR ✓, Cron ✓, Timestamp Unix ✓,
+              Fuso Horário ✓, QR Code ✓, Meta Tags ✓, .gitignore ✓
+           6. Conversores & Design        — Conversor de Case ✓, Base Numérica ✓,
+              Cor + Contraste WCAG ✓, CSS Gradient ✓
+
+         Ao decidir a categoria de uma ferramenta NOVA nesse eixo "Computação",
+         pergunte: ela processa/transforma um bloco de texto ou dado estruturado
+         (→ Texto & Dados)? Lida com segredo/token/hash/encoding (→ Segurança &
+         Codificação)? É sobre rede, tempo/agendamento ou metadados de página
+         (→ Web, Rede & Automação)? Converte um valor entre notações/formatos
+         visuais, sem ser "documento" (→ Conversores & Design)?
+    -->
+    <section class="catalog">
+      <h2 class="catalog__title">Ferramentas disponíveis</h2>
+
+      <!-- CATEGORIA: Documentos & Localização -->
+      <div class="catalog__category">
+        <h3 class="catalog__category-title">Documentos &amp; Localização</h3>
+        <div class="tool-grid">
+          <a href="tools/cpf-cnpj/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="2.5" y="5" width="19" height="14" rx="2"/><circle cx="8" cy="12" r="2"/><line x1="13" y1="9.5" x2="18.5" y2="9.5"/><line x1="13" y1="13" x2="18.5" y2="13"/><line x1="13" y1="16" x2="16.5" y2="16"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">CPF / CNPJ</span>
+              <span class="tool-row__desc">Gera e valida CPF e CNPJ, com dígito verificador</span>
+            </span>
+          </a>
+          <a href="tools/cep/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.3"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">CEP</span>
+              <span class="tool-row__desc">Gera CEPs plausíveis e valida o formato</span>
+            </span>
+          </a>
+          <a href="tools/endereco/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10.5V20h12v-9.5"/><path d="M10 20v-5h4v5"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Endereço</span>
+              <span class="tool-row__desc">Gera endereços fictícios de vários países</span>
+            </span>
+          </a>
+        </div>
+      </div>
+
+      <!-- CATEGORIA: Financeiro -->
+      <div class="catalog__category">
+        <h3 class="catalog__category-title">Financeiro</h3>
+        <div class="tool-grid">
+          <a href="tools/cartao/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="2.5" y="5.5" width="19" height="13" rx="2"/><line x1="2.5" y1="10" x2="21.5" y2="10"/><line x1="5.5" y1="14.5" x2="9.5" y2="14.5"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Cartão</span>
+              <span class="tool-row__desc">Gera e valida números de cartão (Luhn)</span>
+            </span>
+          </a>
+          <a href="tools/conta-bancaria/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 10 12 4l9 6"/><line x1="4" y1="10" x2="20" y2="10"/><line x1="5.5" y1="10" x2="5.5" y2="18"/><line x1="9.5" y1="10" x2="9.5" y2="18"/><line x1="14.5" y1="10" x2="14.5" y2="18"/><line x1="18.5" y1="10" x2="18.5" y2="18"/><line x1="3" y1="20" x2="21" y2="20"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Conta Bancária</span>
+              <span class="tool-row__desc">Gera dados fictícios de conta bancária</span>
+            </span>
+          </a>
+          <a href="tools/conversor-moeda/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 8h13"/><path d="M14 4l3 4-3 4"/><path d="M20 16H7"/><path d="M10 12l-3 4 3 4"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Conversor de Moeda</span>
+              <span class="tool-row__desc">Converte moedas com taxas que você define</span>
+            </span>
+          </a>
+          <a href="tools/salario-pj-clt/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4v16"/><path d="M7 20h10"/><path d="M5 7h14"/><path d="M5 7l-2.5 5a2.5 2.5 0 0 0 5 0z"/><path d="M19 7l-2.5 5a2.5 2.5 0 0 0 5 0z"/><path d="M5 7l7-2 7 2"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Salário PJ vs CLT</span>
+              <span class="tool-row__desc">Compara remuneração CLT e PJ no total anual</span>
+            </span>
+          </a>
+          <a href="tools/pix/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 2l3.5 3.5L12 9 8.5 5.5z"/><path d="M2 12l3.5-3.5L9 12l-3.5 3.5z"/><path d="M22 12l-3.5-3.5L15 12l3.5 3.5z"/><path d="M12 22l3.5-3.5L12 15l-3.5 3.5z"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">PIX Copia e Cola</span>
+              <span class="tool-row__desc">Gera código PIX (BR Code) e QR Code</span>
+            </span>
+          </a>
+        </div>
+      </div>
+
+      <!-- CATEGORIA: Texto & Dados (processam/transformam um bloco de texto
+           ou dado estruturado: parsers, formatadores, geradores de documento) -->
+      <div class="catalog__category">
+        <h3 class="catalog__category-title">Texto &amp; Dados</h3>
+        <div class="tool-grid">
+          <a href="tools/json/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 4c-2 0-3 1-3 3v3c0 1-.6 2-2 2 1.4 0 2 1 2 2v3c0 2 1 3 3 3"/><path d="M15 4c2 0 3 1 3 3v3c0 1 .6 2 2 2-1.4 0-2 1-2 2v3c0 2-1 3-3 3"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">JSON</span>
+              <span class="tool-row__desc">Formata, minifica e valida JSON</span>
+            </span>
+          </a>
+          <a href="tools/sql/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">SQL</span>
+              <span class="tool-row__desc">Indenta e formata queries SQL</span>
+            </span>
+          </a>
+          <a href="tools/csv-json/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="9.5" x2="21" y2="9.5"/><line x1="9.5" y1="9.5" x2="9.5" y2="20"/><line x1="6" y1="14.5" x2="7.5" y2="14.5"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">CSV ↔ JSON</span>
+              <span class="tool-row__desc">Converte CSV em JSON e JSON em CSV</span>
+            </span>
+          </a>
+          <a href="tools/yaml-json/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/><line x1="8" y1="13" x2="15" y2="13"/><line x1="8" y1="16.5" x2="12.5" y2="16.5"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">YAML ↔ JSON</span>
+              <span class="tool-row__desc">Converte YAML em JSON e JSON em YAML</span>
+            </span>
+          </a>
+          <a href="tools/json-para-typescript/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 4c-2 0-3 1-3 3v2c0 1-.6 2-2 2 1.4 0 2 1 2 2v2c0 2 1 3 3 3"/><path d="M12 9h8"/><path d="M16 9v8"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">JSON para TypeScript</span>
+              <span class="tool-row__desc">Gera interfaces TypeScript a partir de um JSON</span>
+            </span>
+          </a>
+          <a href="tools/diff/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="4" width="8" height="16" rx="1.5"/><rect x="13" y="4" width="8" height="16" rx="1.5"/><line x1="5" y1="9" x2="9" y2="9"/><line x1="15" y1="9" x2="19" y2="9"/><line x1="17" y1="7" x2="17" y2="11"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Diff de Texto</span>
+              <span class="tool-row__desc">Compara dois textos e destaca diferenças</span>
+            </span>
+          </a>
+          <a href="tools/markdown/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M6 15V9l3 3 3-3v6"/><path d="M16 9v3"/><path d="M14.5 12l1.5 2 1.5-2"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Editor de Markdown</span>
+              <span class="tool-row__desc">Escreve Markdown com preview ao vivo</span>
+            </span>
+          </a>
+          <a href="tools/regex/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 5H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h2"/><path d="M17 5h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-2"/><circle cx="8.5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="15.5" cy="12" r="1.2"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Regex Tester</span>
+              <span class="tool-row__desc">Testa regex e destaca matches e grupos</span>
+            </span>
+          </a>
+          <a href="tools/contador-caracteres/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 6h14"/><path d="M5 10h14"/><path d="M5 14h9"/><path d="M5 18h6"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Contador de Caracteres</span>
+              <span class="tool-row__desc">Conta caracteres, palavras, linhas e parágrafos</span>
+            </span>
+          </a>
+          <a href="tools/mock-data/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="8.5" cy="8.5" r="1.1"/><circle cx="15.5" cy="8.5" r="1.1"/><circle cx="12" cy="12" r="1.1"/><circle cx="8.5" cy="15.5" r="1.1"/><circle cx="15.5" cy="15.5" r="1.1"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Dados Fake / Mock JSON</span>
+              <span class="tool-row__desc">Gera um array JSON de objetos mock</span>
+            </span>
+          </a>
+          <a href="tools/escopo/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="6" y="4.5" width="12" height="16" rx="2"/><rect x="9" y="3" width="6" height="3" rx="1"/><line x1="8.5" y1="10" x2="15.5" y2="10"/><line x1="8.5" y1="13.5" x2="15.5" y2="13.5"/><line x1="8.5" y1="17" x2="13" y2="17"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Escopo de Projeto</span>
+              <span class="tool-row__desc">Gera documento de escopo de projeto em Markdown</span>
+            </span>
+          </a>
+          <a href="tools/xml/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 4 3 12l5 8"/><path d="M16 4l5 8-5 8"/><line x1="14" y1="3" x2="10" y2="21"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">XML</span>
+              <span class="tool-row__desc">Formata, minifica e verifica a sintaxe de XML</span>
+            </span>
+          </a>
+        </div>
+      </div>
+
+      <!-- CATEGORIA: Segurança & Codificação (segredo, token, hash, encoding) -->
+      <div class="catalog__category">
+        <h3 class="catalog__category-title">Segurança &amp; Codificação</h3>
+        <div class="tool-grid">
+          <a href="tools/senha/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Senha</span>
+              <span class="tool-row__desc">Gera senhas seguras no navegador</span>
+            </span>
+          </a>
+          <a href="tools/hash/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="9" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="15" y2="20"/><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Gerador de Hash</span>
+              <span class="tool-row__desc">Gera MD5, SHA-1, SHA-256, SHA-384 e SHA-512</span>
+            </span>
+          </a>
+          <a href="tools/jwt/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="7.5" cy="12" r="3.5"/><path d="M11 12h9.5"/><path d="M18 12v3"/><path d="M20.5 12v2.5"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">JWT Decoder</span>
+              <span class="tool-row__desc">Decodifica header e payload de tokens JWT</span>
+            </span>
+          </a>
+          <a href="tools/uuid/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 9h16"/><path d="M4 15h16"/><path d="M10 4l-2 16"/><path d="M16 4l-2 16"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Gerador de UUID</span>
+              <span class="tool-row__desc">Gera UUIDs v4 aleatórios no navegador</span>
+            </span>
+          </a>
+          <a href="tools/base64/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 6l-4 6 4 6"/><path d="M16 6l4 6-4 6"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Base64 / URL</span>
+              <span class="tool-row__desc">Codifica e decodifica Base64 e URL</span>
+            </span>
+          </a>
+        </div>
+      </div>
+
+      <!-- CATEGORIA: Web, Rede & Automação (rede, agendamento/tempo, metadados de página) -->
+      <div class="catalog__category">
+        <h3 class="catalog__category-title">Web, Rede &amp; Automação</h3>
+        <div class="tool-grid">
+          <a href="tools/cidr/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4"/><path d="M6 16v-2h12v2"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Calculadora CIDR</span>
+              <span class="tool-row__desc">Calcula rede, broadcast, hosts e máscara</span>
+            </span>
+          </a>
+          <a href="tools/cron/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M8 3v4"/><path d="M16 3v4"/><path d="M12 12v3l2 1"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Cron Builder</span>
+              <span class="tool-row__desc">Explica cron e mostra as próximas execuções</span>
+            </span>
+          </a>
+          <a href="tools/timestamp/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Timestamp Unix</span>
+              <span class="tool-row__desc">Converte data e timestamp Unix nos dois sentidos</span>
+            </span>
+          </a>
+          <a href="tools/fuso-horario/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17"/><path d="M12 3.5c2.5 2.4 2.5 14.6 0 17"/><path d="M12 3.5c-2.5 2.4-2.5 14.6 0 17"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Conversor de Fuso Horário</span>
+              <span class="tool-row__desc">Converte horários entre fusos do mundo</span>
+            </span>
+          </a>
+          <a href="tools/qrcode/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><path d="M20 14v3"/><path d="M14 20h3"/><path d="M20 20h1"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Gerador de QR Code</span>
+              <span class="tool-row__desc">Gera QR Code de texto ou URL e baixa em PNG</span>
+            </span>
+          </a>
+          <a href="tools/meta-tags/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 12l8-8h8v8l-8 8z"/><circle cx="15.5" cy="8.5" r="1.3"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Gerador de Meta Tags</span>
+              <span class="tool-row__desc">Gera Open Graph e Twitter Card com preview</span>
+            </span>
+          </a>
+          <a href="tools/gitignore/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Gerador de .gitignore</span>
+              <span class="tool-row__desc">Monta um .gitignore combinando linguagens e ferramentas</span>
+            </span>
+          </a>
+          <a href="tools/horas-trabalhadas/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 1.5"/><path d="M9 3h6"/><path d="M12 3v2"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Horas Trabalhadas</span>
+              <span class="tool-row__desc">Calcula horas trabalhadas, almoço e saldo do expediente</span>
+            </span>
+          </a>
+        </div>
+      </div>
+
+      <!-- CATEGORIA: Conversores & Design (converte um valor entre notações/formatos visuais) -->
+      <div class="catalog__category">
+        <h3 class="catalog__category-title">Conversores &amp; Design</h3>
+        <div class="tool-grid">
+          <a href="tools/conversor-case/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 7V5h16v2"/><path d="M12 5v14"/><path d="M9 19h6"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Conversor de Case</span>
+              <span class="tool-row__desc">Converte texto entre camelCase, snake_case…</span>
+            </span>
+          </a>
+          <a href="tools/base-numerica/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 7h3v10"/><path d="M5 17h5"/><rect x="14" y="7" width="5" height="10" rx="2.5"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Conversor de Base Numérica</span>
+              <span class="tool-row__desc">Converte entre binário, octal, decimal e hexadecimal</span>
+            </span>
+          </a>
+          <a href="tools/cor/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3.5a8.5 8.5 0 1 0 0 17c1.4 0 2-1 2-2s-.6-1.4-.6-2.4 1-1.6 2.1-1.6H17a3.5 3.5 0 0 0 3.5-3.5A8.5 8.5 0 0 0 12 3.5Z"/><circle cx="8" cy="10" r="1"/><circle cx="12" cy="8" r="1"/><circle cx="16" cy="10.5" r="1"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">Cor + Contraste WCAG</span>
+              <span class="tool-row__desc">Converte HEX/RGB/HSL e checa contraste WCAG</span>
+            </span>
+          </a>
+          <a href="tools/css-gradient/" class="tool-row">
+            <svg class="tool-row__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M3.5 15l17-7"/><path d="M3.5 19l17-11"/></svg>
+            <span class="tool-row__text">
+              <span class="tool-row__title">CSS Gradient Generator</span>
+              <span class="tool-row__desc">Cria gradientes CSS lineares e radiais com preview</span>
+            </span>
+          </a>
+        </div>
+      </div>
+
+    </section>
+
+    <!--
+      BLOCO DE ANÚNCIO (display responsivo).
+      - data-ad-client: o mesmo pub-ID do <head>.
+      - data-ad-slot:   o ID do "bloco de anúncio" que você cria no painel
+                        do AdSense (cada bloco tem o seu número).
+      - data-ad-format="auto" + full-width-responsive: o Google escolhe o
+        melhor tamanho conforme a largura disponível.
+      O <script> logo abaixo "ativa" este bloco. Repita o par <ins> + <script>
+      para cada anúncio extra na página.
+    -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="1234567890"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

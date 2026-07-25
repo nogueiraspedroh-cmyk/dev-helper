@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Diff de Texto — Comparar Dois Textos — Dev Helper</title>
+  <meta name="description" content="Compare dois textos e veja as diferenças destacadas, linha a linha ou palavra a palavra, com adições e remoções coloridas. Algoritmo LCS." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!--
+    AdSense — biblioteca carregada UMA vez por página.
+    Substitua ca-pub-0000000000000000 pelo seu pub-ID real antes do deploy.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../../biblioteca/">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Diff de Texto</h1>
+        <p>Compare dois textos e veja as <strong>diferenças destacadas</strong> — por linha ou por palavra, com adições e remoções coloridas. O cálculo usa o algoritmo <strong>LCS</strong>.</p>
+      </header>
+
+      <div class="tool__controls">
+        <div class="diff-inputs">
+          <div class="diff-inputs__col">
+            <label class="tool__label" for="diff-a">Texto A (original)</label>
+            <textarea
+              id="diff-a"
+              class="tool__input"
+              placeholder="Cole aqui o primeiro texto..."
+              spellcheck="false"
+              autocorrect="off"
+              autocapitalize="off"
+            ></textarea>
+          </div>
+          <div class="diff-inputs__col">
+            <label class="tool__label" for="diff-b">Texto B (modificado)</label>
+            <textarea
+              id="diff-b"
+              class="tool__input"
+              placeholder="Cole aqui o segundo texto..."
+              spellcheck="false"
+              autocorrect="off"
+              autocapitalize="off"
+            ></textarea>
+          </div>
+        </div>
+
+        <fieldset class="tool__fieldset">
+          <legend class="tool__legend">Granularidade</legend>
+          <label class="tool__radio-label">
+            <input type="radio" name="diff-mode" value="line" checked />
+            Por linha
+          </label>
+          <label class="tool__radio-label">
+            <input type="radio" name="diff-mode" value="word" />
+            Por palavra
+          </label>
+        </fieldset>
+
+        <div class="tool__actions">
+          <button id="btn-diff-compare" class="button" type="button">Comparar</button>
+          <button id="btn-diff-clear" class="button--secondary" type="button">Limpar</button>
+        </div>
+      </div>
+
+      <!-- Mensagem de erro -->
+      <p id="diff-error" class="error-msg" role="alert" hidden></p>
+
+      <!-- Resultado -->
+      <section class="tool__output">
+        <p id="diff-stats" class="result-validar result-validar--neutro"></p>
+        <div id="diff-output" class="diff-output" aria-live="polite"></div>
+      </section>
+    </article>
+
+    <!-- Bloco de anúncio — abaixo do resultado da ferramenta -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="1919191919"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Conteúdo real — exigido pelo AdSense -->
+    <section>
+      <h2>Para que serve um diff?</h2>
+      <p>
+        Um <strong>diff</strong> mostra o que mudou entre duas versões de um texto: quais linhas (ou
+        palavras) foram <strong>adicionadas</strong>, quais foram <strong>removidas</strong> e quais
+        permaneceram iguais. É a base de ferramentas de controle de versão como o Git e de revisões
+        de código, mas também é útil para comparar contratos, textos, configurações e qualquer par
+        de documentos parecidos.
+      </p>
+
+      <h2>Como a comparação funciona</h2>
+      <p>
+        A ferramenta usa o algoritmo da <strong>maior subsequência comum</strong> (LCS, do inglês
+        <em>Longest Common Subsequence</em>). Ele encontra a maior sequência de trechos que aparecem
+        na mesma ordem nos dois textos — esses trechos são os "iguais". Tudo que sobra do lado do
+        Texto A é marcado como <strong>removido</strong>, e o que sobra do lado do Texto B é marcado
+        como <strong>adicionado</strong>. Esse é o mesmo princípio matemático por trás dos diffs
+        clássicos.
+      </p>
+
+      <h2>Por linha ou por palavra</h2>
+      <ul>
+        <li><strong>Por linha</strong> — ideal para código e listas: cada linha é comparada como um
+          todo, e as linhas alteradas aparecem uma removida (vermelha) seguida de uma adicionada
+          (verde).</li>
+        <li><strong>Por palavra</strong> — ideal para prosa: destaca dentro do parágrafo apenas as
+          palavras que mudaram, mantendo o restante do texto como está.</li>
+      </ul>
+
+      <h2>Perguntas frequentes (FAQ)</h2>
+
+      <h3>Existe limite de tamanho?</h3>
+      <p>
+        O algoritmo LCS usa uma tabela proporcional ao produto dos tamanhos dos dois textos. Para não
+        travar a aba, há um limite de segurança; se ele for atingido, a ferramenta avisa e sugere usar
+        o modo por linha ou reduzir o conteúdo.
+      </p>
+
+      <h3>O resultado é seguro se eu colar código?</h3>
+      <p>
+        Sim. Todo o texto comparado é inserido no resultado como texto puro (via <code>textContent</code>),
+        nunca como HTML — não há risco de que tags ou scripts colados sejam executados.
+      </p>
+
+      <h3>O diff mostra a menor mudança possível?</h3>
+      <p>
+        Sim. Por usar LCS, o número de adições e remoções é o mínimo necessário para transformar o
+        Texto A no Texto B, na granularidade escolhida.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/tools/diff.js"></script>
+</body>
+</html>

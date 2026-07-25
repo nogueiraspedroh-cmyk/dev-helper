@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arquitetura Hexagonal (Ports &amp; Adapters) — Arquiteturas | Biblioteca Dev Helper</title>
+  <meta name="description" content="Entenda a Arquitetura Hexagonal (Ports &amp; Adapters): núcleo de domínio isolado, portas, adaptadores primários e secundários, inversão de dependência e quando usar." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Arquitetura Hexagonal</span>
+        </nav>
+        <span class="artigo__categoria">Arquitetura</span>
+        <h1 class="artigo__titulo">Arquitetura Hexagonal</h1>
+        <p class="artigo__subtitulo">
+          Isola o núcleo de domínio de toda infraestrutura externa por meio de
+          <em>portas</em> (interfaces definidas pelo domínio) e <em>adaptadores</em>
+          (implementações nas bordas) — garantindo que a infraestrutura dependa do
+          domínio, nunca o contrário.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Permitir que o núcleo de domínio seja desenvolvido, testado e
+            executado de forma completamente independente de qualquer tecnologia
+            externa</strong> — banco de dados, framework HTTP, fila de mensagens, UI.
+            O domínio define as interfaces (<em>portas</em>) que ele precisa; o mundo
+            externo fornece as implementações (<em>adaptadores</em>).
+          </p>
+          <p>
+            A Arquitetura Hexagonal foi descrita por Alistair Cockburn em 2005 com o
+            nome formal <em>Ports and Adapters</em>. O hexágono não tem um significado
+            geométrico especial — é apenas uma forma de representar que o domínio tem
+            múltiplos pontos de conexão com o exterior (HTTP, banco, UI, testes, filas)
+            sem que nenhum deles seja privilegiado ou embutido no núcleo.
+          </p>
+          <p>
+            O princípio central é a <strong>Inversão de Dependência</strong>: módulos
+            de alto nível (domínio) não dependem de módulos de baixo nível
+            (infraestrutura). Ambos dependem de abstrações — as portas.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Em arquiteturas tradicionais, o domínio frequentemente importa diretamente
+            a infraestrutura: entidades que estendem classes ORM, serviços de domínio
+            que chamam bibliotecas de banco de dados, regras de negócio que dependem
+            de tipos de um framework HTTP. O resultado:
+          </p>
+          <ul>
+            <li>
+              <strong>Testabilidade comprometida:</strong> para testar uma regra de
+              negócio, é preciso subir banco de dados, servidor HTTP, mocks de terceiros.
+            </li>
+            <li>
+              <strong>Acoplamento ao framework:</strong> migrar de um ORM para outro,
+              ou de REST para GraphQL, exige tocar no código de domínio.
+            </li>
+            <li>
+              <strong>Dificuldade de raciocinar sobre o negócio:</strong> as regras de
+              domínio ficam escondidas entre código de infraestrutura, dificultando a
+              leitura e a evolução.
+            </li>
+          </ul>
+          <p>
+            A Arquitetura Hexagonal resolve isso de forma direta: o domínio define o que
+            precisa (interfaces/portas) sem saber quem vai implementar. Os adaptadores
+            implementam essas interfaces e ficam completamente fora do domínio.
+          </p>
+        </section>
+
+        <!-- 3. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+          <div class="code-bloco">
+<pre><code>                  ┌─────────────────────────────────────────────────┐
+                  │              ADAPTADORES PRIMÁRIOS               │
+                  │  (dirigem o domínio — driving side)              │
+                  │                                                  │
+                  │   Controller HTTP   CLI   Teste unitário         │
+                  └────────────────┬────────────────────────────────┘
+                                   │ usa porta de entrada (interface)
+                                   ▼
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │                         NÚCLEO DE DOMÍNIO                              │
+  │                                                                         │
+  │  ┌─────────────────────────────────────────────────────────────────┐   │
+  │  │  Portas de entrada (interfaces de casos de uso/application)     │   │
+  │  │  Ex.: CriarPedidoUseCase, BuscarProdutoUseCase                  │   │
+  │  └─────────────────────────────────────────────────────────────────┘   │
+  │                                                                         │
+  │            Entidades · Value Objects · Serviços de Domínio              │
+  │            Regras de negócio · Eventos de domínio                       │
+  │                                                                         │
+  │  ┌─────────────────────────────────────────────────────────────────┐   │
+  │  │  Portas de saída (interfaces de infraestrutura)                  │   │
+  │  │  Ex.: PedidoRepository, EmailService, PaymentGateway            │   │
+  │  └─────────────────────────────────────────────────────────────────┘   │
+  └──────────────────────────────────┬──────────────────────────────────────┘
+                                     │ implementado por
+                                     ▼
+                  ┌─────────────────────────────────────────────────┐
+                  │              ADAPTADORES SECUNDÁRIOS             │
+                  │  (dirigidos pelo domínio — driven side)          │
+                  │                                                  │
+                  │   PostgresRepository   StripeAdapter   SESAdapter│
+                  └─────────────────────────────────────────────────┘
+
+  Regra de dependência: as setas apontam PARA o domínio, nunca para fora.
+  O domínio não importa nada dos adaptadores.
+</code></pre>
+          </div>
+
+          <h3>Adaptadores primários vs secundários</h3>
+          <p>
+            <strong>Adaptadores primários</strong> (ou <em>driving adapters</em>) são
+            aqueles que iniciam a interação com o domínio: eles recebem uma entrada
+            externa (requisição HTTP, comando CLI, mensagem de fila, chamada de teste)
+            e a traduzem em chamadas às portas de entrada do domínio. O Controller HTTP
+            é o exemplo clássico.
+          </p>
+          <p>
+            <strong>Adaptadores secundários</strong> (ou <em>driven adapters</em>) são
+            aqueles que o domínio aciona: eles implementam as portas de saída definidas
+            pelo domínio e fazem a ponte com sistemas externos — banco de dados,
+            serviços de e-mail, gateways de pagamento, sistemas de fila. O domínio
+            não sabe que tipo de banco está sendo usado; ele apenas chama a interface
+            do repositório.
+          </p>
+        </section>
+
+        <!-- 4. PORTAS E ADAPTADORES — TRECHO DE CÓDIGO -->
+        <section class="artigo__secao">
+          <h2>Portas e adaptadores — exemplo de código</h2>
+          <p>
+            O trecho abaixo mostra uma porta de saída (interface de repositório definida
+            pelo domínio) e um adaptador secundário (implementação concreta com acesso
+            ao banco). A porta fica dentro do domínio; o adaptador fica na infraestrutura.
+          </p>
+
+          <!-- Código com code-tabs TS/PHP para UM trecho curto -->
+          <div class="code-tabs" role="tablist" aria-label="Porta e adaptador — repositório">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── PORTA de saída — definida dentro do domínio ──────────────
+// O domínio declara o que precisa; não sabe quem implementa.
+interface PedidoRepository {
+  salvar(pedido: Pedido): Promise&lt;void&gt;;
+  buscarPorId(id: string): Promise&lt;Pedido | null&gt;;
+}
+
+// ── ADAPTADOR secundário — fora do domínio (infraestrutura) ──
+// Implementa a porta usando o mecanismo de persistência real.
+class PostgresPedidoRepository implements PedidoRepository {
+  constructor(private readonly db: DatabaseConnection) {}
+
+  async salvar(pedido: Pedido): Promise&lt;void&gt; {
+    await this.db.query(
+      'INSERT INTO pedidos (id, total, status) VALUES ($1, $2, $3)',
+      [pedido.id, pedido.total, pedido.status]
+    );
+  }
+
+  async buscarPorId(id: string): Promise&lt;Pedido | null&gt; {
+    const row = await this.db.queryOne(
+      'SELECT * FROM pedidos WHERE id = $1', [id]
+    );
+    return row ? Pedido.reconstituir(row) : null;
+  }
+}
+
+// ── ADAPTADOR primário — Controller HTTP ──────────────────────
+// Traduz a requisição HTTP em chamada ao caso de uso do domínio.
+class PedidoController {
+  constructor(private readonly criarPedido: CriarPedidoUseCase) {}
+
+  async post(req: Request): Promise&lt;Response&gt; {
+    const resultado = await this.criarPedido.executar({
+      clienteId: req.body.clienteId,
+      itens: req.body.itens,
+    });
+    return Response.json({ pedidoId: resultado.id }, { status: 201 });
+  }
+}</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── PORTA de saída — definida dentro do domínio ──────────────
+// O domínio declara o que precisa; não sabe quem implementa.
+interface PedidoRepository
+{
+    public function salvar(Pedido $pedido): void;
+    public function buscarPorId(string $id): ?Pedido;
+}
+
+// ── ADAPTADOR secundário — fora do domínio (infraestrutura) ──
+// Implementa a porta usando o mecanismo de persistência real.
+class DoctrinePedidoRepository implements PedidoRepository
+{
+    public function __construct(
+        private readonly EntityManagerInterface $em
+    ) {}
+
+    public function salvar(Pedido $pedido): void
+    {
+        $this-&gt;em-&gt;persist($pedido);
+        $this-&gt;em-&gt;flush();
+    }
+
+    public function buscarPorId(string $id): ?Pedido
+    {
+        return $this-&gt;em-&gt;find(Pedido::class, $id);
+    }
+}
+
+// ── ADAPTADOR primário — Controller HTTP ──────────────────────
+// Traduz a requisição HTTP em chamada ao caso de uso do domínio.
+class PedidoController
+{
+    public function __construct(
+        private readonly CriarPedidoUseCase $criarPedido
+    ) {}
+
+    public function post(Request $request): JsonResponse
+    {
+        $resultado = ($this-&gt;criarPedido)(
+            new CriarPedidoCommand(
+                clienteId: $request-&gt;input('clienteId'),
+                itens: $request-&gt;input('itens'),
+            )
+        );
+        return new JsonResponse(['pedidoId' =&gt; $resultado-&gt;id], 201);
+    }
+}</code></pre>
+            </div>
+          </div><!-- /.code-tabs -->
+
+          <p>
+            O ponto central: <code>PedidoRepository</code> é uma interface que vive
+            dentro do pacote de domínio. <code>PostgresPedidoRepository</code> (ou
+            <code>DoctrinePedidoRepository</code>) vive na infraestrutura e importa o
+            domínio — nunca o contrário. Trocar o banco de dados é trocar o adaptador;
+            o domínio não muda.
+          </p>
+        </section>
+
+        <!-- 5. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Domínios com lógica de negócio complexa:</strong> quando as regras
+              de negócio precisam ser desenvolvidas, testadas e evoluídas de forma
+              independente da tecnologia. A Arquitetura Hexagonal permite testar todo o
+              domínio com mocks simples das portas — sem banco real, sem servidor HTTP.
+            </li>
+            <li>
+              <strong>Múltiplos adaptadores primários:</strong> quando o mesmo domínio
+              precisa ser acionado por HTTP, CLI, consumidores de fila e testes — cada
+              um com seu próprio adaptador, sem alterar o domínio.
+            </li>
+            <li>
+              <strong>Alta probabilidade de troca de infraestrutura:</strong> projetos
+              que preveem migração de banco de dados, de gateway de pagamento ou de
+              serviço de e-mail se beneficiam muito da separação por portas e adaptadores.
+            </li>
+            <li>
+              <strong>Projetos com ciclo de vida longo e equipe crescente:</strong> a
+              explicitação das fronteiras reduz o acoplamento acidental e facilita o
+              onboarding — os contratos (portas) são a documentação viva das integrações.
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>CRUDs simples sem domínio real:</strong> criar portas e adaptadores
+              para uma aplicação que apenas persiste e lê dados sem regras de negócio é
+              overengineering. O custo da estrutura não se paga.
+            </li>
+            <li>
+              <strong>Projetos pequenos de vida curta:</strong> a separação entre portas
+              e adaptadores tem um custo de organização inicial. Para projetos de curta
+              duração ou equipes de uma pessoa, pode ser mais produtivo começar simples
+              e refatorar conforme a complexidade cresce.
+            </li>
+            <li>
+              <strong>Quando a equipe não entende o padrão:</strong> aplicar Hexagonal
+              sem que a equipe compreenda a diferença entre porta e adaptador, ou entre
+              dependência do domínio para a infraestrutura vs. o contrário, tende a
+              resultar em uma Arquitetura em Camadas mal nomeada com classes "Port" e
+              "Adapter" que não invertem nada.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 6. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Domínio completamente testável com mocks simples das portas — sem banco, sem HTTP, sem dependências externas.</li>
+            <li>Substituição de adaptadores sem impacto no domínio — trocar o banco é trocar apenas o adaptador secundário.</li>
+            <li>Múltiplos pontos de entrada (HTTP, CLI, fila, testes) sem modificar o núcleo.</li>
+            <li>Contratos explícitos entre domínio e infraestrutura — portas são a documentação das integrações.</li>
+            <li>Facilita a evolução do domínio de forma independente do mundo externo.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Overengineering para aplicações simples — a estrutura de portas e adaptadores tem custo de configuração e manutenção.</li>
+            <li>Proliferação de interfaces: em sistemas grandes, pode haver dezenas de portas; sem disciplina, o número cresce de forma não gerenciada.</li>
+            <li>Curva de aprendizado: a distinção entre adaptador primário e secundário, e a inversão de dependência, são conceitos não-óbvios para desenvolvedores sem exposição prévia.</li>
+            <li>Injeção de dependência se torna obrigatória — frameworks DI (NestJS, Spring, Laravel) ajudam, mas adicionam complexidade de configuração.</li>
+          </ul>
+        </section>
+
+        <!-- 7. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Colocar a interface (porta) fora do domínio</h3>
+          <p>
+            A porta deve ser definida pelo domínio, não pela infraestrutura. Se a
+            interface <code>PedidoRepository</code> está no pacote de infraestrutura e
+            o domínio importa a infraestrutura para usá-la, a inversão foi feita ao
+            contrário — o domínio voltou a depender da infraestrutura. A porta vive
+            no domínio; o adaptador vive fora e aponta para dentro.
+          </p>
+
+          <h3>2. Overengineering — portas para tudo</h3>
+          <p>
+            Não é necessário criar uma porta para cada interação. Um logger de diagnóstico,
+            um gerador de UUID, um relógio de sistema — às vezes é aceitável injetá-los
+            diretamente sem criar uma interface elaborada. A porta tem valor quando a
+            implementação concreta precisa ser trocável (banco, gateway, e-mail) ou quando
+            o isolamento para testes é crítico. Para utilidades estáveis e sem impacto
+            no comportamento de negócio, a abstração pode ser desnecessária.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Regra prática:</strong> crie uma porta quando você precisar de mais
+            de uma implementação (produção vs. teste, ou provider A vs. provider B), ou
+            quando a dependência concreta impossibilitaria o teste unitário do domínio.
+            Se a resposta for "nunca precisarei trocar isso", não crie a porta.
+          </p>
+
+          <h3>3. Confundir Hexagonal com "só mais camadas"</h3>
+          <p>
+            A diferença entre Arquitetura em Camadas e Hexagonal não é cosmética. Na
+            Arquitetura em Camadas clássica, a Infraestrutura fica "abaixo" do Domínio
+            e o Domínio pode referenciar tipos de infraestrutura indiretamente. Na
+            Hexagonal, a direção é invertida explicitamente: a infraestrutura implementa
+            interfaces do domínio e portanto aponta para o domínio. Se os adaptadores
+            no seu projeto não implementam interfaces definidas dentro do pacote de
+            domínio, você tem Arquitetura em Camadas com nomes diferentes.
+          </p>
+
+          <h3>4. Não testar o domínio de forma isolada</h3>
+          <p>
+            O principal benefício da Arquitetura Hexagonal é a testabilidade do domínio
+            sem infraestrutura real. Se os testes do domínio ainda precisam de banco de
+            dados, de servidor HTTP ou de mocks de framework, as fronteiras entre domínio
+            e infraestrutura foram violadas em algum ponto. Testes de domínio devem usar
+            apenas mocks ou stubs das portas — implementações in-memory simples que
+            satisfazem a interface.
+          </p>
+        </section>
+
+        <!-- 8. ARQUITETURAS E PADRÕES RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Arquiteturas e padrões relacionados</h2>
+          <!--
+            Disciplina de links: só linka artigos já publicados.
+            MVC, Arquitetura em Camadas, Adapter e Strategy existem → links reais.
+            Clean Architecture e Onion — pendentes.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../mvc/">MVC</a></li>
+            <li><a href="../arquitetura-em-camadas/">Arquitetura em Camadas</a></li>
+            <li><a href="../adapter/">Adapter (GoF)</a></li>
+            <li><a href="../strategy/">Strategy (GoF)</a></li>
+            <li><a href="../clean-architecture/">Clean Architecture</a></li>
+            <li><a href="../onion-architecture/">Onion Architecture</a></li>
+          </ul>
+          <p class="mt-1">
+            No <strong>MVC</strong>, o Controller que recebe requisições HTTP atua
+            exatamente como um adaptador primário (driving adapter): traduz a entrada
+            externa em chamadas ao domínio sem que o domínio precise saber da camada HTTP.
+            A Arquitetura Hexagonal formaliza e generaliza esse papel — qualquer ponto
+            de entrada (CLI, fila, teste) é um adaptador primário, não apenas o Controller.
+          </p>
+          <p>
+            A <strong>Arquitetura em Camadas</strong> compartilha o objetivo de isolar
+            o domínio, mas com uma diferença fundamental de direção: nas camadas, a
+            infraestrutura fica "abaixo" e pode ser referenciada pelas camadas superiores
+            via interfaces. Na Hexagonal, a infraestrutura fica "fora" e implementa
+            interfaces que o domínio define — a dependência é explicitamente invertida.
+            Na prática, as duas abordagens convergem quando a Arquitetura em Camadas
+            usa repositórios com inversão de dependência.
+          </p>
+          <p>
+            O padrão <strong>Adapter</strong> (GoF) é o mecanismo de implementação de
+            cada adaptador hexagonal: um adaptador secundário é um Adapter que implementa
+            a porta (interface-alvo do domínio) e envolve a tecnologia externa (adaptee).
+            A diferença é de escala e contexto: o Adapter do GoF é um padrão de classe;
+            o adaptador hexagonal é um conceito arquitetural que frequentemente usa
+            o padrão Adapter internamente.
+          </p>
+          <p>
+            O <strong>Strategy</strong> (GoF) é estruturalmente equivalente à relação
+            porta/adaptador: uma interface e múltiplas implementações intercambiáveis.
+            A Arquitetura Hexagonal aplica esse mesmo mecanismo em escala arquitetural
+            — cada porta é uma Strategy de infraestrutura, e o domínio injeta a
+            implementação correta por injeção de dependência.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="9090909090"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

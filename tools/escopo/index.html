@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gerador de Escopo de Projeto de Software — Dev Helper</title>
+  <meta name="description" content="Construa um documento de escopo de projeto de software em Markdown respondendo a um formulário guiado. Requisitos funcionais, não funcionais, entregáveis, riscos e mais." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!--
+    AdSense — biblioteca carregada UMA vez por página.
+    Substitua ca-pub-0000000000000000 pelo seu pub-ID real antes do deploy.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../../biblioteca/">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Gerador de Escopo de Projeto de Software</h1>
+        <p>Preencha o formulário e gere um documento de escopo completo em Markdown, pronto para copiar ou baixar.</p>
+      </header>
+
+      <!-- ── SEÇÃO: FORMULÁRIO ──────────────────────────────────────────────── -->
+      <section class="tool__section">
+        <h2 class="tool__section-title">Preencha o escopo</h2>
+
+        <div class="tool__controls">
+
+          <!-- Nome do projeto -->
+          <div class="escopo-campo">
+            <label class="escopo-campo__label" for="escopo-nome">Nome do projeto</label>
+            <input
+              id="escopo-nome"
+              class="tool__input-inline escopo-input-nome"
+              type="text"
+              placeholder="Ex.: Portal de Reservas Online"
+              spellcheck="false"
+              autocorrect="off"
+            />
+          </div>
+
+          <!-- Prazo estimado -->
+          <div class="escopo-campo">
+            <label class="escopo-campo__label" for="escopo-prazo">Prazo estimado</label>
+            <input
+              id="escopo-prazo"
+              class="tool__input-inline escopo-input-prazo"
+              type="text"
+              placeholder="Ex.: 3 meses, 12 sprints, Q2 2025"
+              spellcheck="false"
+              autocorrect="off"
+            />
+          </div>
+
+          <!-- Stack / Tecnologias -->
+          <div class="escopo-campo">
+            <label class="escopo-campo__label" for="escopo-stack">Stack / Tecnologias</label>
+            <input
+              id="escopo-stack"
+              class="tool__input-inline escopo-input-nome"
+              type="text"
+              placeholder="Ex.: React, Node.js, PostgreSQL, AWS"
+              spellcheck="false"
+              autocorrect="off"
+            />
+          </div>
+
+          <!-- Objetivo / Visão -->
+          <div class="escopo-campo">
+            <label class="escopo-campo__label" for="escopo-objetivo">Objetivo / Visão</label>
+            <textarea
+              id="escopo-objetivo"
+              class="tool__input escopo-textarea"
+              placeholder="Descreva o problema que o projeto resolve e o resultado esperado. Ex.: Permitir que clientes realizem reservas de hotel de forma autônoma, reduzindo o tempo de atendimento em 60%."
+              spellcheck="true"
+            ></textarea>
+          </div>
+
+          <!-- Requisitos funcionais -->
+          <div class="escopo-campo">
+            <label class="escopo-campo__label">Requisitos funcionais</label>
+            <div id="lista-funcionais" class="escopo-lista"></div>
+            <button type="button" class="button--secondary escopo-btn-adicionar" data-lista="lista-funcionais">+ Adicionar item</button>
+          </div>
+
+          <!-- Requisitos não funcionais -->
+          <div class="escopo-campo">
+            <label class="escopo-campo__label">Requisitos não funcionais</label>
+            <div id="lista-nao-funcionais" class="escopo-lista"></div>
+            <button type="button" class="button--secondary escopo-btn-adicionar" data-lista="lista-nao-funcionais">+ Adicionar item</button>
+          </div>
+
+          <!-- Entregáveis -->
+          <div class="escopo-campo">
+            <label class="escopo-campo__label">Entregáveis</label>
+            <div id="lista-entregaveis" class="escopo-lista"></div>
+            <button type="button" class="button--secondary escopo-btn-adicionar" data-lista="lista-entregaveis">+ Adicionar item</button>
+          </div>
+
+          <!-- Fora de escopo -->
+          <div class="escopo-campo">
+            <label class="escopo-campo__label">Fora de escopo</label>
+            <div id="lista-fora-escopo" class="escopo-lista"></div>
+            <button type="button" class="button--secondary escopo-btn-adicionar" data-lista="lista-fora-escopo">+ Adicionar item</button>
+          </div>
+
+          <!-- Premissas -->
+          <div class="escopo-campo">
+            <label class="escopo-campo__label">Premissas</label>
+            <div id="lista-premissas" class="escopo-lista"></div>
+            <button type="button" class="button--secondary escopo-btn-adicionar" data-lista="lista-premissas">+ Adicionar item</button>
+          </div>
+
+          <!-- Riscos -->
+          <div class="escopo-campo">
+            <label class="escopo-campo__label">Riscos</label>
+            <div id="lista-riscos" class="escopo-lista"></div>
+            <button type="button" class="button--secondary escopo-btn-adicionar" data-lista="lista-riscos">+ Adicionar item</button>
+          </div>
+
+          <!-- Critérios de aceite -->
+          <div class="escopo-campo">
+            <label class="escopo-campo__label">Critérios de aceite</label>
+            <div id="lista-criterios" class="escopo-lista"></div>
+            <button type="button" class="button--secondary escopo-btn-adicionar" data-lista="lista-criterios">+ Adicionar item</button>
+          </div>
+
+        </div>
+
+        <!-- Botões de ação do formulário -->
+        <div class="tool__actions">
+          <button id="btn-gerar-escopo" class="button" type="button">Gerar documento</button>
+          <button id="btn-limpar-escopo" class="button--secondary" type="button">Limpar</button>
+        </div>
+      </section>
+
+      <!-- ── SEÇÃO: SAÍDA ────────────────────────────────────────────────────── -->
+      <section class="tool__section" id="escopo-saida-section" hidden>
+        <h2 class="tool__section-title">Documento gerado</h2>
+
+        <p id="escopo-aviso-vazio" class="escopo-aviso-vazio" hidden>
+          Preencha ao menos o nome do projeto ou o objetivo para gerar o documento.
+        </p>
+
+        <div class="tool__output">
+          <textarea
+            id="escopo-saida"
+            class="tool__input escopo-saida"
+            readonly
+            spellcheck="false"
+            aria-label="Documento de escopo em Markdown"
+          ></textarea>
+        </div>
+
+        <div class="tool__actions tool__actions--mt">
+          <button id="btn-copiar-escopo" class="button--secondary" type="button">Copiar Markdown</button>
+          <button id="btn-baixar-escopo" class="button--secondary" type="button">Baixar .md</button>
+        </div>
+      </section>
+    </article>
+
+    <!-- Bloco de anúncio — abaixo da área de resultado da ferramenta -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="1212121212"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Conteúdo real — exigido pelo AdSense -->
+    <section>
+      <h2>O que é um documento de escopo de projeto de software?</h2>
+      <p>
+        Um <strong>documento de escopo</strong> (também chamado de <em>scope statement</em> ou
+        <em>declaração de escopo</em>) é o contrato interno que define <strong>o que será feito</strong>
+        e, igualmente importante, <strong>o que não será feito</strong> em um projeto de software.
+        Ele responde perguntas essenciais antes mesmo do primeiro commit:
+      </p>
+      <ul>
+        <li>Qual problema o sistema resolve?</li>
+        <li>Quais funcionalidades fazem parte da entrega?</li>
+        <li>Quais funcionalidades estão explicitamente excluídas desta versão?</li>
+        <li>Quais suposições o time está fazendo sobre recursos, integrações e ambiente?</li>
+        <li>Quais riscos podem afetar o prazo ou a qualidade?</li>
+        <li>Como o cliente ou patrocinador saberá que o projeto está concluído?</li>
+      </ul>
+      <p>
+        Responder essas perguntas por escrito, antes de codificar, é a forma mais econômica de evitar
+        retrabalho: mudar texto custa zero; mudar código em produção custa muito.
+      </p>
+
+      <h2>Por que delimitar "fora de escopo" evita scope creep?</h2>
+      <p>
+        <em>Scope creep</em> é o crescimento não planejado e incremental do escopo durante o projeto —
+        pequenas adições que, individualmente, parecem razoáveis, mas que coletivamente atrasam entregas,
+        inflam custos e esgotam o time. A raiz do problema costuma ser a <strong>ambiguidade</strong>:
+        se o escopo não diz que algo está fora, qualquer parte interessada pode argumentar que está dentro.
+      </p>
+      <p>
+        A seção <strong>Fora de escopo</strong> resolve isso ao nomear explicitamente o que
+        <em>não</em> será feito nesta versão ou contrato. Exemplos típicos: integração com sistema
+        legado X, suporte a idioma Y, relatórios avançados, aplicativo mobile. Ao documentar a exclusão,
+        você cria uma referência objetiva para responder a pedidos de expansão: "Conforme acordado no
+        escopo, relatórios avançados estão fora desta fase — podemos abrir um novo ciclo para isso."
+      </p>
+
+      <h2>Dicas de preenchimento por seção</h2>
+
+      <h3>Nome do projeto</h3>
+      <p>
+        Use um nome curto, memorável e sem ambiguidade. Evite nomes genéricos como "Sistema Novo" ou
+        "Plataforma". Prefira: "Portal de Reservas — v1", "API de Pagamentos Recorrentes", "Dashboard
+        de Monitoramento de Frota".
+      </p>
+
+      <h3>Objetivo / Visão</h3>
+      <p>
+        Escreva em 2–5 frases o problema que o projeto resolve e o resultado esperado para o negócio.
+        Uma boa fórmula: <em>"[Ator] precisa [fazer algo] para [alcançar resultado]. Hoje, [problema
+        atual]. Este projeto entrega [solução] que resulta em [benefício mensurável]."</em>
+      </p>
+
+      <h3>Requisitos funcionais</h3>
+      <p>
+        Liste o que o sistema deve fazer — comportamentos e funcionalidades observáveis pelo usuário.
+        Use linguagem de ação: "Permitir que o usuário...", "Exibir relatório de...", "Enviar
+        notificação quando...". Evite detalhes de implementação (banco de dados, framework) — esses
+        vão na Stack.
+      </p>
+
+      <h3>Requisitos não funcionais</h3>
+      <p>
+        Qualidade e restrições do sistema que não são funcionalidades em si: desempenho
+        ("resposta em até 500 ms para 95% das requisições"), disponibilidade ("99,5% mensal"),
+        segurança ("dados em repouso criptografados com AES-256"), escalabilidade, acessibilidade
+        (WCAG 2.1 AA), compatibilidade de navegadores, compliance (LGPD, PCI-DSS).
+      </p>
+
+      <h3>Entregáveis</h3>
+      <p>
+        O que será efetivamente entregue ao final: "Código-fonte no repositório Git", "Deploy em
+        ambiente de produção AWS", "Documentação da API (OpenAPI 3.0)", "Manual do usuário",
+        "Suite de testes automatizados com cobertura mínima de 80%".
+      </p>
+
+      <h3>Fora de escopo</h3>
+      <p>
+        Itens que foram discutidos mas deliberadamente excluídos desta versão. Seja específico:
+        "Aplicativo mobile (apenas web responsivo nesta fase)", "Integração com sistema ERP legado",
+        "Relatórios personalizados pelo usuário", "Suporte ao idioma inglês".
+      </p>
+
+      <h3>Premissas</h3>
+      <p>
+        Condições que o time assume como verdadeiras para que o escopo seja viável. Se uma premissa
+        se mostrar falsa, o escopo precisa ser renegociado. Exemplos: "O cliente fornecerá acesso
+        ao ambiente de homologação até a semana 2", "A API do parceiro estará disponível e
+        documentada antes do início da integração", "A equipe de QA terá dois membros dedicados".
+      </p>
+
+      <h3>Riscos</h3>
+      <p>
+        Eventos incertos que, se ocorrerem, impactam prazo, custo ou qualidade. Para cada risco,
+        indique a probabilidade percebida e o impacto. Exemplos: "Mudança de requisitos na fase
+        de integração (alta probabilidade, alto impacto)", "Indisponibilidade de fornecedor de
+        API de terceiro (baixa probabilidade, alto impacto)".
+      </p>
+
+      <h3>Critérios de aceite</h3>
+      <p>
+        Condições objetivas e verificáveis que definem "projeto concluído". Cada critério deve ser
+        testável sem ambiguidade: "Todas as histórias de usuário de alta prioridade passam nos testes
+        de aceitação", "Tempo de resposta da API é menor que 300 ms em carga de 100 req/s (ambiente
+        de homologação)", "Zero vulnerabilidades críticas no relatório de SAST".
+      </p>
+
+      <h3>Stack / Tecnologias</h3>
+      <p>
+        Liste as principais tecnologias escolhidas: linguagem(ns), frameworks, banco de dados,
+        infraestrutura, serviços de terceiros. Isso alinha expectativas sobre o que o time precisa
+        saber e sobre eventuais restrições de licença ou custo.
+      </p>
+
+      <h3>Prazo estimado</h3>
+      <p>
+        Pode ser uma data ("30 de setembro de 2025"), duração ("12 semanas"), ciclos ("4 sprints de
+        2 semanas") ou marco de negócio ("até o lançamento do produto — Q3 2025"). Inclua a data
+        de início se já estiver definida.
+      </p>
+
+      <h2>Como usar o Markdown gerado</h2>
+      <p>
+        O documento gerado pela ferramenta usa a sintaxe Markdown padrão (CommonMark), compatível
+        com GitHub, GitLab, Notion, Confluence (via plugin), Obsidian, VS Code e a maioria das
+        ferramentas de documentação modernas.
+      </p>
+      <ul>
+        <li><strong>GitHub / GitLab:</strong> cole o conteúdo em um arquivo <code>ESCOPO.md</code> ou <code>docs/scope.md</code> no repositório.</li>
+        <li><strong>Notion / Confluence:</strong> use a opção de importar Markdown ou cole diretamente — a maioria renderiza automaticamente.</li>
+        <li><strong>Word / Google Docs:</strong> ferramentas como Pandoc convertem Markdown para .docx com um único comando.</li>
+        <li><strong>Proposta comercial:</strong> copie as seções relevantes e adapte o tom para o cliente.</li>
+      </ul>
+
+      <h2>Perguntas frequentes (FAQ)</h2>
+
+      <h3>Meus dados são salvos?</h3>
+      <p>
+        Não. Ao fechar a aba ou atualizar a página, o conteúdo digitado é perdido — copie ou
+        baixe o documento antes de sair.
+      </p>
+
+      <h3>Posso editar o Markdown gerado?</h3>
+      <p>
+        Sim. O documento é gerado como texto simples. Após copiar ou baixar o arquivo <code>.md</code>,
+        edite-o em qualquer editor de texto — VS Code, Notepad, Obsidian, Typora ou diretamente no
+        GitHub. O Markdown gerado segue sintaxe padrão e não usa extensões proprietárias.
+      </p>
+
+      <h3>Serve para proposta comercial?</h3>
+      <p>
+        Com adaptações, sim. A estrutura gerada cobre os elementos centrais de um escopo técnico.
+        Para uma proposta comercial completa, você provavelmente precisará acrescentar seções de
+        precificação, cronograma detalhado, responsabilidades do cliente e cláusulas contratuais.
+        Use o documento como ponto de partida e adapte o tom para o contexto (interno ou externo).
+      </p>
+
+      <h3>Há um limite de itens por seção?</h3>
+      <p>
+        Não há limite imposto pela ferramenta. Adicione quantos itens forem necessários em cada
+        lista dinâmica. Itens deixados em branco são automaticamente ignorados na geração do documento.
+      </p>
+
+      <h3>Posso gerar o documento várias vezes sem perder o que preenchi?</h3>
+      <p>
+        Sim. O formulário não é limpo ao gerar o documento — você pode ajustar campos e gerar
+        novamente quantas vezes quiser. Use o botão "Limpar" apenas quando quiser começar um
+        escopo novo do zero.
+      </p>
+
+      <h3>O documento gerado segue alguma metodologia específica?</h3>
+      <p>
+        As seções foram inspiradas em práticas consolidadas do PMBOK (Project Management Body of
+        Knowledge) e em frameworks ágeis como Scrum e SAFe, adaptadas para o contexto de projetos
+        de software. A estrutura é intencionalmente agnóstica à metodologia — funciona tanto
+        para times que trabalham com sprints quanto para projetos waterfall ou contratos de
+        escopo fechado.
+      </p>
+
+      <h3>Posso usar para projetos pessoais ou open source?</h3>
+      <p>
+        Absolutamente. Um documento de escopo é útil mesmo para projetos individuais: ele força
+        você a articular o objetivo, as funcionalidades e os limites antes de codificar, reduzindo
+        o risco de escopo infinito (o famoso "vou adicionar só mais uma feature").
+      </p>
+
+      <h3>O que é a seção de premissas e por que ela importa?</h3>
+      <p>
+        Premissas são condições que o time assume como verdadeiras sem confirmação formal. Documentá-las
+        serve para dois propósitos: (1) alertar as partes interessadas sobre dependências externas
+        que podem invalidar o escopo se não se concretizarem; (2) criar uma base objetiva para
+        renegociação caso uma premissa se mostre falsa durante o projeto.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/tools/escopo.js"></script>
+</body>
+</html>

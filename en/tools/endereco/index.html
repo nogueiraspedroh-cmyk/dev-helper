@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Address Generator — Dev Helper</title>
+  <meta name="description" content="Generate fictitious addresses from Brazil, the US, Portugal, Spain and the UK for software testing. Real cities and states, postal code in the correct format for each country." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../tools/endereco/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!--
+    AdSense — biblioteca carregada UMA vez por página.
+    Substitua ca-pub-0000000000000000 pelo seu pub-ID real antes do deploy.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../../../biblioteca/">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Address Generator</h1>
+        <p>Generate fictitious addresses from Brazil, the US, Portugal, Spain and the UK for software testing. Cities and states are real; street, number and postal code follow the country's format but are not real.</p>
+      </header>
+
+      <!-- COMPLIANCE NOTICE — visible and highlighted -->
+      <div class="conta-aviso" role="note" aria-label="Important notice">
+        <strong>Notice:</strong> the generated addresses are <strong>fictitious and intended exclusively for software testing</strong>. Cities and states/regions are real; <strong>street, number and postal code do not correspond to any real address</strong>. Postal codes only follow the <strong>country's format</strong> — they are not verified against any official database. <strong>Do not use this data for deliveries, registrations or real correspondence.</strong>
+      </div>
+
+      <!-- ── SECTION: GENERATE ─────────────────────────────────────────────── -->
+      <section class="tool__section">
+        <h2 class="tool__section-title">Generate address</h2>
+
+        <div class="tool__controls">
+
+          <!-- Country selector -->
+          <div class="tool__actions">
+            <label class="tool__label" for="pais-select">Country:</label>
+            <select id="pais-select" class="tool__select">
+              <option value="br">Brazil</option>
+              <option value="us">United States</option>
+              <option value="pt">Portugal</option>
+              <option value="es">Spain</option>
+              <option value="uk">United Kingdom</option>
+            </select>
+          </div>
+
+          <!-- Region/state selector (populated via JS based on the country) -->
+          <div class="tool__actions" id="regiao-row">
+            <label class="tool__label" id="regiao-label" for="regiao-select">State:</label>
+            <select id="regiao-select" class="tool__select">
+              <!-- Options injected via JS in atualizarRegioes() -->
+            </select>
+          </div>
+
+          <!-- Quantity -->
+          <div class="tool__actions">
+            <label class="tool__label" for="qtd-select">Quantity:</label>
+            <select id="qtd-select" class="tool__select">
+              <option value="1">1 address</option>
+              <option value="5">5 addresses</option>
+              <option value="10">10 addresses</option>
+            </select>
+          </div>
+
+          <!-- Complement option (Brazil only) -->
+          <div class="tool__actions" id="chk-complemento-row">
+            <label class="tool__checkbox-label">
+              <input type="checkbox" id="chk-complemento" />
+              Include complement (apt, suite, etc.)
+            </label>
+          </div>
+
+          <!-- Generate button -->
+          <div class="tool__actions">
+            <button id="btn-gerar-endereco" class="button" type="button">Generate address</button>
+          </div>
+        </div>
+
+        <!-- Result area -->
+        <div class="tool__output" id="endereco-resultado" hidden>
+          <!-- List of generated addresses — filled via JS -->
+          <div id="endereco-lista" class="endereco-lista"></div>
+
+          <!-- Copy buttons -->
+          <div class="tool__actions tool__actions--mt">
+            <button id="btn-copiar-multilinha" class="button--secondary" type="button">Copy (multiline)</button>
+            <button id="btn-copiar-umalinha" class="button--secondary" type="button">Copy (single line)</button>
+          </div>
+        </div>
+      </section>
+    </article>
+
+    <!-- Ad block — below the tool's result area -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="9999999999"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Real content — required by AdSense -->
+    <section>
+      <h2>Address formats by country</h2>
+      <p>
+        Each country has its own convention for structuring postal addresses. This tool
+        respects each country's format in the generated data:
+      </p>
+
+      <h3>Brazil</h3>
+      <p>
+        The Brazilian address follows the pattern: <em>street type + name, number — complement
+        (optional)</em> on the first line, neighborhood on the second, city and state (UF) on
+        the third, and CEP (8 digits, format NNNNN-NNN) on the fourth. The CEP is managed by the
+        Correios and its first digit indicates the country's macro-region. This tool respects
+        that regional division when generating the CEP — the first digit is always consistent
+        with the state.
+      </p>
+      <p>Example output: <em>Rua das Flores, 42 — Apto 101 / Jardim América / São Paulo — SP / CEP: 01310-450</em></p>
+
+      <h3>United States</h3>
+      <p>
+        The American address follows the pattern: <em>number + street name</em> on the first
+        line, <em>city, state abbreviation + ZIP Code</em> on the second. The ZIP Code has 5
+        digits (format NNNNN) and is managed by USPS. In this tool, the generated ZIP only
+        follows the 5-digit format — there is no exact geographic link to the state.
+      </p>
+      <p>Example output: <em>742 Oak Street / Austin, TX 78734 / United States</em></p>
+
+      <h3>Portugal</h3>
+      <p>
+        The Portuguese address uses: <em>street type + name, number</em> on the first line, and
+        <em>postal code + locality</em> on the second. The Portuguese postal code has the format
+        NNNN-NNN (4 digits, hyphen, 3 digits) and is managed by CTT. The generated code only
+        follows the format — it is not linked to a real district.
+      </p>
+      <p>Example output: <em>Rua da Liberdade, 18 / 1250-096 Lisboa / Portugal</em></p>
+
+      <h3>Spain</h3>
+      <p>
+        The Spanish address uses: <em>street type + name + number</em> on the first line,
+        <em>postal code + city</em> on the second and the <em>province</em> on the third. The
+        Spanish postal code has 5 digits, with the first two indicating the province (01 to 52).
+        The first two generated digits stay within that range, but the code is not checked
+        against the official database.
+      </p>
+      <p>Example output: <em>Calle Mayor 7 / 28013 Madrid / Madrid / España</em></p>
+
+      <h3>United Kingdom</h3>
+      <p>
+        The British address uses: <em>number + street name</em> on the first line, the
+        <em>city</em> on the second and the <em>postcode</em> on the third. The British postcode
+        is alphanumeric with a variable format (e.g., <em>SW1A 1AA</em>, <em>EC2V 8RF</em>,
+        <em>M4 3AB</em>), made up of area (letters) + district (digits), a space, and sector +
+        unit (digit + 2 letters). The generated postcodes follow this visual pattern but are not
+        validated against the Royal Mail database.
+      </p>
+      <p>Example output: <em>15 Victoria Street / London / SW1A 2JH / United Kingdom</em></p>
+
+      <h2>Why are the cities real but the addresses fictitious?</h2>
+      <p>
+        The goal of this tool is to generate <strong>plausible addresses for software
+        testing</strong>. Real cities and states ensure the data passes city/state validations
+        present in many systems. On the other hand, it is not feasible to generate real streets
+        and numbers offline without an official database — which is not public and free for any
+        of the supported countries. Therefore:
+      </p>
+      <ul>
+        <li><strong>City and state/region:</strong> real, extracted from embedded datasets.</li>
+        <li><strong>Street (type + name) and number:</strong> fictitious — plausible random combinations.</li>
+        <li><strong>Neighborhood (Brazil only):</strong> fictitious — plausible generic names.</li>
+        <li><strong>Postal code:</strong> follows the country's <em>format</em>, but is not verified against any official database.</li>
+      </ul>
+
+      <h2>What is an address generator useful for in software testing?</h2>
+      <ul>
+        <li>Filling registration forms in development and QA environments without exposing real data.</li>
+        <li>Testing required-field validations, postal code masks and state/city selects.</li>
+        <li>Populating test databases with varied records from different countries.</li>
+        <li>Generating data for product demos and internationalized interface mockups.</li>
+        <li>Testing integrations with freight, logistics and geolocation APIs using correctly formatted addresses.</li>
+        <li>Validating multilingual and international address forms without using real customer data.</li>
+      </ul>
+
+      <h2>Frequently Asked Questions (FAQ)</h2>
+
+      <h3>Do the generated addresses really exist?</h3>
+      <p>
+        No. Only the cities and states/regions are real. The street, number and postal code are
+        fictitious — randomly generated within each country's format rules. Do not use this data
+        for real mail, shipping calculations, official registrations or any purpose beyond
+        software testing.
+      </p>
+
+      <h3>Are the generated postal codes geographically correct?</h3>
+      <p>
+        Not necessarily. They follow the country's <strong>format</strong> (number of digits,
+        presence of letters, separators), but are not linked to the real state or city. The only
+        partial exception is Brazil, where the first digit of the CEP is consistent with the
+        state's macro-region — but the remaining digits are random. For the US, Portugal, Spain
+        and the UK, the code only follows the country's visual pattern.
+      </p>
+
+      <h3>Why is the Brazilian CEP's first digit consistent with the state?</h3>
+      <p>
+        The Correios divide the country into 10 macro-regions based on the first digit of the
+        CEP (0 for Greater São Paulo, 9 for Rio Grande do Sul, etc.). This tool respects that
+        division to make the address more plausible — an address in Fortaleza will never have a
+        CEP starting with 9 (which belongs to RS). The remaining 7 digits are random.
+      </p>
+
+      <h3>Why isn't the US ZIP Code linked to the state?</h3>
+      <p>
+        That would require a database with the ZIP ranges per state, which is not fully public
+        and free. The generated ZIP follows the 5-digit format, which is enough to test masks
+        and format validations in forms.
+      </p>
+
+      <h3>Does the UK postcode follow the correct format?</h3>
+      <p>
+        It follows the visual pattern: area letters + district digits, space, and digit + 2 unit
+        letters (e.g., <em>SW3 4BK</em>, <em>EC1V 9NB</em>). The Royal Mail uses region-specific
+        variations that cannot be replicated offline without their proprietary database. The
+        generated postcode is enough to test format validations.
+      </p>
+
+      <h3>Can I generate several addresses at once?</h3>
+      <p>
+        Yes. Use the quantity selector to generate 1, 5 or 10 addresses at once — all from the
+        same selected country and region. Useful for quickly populating test tables with
+        multiple records.
+      </p>
+
+      <h3>What is the "complement" field and why does it only appear for Brazil?</h3>
+      <p>
+        The complement is optional information in the Brazilian address that identifies the unit
+        within the property (apartment, suite, block, back building, etc.). In the supported
+        English-speaking and Iberian countries, this information is usually part of the number or
+        street name in another way, or is omitted in the most common formats. For simplicity, the
+        complement field is available only for Brazilian addresses in this version.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/tools-en/endereco.js"></script>
+</body>
+</html>

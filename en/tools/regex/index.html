@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Regex Tester — Test Regular Expressions — Dev Helper</title>
+  <meta name="description" content="Test regular expressions (regex) in your browser: enter the pattern and flags (g, i, m, s), see the matches highlighted in the text and list the captured groups. Invalid regex is handled with a clear message." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../tools/regex/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!--
+    AdSense — biblioteca carregada UMA vez por página.
+    Substitua ca-pub-0000000000000000 pelo seu pub-ID real antes do deploy.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../../../biblioteca/">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Regex Tester</h1>
+        <p>Test <strong>regular expressions</strong> live: enter the pattern and flags, see the <strong>highlighted</strong> matches in the text and the list of <strong>captured groups</strong>.</p>
+      </header>
+
+      <div class="tool__controls">
+        <!-- Padrão -->
+        <div class="regex-pattern-row">
+          <span class="regex-delim">/</span>
+          <input
+            id="regex-pattern"
+            class="tool__input-inline regex-pattern-input"
+            type="text"
+            placeholder="\d{3}-\d{4}"
+            spellcheck="false"
+            autocorrect="off"
+            autocapitalize="off"
+            aria-label="Regular expression pattern"
+          />
+          <span class="regex-delim">/</span>
+        </div>
+
+        <!-- Flags -->
+        <fieldset class="tool__fieldset">
+          <legend class="tool__legend">Flags</legend>
+          <div class="regex-flags">
+            <label class="tool__checkbox-label"><input type="checkbox" id="regex-flag-g" checked /> g <span class="regex-flag-hint">(global)</span></label>
+            <label class="tool__checkbox-label"><input type="checkbox" id="regex-flag-i" /> i <span class="regex-flag-hint">(ignore case)</span></label>
+            <label class="tool__checkbox-label"><input type="checkbox" id="regex-flag-m" /> m <span class="regex-flag-hint">(multiline)</span></label>
+            <label class="tool__checkbox-label"><input type="checkbox" id="regex-flag-s" /> s <span class="regex-flag-hint">(dotall)</span></label>
+          </div>
+        </fieldset>
+
+        <!-- Texto de teste -->
+        <label class="tool__label" for="regex-text">Test text</label>
+        <textarea
+          id="regex-text"
+          class="tool__input"
+          placeholder="Paste here the text where the regex will be tested..."
+          spellcheck="false"
+          autocorrect="off"
+          autocapitalize="off"
+        ></textarea>
+      </div>
+
+      <!-- Mensagem de erro (regex inválida) -->
+      <p id="regex-error" class="error-msg" role="alert" hidden></p>
+
+      <!-- Resultado -->
+      <section class="tool__output">
+        <p id="regex-count" class="result-validar result-validar--neutro"></p>
+
+        <div class="tool__section">
+          <h2 class="tool__section-title">Text with matches highlighted</h2>
+          <div id="regex-highlight" class="regex-highlight" aria-live="polite"></div>
+        </div>
+
+        <div class="tool__section" id="regex-groups-wrapper" hidden>
+          <h2 class="tool__section-title">Captured groups</h2>
+          <table class="info-table">
+            <thead>
+              <tr>
+                <th>Match</th>
+                <th>Group</th>
+                <th>Value</th>
+              </tr>
+            </thead>
+            <tbody id="regex-groups-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </article>
+
+    <!-- Bloco de anúncio — abaixo do resultado da ferramenta -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="1818181818"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Conteúdo real — exigido pelo AdSense -->
+    <section>
+      <h2>What is a regular expression?</h2>
+      <p>
+        A <strong>regular expression</strong> (regex) is a pattern that describes a set of
+        strings. It's used to <strong>search</strong>, <strong>validate</strong> and
+        <strong>extract</strong> text: finding every email in a document, validating a
+        phone number format, replacing parts of a string, and much more. This tool uses
+        JavaScript's own regex engine (the same one used by <code>String.prototype.match</code>), so
+        results reflect your browser's behavior.
+      </p>
+
+      <h2>The flags</h2>
+      <ul>
+        <li><strong>g</strong> (global) — finds <em>every</em> occurrence, not just the first.</li>
+        <li><strong>i</strong> (ignore case) — ignores uppercase/lowercase.</li>
+        <li><strong>m</strong> (multiline) — makes <code>^</code> and <code>$</code> match the start/end
+          of <em>each line</em>, not just the whole text.</li>
+        <li><strong>s</strong> (dotall) — makes <code>.</code> also match line breaks.</li>
+      </ul>
+
+      <h2>Capture groups</h2>
+      <p>
+        Parentheses in a regex create <strong>capture groups</strong>: besides matching, they
+        store the matched part for you to reuse. For example,
+        <code>(\d{4})-(\d{2})</code> captures the year and month separately. Named groups
+        (<code>(?&lt;year&gt;\d{4})</code>) get a name instead of a number. This tool lists
+        each group captured per match.
+      </p>
+
+      <h2>Frequently Asked Questions (FAQ)</h2>
+
+      <h3>What happens if I type an invalid regex?</h3>
+      <p>
+        The tool shows a readable error message (the same one from the JavaScript engine) and doesn't
+        crash — the highlighting simply isn't applied until you fix the pattern.
+      </p>
+
+      <h3>Why doesn't a regex like <code>a*</code> with the g flag freeze the page?</h3>
+      <p>
+        Patterns that can match an empty string (zero-width) could cause an infinite loop.
+        The tool manually advances the position after each empty match, exactly as
+        recommended when iterating <code>RegExp.exec</code>.
+      </p>
+
+      <h3>Is the highlight safe against malicious code in the text?</h3>
+      <p>
+        Yes. The test text is never inserted as HTML. Each snippet (matched or not) is added
+        to the result as a <em>text node</em> or inside a <code>&lt;mark&gt;</code> via
+        <code>textContent</code>, which eliminates the risk of XSS.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/tools-en/regex.js"></script>
+</body>
+</html>

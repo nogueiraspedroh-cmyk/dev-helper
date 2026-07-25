@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Idempotência — Dev Helper Biblioteca</title>
+  <meta name="description" content="Entenda idempotência: operações seguras para retry, Idempotency Key, at-least-once delivery e as armadilhas de efeitos colaterais duplicados em sistemas distribuídos." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Idempotência</span>
+        </nav>
+        <span class="artigo__categoria">System Design</span>
+        <h1 class="artigo__titulo">Idempotência</h1>
+        <p class="artigo__subtitulo">
+          Uma operação é idempotente se executá-la múltiplas vezes produz o mesmo resultado
+          que executá-la uma única vez. Em sistemas distribuídos, onde retries e duplicatas
+          são inevitáveis, a idempotência é a garantia que torna essas repetições seguras.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Idempotência garante que uma operação pode ser executada qualquer número
+            de vezes com o mesmo efeito final de uma única execução.</strong> Isso transforma
+            operações sensíveis — pagamentos, criação de pedidos, envio de mensagens — em
+            operações seguras para retry automático, sem o risco de duplicar efeitos
+            colaterais.
+          </p>
+          <p>
+            Em matemática, uma função f é idempotente quando <code>f(f(x)) = f(x)</code>
+            para todo x no seu domínio. Em sistemas de software, o conceito se traduz para
+            operações: executar a operação uma ou dez vezes deve deixar o sistema no mesmo
+            estado final. A segunda execução é um no-op — não causa novos efeitos.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Redes falham. Servidores reiniciam. Timeouts acontecem. Em todos esses casos,
+            o cliente não sabe se a operação foi executada ou não — e a resposta natural
+            é tentar de novo. O problema é que "tentar de novo" em operações com efeito
+            colateral pode causar resultados indesejados:
+          </p>
+          <ul>
+            <li>
+              <strong>Cobrança duplicada:</strong> o cliente de pagamento envia uma requisição
+              de cobrança, não recebe resposta (timeout de rede), e retenta. Se o servidor
+              processou a primeira requisição mas a resposta foi perdida na rede, o retry
+              cria uma segunda cobrança. O usuário é cobrado duas vezes por uma única compra.
+            </li>
+            <li>
+              <strong>Pedido duplicado:</strong> um webhook de confirmação de pagamento é
+              entregue duas vezes pelo provedor (comportamento normal em sistemas at-least-once).
+              O sistema de pedidos que processa o webhook cria dois pedidos para a mesma
+              compra.
+            </li>
+            <li>
+              <strong>E-mail duplicado:</strong> uma job de notificação falha na metade
+              e é reexecutada. Os usuários que já receberam o e-mail antes da falha
+              recebem novamente.
+            </li>
+            <li>
+              <strong>Inconsistência de estado:</strong> um comando de atualização de saldo
+              executado duas vezes debita o valor duas vezes, mesmo que o usuário tenha
+              executado a operação uma única vez.
+            </li>
+          </ul>
+          <p>
+            O problema fundamental: o sistema não consegue distinguir uma nova intenção
+            do usuário de uma repetição causada por falha de rede. Sem idempotência, retry
+            é uma fonte de bugs silenciosos.
+          </p>
+        </section>
+
+        <!-- 3. COMO FUNCIONA -->
+        <section class="artigo__secao">
+          <h2>Como funciona</h2>
+
+          <h3>Operações naturalmente idempotentes</h3>
+          <p>
+            Algumas operações são idempotentes por definição — não é necessário nenhum
+            mecanismo adicional:
+          </p>
+          <ul>
+            <li>
+              <strong>GET:</strong> buscar um recurso não muda o estado do servidor.
+              Executar cem vezes retorna o mesmo resultado (supondo que o estado não mudou
+              por outras operações).
+            </li>
+            <li>
+              <strong>PUT (sobrescrição total):</strong> definir o estado de um recurso
+              para um valor específico. <code>PUT /users/42 {"name": "João"}</code> duas
+              vezes resulta no mesmo estado que uma única execução.
+            </li>
+            <li>
+              <strong>DELETE:</strong> remover um recurso. O segundo DELETE de um recurso
+              inexistente pode retornar 404 em vez de 200, mas o estado do servidor é o
+              mesmo: o recurso não existe.
+            </li>
+          </ul>
+          <p>
+            Operações <strong>não idempotentes por natureza</strong> incluem POST (cada
+            chamada pode criar um novo recurso), incremento de contador
+            (<code>UPDATE saldo = saldo + 100</code>) e qualquer operação cujo efeito
+            depende do número de execuções.
+          </p>
+
+          <h3>Idempotency Key — tornando operações não-idempotentes seguras</h3>
+          <p>
+            A técnica padrão para adicionar idempotência a operações não-idempotentes é
+            a <strong>Idempotency Key</strong>: um identificador único gerado pelo cliente
+            para cada tentativa de operação (não para cada retry — para cada operação
+            distinta do usuário).
+          </p>
+          <div class="code-bloco">
+<pre><code>  Cliente gera: idempotency-key = uuid-v4() por operação do usuário
+  (o mesmo UUID é reutilizado em todos os retries dessa operação)
+
+  Primeira execução:
+  ┌──────────┐  POST /pagamentos                    ┌──────────────┐
+  │  Cliente │  Idempotency-Key: a1b2-c3d4  ──────► │   Servidor   │
+  └──────────┘                                      └──────┬───────┘
+                                                           │ Chave nova?
+                                                           │ SIM
+                                                           ▼
+                                                    Processa pagamento
+                                                    Salva resultado com chave a1b2-c3d4
+                                                    Retorna: { status: "aprovado", id: 99 }
+
+  Retry (timeout na primeira tentativa):
+  ┌──────────┐  POST /pagamentos                    ┌──────────────┐
+  │  Cliente │  Idempotency-Key: a1b2-c3d4  ──────► │   Servidor   │
+  └──────────┘                                      └──────┬───────┘
+                                                           │ Chave nova?
+                                                           │ NÃO — já processada
+                                                           ▼
+                                                    Retorna resultado cacheado:
+                                                    { status: "aprovado", id: 99 }
+                                                    (sem reprocessar o pagamento)
+</code></pre>
+          </div>
+          <p>
+            O servidor armazena o resultado da primeira execução associado à chave.
+            Retries com a mesma chave retornam o resultado cacheado sem reprocessar a
+            operação. Do ponto de vista do cliente, ambas as respostas são idênticas —
+            ele não precisa saber se foi a primeira execução ou um retry.
+          </p>
+
+          <h3>At-least-once + idempotência = segurança</h3>
+          <p>
+            Sistemas de filas de mensagem com semântica <em>at-least-once</em> garantem
+            que a mensagem será entregue pelo menos uma vez — mas podem entregar mais de
+            uma vez em caso de falha do consumer ou rebalanceamento. Um consumer idempotente
+            processa duplicatas sem consequências:
+          </p>
+          <ul>
+            <li>A mensagem contém um ID único de evento.</li>
+            <li>O consumer registra os IDs já processados.</li>
+            <li>Ao receber a mensagem, verifica se o ID já foi processado: se sim, descarta; se não, processa e registra.</li>
+          </ul>
+
+          <h3>Onde aplicar</h3>
+          <ul>
+            <li><strong>Endpoints de pagamento:</strong> a operação de maior risco — cobrar duas vezes tem consequência direta para o usuário e para o negócio.</li>
+            <li><strong>Criação de pedido/recurso:</strong> qualquer endpoint que cria uma entidade com efeito no mundo real.</li>
+            <li><strong>Envio de notificações:</strong> e-mail, SMS, push notification — o usuário não deve receber a mesma mensagem múltiplas vezes.</li>
+            <li><strong>Webhooks recebidos:</strong> provedores externos podem retentar webhooks — o receptor precisa ser idempotente.</li>
+            <li><strong>Consumers de fila com at-least-once:</strong> duplicatas são entregues; o consumer deve tratá-las.</li>
+          </ul>
+        </section>
+
+        <!-- 4. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Qualquer operação exposta a retry automático:</strong> timeout de rede,
+              falha de instância, retry configurado no cliente HTTP. Se o cliente pode tentar
+              mais de uma vez, o servidor deve ser idempotente.
+            </li>
+            <li>
+              <strong>Consumers de filas com at-least-once:</strong> Kafka, RabbitMQ,
+              SQS standard — a garantia de entrega implica possibilidade de duplicata.
+              A responsabilidade de lidar com duplicatas é do consumer.
+            </li>
+            <li>
+              <strong>Webhooks recebidos de sistemas externos:</strong> Stripe, GitHub,
+              Shopify e a maioria dos provedores de webhook documentam explicitamente que
+              podem retentar. O receptor deve ser idempotente por design.
+            </li>
+            <li>
+              <strong>Operações com efeito colateral externo irreversível:</strong>
+              cobranças, débitos, reservas de estoque, envios. O custo de duplicar esses
+              efeitos é alto demais para depender apenas de uma única entrega bem-sucedida.
+            </li>
+          </ul>
+
+          <h2>Quando evitar (ou adaptar)</h2>
+          <ul>
+            <li>
+              <strong>Quando múltiplos efeitos são a intenção:</strong> se o usuário clica
+              "adicionar ao carrinho" duas vezes, provavelmente quer dois itens — não um.
+              Nesse caso, a Idempotency Key deve ser gerada explicitamente pelo usuário
+              (ou pela ação), não automaticamente pelo cliente. O design deve deixar claro
+              o que é repetição acidental e o que é intenção.
+            </li>
+            <li>
+              <strong>Operações de leitura:</strong> GET já é idempotente por natureza.
+              Adicionar mecanismo de Idempotency Key a endpoints de leitura é overhead
+              sem benefício.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 5. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Retry seguro: o cliente pode tentar novamente sem medo de duplicar efeitos, simplificando a lógica de tratamento de erros.</li>
+            <li>Resiliência natural: falhas de rede, timeouts e reinicializações de servidor se tornam eventos recuperáveis, não causas de inconsistência.</li>
+            <li>Compatibilidade com at-least-once: sistemas de fila e webhooks podem ser usados com segurança sem exigir semântica exactly-once (mais cara e complexa).</li>
+            <li>Auditabilidade: armazenar a Idempotency Key com o resultado cria um registro das operações tentadas, útil para debugging e auditoria.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Armazenamento da chave: o servidor precisa persistir as chaves processadas e os resultados associados, adicionando storage e complexidade operacional.</li>
+            <li>Definição do escopo da chave: determinar o que constitui "a mesma operação" vs "uma nova operação" pode ser sutil e levar a bugs se errado.</li>
+            <li>Efeitos colaterais externos difíceis de controlar: a operação principal pode ser idempotente, mas chamar serviços externos (e-mail, SMS) também precisa ser, o que depende de capacidade de terceiros.</li>
+            <li>Expiração da chave: decidir por quanto tempo manter as chaves requer análise do padrão de retry esperado — muito curto perde proteção, muito longo aumenta storage.</li>
+          </ul>
+        </section>
+
+        <!-- 6. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Idempotency Key com escopo errado</h3>
+          <p>
+            Usar o ID do usuário, o ID do produto ou qualquer dado da operação como chave
+            de idempotência em vez de um UUID gerado por tentativa é o erro mais comum.
+            Se a chave é o ID do usuário, todas as tentativas do mesmo usuário para
+            operações diferentes são tratadas como a mesma operação — o segundo pagamento
+            do mês retorna o resultado cacheado do primeiro.
+          </p>
+          <p>
+            A Idempotency Key deve identificar <em>uma tentativa específica de uma operação
+            específica</em>. A forma correta é: o cliente gera um UUID novo para cada operação
+            distinta que o usuário inicia, e reutiliza esse mesmo UUID em todos os retries
+            daquela operação.
+          </p>
+
+          <h3>2. Expirar a chave cedo demais</h3>
+          <p>
+            Se o cache da Idempotency Key expira em 5 minutos mas o retry pode vir em
+            1 hora — por exemplo, via dead letter queue reprocessada manualmente — a
+            proteção desaparece exatamente quando ela seria necessária. A janela de
+            retenção da chave deve cobrir o período máximo possível entre a primeira
+            tentativa e o último retry, incluindo cenários de processamento tardio.
+          </p>
+
+          <h3>3. Idempotência parcial — efeitos colaterais duplicados</h3>
+          <p>
+            A operação principal (criar um pedido) é idempotente com Idempotency Key,
+            mas os efeitos colaterais (envio de e-mail de confirmação, disparo de webhook
+            para o ERP, criação de evento no sistema de analytics) não são. O resultado:
+            um único pedido criado, mas três e-mails de confirmação, três webhooks
+            disparados e três eventos no analytics.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Regra prática:</strong> ao tornar uma operação idempotente, mapeie
+            todos os efeitos colaterais que ela gera e avalie a idempotência de cada um.
+            Efeitos colaterais externos que não podem ser tornados idempotentes devem ser
+            movidos para fora do fluxo de retry ou protegidos com verificação de estado
+            antes da execução.
+          </p>
+
+          <h3>4. Confundir idempotência com segurança a concorrência</h3>
+          <p>
+            Idempotência protege contra retries sequenciais — a mesma operação executada
+            uma vez e depois de novo. Não protege contra concorrência: dois requests
+            simultâneos com chaves diferentes (dois usuários clicando ao mesmo tempo)
+            ou dois processos processando a mesma mensagem de fila ao mesmo tempo.
+            Para esses cenários, é necessário lock distribuído ou transação atômica
+            com verificação de unicidade — idempotência resolve um problema diferente.
+          </p>
+        </section>
+
+        <!-- 7. RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Arquiteturas e padrões relacionados</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../circuit-breaker/">Circuit Breaker</a></li>
+            <li><a href="../cqrs/">CQRS</a></li>
+            <li><a href="../filas-de-mensagem/">Filas de Mensagem</a></li>
+            <li><a href="../rest-vs-graphql-vs-grpc/">REST vs GraphQL vs gRPC</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Circuit Breaker</strong> e idempotência são complementares na estratégia
+            de resiliência: o Circuit Breaker decide se vale tentar a chamada, e a idempotência
+            garante que, quando a chamada é retentada após uma falha, o efeito não é duplicado.
+            Juntos, permitem retry com segurança: o Circuit Breaker evita retry quando o
+            serviço está degradado; a idempotência protege quando o retry é necessário.
+          </p>
+          <p>
+            No <strong>CQRS</strong>, commands idempotentes são mais seguros para operar
+            em sistemas distribuídos: um command de "processar pagamento" que pode ser
+            reenviado sem efeito duplicado simplifica o tratamento de falhas no fluxo de
+            escrita. O Event Store também se beneficia: eventos gerados por commands
+            idempotentes não se duplicam mesmo que o command seja processado mais de uma vez.
+          </p>
+          <p>
+            <strong>Filas de Mensagem</strong> com semântica at-least-once são o contexto
+            mais comum onde a idempotência é obrigatória. A combinação fila + consumer
+            idempotente é o padrão de fato para processamento confiável de mensagens sem
+            exigir a complexidade e o custo de semântica exactly-once.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="6262626262"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

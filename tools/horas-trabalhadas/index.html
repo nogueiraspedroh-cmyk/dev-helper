@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculadora de Horas Trabalhadas — Dev Helper</title>
+  <meta name="description" content="Calcule o tempo de almoço, o total de horas trabalhadas e o saldo em relação à carga horária esperada, a partir dos horários de entrada, almoço e saída. Suporta turno noturno." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!--
+    AdSense — biblioteca carregada UMA vez por página.
+    Substitua ca-pub-0000000000000000 pelo seu pub-ID real antes do deploy.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../../biblioteca/">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Calculadora de Horas Trabalhadas</h1>
+        <p>Informe os quatro horários do seu expediente para calcular o tempo de almoço, o total trabalhado e o saldo em relação à carga horária esperada.</p>
+      </header>
+
+      <div class="tool__controls">
+        <div class="horas-campos">
+          <div class="horas-campo">
+            <label class="tool__label" for="hs-entrada">Entrada</label>
+            <input type="time" id="hs-entrada" class="tool__input-inline" />
+          </div>
+          <div class="horas-campo">
+            <label class="tool__label" for="hs-saida-almoco">Saída para almoço</label>
+            <input type="time" id="hs-saida-almoco" class="tool__input-inline" />
+          </div>
+          <div class="horas-campo">
+            <label class="tool__label" for="hs-retorno-almoco">Retorno do almoço</label>
+            <input type="time" id="hs-retorno-almoco" class="tool__input-inline" />
+          </div>
+          <div class="horas-campo">
+            <label class="tool__label" for="hs-saida">Saída</label>
+            <input type="time" id="hs-saida" class="tool__input-inline" />
+          </div>
+          <div class="horas-campo">
+            <label class="tool__label" for="hs-carga">Carga horária esperada</label>
+            <input type="time" id="hs-carga" class="tool__input-inline" value="08:00" />
+          </div>
+        </div>
+
+        <div class="tool__actions tool__actions--mt">
+          <button id="btn-limpar" class="button--secondary" type="button">Limpar</button>
+        </div>
+      </div>
+
+      <p id="hs-error" class="error-msg" role="alert" hidden></p>
+
+      <div class="tool__output" id="hs-resultado" hidden>
+        <div class="horas-resultado-grid">
+          <div class="cartao-campo">
+            <span class="cartao-campo__label">Tempo de almoço</span>
+            <span id="hs-out-almoco" class="cartao-campo__valor cartao-campo__valor--mono"></span>
+          </div>
+          <div class="cartao-campo">
+            <span class="cartao-campo__label">Total trabalhado</span>
+            <span id="hs-out-total" class="cartao-campo__valor cartao-campo__valor--mono"></span>
+          </div>
+        </div>
+        <p id="hs-out-saldo" class="horas-saldo"></p>
+      </div>
+    </article>
+
+    <!-- Bloco de anúncio — abaixo do resultado da ferramenta -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="7575757575"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Conteúdo real — exigido pelo AdSense -->
+    <section>
+      <h2>Como o cálculo funciona</h2>
+      <p>
+        A calculadora usa os quatro horários do seu expediente — <strong>entrada</strong>,
+        <strong>saída para almoço</strong>, <strong>retorno do almoço</strong> e
+        <strong>saída</strong> — para calcular:
+      </p>
+      <ul>
+        <li>
+          <strong>Tempo de almoço:</strong> a diferença entre o retorno do almoço e a saída
+          para o almoço.
+        </li>
+        <li>
+          <strong>Total trabalhado:</strong> a soma do período da manhã (entrada até a saída
+          para o almoço) com o período da tarde (retorno do almoço até a saída).
+        </li>
+        <li>
+          <strong>Saldo:</strong> a diferença entre o total trabalhado e a
+          <strong>carga horária esperada</strong> — positiva quando você trabalhou a mais e
+          negativa quando trabalhou a menos.
+        </li>
+      </ul>
+
+      <h2>O que é a "carga horária esperada"?</h2>
+      <p>
+        É a jornada de referência do seu expediente — por padrão, <strong>08:00</strong> (8
+        horas), mas o campo é editável para qualquer jornada (6h, 4h, meio período etc.). O
+        saldo é sempre calculado comparando o total trabalhado a esse valor.
+      </p>
+
+      <h2>Perguntas frequentes (FAQ)</h2>
+
+      <h3>A calculadora suporta turno noturno (que cruza a meia-noite)?</h3>
+      <p>
+        Sim. Se um horário for cronologicamente "menor" que o anterior na sequência — por
+        exemplo, entrada às 22:00 e saída às 06:00 — a ferramenta entende que esse horário
+        pertence ao dia seguinte e soma 24 horas a ele antes de calcular. Se mais de um
+        horário parecer fora de ordem de um jeito que não corresponda a um único turno
+        noturno plausível, é exibido um erro em vez de um resultado incorreto.
+      </p>
+
+      <h3>Os horários precisam estar em ordem crescente?</h3>
+      <p>
+        Em um expediente comum (dentro do mesmo dia), sim: entrada, saída para almoço,
+        retorno do almoço e saída devem estar em ordem crescente. A única exceção é o turno
+        noturno descrito acima, tratado automaticamente.
+      </p>
+
+      <h3>A calculadora soma múltiplos dias ou guarda um banco de horas?</h3>
+      <p>
+        Não. O cálculo é feito para um único expediente (um dia), sem acúmulo entre dias e
+        sem persistência de dados — cada cálculo é independente.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/tools/horas-trabalhadas.js"></script>
+</body>
+</html>

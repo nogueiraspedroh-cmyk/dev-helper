@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculadora de Subnet / CIDR (IPv4) — Dev Helper</title>
+  <meta name="description" content="Calcule rede, broadcast, primeiro e último host, máscara, wildcard e total de hosts a partir de um IP com prefixo CIDR (ex.: 192.168.1.10/24) ou máscara. Trata /31 (RFC 3021) e /32." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../../biblioteca/">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Calculadora de Subnet / CIDR</h1>
+        <p>Informe um IPv4 com prefixo <strong>CIDR</strong> (ex.: <code>192.168.1.10/24</code>) ou um IP com máscara e obtenha endereço de <strong>rede</strong>, <strong>broadcast</strong>, faixa de hosts utilizáveis, máscara, <strong>wildcard</strong> e total de hosts.</p>
+      </header>
+
+      <div class="tool__controls">
+        <label class="tool__label" for="cidr-input">IP + prefixo (ou IP + máscara)</label>
+        <div class="tool__actions">
+          <input type="text" id="cidr-input" class="tool__input-inline" spellcheck="false" autocomplete="off" value="192.168.1.10/24" placeholder="192.168.1.10/24 ou 192.168.1.10 255.255.255.0" />
+          <label class="tool__label" for="cidr-prefix">Prefixo:</label>
+          <input type="number" id="cidr-prefix" class="tool__select cor-num" min="0" max="32" value="24" aria-label="Prefixo CIDR (0 a 32)" />
+          <button id="cidr-calc" class="button" type="button">Calcular</button>
+        </div>
+
+        <p id="cidr-error" class="error-msg" role="alert" hidden></p>
+
+        <div id="cidr-result" class="tool__output" hidden>
+          <table class="info-table">
+            <tbody>
+              <tr><th scope="row">CIDR</th><td id="cidr-out-cidr">—</td></tr>
+              <tr><th scope="row">Máscara de sub-rede</th><td id="cidr-out-mask">—</td></tr>
+              <tr><th scope="row">Wildcard</th><td id="cidr-out-wildcard">—</td></tr>
+              <tr><th scope="row">Endereço de rede</th><td id="cidr-out-network">—</td></tr>
+              <tr><th scope="row">Broadcast</th><td id="cidr-out-broadcast">—</td></tr>
+              <tr><th scope="row">Primeiro host utilizável</th><td id="cidr-out-first">—</td></tr>
+              <tr><th scope="row">Último host utilizável</th><td id="cidr-out-last">—</td></tr>
+              <tr><th scope="row">Total de endereços</th><td id="cidr-out-total">—</td></tr>
+              <tr><th scope="row">Hosts utilizáveis</th><td id="cidr-out-usable">—</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </article>
+
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="3232323232"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <section>
+      <h2>O que é CIDR?</h2>
+      <p>
+        <strong>CIDR</strong> (Classless Inter-Domain Routing) representa uma sub-rede pela notação
+        <code>IP/prefixo</code>, onde o prefixo (0–32) indica quantos bits do endereço identificam a
+        <strong>rede</strong>. O restante identifica os <strong>hosts</strong>. Por exemplo,
+        <code>/24</code> reserva 24 bits para a rede e 8 para hosts, resultando em 256 endereços (254
+        utilizáveis, descontando rede e broadcast).
+      </p>
+
+      <h2>Máscara e wildcard</h2>
+      <p>
+        A <strong>máscara de sub-rede</strong> é o prefixo em forma decimal (<code>/24</code> =
+        <code>255.255.255.0</code>). A <strong>wildcard</strong> é o inverso bit a bit da máscara
+        (<code>0.0.0.255</code>), usada em ACLs de roteadores. O <strong>endereço de rede</strong> é o
+        primeiro da faixa; o <strong>broadcast</strong>, o último.
+      </p>
+
+      <h2>Perguntas frequentes (FAQ)</h2>
+
+      <h3>Como são tratados /31 e /32?</h3>
+      <p>
+        Um <code>/32</code> descreve um <strong>host único</strong> (1 endereço utilizável, sem rede
+        nem broadcast distintos). Um <code>/31</code> segue a <strong>RFC 3021</strong>: em enlaces
+        ponto-a-ponto, os <strong>2 endereços são utilizáveis</strong>, sem reservar rede/broadcast —
+        por isso a ferramenta mostra 2 hosts utilizáveis nesse caso, em vez de zero.
+      </p>
+
+      <h3>Aceita máscara em vez de prefixo?</h3>
+      <p>
+        Sim. Você pode digitar <code>192.168.1.10 255.255.255.0</code> (IP e máscara separados por
+        espaço) — a máscara é convertida para o prefixo equivalente, desde que seja contígua.
+      </p>
+
+      <h3>Suporta IPv6?</h3>
+      <p>Não. Esta calculadora cobre apenas IPv4 (endereços de 32 bits, prefixo 0–32).</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/tools/cidr.js"></script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Character and Word Counter — Dev Helper</title>
+  <meta name="description" content="Count characters (with and without spaces), words, lines and paragraphs live, with limit indicators for an X post (280), meta description (160) and title tag (60)." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../tools/contador-caracteres/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../../../biblioteca/">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Character and Word Counter</h1>
+        <p>Paste or type a text and see, <strong>live</strong>, the count of characters (with and without spaces), words, lines and paragraphs — plus indicators for the most common social and SEO limits.</p>
+      </header>
+
+      <div class="tool__controls">
+        <textarea id="cc-input" class="tool__input" spellcheck="false" placeholder="Type or paste your text here…" aria-label="Text to count"></textarea>
+
+        <div class="cc-stats">
+          <div class="cc-stat"><span class="cc-stat__num" id="cc-chars-with">0</span><span class="cc-stat__label">characters (with spaces)</span></div>
+          <div class="cc-stat"><span class="cc-stat__num" id="cc-chars-without">0</span><span class="cc-stat__label">characters (without spaces)</span></div>
+          <div class="cc-stat"><span class="cc-stat__num" id="cc-words">0</span><span class="cc-stat__label">words</span></div>
+          <div class="cc-stat"><span class="cc-stat__num" id="cc-lines">0</span><span class="cc-stat__label">lines</span></div>
+          <div class="cc-stat"><span class="cc-stat__num" id="cc-paragraphs">0</span><span class="cc-stat__label">paragraphs</span></div>
+        </div>
+
+        <div class="cc-limits" id="cc-limits" aria-live="polite"></div>
+
+        <div class="tool__actions tool__actions--mt">
+          <button id="cc-clear" class="button--secondary" type="button">Clear</button>
+        </div>
+      </div>
+    </article>
+
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="3030303030"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <section>
+      <h2>What is counted</h2>
+      <p>
+        <strong>Characters with spaces</strong> is the total of every symbol, including spaces and
+        line breaks — the number that social networks and search engines usually limit.
+        <strong>Characters without spaces</strong> ignores any whitespace. <strong>Words</strong>
+        are sequences separated by whitespace. <strong>Lines</strong> counts line breaks, and
+        <strong>paragraphs</strong> counts blocks separated by a blank line.
+      </p>
+
+      <h2>Common limits</h2>
+      <p>
+        The tool shows how much is left (or how much you've exceeded) for three frequent limits:
+        <strong>280</strong> characters for an X (Twitter) post, <strong>~160</strong> for a
+        <em>meta description</em> and <strong>~60</strong> for a <em>title tag</em> — the latter two
+        important for SEO, because Google truncates whatever exceeds that in the results.
+      </p>
+
+      <h2>Frequently Asked Questions (FAQ)</h2>
+
+      <h3>Do emojis count as one character?</h3>
+      <p>
+        Yes. The count uses Unicode <em>code points</em>, so an emoji (even ones made of surrogate
+        pairs) counts as a single character, the way most platforms do it.
+      </p>
+
+      <h3>Are the limits exact for every platform?</h3>
+      <p>
+        They are widely used reference values. Each platform may have its own rules (for
+        example, counting links differently), so treat them as a guide, not a guarantee.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/tools-en/contador-caracteres.js"></script>
+</body>
+</html>

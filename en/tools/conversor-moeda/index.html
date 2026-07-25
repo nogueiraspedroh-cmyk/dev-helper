@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Currency Converter — Dev Helper</title>
+  <meta name="description" content="Offline currency converter with editable rates. Convert between BRL, USD, EUR, GBP, JPY, ARS, CAD, CHF and other currencies using manual rates — no external API." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../tools/conversor-moeda/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!--
+    AdSense — biblioteca carregada UMA vez por página.
+    Substitua ca-pub-0000000000000000 pelo seu pub-ID real antes do deploy.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../../../biblioteca/">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Currency Converter</h1>
+        <p>Convert values between currencies using rates you set yourself — with no external API lookup.</p>
+      </header>
+
+      <!-- COMPLIANCE NOTICE — visible and highlighted -->
+      <div class="conta-aviso" role="note" aria-label="Important notice">
+        <strong>Notice:</strong> the rates shown are <strong>illustrative and entered manually</strong>. They <strong>do not reflect real-time market quotes</strong> and may be outdated. This tool is intended <strong>exclusively for estimation, software testing and learning purposes</strong>. Do not use the results for financial transactions, real currency exchange or business decisions.
+      </div>
+
+      <!-- ── SECTION: CONVERTER ─────────────────────────────────────────────── -->
+      <section class="tool__section">
+        <h2 class="tool__section-title">Conversion</h2>
+
+        <div class="tool__controls">
+
+          <!-- Value and currencies -->
+          <div class="tool__actions">
+            <label class="tool__label" for="moeda-valor">Value:</label>
+            <input
+              id="moeda-valor"
+              class="tool__input-inline conversor-valor-input"
+              type="number"
+              min="0"
+              step="any"
+              placeholder="E.g.: 100"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+
+          <div class="tool__actions">
+            <label class="tool__label" for="moeda-origem">From:</label>
+            <select id="moeda-origem" class="tool__select"></select>
+
+            <button id="btn-inverter" class="button--secondary" type="button" title="Swap currencies">&#8646; Swap</button>
+
+            <label class="tool__label" for="moeda-destino">To:</label>
+            <select id="moeda-destino" class="tool__select"></select>
+          </div>
+
+          <div class="tool__actions">
+            <button id="btn-converter" class="button" type="button">Convert</button>
+          </div>
+        </div>
+
+        <!-- Conversion result -->
+        <div class="tool__output" id="conversor-resultado" hidden>
+          <div class="conta-resultado-grid">
+            <div class="cartao-campo">
+              <span class="cartao-campo__label">Original value</span>
+              <span id="out-valor-original" class="cartao-campo__valor cartao-campo__valor--mono"></span>
+            </div>
+            <div class="cartao-campo">
+              <span class="cartao-campo__label">Rate used</span>
+              <span id="out-taxa" class="cartao-campo__valor cartao-campo__valor--mono"></span>
+            </div>
+            <div class="cartao-campo">
+              <span class="cartao-campo__label">Result</span>
+              <span id="out-resultado" class="cartao-campo__valor cartao-campo__valor--mono conversor-resultado-destaque"></span>
+            </div>
+          </div>
+
+          <p id="out-aviso-taxa" class="conta-validar-aviso conversor-aviso-taxa"></p>
+
+          <div class="tool__actions tool__actions--mt">
+            <button id="btn-copiar-resultado" class="button--secondary" type="button">Copy result</button>
+          </div>
+        </div>
+
+        <!-- Input error message -->
+        <p id="conversor-erro" class="error-msg" role="alert" hidden></p>
+      </section>
+
+      <!-- ── SECTION: EDITABLE RATES ──────────────────────────────────────── -->
+      <section class="tool__section">
+        <h2 class="tool__section-title">Exchange rates (editable)</h2>
+
+        <p class="conta-validar-aviso">
+          The rates below are <strong>illustrative</strong> and represent a rough approximation of historical values — not live market quotes. Feel free to edit them to use the values you need. All rates are relative to the <strong>US Dollar (USD)</strong> as the base currency (1 USD = X units of the currency).
+        </p>
+
+        <div class="tool__actions tool__actions--mt">
+          <button id="btn-restaurar-taxas" class="button--secondary" type="button">Restore default rates</button>
+        </div>
+
+        <div id="tabela-taxas" class="conversor-tabela-taxas"></div>
+      </section>
+
+    </article>
+
+    <!-- Ad block — below the tool's area -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="8888888888"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Real content — required by AdSense -->
+    <section>
+      <h2>What is an exchange rate?</h2>
+      <p>
+        The <strong>exchange rate</strong> (or FX rate) is the price of one currency expressed in
+        terms of another. For example, if the USD/BRL rate is 5.00, it means 1 US dollar equals
+        5 Brazilian reais. Exchange rates fluctuate continuously in international financial
+        markets, influenced by factors such as central banks' monetary policy, inflation, trade
+        balance, foreign capital flow and market expectations.
+      </p>
+      <p>
+        There are two main types of exchange rate:
+      </p>
+      <ul>
+        <li>
+          <strong>Nominal rate:</strong> the direct exchange price between two currencies,
+          without considering relative purchasing power. It is the value you see on exchange
+          websites and financial platforms.
+        </li>
+        <li>
+          <strong>Real rate:</strong> the nominal rate adjusted by the inflation difference
+          between the two countries. It reflects a currency's real purchasing power relative to
+          another.
+        </li>
+      </ul>
+
+      <h2>How the base-currency converter works</h2>
+      <p>
+        This tool uses a <strong>single base-currency</strong> approach, where all rates are
+        expressed relative to the US Dollar (USD). To convert from any currency A to any
+        currency B, the calculation performed is:
+      </p>
+      <p>
+        <code>result = value &times; (rateB / rateA)</code>
+      </p>
+      <p>
+        Where <code>rateA</code> and <code>rateB</code> represent how many units of each currency
+        equal 1 USD. For example, if 1 USD = 5.00 BRL and 1 USD = 0.92 EUR, then to convert 100
+        BRL to EUR:
+      </p>
+      <p>
+        <code>100 &times; (0.92 / 5.00) = 18.40 EUR</code>
+      </p>
+      <p>
+        This approach is simple, extensible and avoids the need to maintain a separate table for
+        every possible currency pair.
+      </p>
+
+      <h2>Why are the rates manual and not updated automatically?</h2>
+      <p>
+        This tool is <strong>100% static</strong> — there is no application server, database or
+        external API calls. All processing happens in the browser itself. This brings
+        significant advantages:
+      </p>
+      <ul>
+        <li><strong>Offline operation:</strong> the tool works even without an internet connection after the page's initial load.</li>
+        <li><strong>No external dependency:</strong> it is not subject to request limits, paid API keys or exchange-service outages.</li>
+        <li><strong>Suitable for testing:</strong> developers can set arbitrary rates to test e-commerce systems, ERPs and other software that performs currency conversions.</li>
+      </ul>
+      <p>
+        The trade-off is that the rates need to be updated manually by the user. For real-time
+        market quotes, we recommend consulting official services such as the
+        <strong>Central Bank of Brazil</strong> (bcb.gov.br), your bank's website or dedicated
+        financial platforms.
+      </p>
+
+      <h2>Available currencies and their ISO 4217 codes</h2>
+      <p>
+        The <strong>ISO 4217</strong> standard defines three-letter codes to identify currencies
+        internationally. This is the standard used in banking systems, ERPs and global exchange
+        platforms. The currencies available in this tool are:
+      </p>
+      <ul>
+        <li><strong>BRL</strong> — Brazilian Real (Brazil)</li>
+        <li><strong>USD</strong> — US Dollar (United States)</li>
+        <li><strong>EUR</strong> — Euro (Eurozone)</li>
+        <li><strong>GBP</strong> — Pound Sterling (United Kingdom)</li>
+        <li><strong>JPY</strong> — Japanese Yen (Japan)</li>
+        <li><strong>ARS</strong> — Argentine Peso (Argentina)</li>
+        <li><strong>CAD</strong> — Canadian Dollar (Canada)</li>
+        <li><strong>CHF</strong> — Swiss Franc (Switzerland)</li>
+        <li><strong>CNY</strong> — Renminbi Yuan (China)</li>
+        <li><strong>MXN</strong> — Mexican Peso (Mexico)</li>
+      </ul>
+
+      <h2>Frequently Asked Questions (FAQ)</h2>
+
+      <h3>Are the displayed rates reliable for real transactions?</h3>
+      <p>
+        <strong>No.</strong> The rates are illustrative values entered manually as a starting
+        point. They do not reflect real-time market quotes and may be significantly outdated.
+        For any real financial transaction — bank exchange, brokerage, international travel or
+        international transfer — always check the official rates from your bank or a financial
+        institution authorized by the Central Bank.
+      </p>
+
+      <h3>How do I update the rates to values closer to reality?</h3>
+      <p>
+        You can edit any rate directly in the fields of the "Exchange rates (editable)" section.
+        Check a reliable exchange website (such as the Central Bank of Brazil at bcb.gov.br, or
+        Google Finance) to get the current quote of 1 USD for each currency, and enter the
+        values in the corresponding fields. Conversions will be recalculated automatically.
+      </p>
+
+      <h3>Are the rates I edited saved?</h3>
+      <p>
+        Only during the current page session. When you reload, the rates return to the default
+        illustrative values — so note down or copy the result before leaving, if you need it
+        later.
+      </p>
+
+      <h3>Why does the result have so many decimal places?</h3>
+      <p>
+        Dividing exchange rates often results in numbers with many decimal places, especially
+        for currencies with very different magnitudes relative to each other (such as JPY or ARS
+        relative to USD). The tool shows up to 4 decimal places for the result and up to 6 for
+        the rate used, to preserve precision for technical use cases, such as testing financial
+        rounding systems.
+      </p>
+
+      <h3>Why does USD show a rate of 1.000000?</h3>
+      <p>
+        The US Dollar is the converter's base currency — all other rates are expressed as "how
+        many units of this currency equal 1 USD". Therefore, the USD rate is always 1.000000 by
+        definition and cannot be changed.
+      </p>
+
+      <h3>Can I use this tool to test e-commerce systems?</h3>
+      <p>
+        Yes, that is one of the main use cases. When developing or testing systems that convert
+        prices between currencies — online stores, ERPs, international marketplace systems — you
+        can set arbitrary rates and check your code's behavior. The editable rates let you
+        simulate extreme scenarios, such as very high rates (ARS) or very small fractional values
+        (JPY to BRL), to validate rounding, value display and business logic.
+      </p>
+
+      <h3>What do "bid, ask and mid" exchange rates mean?</h3>
+      <p>
+        In the real foreign exchange market, there are three common prices: the <strong>bid</strong>
+        (buy price — what the bank pays for the foreign currency), the <strong>ask</strong>
+        (sell price — what the bank charges), and the <strong>mid</strong> (the midpoint between
+        bid and ask, used as a reference). This tool uses a single rate (a simplification),
+        equivalent to the mid rate, without a bank spread. In real transactions, the spread
+        (difference between bid and ask) is the intermediary's profit.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/tools-en/conversor-moeda.js"></script>
+</body>
+</html>

@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>State — Design Patterns | Biblioteca Dev Helper</title>
+  <meta name="description" content="Aprenda o padrão State (GoF) em profundidade: intenção, problema, solução, diferença com Strategy, exemplos em TypeScript e PHP, quando usar, quando evitar e armadilhas comuns." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>State</span>
+        </nav>
+        <span class="artigo__categoria">Padrão Comportamental (GoF)</span>
+        <h1 class="artigo__titulo">State</h1>
+        <p class="artigo__subtitulo">
+          Permite que um objeto altere seu comportamento quando seu estado interno muda —
+          como se o objeto mudasse de classe em tempo de execução. Cada estado possível
+          é encapsulado em sua própria classe, e as transições fazem parte do design.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Encapsular cada estado possível de um objeto em sua própria classe</strong>
+            e delegar o comportamento dependente de estado ao objeto de estado corrente.
+            Do ponto de vista do contexto, o objeto parece "mudar de classe" quando muda
+            de estado — mas na realidade ele troca o objeto de estado que detém o comportamento.
+          </p>
+          <p>
+            Catalogado pelo GoF (1994) como padrão comportamental, o State é a solução
+            elegante para máquinas de estado finitas: substitui condicionais extensas
+            (<code>switch</code> ou <code>if/else</code>) que verificam o estado atual
+            por uma estrutura onde cada estado conhece seus próprios comportamentos válidos
+            e suas transições permitidas.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Considere o workflow de um documento editorial: <em>rascunho</em>, <em>em revisão</em>
+            e <em>publicado</em>. Cada estado permite ações diferentes: um rascunho pode ser
+            enviado para revisão, mas não publicado diretamente; um documento em revisão pode
+            ser aprovado (vai para publicado) ou rejeitado (volta para rascunho); um documento
+            publicado não pode retroceder.
+          </p>
+          <p>
+            A abordagem ingênua codifica todas essas regras em condicionais dentro do contexto:
+          </p>
+          <div class="code-bloco">
+<pre><code>// Abordagem ingênua — NÃO faça isso:
+class Documento {
+  private estado: string = "rascunho";
+
+  publicar(): void {
+    if (this.estado === "rascunho") {
+      throw new Error("Rascunho nao pode ser publicado diretamente.");
+    } else if (this.estado === "revisao") {
+      this.estado = "publicado";
+      console.log("Documento publicado.");
+    } else if (this.estado === "publicado") {
+      throw new Error("Ja publicado.");
+    }
+  }
+
+  enviarParaRevisao(): void {
+    if (this.estado === "rascunho") {
+      this.estado = "revisao";
+    } else {
+      throw new Error("So rascunhos podem ir para revisao.");
+    }
+  }
+  // Cada novo estado ou ação cresce todos os if/else acima.
+}</code></pre>
+          </div>
+          <p>
+            Adicionar um novo estado (ex.: <em>arquivado</em>) exige abrir todos os métodos
+            e adicionar mais uma ramificação — violação do Princípio Aberto/Fechado.
+            O State resolve isso extraindo cada estado para sua própria classe.
+          </p>
+        </section>
+
+        <!-- 3. SOLUÇÃO -->
+        <section class="artigo__secao">
+          <h2>Solução</h2>
+          <p>O State organiza o código em três participantes:</p>
+          <ol>
+            <li>
+              <strong>Context:</strong> mantém uma referência ao estado atual
+              (<code>EstadoDocumento</code>) e delega as operações a ele. Expõe um método
+              interno para que os estados possam solicitar a troca de estado.
+            </li>
+            <li>
+              <strong>State (interface):</strong> declara os métodos que representam as
+              operações dependentes de estado. Todos os estados concretos implementam esta
+              interface.
+            </li>
+            <li>
+              <strong>ConcreteState:</strong> implementa o comportamento correspondente a
+              um estado específico do contexto e pode disparar transições chamando o método
+              de troca de estado no contexto.
+            </li>
+          </ol>
+
+          <h3>Distinção-chave: State vs Strategy</h3>
+          <p>
+            State e Strategy são estruturalmente idênticos — ambos têm um contexto que
+            delega para um objeto intercambiável que implementa uma interface comum.
+            A diferença está na <strong>intenção e no controle das transições</strong>:
+          </p>
+          <ul>
+            <li>
+              <strong>Strategy:</strong> o cliente escolhe e injeta o algoritmo. O contexto
+              não sabe qual estratégia está ativa e não se importa — não há transições
+              automáticas. Algoritmos não se conhecem entre si.
+            </li>
+            <li>
+              <strong>State:</strong> as transições são parte do design e acontecem
+              automaticamente. Os estados se conhecem: um estado sabe para quais outros
+              estados pode transitar. O cliente raramente troca o estado diretamente —
+              o estado atual faz isso em resposta a eventos.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 4. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+          <div class="code-bloco">
+<pre><code>         «interface»
+        EstadoDocumento
+  ┌──────────────────────────────────────┐
+  │ + publicar(ctx: Documento): void     │
+  │ + enviarParaRevisao(ctx): void       │
+  │ + rejeitar(ctx: Documento): void     │
+  └──────────────────────────────────────┘
+              ▲
+   ┌──────────┼──────────────────────┐
+   │          │                      │
+EstadoRascunho EstadoRevisao   EstadoPublicado
+(ConcreteState) (ConcreteState) (ConcreteState)
+  enviar OK    publicar OK      todas: erro
+  publicar err rejeitar OK
+
+
+         Documento (Context)
+  ┌──────────────────────────────────────┐
+  │ - estado: EstadoDocumento            │
+  │ + publicar(): void                   │
+  │ + enviarParaRevisao(): void          │
+  │ + rejeitar(): void                   │
+  │ + transicionarPara(e): void [pkg]    │
+  └──────────────────────────────────────┘
+              │ delega para
+              ▼
+        EstadoDocumento (corrente)
+
+
+Fluxo de transição:
+
+  doc.enviarParaRevisao()
+    → EstadoRascunho.enviarParaRevisao(doc)
+      → doc.transicionarPara(new EstadoRevisao())
+
+  doc.publicar()
+    → EstadoRevisao.publicar(doc)
+      → doc.transicionarPara(new EstadoPublicado())
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. EXEMPLOS DE CÓDIGO -->
+        <section class="artigo__secao">
+          <h2>Exemplos de código</h2>
+
+          <h3>Exemplo 1 — Workflow de documento (rascunho → revisão → publicado)</h3>
+          <p>
+            Implementação completa com interface de estado, estados concretos que
+            controlam as próprias transições e um contexto que delega sem condicionais.
+          </p>
+
+          <!-- GRUPO DE ABAS 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 1 — workflow de documento">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── State interface ───────────────────────────────────────────
+interface EstadoDocumento {
+  publicar(doc: Documento): void;
+  enviarParaRevisao(doc: Documento): void;
+  rejeitar(doc: Documento): void;
+  nome(): string;
+}
+
+// ── Context ───────────────────────────────────────────────────
+class Documento {
+  private estado: EstadoDocumento;
+
+  constructor(private readonly titulo: string) {
+    this.estado = new EstadoRascunho();
+  }
+
+  // Chamado pelos estados concretos — não pelo cliente diretamente.
+  transicionarPara(novoEstado: EstadoDocumento): void {
+    console.log(`  [${this.titulo}] ${this.estado.nome()} -> ${novoEstado.nome()}`);
+    this.estado = novoEstado;
+  }
+
+  publicar(): void           { this.estado.publicar(this); }
+  enviarParaRevisao(): void  { this.estado.enviarParaRevisao(this); }
+  rejeitar(): void           { this.estado.rejeitar(this); }
+
+  getNomeEstado(): string    { return this.estado.nome(); }
+}
+
+// ── ConcreteStates ────────────────────────────────────────────
+class EstadoRascunho implements EstadoDocumento {
+  publicar(doc: Documento): void {
+    throw new Error("Rascunho nao pode ser publicado sem revisao.");
+  }
+  enviarParaRevisao(doc: Documento): void {
+    doc.transicionarPara(new EstadoRevisao());
+  }
+  rejeitar(doc: Documento): void {
+    throw new Error("Rascunho nao pode ser rejeitado.");
+  }
+  nome(): string { return "Rascunho"; }
+}
+
+class EstadoRevisao implements EstadoDocumento {
+  publicar(doc: Documento): void {
+    doc.transicionarPara(new EstadoPublicado());
+  }
+  enviarParaRevisao(doc: Documento): void {
+    throw new Error("Ja esta em revisao.");
+  }
+  rejeitar(doc: Documento): void {
+    doc.transicionarPara(new EstadoRascunho());
+  }
+  nome(): string { return "Em Revisao"; }
+}
+
+class EstadoPublicado implements EstadoDocumento {
+  publicar(doc: Documento): void {
+    throw new Error("Ja publicado.");
+  }
+  enviarParaRevisao(doc: Documento): void {
+    throw new Error("Documento publicado nao retorna para revisao.");
+  }
+  rejeitar(doc: Documento): void {
+    throw new Error("Documento publicado nao pode ser rejeitado.");
+  }
+  nome(): string { return "Publicado"; }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+const doc = new Documento("Guia de Design Patterns");
+
+doc.enviarParaRevisao();
+// [Guia de Design Patterns] Rascunho -> Em Revisao
+
+doc.rejeitar();
+// [Guia de Design Patterns] Em Revisao -> Rascunho
+
+doc.enviarParaRevisao();
+// [Guia de Design Patterns] Rascunho -> Em Revisao
+
+doc.publicar();
+// [Guia de Design Patterns] Em Revisao -> Publicado
+
+console.log("Estado final:", doc.getNomeEstado());
+// Estado final: Publicado
+
+try {
+  doc.publicar(); // ja publicado
+} catch (e) {
+  console.log("Erro esperado:", (e as Error).message);
+  // Erro esperado: Ja publicado.
+}</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── State interface ───────────────────────────────────────────
+interface EstadoDocumento
+{
+    public function publicar(Documento $doc): void;
+    public function enviarParaRevisao(Documento $doc): void;
+    public function rejeitar(Documento $doc): void;
+    public function nome(): string;
+}
+
+// ── Context ───────────────────────────────────────────────────
+class Documento
+{
+    private EstadoDocumento $estado;
+
+    public function __construct(private readonly string $titulo)
+    {
+        $this-&gt;estado = new EstadoRascunho();
+    }
+
+    public function transicionarPara(EstadoDocumento $novoEstado): void
+    {
+        printf("  [%s] %s -&gt; %s\n", $this-&gt;titulo, $this-&gt;estado-&gt;nome(), $novoEstado-&gt;nome());
+        $this-&gt;estado = $novoEstado;
+    }
+
+    public function publicar(): void           { $this-&gt;estado-&gt;publicar($this); }
+    public function enviarParaRevisao(): void  { $this-&gt;estado-&gt;enviarParaRevisao($this); }
+    public function rejeitar(): void           { $this-&gt;estado-&gt;rejeitar($this); }
+    public function getNomeEstado(): string    { return $this-&gt;estado-&gt;nome(); }
+}
+
+// ── ConcreteStates ────────────────────────────────────────────
+class EstadoRascunho implements EstadoDocumento
+{
+    public function publicar(Documento $doc): void
+    {
+        throw new \LogicException('Rascunho nao pode ser publicado sem revisao.');
+    }
+    public function enviarParaRevisao(Documento $doc): void
+    {
+        $doc-&gt;transicionarPara(new EstadoRevisao());
+    }
+    public function rejeitar(Documento $doc): void
+    {
+        throw new \LogicException('Rascunho nao pode ser rejeitado.');
+    }
+    public function nome(): string { return 'Rascunho'; }
+}
+
+class EstadoRevisao implements EstadoDocumento
+{
+    public function publicar(Documento $doc): void
+    {
+        $doc-&gt;transicionarPara(new EstadoPublicado());
+    }
+    public function enviarParaRevisao(Documento $doc): void
+    {
+        throw new \LogicException('Ja esta em revisao.');
+    }
+    public function rejeitar(Documento $doc): void
+    {
+        $doc-&gt;transicionarPara(new EstadoRascunho());
+    }
+    public function nome(): string { return 'Em Revisao'; }
+}
+
+class EstadoPublicado implements EstadoDocumento
+{
+    public function publicar(Documento $doc): void
+    {
+        throw new \LogicException('Ja publicado.');
+    }
+    public function enviarParaRevisao(Documento $doc): void
+    {
+        throw new \LogicException('Documento publicado nao retorna para revisao.');
+    }
+    public function rejeitar(Documento $doc): void
+    {
+        throw new \LogicException('Documento publicado nao pode ser rejeitado.');
+    }
+    public function nome(): string { return 'Publicado'; }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+$doc = new Documento('Guia de Design Patterns');
+
+$doc-&gt;enviarParaRevisao();
+// [Guia de Design Patterns] Rascunho -&gt; Em Revisao
+
+$doc-&gt;rejeitar();
+// [Guia de Design Patterns] Em Revisao -&gt; Rascunho
+
+$doc-&gt;enviarParaRevisao();
+// [Guia de Design Patterns] Rascunho -&gt; Em Revisao
+
+$doc-&gt;publicar();
+// [Guia de Design Patterns] Em Revisao -&gt; Publicado
+
+echo "Estado final: " . $doc-&gt;getNomeEstado() . "\n";
+// Estado final: Publicado
+
+try {
+    $doc-&gt;publicar();
+} catch (\LogicException $e) {
+    echo "Erro esperado: " . $e-&gt;getMessage() . "\n";
+    // Erro esperado: Ja publicado.
+}</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 1) -->
+
+          <h3>Exemplo 2 — Singleton de estado: objetos de estado compartilhados</h3>
+          <p>
+            Quando os estados não têm dados próprios (são stateless), eles podem ser
+            compartilhados como singletons — economizando alocações. Esta é uma otimização
+            mencionada pelo GoF e ilustra a relação entre State e Singleton.
+          </p>
+
+          <!-- GRUPO DE ABAS 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Exemplo 2 — estados singleton">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// Estados stateless podem ser compartilhados — instâncias únicas por tipo.
+// Aqui usamos objetos literais (mais leve que classes em TS para casos simples).
+
+interface EstadoPlayer {
+  play(player: MediaPlayer): void;
+  pause(player: MediaPlayer): void;
+  stop(player: MediaPlayer): void;
+  nome(): string;
+}
+
+// Estado singleton como objeto literal tipado.
+const Parado: EstadoPlayer = {
+  play(player) { player.transicionarPara(Tocando); },
+  pause(_p)    { /* ignorar — ja parado */ },
+  stop(_p)     { /* ja parado */ },
+  nome()       { return "Parado"; },
+};
+
+const Tocando: EstadoPlayer = {
+  play(_p)     { /* ja tocando */ },
+  pause(player){ player.transicionarPara(Pausado); },
+  stop(player) { player.transicionarPara(Parado); },
+  nome()       { return "Tocando"; },
+};
+
+const Pausado: EstadoPlayer = {
+  play(player) { player.transicionarPara(Tocando); },
+  pause(_p)    { /* ja pausado */ },
+  stop(player) { player.transicionarPara(Parado); },
+  nome()       { return "Pausado"; },
+};
+
+class MediaPlayer {
+  private estado: EstadoPlayer = Parado;
+
+  transicionarPara(novoEstado: EstadoPlayer): void {
+    console.log(`  ${this.estado.nome()} -> ${novoEstado.nome()}`);
+    this.estado = novoEstado;
+  }
+
+  play():  void { this.estado.play(this); }
+  pause(): void { this.estado.pause(this); }
+  stop():  void { this.estado.stop(this); }
+
+  getEstado(): string { return this.estado.nome(); }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+const player = new MediaPlayer();
+console.log("Inicio:", player.getEstado()); // Inicio: Parado
+
+player.play();   //   Parado -> Tocando
+player.pause();  //   Tocando -> Pausado
+player.play();   //   Pausado -> Tocando
+player.stop();   //   Tocando -> Parado
+console.log("Fim:", player.getEstado()); // Fim: Parado</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// Estados stateless em PHP — classes com instância única (flyweight/singleton leve).
+
+interface EstadoPlayer
+{
+    public function play(MediaPlayer $player): void;
+    public function pause(MediaPlayer $player): void;
+    public function stop(MediaPlayer $player): void;
+    public function nome(): string;
+}
+
+class EstadoParado implements EstadoPlayer
+{
+    private static ?self $instance = null;
+    private function __construct() {}
+    public static function getInstance(): self
+    {
+        return self::$instance ??= new self();
+    }
+
+    public function play(MediaPlayer $player): void  { $player-&gt;transicionarPara(EstadoTocando::getInstance()); }
+    public function pause(MediaPlayer $player): void { /* ja parado — ignorar */ }
+    public function stop(MediaPlayer $player): void  { /* ja parado */ }
+    public function nome(): string { return 'Parado'; }
+}
+
+class EstadoTocando implements EstadoPlayer
+{
+    private static ?self $instance = null;
+    private function __construct() {}
+    public static function getInstance(): self
+    {
+        return self::$instance ??= new self();
+    }
+
+    public function play(MediaPlayer $player): void  { /* ja tocando */ }
+    public function pause(MediaPlayer $player): void { $player-&gt;transicionarPara(EstadoPausado::getInstance()); }
+    public function stop(MediaPlayer $player): void  { $player-&gt;transicionarPara(EstadoParado::getInstance()); }
+    public function nome(): string { return 'Tocando'; }
+}
+
+class EstadoPausado implements EstadoPlayer
+{
+    private static ?self $instance = null;
+    private function __construct() {}
+    public static function getInstance(): self
+    {
+        return self::$instance ??= new self();
+    }
+
+    public function play(MediaPlayer $player): void  { $player-&gt;transicionarPara(EstadoTocando::getInstance()); }
+    public function pause(MediaPlayer $player): void { /* ja pausado */ }
+    public function stop(MediaPlayer $player): void  { $player-&gt;transicionarPara(EstadoParado::getInstance()); }
+    public function nome(): string { return 'Pausado'; }
+}
+
+class MediaPlayer
+{
+    private EstadoPlayer $estado;
+
+    public function __construct()
+    {
+        $this-&gt;estado = EstadoParado::getInstance();
+    }
+
+    public function transicionarPara(EstadoPlayer $novoEstado): void
+    {
+        printf("  %s -&gt; %s\n", $this-&gt;estado-&gt;nome(), $novoEstado-&gt;nome());
+        $this-&gt;estado = $novoEstado;
+    }
+
+    public function play():  void { $this-&gt;estado-&gt;play($this); }
+    public function pause(): void { $this-&gt;estado-&gt;pause($this); }
+    public function stop():  void { $this-&gt;estado-&gt;stop($this); }
+    public function getEstado(): string { return $this-&gt;estado-&gt;nome(); }
+}
+
+// ── Uso ──────────────────────────────────────────────────────
+$player = new MediaPlayer();
+echo "Inicio: " . $player-&gt;getEstado() . "\n"; // Inicio: Parado
+
+$player-&gt;play();   //   Parado -&gt; Tocando
+$player-&gt;pause();  //   Tocando -&gt; Pausado
+$player-&gt;play();   //   Pausado -&gt; Tocando
+$player-&gt;stop();   //   Tocando -&gt; Parado
+echo "Fim: " . $player-&gt;getEstado() . "\n"; // Fim: Parado</code></pre>
+            </div>
+          </div><!-- /.code-tabs (grupo 2) -->
+
+        </section><!-- /.artigo__secao (exemplos) -->
+
+        <!-- 6. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Quando um objeto muda radicalmente de comportamento dependendo do
+              estado</strong> e há muitos estados possíveis: workflows (pedido, documento,
+              ticket), players de mídia, conexões de rede (conectado/desconectado/reconectando),
+              portas de comunicação.
+            </li>
+            <li>
+              <strong>Quando as transições de estado são complexas e têm regras:</strong>
+              cada estado sabe de quais outros estados pode vir e para quais pode ir. Isso
+              fica claro e testável quando encapsulado em classes de estado.
+            </li>
+            <li>
+              <strong>Para eliminar condicionais de estado espalhadas por vários métodos:</strong>
+              se você tem <code>if (this.estado === "x")</code> repetido em dezenas de métodos,
+              State extrai essa lógica para onde ela pertence — dentro de cada estado.
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>Quando há apenas dois ou três estados simples e estáveis:</strong>
+              um enum com uma condicional direta é mais legível do que criar toda a hierarquia
+              de classes de Estado para uma máquina trivial.
+            </li>
+            <li>
+              <strong>Quando o comportamento não muda por estado:</strong> se todos os
+              estados executam os mesmos métodos com a mesma lógica, o padrão não adiciona
+              valor — você está criando classes vazias.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Elimina grandes condicionais de estado espalhadas pelo código do contexto.</li>
+            <li>Cada estado é uma classe isolada — fácil de testar, entender e modificar sem afetar outros estados.</li>
+            <li>Novos estados podem ser adicionados sem alterar o contexto nem os estados existentes (Princípio Aberto/Fechado).</li>
+            <li>Transições explícitas dentro de cada estado tornam o fluxo legível e auditável.</li>
+            <li>Estados stateless podem ser compartilhados como singletons (otimização de memória).</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Explosão de classes para máquinas de estado com muitos estados — cada estado vira uma classe.</li>
+            <li>A visão global das transições fica distribuída entre as classes de estado — mais difícil de enxergar o diagrama completo em um só lugar.</li>
+            <li>Para máquinas simples, o overhead de classes é desnecessário — uma tabela de transições ou uma enum pode ser suficiente.</li>
+          </ul>
+        </section>
+
+        <!-- 8. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Onde colocar a lógica de transição</h3>
+          <p>
+            A decisão mais delicada: quem dispara a transição de estado — o Context ou
+            o ConcreteState? O GoF recomenda que os próprios estados disparem as transições,
+            pois eles conhecem as regras de quando e para onde transitar. Isso distribui
+            o conhecimento de transição para cada estado, tornando cada um independente.
+            O risco: estados que se referenciam mutuamente criam acoplamento circular.
+            Para evitar isso, passe o Context para o estado (como mostrado nos exemplos)
+            em vez de instanciar os estados diretamente dentro de outros estados quando
+            possível.
+          </p>
+
+          <h3>2. Explosão de classes para máquinas simples</h3>
+          <p class="artigo__aviso">
+            <strong>Regra prática:</strong> se a máquina tem menos de quatro estados e
+            as transições são simples, considere uma abordagem mais leve: uma enum de
+            estado + um método de transição com um <code>switch</code> centralizado no
+            Context. Reserve o padrão State completo para máquinas onde o comportamento
+            por estado é substancialmente diferente e as transições têm lógica relevante.
+          </p>
+
+          <h3>3. Estados com dados vs estados stateless</h3>
+          <p>
+            Se um estado precisa armazenar dados próprios (ex.: contador de tentativas
+            em um estado de "reconectando"), ele não pode ser compartilhado como singleton —
+            cada instância de Context precisa da sua própria instância do estado. Estados
+            stateless são a exceção, não a regra. Tente manter os dados do contexto no
+            Context e deixar os estados como pura lógica de comportamento e transição.
+          </p>
+
+          <h3>4. Confundir State com Strategy</h3>
+          <p>
+            Estruturalmente idênticos, mas a diferença de intenção importa na prática.
+            Se você está modelando transições automáticas e os "objetos" se conhecem para
+            transitar entre si — é State. Se o cliente escolhe e injeta o comportamento
+            externamente e não há transições entre "estados" — é Strategy. A pergunta de
+            diagnóstico: <em>"quem decide a próxima variação — o próprio objeto ou o
+            cliente externo?"</em>. Se o próprio objeto decide, é State.
+          </p>
+        </section>
+
+        <!-- 9. PADRÕES RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Padrões relacionados</h2>
+          <p>
+            O State interage com outros padrões comportamentais e de criação:
+          </p>
+          <!--
+            Disciplina de links: só linka artigos já publicados.
+            Strategy existe → link real.
+            Singleton existe → link real.
+            Observer existe agora → link real.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../strategy/">Strategy</a></li>
+            <li><a href="../singleton/">Singleton</a></li>
+            <li><a href="../observer/">Observer</a></li>
+          </ul>
+          <p class="mt-1">
+            O <strong>Strategy</strong> é o "irmão estrutural" do State: ambos encapsulam
+            comportamento variável em objetos intercambiáveis, mas Strategy é controlado
+            externamente pelo cliente (sem transições automáticas) enquanto State controla
+            suas próprias transições. O <strong>Singleton</strong> é usado como otimização
+            quando os estados são stateless — cada estado concreto sem dados próprios pode
+            ser compartilhado como instância única entre todos os contextos. O
+            <strong>Observer</strong> pode ser combinado com State para notificar componentes
+            externos sobre transições de estado — o Context age como Subject e notifica
+            Observers quando o estado muda.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="8585858585"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

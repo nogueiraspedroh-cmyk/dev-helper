@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JSON para Interface TypeScript — Dev Helper</title>
+  <meta name="description" content="Cole um JSON de exemplo e gere interfaces TypeScript inferidas automaticamente: objetos aninhados como interfaces separadas, arrays, union de tipos e nome da interface raiz configurável." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../../biblioteca/">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>JSON para Interface TypeScript</h1>
+        <p>Cole um <strong>JSON de exemplo</strong> e gere <strong>interfaces TypeScript</strong> inferidas: objetos aninhados viram interfaces próprias, arrays viram <code>T[]</code> e itens heterogêneos viram <code>union</code>. O nome da interface raiz é configurável.</p>
+      </header>
+
+      <div class="tool__controls">
+        <div class="tool__actions">
+          <label class="tool__label" for="jts-root">Nome da interface raiz:</label>
+          <input type="text" id="jts-root" class="tool__input-inline" spellcheck="false" autocomplete="off" value="Root" placeholder="Root" />
+        </div>
+
+        <label class="tool__label" for="jts-input">JSON de entrada</label>
+        <textarea id="jts-input" class="tool__input" spellcheck="false" placeholder='{ "id": 1, "nome": "Ana", "endereco": { "cidade": "SP" }, "tags": ["a", "b"] }'>{
+  "id": 1,
+  "nome": "Ana",
+  "ativo": true,
+  "endereco": {
+    "cidade": "São Paulo",
+    "cep": "01000-000"
+  },
+  "tags": ["dev", "js"],
+  "notas": [10, 9.5, 8]
+}</textarea>
+
+        <p id="jts-error" class="error-msg" role="alert" hidden></p>
+
+        <div class="tool__actions tool__actions--mt">
+          <button id="jts-generate" class="button" type="button">Gerar TypeScript</button>
+          <button id="jts-copy" class="button--secondary" type="button">Copiar</button>
+          <button id="jts-clear" class="button--secondary" type="button">Limpar</button>
+        </div>
+
+        <div class="tool__output">
+          <label class="tool__label" for="jts-output">Interfaces TypeScript</label>
+          <textarea id="jts-output" class="result" readonly spellcheck="false" aria-label="Interfaces TypeScript geradas"></textarea>
+        </div>
+      </div>
+    </article>
+
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="3434343434"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <section>
+      <h2>Como a inferência funciona</h2>
+      <p>
+        A ferramenta faz o <code>JSON.parse</code> do texto e percorre a estrutura inferindo os tipos
+        básicos (<code>string</code>, <code>number</code>, <code>boolean</code>, <code>null</code>).
+        Cada <strong>objeto aninhado</strong> vira uma <strong>interface separada</strong>, nomeada a
+        partir da chave (em PascalCase). Objetos com a <strong>mesma forma</strong> são reaproveitados
+        em uma única interface. <strong>Arrays</strong> viram <code>T[]</code>; quando os itens têm
+        tipos diferentes, o elemento vira uma <strong>união</strong>, por exemplo
+        <code>(number | string)[]</code>.
+      </p>
+
+      <h2>Escopo e limitações</h2>
+      <p>
+        O objetivo é ser <strong>simples e previsível</strong>: tipos básicos, objetos aninhados e
+        arrays. Campos <strong>opcionais não são inferidos</strong> (todos saem como obrigatórios), e
+        um array vazio vira <code>unknown[]</code>, já que não há item para inspecionar. Chaves que
+        não são identificadores válidos (com hífen, por exemplo) saem entre aspas, como o TypeScript
+        exige.
+      </p>
+
+      <h2>Perguntas frequentes (FAQ)</h2>
+
+      <h3>O que acontece se o JSON for inválido?</h3>
+      <p>
+        A ferramenta mostra uma <strong>mensagem de erro legível</strong> (a mesma do
+        <code>JSON.parse</code>) e não gera saída, sem quebrar a página. Corrija o JSON e a geração
+        acontece ao vivo enquanto você digita.
+      </p>
+
+      <h3>Por que dois campos diferentes usam a mesma interface?</h3>
+      <p>
+        Quando dois objetos têm exatamente as mesmas chaves e tipos, eles compartilham uma única
+        interface — reduz a duplicação. Se você precisa de nomes distintos, renomeie no código gerado.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/tools/json-para-typescript.js"></script>
+</body>
+</html>

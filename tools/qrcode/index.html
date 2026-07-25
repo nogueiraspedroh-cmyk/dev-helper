@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gerador de QR Code — Texto e URL para QR — Dev Helper</title>
+  <meta name="description" content="Gere QR Codes a partir de texto ou URL direto no navegador. Nível de correção de erro selecionável e download em PNG. Algoritmo próprio, sem bibliotecas externas." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!--
+    AdSense — biblioteca carregada UMA vez por página.
+    Substitua ca-pub-0000000000000000 pelo seu pub-ID real antes do deploy.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../../biblioteca/">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Gerador de QR Code</h1>
+        <p>Gere um <strong>QR Code</strong> a partir de qualquer texto ou URL — sem bibliotecas externas. Escolha o nível de correção de erro e baixe como PNG.</p>
+      </header>
+
+      <div class="tool__controls">
+        <label class="tool__label" for="qr-input">Texto ou URL</label>
+        <textarea
+          id="qr-input"
+          class="tool__input"
+          placeholder="https://exemplo.com  ou  qualquer texto..."
+          spellcheck="false"
+          autocorrect="off"
+          autocapitalize="off"
+        >https://github.com</textarea>
+
+        <fieldset class="tool__fieldset">
+          <legend class="tool__legend">Nível de correção de erro</legend>
+          <label class="tool__radio-label"><input type="radio" name="qr-ecl" value="L" /> L <span class="regex-flag-hint">(~7%)</span></label>
+          <label class="tool__radio-label"><input type="radio" name="qr-ecl" value="M" checked /> M <span class="regex-flag-hint">(~15%)</span></label>
+          <label class="tool__radio-label"><input type="radio" name="qr-ecl" value="Q" /> Q <span class="regex-flag-hint">(~25%)</span></label>
+          <label class="tool__radio-label"><input type="radio" name="qr-ecl" value="H" /> H <span class="regex-flag-hint">(~30%)</span></label>
+        </fieldset>
+      </div>
+
+      <!-- Mensagem de erro -->
+      <p id="qr-error" class="error-msg" role="alert" hidden></p>
+
+      <!-- Resultado -->
+      <section class="tool__output">
+        <div class="qr-result">
+          <canvas id="qr-canvas" class="qr-canvas" aria-label="QR Code gerado" role="img"></canvas>
+          <p id="qr-info" class="qr-info"></p>
+          <div class="tool__actions">
+            <button id="btn-qr-download" class="button" type="button" disabled>Baixar PNG</button>
+          </div>
+        </div>
+      </section>
+    </article>
+
+    <!-- Bloco de anúncio — abaixo do resultado da ferramenta -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="2121212121"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Conteúdo real — exigido pelo AdSense -->
+    <section>
+      <h2>O que é um QR Code?</h2>
+      <p>
+        Um <strong>QR Code</strong> (<em>Quick Response Code</em>) é um código de barras bidimensional
+        capaz de armazenar textos, URLs, dados de contato e muito mais. Ele é lido por câmeras de
+        celular e leitores dedicados. A informação fica codificada nos quadradinhos (módulos) pretos e
+        brancos; os três grandes quadrados nos cantos são os <em>finder patterns</em>, que ajudam o
+        leitor a localizar e orientar o código.
+      </p>
+
+      <h2>Correção de erro</h2>
+      <p>
+        Todo QR Code inclui <strong>correção de erro</strong> Reed-Solomon: parte dos dados é
+        redundante, então o código continua legível mesmo parcialmente danificado, sujo ou coberto.
+        Há quatro níveis:
+      </p>
+      <ul>
+        <li><strong>L</strong> — recupera ~7% dos dados. Gera o menor código.</li>
+        <li><strong>M</strong> — ~15%. Bom equilíbrio (padrão).</li>
+        <li><strong>Q</strong> — ~25%. Mais robusto.</li>
+        <li><strong>H</strong> — ~30%. Máxima tolerância a danos; útil quando você vai colocar um
+          logotipo sobre o código.</li>
+      </ul>
+      <p>
+        Quanto maior o nível de correção, mais dados de redundância — e, portanto, um código
+        ligeiramente maior para a mesma informação.
+      </p>
+
+      <h2>Como este gerador funciona</h2>
+      <p>
+        O código é gerado inteiramente no seu navegador, com uma implementação própria do algoritmo de
+        QR (codificação em <strong>modo byte</strong> com UTF-8, correção de erro <strong>Reed-Solomon</strong>,
+        montagem dos padrões e escolha automática da melhor máscara). Não há bibliotecas externas nem
+        CDN. A versão do QR (de 1 a 40) é escolhida automaticamente conforme o tamanho do conteúdo.
+      </p>
+
+      <h2>Perguntas frequentes (FAQ)</h2>
+
+      <h3>Qual o tamanho máximo de texto?</h3>
+      <p>
+        Depende do nível de correção. No nível L, um QR versão 40 comporta até cerca de 2.953 bytes
+        (menos para acentos e emojis, que ocupam mais de um byte em UTF-8). Se o texto não couber, a
+        ferramenta avisa e sugere encurtá-lo ou usar um nível de correção menor.
+      </p>
+
+      <h3>Consigo baixar o QR Code?</h3>
+      <p>
+        Sim. O botão "Baixar PNG" exporta a imagem gerada no <code>&lt;canvas&gt;</code> como um arquivo
+        PNG, com margem clara (<em>quiet zone</em>) ao redor, essencial para a leitura.
+      </p>
+
+      <h3>Posso gerar um QR para conectar a uma rede Wi-Fi ou um contato?</h3>
+      <p>
+        Sim, indiretamente: basta colar o texto no formato que os leitores entendem — por exemplo,
+        <code>WIFI:T:WPA;S:NomeDaRede;P:senha;;</code> para Wi-Fi. A ferramenta gera o QR de qualquer
+        texto; o significado é interpretado pelo aplicativo que fizer a leitura.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/lib/qrcode-core.js"></script>
+  <script src="../../js/tools/qrcode.js"></script>
+</body>
+</html>

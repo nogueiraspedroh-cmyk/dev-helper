@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Text Diff — Compare Two Texts — Dev Helper</title>
+  <meta name="description" content="Compare two texts and see the differences highlighted, line by line or word by word, with colored additions and removals. LCS algorithm." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../tools/diff/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!--
+    AdSense — biblioteca carregada UMA vez por página.
+    Substitua ca-pub-0000000000000000 pelo seu pub-ID real antes do deploy.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../../../biblioteca/">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Text Diff</h1>
+        <p>Compare two texts and see the <strong>highlighted differences</strong> — by line or by word, with colored additions and removals. The calculation uses the <strong>LCS</strong> algorithm.</p>
+      </header>
+
+      <div class="tool__controls">
+        <div class="diff-inputs">
+          <div class="diff-inputs__col">
+            <label class="tool__label" for="diff-a">Text A (original)</label>
+            <textarea
+              id="diff-a"
+              class="tool__input"
+              placeholder="Paste the first text here..."
+              spellcheck="false"
+              autocorrect="off"
+              autocapitalize="off"
+            ></textarea>
+          </div>
+          <div class="diff-inputs__col">
+            <label class="tool__label" for="diff-b">Text B (modified)</label>
+            <textarea
+              id="diff-b"
+              class="tool__input"
+              placeholder="Paste the second text here..."
+              spellcheck="false"
+              autocorrect="off"
+              autocapitalize="off"
+            ></textarea>
+          </div>
+        </div>
+
+        <fieldset class="tool__fieldset">
+          <legend class="tool__legend">Granularity</legend>
+          <label class="tool__radio-label">
+            <input type="radio" name="diff-mode" value="line" checked />
+            By line
+          </label>
+          <label class="tool__radio-label">
+            <input type="radio" name="diff-mode" value="word" />
+            By word
+          </label>
+        </fieldset>
+
+        <div class="tool__actions">
+          <button id="btn-diff-compare" class="button" type="button">Compare</button>
+          <button id="btn-diff-clear" class="button--secondary" type="button">Clear</button>
+        </div>
+      </div>
+
+      <!-- Mensagem de erro -->
+      <p id="diff-error" class="error-msg" role="alert" hidden></p>
+
+      <!-- Resultado -->
+      <section class="tool__output">
+        <p id="diff-stats" class="result-validar result-validar--neutro"></p>
+        <div id="diff-output" class="diff-output" aria-live="polite"></div>
+      </section>
+    </article>
+
+    <!-- Bloco de anúncio — abaixo do resultado da ferramenta -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="1919191919"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Conteúdo real — exigido pelo AdSense -->
+    <section>
+      <h2>What is a diff for?</h2>
+      <p>
+        A <strong>diff</strong> shows what changed between two versions of a text: which lines (or
+        words) were <strong>added</strong>, which were <strong>removed</strong> and which
+        stayed the same. It's the foundation of version control tools like Git and of code
+        reviews, but it's also useful for comparing contracts, texts, configurations and any pair
+        of similar documents.
+      </p>
+
+      <h2>How the comparison works</h2>
+      <p>
+        The tool uses the <strong>longest common subsequence</strong> algorithm (LCS). It finds
+        the longest sequence of chunks that appear in the same order in both texts — these
+        chunks are the "equal" parts. Everything left over on the Text A side is marked as
+        <strong>removed</strong>, and everything left over on the Text B side is marked
+        as <strong>added</strong>. This is the same mathematical principle behind classic diffs.
+      </p>
+
+      <h2>By line or by word</h2>
+      <ul>
+        <li><strong>By line</strong> — ideal for code and lists: each line is compared as a
+          whole, and changed lines appear as one removed (red) followed by one added
+          (green).</li>
+        <li><strong>By word</strong> — ideal for prose: highlights only the words that changed
+          within the paragraph, keeping the rest of the text as is.</li>
+      </ul>
+
+      <h2>Frequently Asked Questions (FAQ)</h2>
+
+      <h3>Is there a size limit?</h3>
+      <p>
+        The LCS algorithm uses a table proportional to the product of the two texts' lengths. To avoid
+        freezing the tab, there is a safety limit; if it's reached, the tool warns you and suggests using
+        line mode or reducing the content.
+      </p>
+
+      <h3>Is the result safe if I paste code?</h3>
+      <p>
+        Yes. All compared text is inserted into the result as plain text (via <code>textContent</code>),
+        never as HTML — there's no risk that pasted tags or scripts will be executed.
+      </p>
+
+      <h3>Does the diff show the smallest possible change?</h3>
+      <p>
+        Yes. Since it uses LCS, the number of additions and removals is the minimum necessary to
+        transform Text A into Text B, at the chosen granularity.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/tools-en/diff.js"></script>
+</body>
+</html>

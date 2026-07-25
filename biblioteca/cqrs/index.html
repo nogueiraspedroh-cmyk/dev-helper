@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CQRS — Arquiteturas | Biblioteca Dev Helper</title>
+  <meta name="description" content="Entenda o CQRS (Command Query Responsibility Segregation): separação de leitura e escrita, graus de aplicação, consistência eventual, Event Sourcing e armadilhas comuns." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Início</a></li>
+        <li><a href="../">Biblioteca</a></li>
+        <li><a href="../../pages/sobre.html">Sobre</a></li>
+        <li><a href="../../pages/contato.html">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Cabeçalho do artigo ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Navegação estrutural">
+          <a href="../../index.html">Início</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Biblioteca</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>CQRS</span>
+        </nav>
+        <span class="artigo__categoria">Arquitetura</span>
+        <h1 class="artigo__titulo">CQRS</h1>
+        <p class="artigo__subtitulo">
+          Segrega as operações de <em>escrita</em> (Commands — alteram estado, não
+          retornam dados) das de <em>leitura</em> (Queries — não alteram estado,
+          retornam dados), permitindo que cada lado evolua, escale e seja otimizado
+          de forma independente.
+        </p>
+      </header>
+
+      <!-- ── Corpo do artigo ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENÇÃO -->
+        <section class="artigo__secao">
+          <h2>Intenção</h2>
+          <p class="artigo__destaque">
+            <strong>Separar o modelo que muda o estado do sistema do modelo que
+            lê esse estado.</strong> CQRS (Command Query Responsibility Segregation)
+            é a aplicação arquitetural do princípio CQS de Bertrand Meyer — que
+            proíbe um mesmo método de fazer as duas coisas ao mesmo tempo — elevando
+            essa separação ao nível de modelos distintos, handlers distintos e,
+            nos graus mais avançados, bancos de dados distintos.
+          </p>
+          <p>
+            Um <strong>Command</strong> expressa uma intenção de mudança:
+            <em>CriarPedido</em>, <em>CancelarReserva</em>, <em>AtualizarEstoque</em>.
+            Ele é processado por um <strong>CommandHandler</strong> que valida regras
+            de negócio, muta o estado e retorna apenas uma confirmação ou nada. Uma
+            <strong>Query</strong> expressa uma pergunta: <em>ListarPedidosPorCliente</em>,
+            <em>ObterSaldoConta</em>. Ela é respondida por um <strong>QueryHandler</strong>
+            que lê os dados e os retorna sem jamais alterar o estado.
+          </p>
+          <p>
+            Essa separação resolve um atrito fundamental: o modelo ideal para
+            <em>escrever</em> dados (com invariantes de domínio protegidas, agregados
+            com consistência transacional, validação rica) costuma ser um modelo
+            ruim para <em>ler</em> dados (que frequentemente exige joins de múltiplas
+            entidades, projeções específicas por caso de uso e formatos otimizados
+            para exibição). Com CQRS, cada lado pode ser modelado da forma mais
+            adequada para sua função.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEMA -->
+        <section class="artigo__secao">
+          <h2>Problema</h2>
+          <p>
+            Em sistemas com um único modelo compartilhado de leitura e escrita,
+            surgem conflitos que crescem com o tempo:
+          </p>
+          <ul>
+            <li>
+              <strong>Impedância de leitura vs. escrita:</strong> o modelo de domínio
+              com agregados encapsulados e invariantes protegidas é excelente para
+              garantir consistência na escrita, mas péssimo para consultas que
+              precisam de dados desnormalizados, calculados ou projetados de formas
+              variadas. O resultado são queries complexas com joins profundos sobre
+              um modelo que não foi projetado para ser consultado.
+            </li>
+            <li>
+              <strong>Escalabilidade assimétrica:</strong> a maioria dos sistemas
+              tem carga de leitura muito maior que carga de escrita. Escalar um único
+              modelo para os dois casos força um compromisso subótimo: ou o modelo
+              de escrita é sacrificado para otimizar leituras, ou as leituras ficam
+              lentas para preservar as garantias de escrita.
+            </li>
+            <li>
+              <strong>Queries que expõem detalhes internos do domínio:</strong> para
+              atender relatórios e dashboards, o domínio é frequentemente obrigado a
+              expor estruturas internas que não fazem parte de nenhum caso de uso de
+              negócio — violando o encapsulamento do agregado.
+            </li>
+            <li>
+              <strong>Contention em dados quentes:</strong> leituras e escritas
+              frequentes sobre os mesmos registros geram contenção de locks no banco,
+              degradando a performance dos dois lados simultaneamente.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. ESTRUTURA -->
+        <section class="artigo__secao">
+          <h2>Estrutura</h2>
+          <p>
+            O fluxo central do CQRS separa completamente o caminho de um Command do
+            caminho de uma Query. Ambos entram pelo mesmo ponto de entrada (ex.: um
+            controller HTTP), mas seguem por handlers e modelos distintos.
+          </p>
+          <div class="code-bloco">
+<pre><code>  ┌─────────────────────────────────────────────────────────────────────┐
+  │                     PONTO DE ENTRADA (Controller / API)             │
+  └────────────────────┬────────────────────────┬────────────────────────┘
+                       │ Command                 │ Query
+                       ▼                         ▼
+            ┌──────────────────┐      ┌──────────────────────┐
+            │  CommandHandler  │      │    QueryHandler       │
+            │                  │      │                        │
+            │ - valida regras  │      │ - lê dados             │
+            │ - muta estado    │      │ - projeta DTO          │
+            │ - emite eventos  │      │ - nunca muta estado    │
+            └────────┬─────────┘      └──────────┬─────────────┘
+                     │ persiste                   │ lê de
+                     ▼                            ▼
+            ┌──────────────────┐      ┌──────────────────────┐
+            │   Write Model    │      │     Read Model        │
+            │                  │      │                        │
+            │ Agregados ricos  │      │ Projeções planas       │
+            │ invariantes      │      │ desnormalizadas        │
+            │ transações ACID  │      │ otimizadas por query   │
+            └──────────────────┘      └──────────────────────┘
+
+  Graus de separação:
+    Simples  — mesmo banco, dois modelos no código (ORM distinto por lado)
+    Completo — bancos distintos; Read Model sincronizado via eventos ou polling
+    Máximo   — CQRS + Event Sourcing; Read Model derivado dos eventos do stream
+</code></pre>
+          </div>
+
+          <h3>Os três graus de aplicação</h3>
+          <ul>
+            <li>
+              <strong>Simples (mesmo banco):</strong> o Write Model usa o ORM completo
+              com agregados ricos; o Read Model usa queries SQL diretas ou views
+              materializadas no mesmo banco. É o ponto de entrada mais comum e traz
+              boa parte do benefício com pouca complexidade adicional.
+            </li>
+            <li>
+              <strong>Completo (bancos separados):</strong> o Write Model persiste em
+              um banco relacional ou orientado a documentos; o Read Model é mantido em
+              um banco otimizado para leitura (ex.: Elasticsearch, Redis, réplica de
+              leitura, tabela projeção). Cada evento de domínio ou mudança de estado
+              desencadeia a atualização do Read Model — introduzindo consistência
+              eventual.
+            </li>
+            <li>
+              <strong>Máximo (CQRS + Event Sourcing):</strong> o Write Model persiste
+              eventos imutáveis em vez do estado atual. O Read Model é derivado
+              inteiramente desses eventos. O estado atual é reconstruído a partir do
+              event stream. CQRS e Event Sourcing são ortogonais — um pode existir
+              sem o outro — mas se combinam naturalmente aqui.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 4. COMO FUNCIONA -->
+        <section class="artigo__secao">
+          <h2>Como funciona</h2>
+          <p>
+            O trecho abaixo mostra a estrutura mínima de um CommandHandler e um
+            QueryHandler. Note que o Command não retorna dados de domínio — apenas
+            um identificador de confirmação ou nada. O QueryHandler nunca toca no
+            Write Model.
+          </p>
+          <div class="code-bloco">
+<pre><code>// ── COMMAND: expressa intenção de mudança ───────────────────
+interface CriarPedidoCommand {
+  readonly clienteId: string;
+  readonly itens: { produtoId: string; quantidade: number }[];
+}
+
+// ── COMMAND HANDLER: valida, muta, persiste ──────────────────
+class CriarPedidoHandler {
+  constructor(private readonly repo: PedidoRepository) {}
+
+  async handle(cmd: CriarPedidoCommand): Promise&lt;{ pedidoId: string }&gt; {
+    const pedido = Pedido.criar(cmd.clienteId, cmd.itens); // regras de negócio
+    await this.repo.salvar(pedido);
+    return { pedidoId: pedido.id }; // só o ID — sem projeção de leitura
+  }
+}
+
+// ── QUERY: pergunta ao sistema ───────────────────────────────
+interface ListarPedidosQuery {
+  readonly clienteId: string;
+  readonly pagina: number;
+}
+
+// ── QUERY HANDLER: lê, projeta, nunca muta ──────────────────
+class ListarPedidosHandler {
+  constructor(private readonly db: ReadDatabase) {}
+
+  async handle(query: ListarPedidosQuery): Promise&lt;PedidoResumoDTO[]&gt; {
+    // SQL direto, view ou índice otimizado — sem passar pelo agregado
+    return this.db.query(
+      'SELECT id, status, total FROM pedidos_view WHERE cliente_id = $1 LIMIT 20 OFFSET $2',
+      [query.clienteId, query.pagina * 20],
+    );
+  }
+}</code></pre>
+          </div>
+          <p>
+            A separação é especialmente visível no tipo de retorno: o handler de
+            Command devolve apenas dados de correlação (o ID gerado); o handler de
+            Query devolve um DTO de leitura montado pela projeção, sem expor nenhum
+            agregado de domínio.
+          </p>
+        </section>
+
+        <!-- 5. QUANDO USAR / QUANDO EVITAR -->
+        <section class="artigo__secao">
+          <h2>Quando usar</h2>
+          <ul>
+            <li>
+              <strong>Carga de leitura muito maior que escrita:</strong> separar os
+              modelos permite escalar o lado de leitura independentemente — réplicas
+              de banco, caches dedicados, índices especializados — sem afetar as
+              garantias de consistência do lado de escrita.
+            </li>
+            <li>
+              <strong>Domínio rico com invariantes complexas:</strong> quando o modelo
+              de escrita precisa proteger regras de negócio sérias (limites de crédito,
+              estoques não negativos, transições de estado válidas), manter esse modelo
+              separado das queries evita que otimizações de leitura introduzam brechas
+              nas invariantes.
+            </li>
+            <li>
+              <strong>Consultas com formatos muito distintos do modelo de domínio:</strong>
+              dashboards, relatórios e telas de listagem frequentemente precisam de
+              projeções desnormalizadas que não existem no modelo de domínio. Com CQRS,
+              o Read Model pode ser projetado exatamente para cada caso de uso de leitura.
+            </li>
+            <li>
+              <strong>Sistemas que já usam Event Sourcing:</strong> o event stream
+              produzido pelo Write Model é a fonte natural para alimentar projeções
+              de leitura especializadas — o CQRS completo emerge de forma quase natural.
+            </li>
+          </ul>
+
+          <h2>Quando evitar</h2>
+          <ul>
+            <li>
+              <strong>CRUDs simples sem regras de domínio:</strong> quando não há
+              invariantes a proteger nem consultas complexas, CQRS adiciona camadas
+              de indireção sem benefício real. Uma Arquitetura em Camadas simples
+              ou um repositório genérico resolvem o problema com muito menos código.
+            </li>
+            <li>
+              <strong>Equipes pequenas sem experiência com consistência eventual:</strong>
+              o grau completo (bancos separados) exige lidar com Read Models
+              desatualizados, estratégias de sincronização e lógica de compensação.
+              O custo de entender e operar esse modelo é alto.
+            </li>
+            <li>
+              <strong>Quando a consistência imediata é obrigatória:</strong> se a UI
+              precisa mostrar exatamente o estado após cada mutação, a consistência
+              eventual do Read Model exige workarounds (polling, otimistic UI, retorno
+              do estado no Command response) que reduzem o valor da separação.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 6. PRÓS E CONTRAS -->
+        <section class="artigo__secao">
+          <h2>Prós e contras</h2>
+          <h3>Prós</h3>
+          <ul class="artigo__lista-pros">
+            <li>Modelos otimizados para sua função: o Write Model protege invariantes; o Read Model entrega projeções eficientes.</li>
+            <li>Escalabilidade assimétrica: leitura e escrita escalam independentemente, com infraestrutura adequada para cada carga.</li>
+            <li>Queries sem fricção com o domínio: o Read Model pode usar SQL direto, views materializadas ou índices especializados sem comprometer a modelagem do domínio.</li>
+            <li>Auditoria e rastreabilidade naturais: Commands carregam intenção explícita e podem ser logados ou persistidos como log de mudanças.</li>
+            <li>Combinação natural com Event Sourcing: o event stream do Write Model alimenta projeções de Read Model de forma desacoplada.</li>
+          </ul>
+          <h3>Contras</h3>
+          <ul class="artigo__lista-contras">
+            <li>Mais código e mais conceitos: dois modelos, dois sets de handlers, possivelmente dois bancos — o volume de código e a quantidade de conceitos crescem significativamente.</li>
+            <li>Consistência eventual (no grau completo): o Read Model pode estar desatualizado após uma mutação. Isso exige que a UI e o negócio aceitem janelas de inconsistência.</li>
+            <li>Sincronização do Read Model: manter o Read Model atualizado requer uma estratégia explícita — eventos de domínio, change data capture ou polling — que precisa ser monitorada e operada.</li>
+            <li>Debug mais complexo: rastrear por que uma Query retornou dados inesperados exige verificar tanto o estado do Write Model quanto o estado do Read Model e o mecanismo de sincronização entre eles.</li>
+          </ul>
+        </section>
+
+        <!-- 7. ARMADILHAS -->
+        <section class="artigo__secao">
+          <h2>Armadilhas comuns</h2>
+
+          <h3>1. Confundir CQRS com Event Sourcing</h3>
+          <p>
+            CQRS e Event Sourcing são conceitos ortogonais. CQRS separa modelos de
+            leitura e escrita — o Write Model pode persistir o estado atual, como
+            qualquer sistema convencional. Event Sourcing é uma estratégia de
+            persistência onde o estado é derivado de uma sequência imutável de eventos.
+            Os dois se combinam bem, mas nenhum implica o outro. Aplicar CQRS sem
+            Event Sourcing é plenamente válido e muito mais simples. Aplicar Event
+            Sourcing sem CQRS é igualmente possível (e igualmente raro de fazer bem).
+          </p>
+          <p class="artigo__aviso">
+            <strong>Regra prática:</strong> comece com CQRS simples (mesmo banco,
+            dois modelos no código). Só avance para bancos separados ou Event Sourcing
+            quando tiver um problema mensurável que justifique a complexidade adicional.
+          </p>
+
+          <h3>2. Read Model desatualizado causando bugs sutis</h3>
+          <p>
+            No grau completo, há uma janela de tempo entre a persistência do Write
+            Model e a atualização do Read Model. Se a UI faz uma Query imediatamente
+            após um Command e exibe o resultado, o usuário pode ver o estado anterior.
+            Isso não é um bug do CQRS — é uma propriedade do modelo — mas precisa ser
+            comunicada claramente ao produto e tratada na UI. Soluções comuns incluem
+            retornar o ID e o novo estado resumido no response do Command, usar
+            otimistic updates na UI ou esperar uma confirmação via polling.
+          </p>
+
+          <h3>3. Aplicar CQRS onde um CRUD resolve</h3>
+          <p>
+            O custo de introduzir CommandHandlers, QueryHandlers, dois modelos e uma
+            estratégia de sincronização em uma aplicação que apenas cria, lê, atualiza
+            e deleta registros sem regras de domínio complexas é custo real sem
+            retorno mensurável. CQRS não é um padrão de organização de código — é um
+            padrão para resolver problemas específicos de escalabilidade e modelagem.
+            Aplique onde o problema existe, não como convenção global do projeto.
+          </p>
+
+          <h3>4. Misturar lógica de escrita no QueryHandler</h3>
+          <p>
+            A separação só tem valor se for mantida com disciplina. QueryHandlers que
+            atualizam contadores de visualização, registram logs de acesso ou alteram
+            qualquer estado colapsam a separação e tornam as queries imprevisíveis e
+            não idempotentes. Se uma operação de leitura precisa produzir um efeito
+            colateral, esse efeito deve ser modelado como um Command separado, disparado
+            após a Query ou em paralelo.
+          </p>
+
+          <h3>5. Sincronização frágil do Read Model</h3>
+          <p>
+            Um Read Model que é atualizado de forma síncrona dentro da transação de
+            escrita anula os benefícios de desacoplamento. Um que é atualizado via
+            evento assíncrono sem garantias de entrega, sem idempotência no handler e
+            sem monitoramento de lag cria inconsistências silenciosas difíceis de
+            depurar. A sincronização do Read Model é uma parte crítica da arquitetura
+            e precisa de atenção equivalente à dos modelos em si.
+          </p>
+        </section>
+
+        <!-- 8. ARQUITETURAS E PADRÕES RELACIONADOS -->
+        <section class="artigo__secao">
+          <h2>Arquiteturas e padrões relacionados</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../event-driven/">Event-Driven Architecture</a></li>
+            <li><a href="../clean-architecture/">Clean Architecture</a></li>
+            <li><a href="../monolito-vs-microsservicos/">Monolito vs Microsserviços</a></li>
+          </ul>
+          <p class="mt-1">
+            A <strong>Event-Driven Architecture</strong> é o mecanismo mais comum para
+            sincronizar o Read Model no grau completo do CQRS. Quando o CommandHandler
+            persiste um Command, ele também publica um evento de domínio; um consumidor
+            do lado de leitura recebe esse evento e atualiza o Read Model. Os dois
+            padrões se complementam, mas são independentes: EDA não exige CQRS, e CQRS
+            no grau simples não exige EDA.
+          </p>
+          <p>
+            A <strong>Clean Architecture</strong> e o CQRS se encaixam naturalmente:
+            CommandHandlers e QueryHandlers mapeiam para Use Case Interactors; o Write
+            Model vive na camada de domínio; o Read Model vive na camada de adaptadores
+            ou infraestrutura. A regra da dependência é preservada — os handlers
+            definem interfaces de repositório que a infraestrutura implementa.
+          </p>
+          <p>
+            Em <strong>Microsserviços</strong>, o CQRS com bancos separados é especialmente
+            valioso porque cada serviço pode manter seu próprio Read Model projetado
+            para suas necessidades, evitando joins entre serviços. A sincronização ocorre
+            via eventos publicados no barramento inter-serviços.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-0000000000000000"
+           data-ad-slot="4848484848"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>
