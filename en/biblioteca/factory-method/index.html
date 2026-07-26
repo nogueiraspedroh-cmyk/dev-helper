@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Factory Method — Design Patterns | Dev Helper Library</title>
+  <meta name="description" content="Learn the Factory Method pattern (GoF) in depth: intent, problem, solution, structure, examples in TypeScript and PHP, when to use it, when to avoid it, and common pitfalls." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/factory-method/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Factory Method</span>
+        </nav>
+        <span class="artigo__categoria">Creational Pattern (GoF)</span>
+        <h1 class="artigo__titulo">Factory Method</h1>
+        <p class="artigo__subtitulo">
+          Defines an interface for creating an object, but lets subclasses (or
+          implementations) decide which concrete class to instantiate — decoupling
+          the code that uses the object from the code that creates it.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            Define an <strong>interface for creating an object</strong>, delegating
+            to subclasses (or concrete implementations) the decision of which class
+            to instantiate. Factory Method lets a class defer instantiation to its
+            subclasses, promoting the Open/Closed Principle: to support a new product
+            type, you just create a new subclass — without modifying existing code.
+          </p>
+          <p>
+            Cataloged by Gamma, Helm, Johnson and Vlissides in the book
+            <em>Design Patterns: Elements of Reusable Object-Oriented Software</em> (1994),
+            Factory Method belongs to the <strong>creational patterns</strong> category.
+            It's one of the most widely used patterns in practice and serves as the
+            foundation for Abstract Factory.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Imagine a notification system that, initially, only sent emails. As the
+            product grew, the need arose to send SMS and, later, push notifications.
+            The naive solution — an <code>if/else</code> or <code>switch</code> inside
+            the business code choosing which notification class to instantiate —
+            violates two fundamental principles:
+          </p>
+          <ul>
+            <li>
+              <strong>Open/Closed:</strong> every new channel requires modifying
+              already existing and tested code, risking regressions.
+            </li>
+            <li>
+              <strong>Single Responsibility:</strong> the business class accumulates
+              the creation decision together with the usage logic.
+            </li>
+          </ul>
+          <p>
+            The problem gets worse when instantiation involves complex configuration
+            (e.g. SMTP authentication, API credentials, connection pooling). Spreading
+            this logic across the code turns any provider change into a hunt across
+            multiple files.
+          </p>
+
+          <h3>Simple Factory vs Factory Method</h3>
+          <p>
+            It's worth distinguishing two concepts that are frequently confused:
+          </p>
+          <ul>
+            <li>
+              <strong>Simple Factory</strong> (not a GoF pattern): a static class
+              or function with a <code>switch</code> that returns different instances.
+              It's simple and sufficient when the types are fixed and rarely change.
+              The problem: it still violates Open/Closed when new types appear.
+            </li>
+            <li>
+              <strong>Factory Method</strong> (GoF pattern): defines a creation method
+              in a base class (abstract or concrete) and lets subclasses override
+              that method to provide the concrete product. Extensible without
+              modifying the base code.
+            </li>
+          </ul>
+          <p>
+            Use Simple Factory when the types are few and stable; prefer Factory
+            Method when type variation is the central extension point of your design.
+          </p>
+        </section>
+
+        <!-- 3. SOLUTION -->
+        <section class="artigo__secao">
+          <h2>Solution</h2>
+          <p>Factory Method organizes the code into four participants:</p>
+          <ol>
+            <li>
+              <strong>Product (interface/abstract class):</strong> defines the contract
+              that every concrete product must fulfill. E.g.: <code>Notification</code>
+              interface with the method <code>send(recipient, message)</code>.
+            </li>
+            <li>
+              <strong>ConcreteProduct:</strong> implements the Product's contract.
+              E.g.: <code>EmailNotification</code>, <code>SmsNotification</code>,
+              <code>PushNotification</code>.
+            </li>
+            <li>
+              <strong>Creator (base class):</strong> declares the factory method —
+              <code>createNotification()</code> — and may contain business logic that
+              <em>uses</em> the product returned by the method. The Creator doesn't
+              know which ConcreteProduct will be created.
+            </li>
+            <li>
+              <strong>ConcreteCreator:</strong> overrides the factory method to
+              instantiate and return a specific ConcreteProduct.
+            </li>
+          </ol>
+          <p>
+            The client code works with Creator and Product through interfaces —
+            never referencing the concrete classes directly. To add a new
+            notification channel, you just create a new ConcreteProduct + ConcreteCreator pair.
+          </p>
+        </section>
+
+        <!-- 4. STRUCTURE -->
+        <section class="artigo__secao">
+          <h2>Structure</h2>
+          <p>
+            Simplified UML diagram using the notification example:
+          </p>
+          <div class="code-bloco">
+<pre><code>          «interface»
+         Notification
+    ┌───────────────────┐
+    │ + send(dest, msg) │
+    └───────────────────┘
+              ▲
+    ┌─────────┴──────────────────────┐
+    │                                │
+EmailNotification         SmsNotification
+(ConcreteProduct)         (ConcreteProduct)
+
+
+          «abstract»
+      NotificationCreator
+    ┌──────────────────────────────────────┐
+    │ # createNotification(): Notification │  ← factory method (abstract)
+    │ + notify(dest, msg): void            │  ← uses the product via interface
+    └──────────────────────────────────────┘
+              ▲
+    ┌─────────┴────────────────────────┐
+    │                                  │
+EmailCreator                    SmsCreator
+(ConcreteCreator)               (ConcreteCreator)
+createNotification()            createNotification()
+  → new EmailNotification()       → new SmsNotification()
+
+
+Call flow:
+
+  client
+    │
+    │  emailCreator.notify("a@b.com", "Hello")
+    ▼
+  NotificationCreator.notify()
+    │
+    │  notification = this.createNotification()  ← calls the factory method
+    │                                       (polymorphism resolves to EmailNotification)
+    │  notification.send("a@b.com", "Hello")
+    ▼
+  EmailNotification.send()
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. CODE EXAMPLES -->
+        <section class="artigo__secao">
+          <h2>Code examples</h2>
+
+          <h3>Example 1 — Notification system</h3>
+          <p>
+            The Creator defines the contract and the business logic; each
+            ConcreteCreator provides its product. The client code only knows the
+            base class.
+          </p>
+
+          <!-- TAB GROUP 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 1 — notification system">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Product ──────────────────────────────────────────────────
+interface Notification {
+  send(recipient: string, message: string): void;
+}
+
+// ── ConcreteProducts ─────────────────────────────────────────
+class EmailNotification implements Notification {
+  send(recipient: string, message: string): void {
+    console.log(`[EMAIL] To: ${recipient} | Message: ${message}`);
+  }
+}
+
+class SmsNotification implements Notification {
+  send(recipient: string, message: string): void {
+    console.log(`[SMS] To: ${recipient} | Message: ${message}`);
+  }
+}
+
+class PushNotification implements Notification {
+  send(recipient: string, message: string): void {
+    console.log(`[PUSH] To: ${recipient} | Message: ${message}`);
+  }
+}
+
+// ── Creator ──────────────────────────────────────────────────
+// The factory method is abstract: subclasses are required to provide it.
+abstract class NotificationCreator {
+  // Factory Method — each subclass decides which product to create.
+  protected abstract createNotification(): Notification;
+
+  // Business logic reused by every creator.
+  // Uses the product via interface — without knowing the concrete class.
+  public notify(recipient: string, message: string): void {
+    const notification = this.createNotification();
+    notification.send(recipient, message);
+  }
+}
+
+// ── ConcreteCreators ─────────────────────────────────────────
+class EmailCreator extends NotificationCreator {
+  protected createNotification(): Notification {
+    return new EmailNotification();
+  }
+}
+
+class SmsCreator extends NotificationCreator {
+  protected createNotification(): Notification {
+    return new SmsNotification();
+  }
+}
+
+class PushCreator extends NotificationCreator {
+  protected createNotification(): Notification {
+    return new PushNotification();
+  }
+}
+
+// ── Client code ───────────────────────────────────────────────
+// The client works with NotificationCreator — without coupling itself
+// to concrete product classes.
+function sendAlert(creator: NotificationCreator, msg: string): void {
+  creator.notify("user@example.com", msg);
+}
+
+sendAlert(new EmailCreator(), "Your invoice is available.");
+sendAlert(new SmsCreator(),   "Verification code: 4821");
+sendAlert(new PushCreator(),  "New comment on your post.");</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Product ──────────────────────────────────────────────────
+interface Notification
+{
+    public function send(string $recipient, string $message): void;
+}
+
+// ── ConcreteProducts ─────────────────────────────────────────
+class EmailNotification implements Notification
+{
+    public function send(string $recipient, string $message): void
+    {
+        echo "[EMAIL] To: {$recipient} | Message: {$message}" . PHP_EOL;
+    }
+}
+
+class SmsNotification implements Notification
+{
+    public function send(string $recipient, string $message): void
+    {
+        echo "[SMS] To: {$recipient} | Message: {$message}" . PHP_EOL;
+    }
+}
+
+class PushNotification implements Notification
+{
+    public function send(string $recipient, string $message): void
+    {
+        echo "[PUSH] To: {$recipient} | Message: {$message}" . PHP_EOL;
+    }
+}
+
+// ── Creator ──────────────────────────────────────────────────
+abstract class NotificationCreator
+{
+    // Factory Method — each subclass decides which product to create.
+    abstract protected function createNotification(): Notification;
+
+    // Business logic reused by every creator.
+    public function notify(string $recipient, string $message): void
+    {
+        $notification = $this-&gt;createNotification();
+        $notification-&gt;send($recipient, $message);
+    }
+}
+
+// ── ConcreteCreators ─────────────────────────────────────────
+class EmailCreator extends NotificationCreator
+{
+    protected function createNotification(): Notification
+    {
+        return new EmailNotification();
+    }
+}
+
+class SmsCreator extends NotificationCreator
+{
+    protected function createNotification(): Notification
+    {
+        return new SmsNotification();
+    }
+}
+
+class PushCreator extends NotificationCreator
+{
+    protected function createNotification(): Notification
+    {
+        return new PushNotification();
+    }
+}
+
+// ── Client code ───────────────────────────────────────────────
+function sendAlert(NotificationCreator $creator, string $msg): void
+{
+    $creator-&gt;notify('user@example.com', $msg);
+}
+
+sendAlert(new EmailCreator(), 'Your invoice is available.');
+sendAlert(new SmsCreator(),   'Verification code: 4821');
+sendAlert(new PushCreator(),  'New comment on your post.');</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 1) -->
+
+          <h3>Example 2 — Parameterized Factory Method (subclass-free variant)</h3>
+          <p>
+            In languages with support for first-class functions (TypeScript) or
+            closures, the factory method can be parameterized — avoiding a subclass
+            explosion for simple cases. This variant is less orthodox, but very
+            common in practice:
+          </p>
+
+          <!-- TAB GROUP 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 2 — parameterized factory">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>type Channel = "email" | "sms" | "push";
+
+// Factory registry: each channel maps to a creator function.
+// Adding a new channel = registering a new entry in the map.
+const factories: Record&lt;Channel, () =&gt; Notification&gt; = {
+  email: () =&gt; new EmailNotification(),
+  sms:   () =&gt; new SmsNotification(),
+  push:  () =&gt; new PushNotification(),
+};
+
+function createNotification(channel: Channel): Notification {
+  const factory = factories[channel];
+  return factory();
+}
+
+// ── Usage ────────────────────────────────────────────────────
+const channels: Channel[] = ["email", "sms", "push"];
+
+for (const channel of channels) {
+  const notif = createNotification(channel);
+  notif.send("user@example.com", `Alert via ${channel}`);
+}</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// Factory registry as callables.
+// Adding a new channel = registering a new entry in the array.
+/** @var array&lt;string, callable(): Notification&gt; */
+$factories = [
+    'email' =&gt; fn() =&gt; new EmailNotification(),
+    'sms'   =&gt; fn() =&gt; new SmsNotification(),
+    'push'  =&gt; fn() =&gt; new PushNotification(),
+];
+
+function createNotification(string $channel, array $factories): Notification
+{
+    if (!isset($factories[$channel])) {
+        throw new \InvalidArgumentException("Unknown channel: {$channel}");
+    }
+    return ($factories[$channel])();
+}
+
+// ── Usage ────────────────────────────────────────────────────
+foreach (['email', 'sms', 'push'] as $channel) {
+    $notif = createNotification($channel, $factories);
+    $notif-&gt;send('user@example.com', "Alert via {$channel}");
+}</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 2) -->
+
+        </section><!-- /.artigo__secao (examples) -->
+
+        <!-- 6. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>The type of object to create isn't known at compile time:</strong>
+              it depends on configuration, the environment, or user input — and new
+              variations will appear in the future.
+            </li>
+            <li>
+              <strong>You want the client code to be independent of the concrete
+              classes</strong> it creates — decoupling "usage" from "creation".
+            </li>
+            <li>
+              <strong>You want to provide extension points:</strong> libraries and
+              frameworks use Factory Method to let the library's consumer replace
+              internal components without changing the framework's source code.
+            </li>
+            <li>
+              <strong>Creation involves reusable logic:</strong> if the business logic
+              that uses the product (the Creator's <code>notify</code> method) is
+              identical for every product, only varying the instantiation, Factory
+              Method eliminates duplication via inheritance or composition.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>When a Simple Factory solves it:</strong> if the product types
+              are few, stable and known at compile time, a <code>switch</code> in a
+              factory function is simpler and equally readable — without the
+              ceremony of subclasses.
+            </li>
+            <li>
+              <strong>When there's no real variation:</strong> if there's only one
+              concrete product type now and for the foreseeable future, the
+              abstraction is premature.
+            </li>
+            <li>
+              <strong>In projects with DI containers:</strong> NestJS, Spring, Laravel
+              and similar frameworks already solve implementation selection through
+              dependency injection and configuration — manually reimplementing
+              Factory Method is usually redundant.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Follows the Open/Closed Principle — new product types don't require modifying existing code.</li>
+            <li>Decouples the client code from the concrete product classes.</li>
+            <li>Centralizes creation logic, eliminating instantiations scattered across the code.</li>
+            <li>Makes testing easier: the Creator can be tested with a fake product injected via a test subclass.</li>
+            <li>Lets subclasses reuse the Creator's business logic without repetition.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Introduces a class hierarchy: for each new ConcreteProduct, a new ConcreteCreator is generally required — can lead to a subclass explosion.</li>
+            <li>More complex than a Simple Factory for cases where the types are fixed and few.</li>
+            <li>Can be hard to understand for those unfamiliar with the pattern, since the creation flow isn't immediately obvious when reading the client code.</li>
+          </ul>
+        </section>
+
+        <!-- 8. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Subclass explosion</h3>
+          <p>
+            If every product variation requires a new Creator + Product pair, and the
+            application has dozens of variations, the hierarchy grows rapidly. When
+            the creators have no business logic of their own (they're empty besides
+            the factory method), consider replacing the hierarchy with a factory map
+            (as in Example 2) or with an Abstract Factory if the products are related
+            in families.
+          </p>
+
+          <h3>2. Confusing Simple Factory with Factory Method</h3>
+          <p class="artigo__aviso">
+            <strong>Warning:</strong> Simple Factory is a programming idiom, not a
+            GoF pattern. A static method <code>Notification::create("email")</code>
+            that does a <code>switch($type)</code> solves many practical problems
+            without the ceremony of subclasses. Apply Factory Method only when
+            extension via subclassing is the actual goal — otherwise you add
+            complexity without proportional benefit.
+          </p>
+
+          <h3>3. Factory Method vs Abstract Factory</h3>
+          <p>
+            Factory Method creates <strong>a single product</strong> — the variation
+            is in which concrete class of that product gets instantiated. Abstract
+            Factory creates <strong>families of related products</strong> — several
+            objects that must work together. If you find yourself creating several
+            related factory methods in the same Creator, your design probably calls
+            for an Abstract Factory.
+          </p>
+
+          <h3>4. Selection logic leaking into the client</h3>
+          <p>
+            A common mistake: the client code chooses which ConcreteCreator to
+            instantiate with an <code>if/switch</code> based on configuration. This
+            defeats the purpose of the pattern. Choosing the concrete creator should
+            happen as close as possible to the application's edge (entry point,
+            configuration, DI container), not scattered throughout the business logic.
+          </p>
+        </section>
+
+        <!-- 9. RELATED PATTERNS -->
+        <section class="artigo__secao">
+          <h2>Related patterns</h2>
+          <p>
+            Factory Method is the foundation of several other patterns and
+            frequently appears together with them:
+          </p>
+          <!--
+            Link discipline: only 5 of the 51 catalog patterns have an
+            English translation so far (this batch — singleton,
+            factory-method, abstract-factory, builder, prototype). Siblings
+            within this batch link directly via ../slug/. Any pattern still
+            untranslated falls back to the pt-BR article via
+            ../../../biblioteca/slug/ (same fallback used in
+            en/biblioteca/index.html) instead of 404ing on a non-existent
+            /en/biblioteca/slug/ page. When a pattern is later published in
+            English, replace its fallback href with ../slug/.
+            Singleton and Abstract Factory are in this batch → real links.
+            Template Method is not translated yet → pt-BR fallback.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../singleton/">Singleton</a></li>
+            <li><a href="../abstract-factory/">Abstract Factory</a></li>
+            <li><a href="../../../biblioteca/template-method/">Template Method</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Singleton</strong> is frequently implemented alongside the
+            Creator when the factory itself needs to be unique in the application.
+            <strong>Abstract Factory</strong> can be seen as a group of coordinated
+            Factory Methods for creating families of compatible products — while
+            Factory Method focuses on a single product type, Abstract Factory
+            coordinates the creation of multiple types that must work together.
+            <strong>Template Method</strong> shares the same inheritance structure:
+            the base class defines the algorithm's skeleton with abstract steps, and
+            subclasses provide the concrete implementations — the factory method is,
+            essentially, a Template Method specialized in object creation.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="7979797979"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

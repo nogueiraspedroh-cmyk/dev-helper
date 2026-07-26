@@ -1,7 +1,7 @@
 {
   "version": 1,
   "createdAt": "2026-07-25T15:16:46.641Z",
-  "updatedAt": "2026-07-25T15:39:13.504Z",
+  "updatedAt": "2026-07-26T04:56:08.131Z",
   "briefPath": ".omc/ultragoal/brief.md",
   "goalsPath": ".omc/ultragoal/goals.json",
   "ledgerPath": ".omc/ultragoal/ledger.jsonl",
@@ -23,74 +23,95 @@
       "id": "G002-faseb-lote2-textodados",
       "title": "FaseB-Lote2-TextoDados",
       "objective": "Traduzir para /en/ as 11 ferramentas restantes de Texto & Dados (sql, csv-json, yaml-json, json-para-typescript, diff, markdown, regex, contador-caracteres, mock-data, escopo, xml) - json ja foi feito na Fase A. Mesmo padrao: en/tools/<slug>/ + js/tools-en/<slug>.js + TRANSLATED_PATHS + hreflang. Dev-typescript + gate code-reviewer, max 2 tentativas.",
-      "status": "in_progress",
+      "status": "complete",
       "attempt": 1,
       "createdAt": "2026-07-25T15:16:46.641Z",
-      "updatedAt": "2026-07-25T15:39:13.504Z",
-      "startedAt": "2026-07-25T15:39:13.504Z"
+      "updatedAt": "2026-07-25T23:02:39.325Z",
+      "startedAt": "2026-07-25T15:39:13.504Z",
+      "completedAt": "2026-07-25T23:02:39.325Z",
+      "evidence": "22 arquivos novos (en/tools/{sql,csv-json,yaml-json,json-para-typescript,diff,markdown,regex,contador-caracteres,mock-data,escopo,xml}/index.html + js/tools-en/{...}.js), TRANSLATED_PATHS com 24 entradas em js/main.js, en/index.html atualizado (11 links), hreflang reciproco nas 11 paginas pt-BR. Executado em 2 rodadas (1a interrompida por limite de sessao da API, retomada e completada sem arquivos truncados). Validado via docker/nginx (todas as paginas 200, sem regressao) e node --check. Code review: APROVADO com 3 ressalvas nao-bloqueadoras; a mais relevante (nomes brasileiros nos dados mock da versao EN) foi corrigida (FIRST_NAMES/LAST_NAMES trocados por nomes em ingles em js/tools-en/mock-data.js). As outras 2 (comentarios HTML em pt-BR nas paginas EN, hreflang self-referencing ausente no retrofit pt-BR do Lote 1+2) sao polimento futuro, registradas para a revisao final (G015)."
     },
     {
       "id": "G003-faseb-lote3-seguranca",
       "title": "FaseB-Lote3-Seguranca",
       "objective": "Traduzir para /en/ as 5 ferramentas de Seguranca & Codificacao (senha, hash, jwt, uuid, base64). Mesmo padrao: en/tools/<slug>/ + js/tools-en/<slug>.js + TRANSLATED_PATHS + hreflang. Dev-typescript + gate code-reviewer, max 2 tentativas.",
-      "status": "pending",
-      "attempt": 0,
+      "status": "complete",
+      "attempt": 1,
       "createdAt": "2026-07-25T15:16:46.641Z",
-      "updatedAt": "2026-07-25T15:16:46.641Z"
+      "updatedAt": "2026-07-25T23:14:39.545Z",
+      "startedAt": "2026-07-25T23:14:38.838Z",
+      "completedAt": "2026-07-25T23:14:39.545Z",
+      "evidence": "10 arquivos novos (en/tools/{senha,hash,jwt,uuid,base64}/index.html + js/tools-en/{...}.js), TRANSLATED_PATHS com 29 entradas, en/index.html atualizado (5 tool-row + 2 chips hero), hreflang em 5 paginas pt-BR. Validado via docker/nginx (todas 200, sem regressao) e node --check. Code review: APROVADO, zero bloqueadores. Sugestao nao-bloqueadora registrada para G015: hreflang pt-BR self-referencing ausente nos retrofits dos Lotes 1-3 (so o piloto json tem as 2 tags; retrofits tem so hreflang=en) - tratar como fix transversal na revisao final."
     },
     {
       "id": "G004-faseb-lote4-webrede",
       "title": "FaseB-Lote4-WebRede",
       "objective": "Traduzir para /en/ as 8 ferramentas de Web, Rede & Automacao (cidr, cron, timestamp, fuso-horario, qrcode, meta-tags, gitignore, horas-trabalhadas). Mesmo padrao: en/tools/<slug>/ + js/tools-en/<slug>.js + TRANSLATED_PATHS + hreflang. Dev-typescript + gate code-reviewer, max 2 tentativas.",
-      "status": "pending",
-      "attempt": 0,
+      "status": "complete",
+      "attempt": 1,
       "createdAt": "2026-07-25T15:16:46.641Z",
-      "updatedAt": "2026-07-25T15:16:46.641Z"
+      "updatedAt": "2026-07-25T23:33:04.712Z",
+      "startedAt": "2026-07-25T23:14:47.091Z",
+      "completedAt": "2026-07-25T23:33:04.712Z",
+      "evidence": "16 arquivos novos (en/tools/{cidr,cron,timestamp,fuso-horario,qrcode,meta-tags,gitignore,horas-trabalhadas}/index.html + js/tools-en/{...}.js), TRANSLATED_PATHS com 37 entradas, en/index.html atualizado (8 tool-row), hreflang bidirecional em 8 paginas pt-BR. qrcode reusa js/lib/qrcode-core.js compartilhado. Validado via docker/nginx (todas 200, sem regressao) e node --check; paridade de logica core confirmada (cron parsing, timestamp pluralizacao, meta-tags exemplos localizados, gitignore labels tecnicos preservados). Code review: APROVADO, zero bloqueadores. 1 sugestao nao-bloqueadora (formato de data DD/MM/YYYY em fuso-horario e cron EN) corrigida na hora para ISO YYYY-MM-DD, validada com node."
     },
     {
       "id": "G005-faseb-lote5-conversores",
       "title": "FaseB-Lote5-Conversores",
       "objective": "Traduzir para /en/ as 4 ferramentas de Conversores & Design (conversor-case, base-numerica, cor, css-gradient). Mesmo padrao: en/tools/<slug>/ + js/tools-en/<slug>.js + TRANSLATED_PATHS + hreflang. Dev-typescript + gate code-reviewer, max 2 tentativas.",
-      "status": "pending",
-      "attempt": 0,
+      "status": "complete",
+      "attempt": 1,
       "createdAt": "2026-07-25T15:16:46.641Z",
-      "updatedAt": "2026-07-25T15:16:46.641Z"
+      "updatedAt": "2026-07-25T23:44:16.822Z",
+      "startedAt": "2026-07-25T23:33:12.632Z",
+      "completedAt": "2026-07-25T23:44:16.822Z",
+      "evidence": "8 arquivos novos (en/tools/{conversor-case,base-numerica,cor,css-gradient}/index.html + js/tools-en/{...}.js), TRANSLATED_PATHS com 41 entradas. Marco: en/index.html 100% migrado, zero fallback pt-BR no catalogo (37/37 tool-row em ../en/tools/). Validado via docker/nginx (todas 200) e node --check; paridade matematica confirmada em cor.js (WCAG contrast/luminancia intacta). Code review: 1 bloqueador (hreflang self pt-BR ausente) -> corrigido retroativamente nas 36 paginas de ferramenta pt-BR (nao so as 4 deste lote), fechando a pendencia transversal que vinha sendo adiada desde o Lote 1. Revalidado: 37/37 pastas tools/ com hreflang bidirecional completo."
     },
     {
       "id": "G006-faseb-integracao",
       "title": "FaseB-Integracao",
       "objective": "Com as 37 ferramentas traduzidas, validar que TRANSLATED_PATHS/translatedToolSlugs em js/main.js cobre todos os slugs, sidebar/catalogo em /en/* nao usam mais fallback pt-BR para nenhuma ferramenta, home en/index.html atualizada para linkar todas direto em /en/. Documentar flow da Fase B em .claude-work/flows/. Dev-typescript + gate code-reviewer, max 2 tentativas.",
-      "status": "pending",
-      "attempt": 0,
+      "status": "complete",
+      "attempt": 1,
       "createdAt": "2026-07-25T15:16:46.641Z",
-      "updatedAt": "2026-07-25T15:16:46.641Z"
+      "updatedAt": "2026-07-25T23:46:36.187Z",
+      "startedAt": "2026-07-25T23:44:36.132Z",
+      "completedAt": "2026-07-25T23:46:36.187Z",
+      "evidence": "Validacao de cobertura: 37 entradas TRANSLATED_PATHS == 37 slugs TOOLS (zero faltando/extra/duplicata), 37 diretorios en/tools/, 74 paginas (37 EN + 37 pt-BR) 200 via nginx local, node --check limpo. Flow documentado em .claude-work/flows/2026-07-25-traducao-ingles-fase-b-37-ferramentas.md. Fase B encerrada: 37/37 ferramentas do catalogo com versao em ingles publicavel."
     },
     {
       "id": "G007-fasec-infra",
       "title": "FaseC-Infra",
       "objective": "Infra de i18n para a Biblioteca em js/main.js: BIBLIOTECA_CATEGORIES_EN (mesmo padrao de TOOLS_EN, derivado via map+dicionario), decisao sobre fallback do link Library/Biblioteca na sidebar (equivalente a translatedToolSlugs), conferir js/biblioteca.js por strings pt-BR hardcoded e preparar js/biblioteca-en.js se necessario. Dev-typescript + gate code-reviewer, max 2 tentativas.",
-      "status": "pending",
-      "attempt": 0,
+      "status": "complete",
+      "attempt": 1,
       "createdAt": "2026-07-25T15:16:46.641Z",
-      "updatedAt": "2026-07-25T15:16:46.641Z"
+      "updatedAt": "2026-07-26T04:19:30.677Z",
+      "startedAt": "2026-07-25T23:46:47.495Z",
+      "completedAt": "2026-07-26T04:19:30.677Z",
+      "evidence": "Infra i18n da Biblioteca em js/main.js: isEnglishPath exposta em window.DevHelper, BIBLIOTECA_CATEGORIES_EN derivado via map (55 slugs validados 1:1 com ARTICLE_LABELS_EN), buildBibliotecaAccordion com fallback por artigo via translatedArticleSlugs (vazio por enquanto, cresce sozinho quando artigos forem traduzidos), TRANSLATED_PATHS com entradas biblioteca/biblioteca-index.html. js/biblioteca.js: string 'Nesta pagina'/'On this page' do TOC language-aware. en/biblioteca/index.html criado (catalogo com 55 cards, labels EN, hrefs em fallback pt-BR). Corrigido manualmente: 41 links Library na nav de en/* apontavam para o fallback pt-BR biblioteca/ com profundidade errada -> corrigidos para en/biblioteca/. Validado via docker/nginx (218 links unicos testados, 0 quebrados) e node --check. Code review: APROVADO com ressalvas, zero bloqueadores; 2 warnings (3 strings UI_STRINGS.en nao traduzidas, comentarios desatualizados) corrigidos na hora; 2 sugestoes tambem aplicadas (entrada biblioteca/index.html em TRANSLATED_PATHS, comentario de profundidade corrigido em en/biblioteca/index.html)."
     },
     {
       "id": "G008-fasec-lote1-criacao",
       "title": "FaseC-Lote1-Criacao",
       "objective": "Traduzir os 5 artigos de Padroes de Criacao (singleton, factory-method, abstract-factory, builder, prototype) para en/biblioteca/<slug>/, incluindo textos dentro dos diagramas SVG inline. TRANSLATED_PATHS/entrada biblioteca + hreflang reciproco. Dev-typescript + gate code-reviewer, max 2 tentativas.",
-      "status": "pending",
-      "attempt": 0,
+      "status": "complete",
+      "attempt": 1,
       "createdAt": "2026-07-25T15:16:46.641Z",
-      "updatedAt": "2026-07-25T15:16:46.641Z"
+      "updatedAt": "2026-07-26T04:55:57.730Z",
+      "startedAt": "2026-07-26T04:19:40.266Z",
+      "completedAt": "2026-07-26T04:55:57.730Z",
+      "evidence": "5 artigos long-form traduzidos (en/biblioteca/{singleton,factory-method,abstract-factory,builder,prototype}/), incluindo diagramas ASCII e exemplos de codigo TS/PHP com identificadores/comentarios traduzidos de forma consistente. TRANSLATED_PATHS com 50 entradas. hreflang reciproco nos 5 pares. Code review (1a rodada): 3 bloqueadores (4 links quebrados na secao 'related patterns' que assumiam profundidade errada de fallback; 2 diagramas ASCII desalinhados apos traducao - abstract-factory e builder) + 1 sugestao (slug fantasma 'index.html' em translatedArticleSlugs). Corrigidos na 2a e ultima tentativa permitida: links revalidados 200, diagramas reconstruidos do zero e verificados programaticamente (centros de caixa/seta/legenda alinhados com precisao). Fidelidade tecnica dos 5 artigos confirmada pelo reviewer (zero desvio conceitual nos padroes GoF explicados). Validado via docker/nginx e node --check."
     },
     {
       "id": "G009-fasec-lote2-estruturais",
       "title": "FaseC-Lote2-Estruturais",
       "objective": "Traduzir os 7 artigos de Padroes Estruturais (adapter, decorator, facade, proxy, composite, bridge, flyweight) para en/biblioteca/<slug>/, incluindo SVGs. Dev-typescript + gate code-reviewer, max 2 tentativas.",
-      "status": "pending",
-      "attempt": 0,
+      "status": "in_progress",
+      "attempt": 1,
       "createdAt": "2026-07-25T15:16:46.641Z",
-      "updatedAt": "2026-07-25T15:16:46.641Z"
+      "updatedAt": "2026-07-26T04:56:08.131Z",
+      "startedAt": "2026-07-26T04:56:08.131Z"
     },
     {
       "id": "G010-fasec-lote3-comportamentais",
@@ -148,5 +169,5 @@
     }
   ],
   "claudeObjective": "Complete all ultragoal stories in .omc/ultragoal/goals.json: G001-faseb-lote1-docfinanceiro FaseB-Lote1-DocFinanceiro; G002-faseb-lote2-textodados FaseB-Lote2-TextoDados; G003-faseb-lote3-seguranca FaseB-Lote3-Seguranca; G004-faseb-lote4-webrede FaseB-Lote4-WebRede; G005-faseb-lote5-conversores FaseB-Lote5-Conversores; G006-faseb-integracao FaseB-Integracao; G007-fasec-infra FaseC-Infra; G008-fasec-lote1-criacao FaseC-Lote1-Criacao; G009-fasec-lote2-estruturais FaseC-Lote2-Estruturais; G010-fasec-lote3-comportamentais FaseC-Lote3-Comportamentais; G011-fasec-lote4-arquiteturas FaseC-Lote4-Arquiteturas; G012-fasec-lote5-organizacao FaseC-Lote5-Organizacao; G013-fasec-lote6a-infraescala1 FaseC-Lote6a-InfraEscala1; G014-fasec-lote6b-infraescala2 FaseC-Lote6b-InfraEscala2; G015-final-revisaocompleta Final-RevisaoCompleta",
-  "activeGoalId": "G002-faseb-lote2-textodados"
+  "activeGoalId": "G009-fasec-lote2-estruturais"
 }

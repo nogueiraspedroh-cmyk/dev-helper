@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Time Zone Converter — Hours Between IANA Time Zones — Dev Helper</title>
+  <meta name="description" content="Convert a reference time between time zones (IANA) using the browser's native API, with daylight saving time support. Add or remove time zones from the list." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../tools/fuso-horario/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../../biblioteca/">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Time Zone Converter</h1>
+        <p>Choose a <strong>reference date and time</strong> and the <strong>source time zone</strong>; see the equivalent time in several time zones around the world. Uses the browser's native API (<code>Intl.DateTimeFormat</code>), with automatic <strong>daylight saving time</strong>.</p>
+      </header>
+
+      <div class="tool__controls">
+        <label class="tool__label" for="tz-date">Date</label>
+        <input type="date" id="tz-date" class="tool__input-inline" />
+
+        <label class="tool__label" for="tz-time">Time</label>
+        <input type="time" id="tz-time" class="tool__input-inline" />
+
+        <label class="tool__label" for="tz-source">Source time zone</label>
+        <select id="tz-source" class="tool__select">
+          <option value="America/Sao_Paulo" selected>America/Sao_Paulo</option>
+          <option value="America/New_York">America/New_York</option>
+          <option value="America/Los_Angeles">America/Los_Angeles</option>
+          <option value="Europe/London">Europe/London</option>
+          <option value="Europe/Lisbon">Europe/Lisbon</option>
+          <option value="Europe/Berlin">Europe/Berlin</option>
+          <option value="Africa/Johannesburg">Africa/Johannesburg</option>
+          <option value="Asia/Dubai">Asia/Dubai</option>
+          <option value="Asia/Kolkata">Asia/Kolkata</option>
+          <option value="Asia/Shanghai">Asia/Shanghai</option>
+          <option value="Asia/Tokyo">Asia/Tokyo</option>
+          <option value="Australia/Sydney">Australia/Sydney</option>
+          <option value="UTC">UTC</option>
+        </select>
+
+        <div class="tool__actions tool__actions--mt">
+          <button id="tz-now" class="button--secondary" type="button">Now</button>
+        </div>
+      </div>
+
+      <p id="tz-error" class="error-msg" role="alert" hidden></p>
+
+      <section class="tool__output">
+        <div class="tool__controls">
+          <label class="tool__label" for="tz-add-select">Add time zone to the list</label>
+          <select id="tz-add-select" class="tool__select">
+            <option value="America/Sao_Paulo">America/Sao_Paulo</option>
+            <option value="America/Argentina/Buenos_Aires">America/Argentina/Buenos_Aires</option>
+            <option value="America/Bogota">America/Bogota</option>
+            <option value="America/Mexico_City">America/Mexico_City</option>
+            <option value="America/New_York">America/New_York</option>
+            <option value="America/Chicago">America/Chicago</option>
+            <option value="America/Denver">America/Denver</option>
+            <option value="America/Los_Angeles">America/Los_Angeles</option>
+            <option value="Europe/London">Europe/London</option>
+            <option value="Europe/Lisbon">Europe/Lisbon</option>
+            <option value="Europe/Madrid">Europe/Madrid</option>
+            <option value="Europe/Paris">Europe/Paris</option>
+            <option value="Europe/Berlin">Europe/Berlin</option>
+            <option value="Europe/Moscow">Europe/Moscow</option>
+            <option value="Africa/Johannesburg">Africa/Johannesburg</option>
+            <option value="Asia/Dubai">Asia/Dubai</option>
+            <option value="Asia/Kolkata">Asia/Kolkata</option>
+            <option value="Asia/Shanghai">Asia/Shanghai</option>
+            <option value="Asia/Singapore">Asia/Singapore</option>
+            <option value="Asia/Tokyo">Asia/Tokyo</option>
+            <option value="Australia/Sydney">Australia/Sydney</option>
+            <option value="Pacific/Auckland">Pacific/Auckland</option>
+            <option value="UTC">UTC</option>
+          </select>
+          <div class="tool__actions tool__actions--mt">
+            <button id="tz-add-btn" class="button" type="button">Add</button>
+          </div>
+        </div>
+
+        <table class="info-table">
+          <thead>
+            <tr><th scope="col">Time zone</th><th scope="col">Local date and time</th><th scope="col">Offset</th><th scope="col"></th></tr>
+          </thead>
+          <tbody id="tz-tbody"></tbody>
+        </table>
+      </section>
+    </article>
+
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="3838383838"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <section>
+      <h2>How it works</h2>
+      <p>
+        The tool interprets the date and time you entered as the <strong>wall-clock time</strong>
+        in the chosen <strong>source time zone</strong>, converts that moment to the universal
+        instant (UTC), and then displays the corresponding time in each time zone on the list. All
+        with the native <code>Intl.DateTimeFormat</code> API, no external libraries.
+      </p>
+
+      <h2>About time zones (IANA) and daylight saving time</h2>
+      <p>
+        Time zones use <strong>IANA</strong> identifiers (such as <code>America/Sao_Paulo</code> or
+        <code>Asia/Tokyo</code>). These identifiers carry the historical rules for each region,
+        including <strong>daylight saving time</strong> (DST). That's why the displayed <em>offset</em>
+        can vary depending on the chosen date — for example, New York appears as <code>UTC-05:00</code> in
+        winter and <code>UTC-04:00</code> in summer.
+      </p>
+
+      <h2>Frequently Asked Questions (FAQ)</h2>
+
+      <h3>Can I add other time zones?</h3>
+      <p>
+        Yes. Use the "Add time zone to the list" selector to include more time zones, and the "Remove"
+        button on each row to drop the ones you don't need.
+      </p>
+
+      <h3>Do the times account for daylight saving time?</h3>
+      <p>
+        Yes. Since we use IANA identifiers and the browser's native API, daylight saving time
+        transitions are applied automatically based on the reference date.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/tools-en/fuso-horario.js"></script>
+</body>
+</html>

@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bridge — Design Patterns | Dev Helper Library</title>
+  <meta name="description" content="Learn the Bridge pattern (GoF) in depth: intent, problem, solution, structure, examples in TypeScript and PHP, when to use it, when to avoid it, and common pitfalls." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/bridge/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Bridge</span>
+        </nav>
+        <span class="artigo__categoria">Structural Pattern (GoF)</span>
+        <h1 class="artigo__titulo">Bridge</h1>
+        <p class="artigo__subtitulo">
+          Decouples an abstraction from its implementation so both can vary
+          independently — using composition instead of inheritance to avoid the
+          combinatorial explosion of subclasses.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Decouple abstraction from implementation</strong> through
+            composition, so that both axes can vary and evolve completely
+            independently. The abstraction delegates to the implementor instead
+            of inheriting from it — replacing the N×M hierarchy of subclasses with
+            N + M classes.
+          </p>
+          <p>
+            Cataloged by the GoF (1994) as a structural pattern, the Bridge is the
+            planned answer to the combinatorial explosion problem of inheritance:
+            when a class has two (or more) independent axes of variation, creating
+            a subclass for every combination scales unsustainably. The Bridge
+            solves this by separating the two axes into distinct hierarchies and
+            connecting them through composition.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Imagine a notification system with two independent axes of variation:
+            the <strong>type</strong> (normal, urgent) and the <strong>send
+            channel</strong> (e-mail, SMS). If you model this with pure
+            inheritance, you need a subclass for every combination:
+          </p>
+          <ul>
+            <li><code>NormalNotificationByEmail</code></li>
+            <li><code>NormalNotificationBySms</code></li>
+            <li><code>UrgentNotificationByEmail</code></li>
+            <li><code>UrgentNotificationBySms</code></li>
+          </ul>
+          <p>
+            With just 2 types and 2 channels, that's already 4 classes. Adding a
+            WhatsApp channel and a Scheduled type raises it to 3×3 = 9 classes.
+            With 5 types and 5 channels: 25 classes. The growth is multiplicative
+            — and any change in one dimension requires updating the other.
+          </p>
+          <p>
+            The Bridge eliminates the explosion: each axis has its own hierarchy.
+            Types and channels evolve completely independently. Adding WhatsApp is
+            creating a <code>WhatsAppSender</code> class — without touching any
+            notification type.
+          </p>
+
+          <h3>Bridge vs Adapter: the critical distinction</h3>
+          <p>
+            This is the most frequent confusion with the Bridge. The difference is
+            in the <em>timing</em> and the <em>intent</em>:
+          </p>
+          <ul>
+            <li>
+              The <strong>Adapter</strong> is applied <em>afterwards</em> — you
+              have two incompatible interfaces that already exist independently,
+              and the Adapter reconciles them. It's a corrective solution to an
+              existing integration problem.
+            </li>
+            <li>
+              The <strong>Bridge</strong> is <em>planned from the start</em> — you
+              identify two independent axes of variation in the design and
+              intentionally separate them so they can evolve without affecting
+              each other. It's a preventive architecture decision.
+            </li>
+          </ul>
+          <p>
+            In short: Adapter reconciles existing incompatibilities; Bridge
+            prevents coupling between dimensions of variation from the design
+            stage.
+          </p>
+
+          <h3>Bridge vs Strategy</h3>
+          <p>
+            Both use composition to delegate behavior, and the code structure can
+            be identical. The difference is conceptual:
+          </p>
+          <ul>
+            <li>
+              The <strong>Strategy</strong> is a <em>behavioral</em> pattern with a
+              single axis of variation: the algorithm. The context chooses which
+              Strategy to use and can swap it at runtime. The focus is on the
+              interchangeability of algorithms.
+            </li>
+            <li>
+              The <strong>Bridge</strong> is a <em>structural</em> pattern with two
+              independent axes of variation: abstraction and implementation. Both
+              can vary and have their own hierarchies. The focus is on separating
+              structural dimensions of the design.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. SOLUTION -->
+        <section class="artigo__secao">
+          <h2>Solution</h2>
+          <p>The Bridge organizes the code into four participants:</p>
+          <ol>
+            <li>
+              <strong>Abstraction:</strong> defines the high-level interface and
+              keeps a reference to the <em>Implementor</em>. Can be an abstract or
+              concrete class. E.g.: abstract class <code>Notification</code> with
+              a reference to <code>SendChannel</code>.
+            </li>
+            <li>
+              <strong>RefinedAbstraction:</strong> extends the Abstraction, adding
+              behavior specific to each variant. E.g.:
+              <code>NormalNotification</code>, <code>UrgentNotification</code>.
+            </li>
+            <li>
+              <strong>Implementor (interface):</strong> defines the contract of
+              the implementation axis — typically low-level operations. E.g.:
+              <code>SendChannel</code> interface with
+              <code>send(recipient, message)</code>.
+            </li>
+            <li>
+              <strong>ConcreteImplementor:</strong> fulfills the Implementor
+              contract. E.g.: <code>EmailSender</code>, <code>SmsSender</code>.
+              New implementations don't affect any abstraction class.
+            </li>
+          </ol>
+          <p>
+            The "bridge" is the reference the Abstraction keeps to the
+            Implementor. Since this reference is typed as the
+            <code>SendChannel</code> interface (not a concrete class), any
+            ConcreteImplementor can be injected — at construction time or at
+            runtime.
+          </p>
+        </section>
+
+        <!-- 4. STRUCTURE -->
+        <section class="artigo__secao">
+          <h2>Structure</h2>
+          <div class="code-bloco">
+<pre><code>  Abstraction axis                                    Implementation axis
+
+  Notification (abstract)                 «interface» SendChannel
+  ┌────────────────────────────────┐                  ┌──────────────────────────────┐
+  │ # channel: SendChannel         │─────────────────▶│ + send(recipient, msg): void │
+  │ + notify(recipient, msg): void │                  └──────────────────────────────┘
+  └────────────────────────────────┘                                  ▲
+                   ▲                                  ┌───────────────┴───────────┐
+  ┌────────────────┴────────────────────────────┐     EmailSender        SmsSender
+   NormalNotification       UrgentNotification
+  (Refined Abstraction)    (Refined Abstraction)
+
+
+Without Bridge — N×M explosion of subclasses:
+
+  2 types × 2 channels = 4 classes
+  NormalNotificationByEmail
+  NormalNotificationBySms
+  UrgentNotificationByEmail
+  UrgentNotificationBySms
+  → with 5 types and 5 channels: 25 classes
+
+With Bridge — N + M classes:
+
+  2 types + 2 channels = 4 classes
+  NormalNotification, UrgentNotification
+  EmailSender, SmsSender
+  → with 5 types and 5 channels: only 10 classes
+
+
+Call flow:
+
+  urgent.notify("ops@company.com", "Server is down!")
+      │
+      ▼ (UrgentNotification.notify)
+      │  "[URGENT]" prefix applied
+      │
+      ▼ (delegates to this.channel.send)
+  EmailSender.send("ops@company.com", "[URGENT] Server is down!")
+      │
+      ▼
+  [EMAIL to ops@company.com] [URGENT] Server is down!
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. CODE EXAMPLES -->
+        <section class="artigo__secao">
+          <h2>Code examples</h2>
+
+          <h3>Example 1 — Notifications by type and channel</h3>
+          <p>
+            The abstraction (<code>Notification</code>) and the implementor
+            (<code>SendChannel</code>) vary completely independently. Adding a
+            new channel or a new notification type doesn't require changing the
+            other axis.
+          </p>
+
+          <!-- TAB GROUP 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 1 — notifications by channel">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Implementor — send channel axis ────────────────────────────
+interface SendChannel {
+  send(recipient: string, message: string): void;
+}
+
+// ── ConcreteImplementors ──────────────────────────────────────
+class EmailSender implements SendChannel {
+  send(recipient: string, message: string): void {
+    console.log(`[EMAIL to ${recipient}] ${message}`);
+  }
+}
+
+class SmsSender implements SendChannel {
+  send(recipient: string, message: string): void {
+    console.log(`[SMS to ${recipient}] ${message}`);
+  }
+}
+
+// Adding WhatsAppSender doesn't affect any Notification class:
+class WhatsAppSender implements SendChannel {
+  send(recipient: string, message: string): void {
+    console.log(`[WA to ${recipient}] ${message}`);
+  }
+}
+
+// ── Abstraction — notification type axis ───────────────────────
+abstract class Notification {
+  // The "bridge": reference to the implementor — injected in the constructor.
+  constructor(protected readonly channel: SendChannel) {}
+
+  abstract notify(recipient: string, content: string): void;
+}
+
+// ── Refined abstractions ────────────────────────────────────────
+class NormalNotification extends Notification {
+  notify(recipient: string, content: string): void {
+    this.channel.send(recipient, content);
+  }
+}
+
+class UrgentNotification extends Notification {
+  notify(recipient: string, content: string): void {
+    this.channel.send(recipient, `[URGENT] ${content}`);
+  }
+}
+
+// Adding ScheduledNotification doesn't affect any SendChannel class:
+class ScheduledNotification extends Notification {
+  constructor(channel: SendChannel, private readonly scheduledFor: string) {
+    super(channel);
+  }
+  notify(recipient: string, content: string): void {
+    this.channel.send(
+      recipient,
+      `[SCHEDULED ${this.scheduledFor}] ${content}`
+    );
+  }
+}
+
+// ── Usage — free combinations without new subclasses ──────────
+const email = new EmailSender();
+const sms   = new SmsSender();
+const wa    = new WhatsAppSender();
+
+new NormalNotification(email).notify(
+  "ana@example.com", "Your order has been confirmed."
+);
+// [EMAIL to ana@example.com] Your order has been confirmed.
+
+new UrgentNotification(email).notify(
+  "ops@company.com", "Server is down!"
+);
+// [EMAIL to ops@company.com] [URGENT] Server is down!
+
+new UrgentNotification(sms).notify(
+  "+1-555-0000", "Server is down!"
+);
+// [SMS to +1-555-0000] [URGENT] Server is down!
+
+new ScheduledNotification(wa, "2026-07-01 09:00").notify(
+  "+1-555-0001", "Meeting reminder"
+);
+// [WA to +1-555-0001] [SCHEDULED 2026-07-01 09:00] Meeting reminder</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Implementor — send channel axis ────────────────────────────
+interface SendChannel
+{
+    public function send(string $recipient, string $message): void;
+}
+
+// ── ConcreteImplementors ──────────────────────────────────────
+class EmailSender implements SendChannel
+{
+    public function send(string $recipient, string $message): void
+    {
+        echo "[EMAIL to {$recipient}] {$message}" . PHP_EOL;
+    }
+}
+
+class SmsSender implements SendChannel
+{
+    public function send(string $recipient, string $message): void
+    {
+        echo "[SMS to {$recipient}] {$message}" . PHP_EOL;
+    }
+}
+
+// Adding WhatsAppSender doesn't affect any Notification class:
+class WhatsAppSender implements SendChannel
+{
+    public function send(string $recipient, string $message): void
+    {
+        echo "[WA to {$recipient}] {$message}" . PHP_EOL;
+    }
+}
+
+// ── Abstraction — notification type axis ───────────────────────
+abstract class Notification
+{
+    // The "bridge": reference to the implementor — injected in the constructor.
+    public function __construct(
+        protected readonly SendChannel $channel
+    ) {}
+
+    abstract public function notify(string $recipient, string $content): void;
+}
+
+// ── Refined abstractions ────────────────────────────────────────
+class NormalNotification extends Notification
+{
+    public function notify(string $recipient, string $content): void
+    {
+        $this-&gt;channel-&gt;send($recipient, $content);
+    }
+}
+
+class UrgentNotification extends Notification
+{
+    public function notify(string $recipient, string $content): void
+    {
+        $this-&gt;channel-&gt;send($recipient, "[URGENT] {$content}");
+    }
+}
+
+// Adding ScheduledNotification doesn't affect any SendChannel class:
+class ScheduledNotification extends Notification
+{
+    public function __construct(
+        SendChannel $channel,
+        private readonly string $scheduledFor
+    ) {
+        parent::__construct($channel);
+    }
+
+    public function notify(string $recipient, string $content): void
+    {
+        $this-&gt;channel-&gt;send(
+            $recipient,
+            "[SCHEDULED {$this-&gt;scheduledFor}] {$content}"
+        );
+    }
+}
+
+// ── Usage — free combinations without new subclasses ──────────
+$email = new EmailSender();
+$sms   = new SmsSender();
+$wa    = new WhatsAppSender();
+
+(new NormalNotification($email))-&gt;notify(
+    'ana@example.com', 'Your order has been confirmed.'
+);
+// [EMAIL to ana@example.com] Your order has been confirmed.
+
+(new UrgentNotification($email))-&gt;notify(
+    'ops@company.com', 'Server is down!'
+);
+// [EMAIL to ops@company.com] [URGENT] Server is down!
+
+(new UrgentNotification($sms))-&gt;notify(
+    '+1-555-0000', 'Server is down!'
+);
+// [SMS to +1-555-0000] [URGENT] Server is down!
+
+(new ScheduledNotification($wa, '2026-07-01 09:00'))-&gt;notify(
+    '+1-555-0001', 'Meeting reminder'
+);
+// [WA to +1-555-0001] [SCHEDULED 2026-07-01 09:00] Meeting reminder</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 1) -->
+
+          <h3>Example 2 — Geometric shapes with interchangeable renderers</h3>
+          <p>
+            The classic GoF example: shapes (abstraction) vary independently from
+            the renderer (implementation). A new shape type doesn't require any
+            new renderer, and a new renderer doesn't require any new shape.
+          </p>
+
+          <!-- TAB GROUP 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 2 — shapes and renderers">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Implementor — renderer axis ────────────────────────────────
+interface Renderer {
+  renderShape(type: string, params: string): void;
+}
+
+class VectorRenderer implements Renderer {
+  renderShape(type: string, params: string): void {
+    console.log(`[SVG]    ${type}(${params})`);
+  }
+}
+
+class RasterRenderer implements Renderer {
+  renderShape(type: string, params: string): void {
+    console.log(`[Canvas] ${type}(${params})`);
+  }
+}
+
+// ── Abstraction — geometric shape axis ──────────────────────────
+abstract class Shape {
+  constructor(protected renderer: Renderer) {}
+  abstract draw(): void;
+  // The implementor can be swapped at runtime:
+  switchRenderer(renderer: Renderer): void {
+    this.renderer = renderer;
+  }
+}
+
+// ── Refined abstractions ────────────────────────────────────────
+class Circle extends Shape {
+  constructor(renderer: Renderer, private readonly radius: number) {
+    super(renderer);
+  }
+  draw(): void {
+    this.renderer.renderShape("circle", `r=${this.radius}`);
+  }
+}
+
+class Rectangle extends Shape {
+  constructor(
+    renderer: Renderer,
+    private readonly width: number,
+    private readonly height: number
+  ) {
+    super(renderer);
+  }
+  draw(): void {
+    this.renderer.renderShape(
+      "rectangle", `w=${this.width} h=${this.height}`
+    );
+  }
+}
+
+// ── Usage ───────────────────────────────────────────────────────
+const vector = new VectorRenderer();
+const raster = new RasterRenderer();
+
+const c = new Circle(vector, 50);
+c.draw();
+// [SVG]    circle(r=50)
+
+new Circle(raster, 50).draw();
+// [Canvas] circle(r=50)
+
+new Rectangle(vector, 200, 100).draw();
+// [SVG]    rectangle(w=200 h=100)
+
+new Rectangle(raster, 200, 100).draw();
+// [Canvas] rectangle(w=200 h=100)
+
+// Swapping the renderer at runtime — no new subclass:
+c.switchRenderer(raster);
+c.draw();
+// [Canvas] circle(r=50)</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Implementor — renderer axis ────────────────────────────────
+interface Renderer
+{
+    public function renderShape(string $type, string $params): void;
+}
+
+class VectorRenderer implements Renderer
+{
+    public function renderShape(string $type, string $params): void
+    {
+        echo "[SVG]    {$type}({$params})" . PHP_EOL;
+    }
+}
+
+class RasterRenderer implements Renderer
+{
+    public function renderShape(string $type, string $params): void
+    {
+        echo "[Canvas] {$type}({$params})" . PHP_EOL;
+    }
+}
+
+// ── Abstraction — geometric shape axis ──────────────────────────
+abstract class Shape
+{
+    public function __construct(
+        protected Renderer $renderer
+    ) {}
+
+    abstract public function draw(): void;
+
+    // The implementor can be swapped at runtime:
+    public function switchRenderer(Renderer $renderer): void
+    {
+        $this-&gt;renderer = $renderer;
+    }
+}
+
+// ── Refined abstractions ────────────────────────────────────────
+class Circle extends Shape
+{
+    public function __construct(
+        Renderer $renderer,
+        private readonly int $radius
+    ) {
+        parent::__construct($renderer);
+    }
+
+    public function draw(): void
+    {
+        $this-&gt;renderer-&gt;renderShape('circle', "r={$this-&gt;radius}");
+    }
+}
+
+class Rectangle extends Shape
+{
+    public function __construct(
+        Renderer $renderer,
+        private readonly int $width,
+        private readonly int $height
+    ) {
+        parent::__construct($renderer);
+    }
+
+    public function draw(): void
+    {
+        $this-&gt;renderer-&gt;renderShape(
+            'rectangle',
+            "w={$this-&gt;width} h={$this-&gt;height}"
+        );
+    }
+}
+
+// ── Usage ───────────────────────────────────────────────────────
+$vector = new VectorRenderer();
+$raster = new RasterRenderer();
+
+$c = new Circle($vector, 50);
+$c-&gt;draw();
+// [SVG]    circle(r=50)
+
+(new Circle($raster, 50))-&gt;draw();
+// [Canvas] circle(r=50)
+
+(new Rectangle($vector, 200, 100))-&gt;draw();
+// [SVG]    rectangle(w=200 h=100)
+
+(new Rectangle($raster, 200, 100))-&gt;draw();
+// [Canvas] rectangle(w=200 h=100)
+
+// Swapping the renderer at runtime — no new subclass:
+$c-&gt;switchRenderer($raster);
+$c-&gt;draw();
+// [Canvas] circle(r=50)</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 2) -->
+
+        </section><!-- /.artigo__secao (examples) -->
+
+        <!-- 6. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>When you identify two independent axes of variation:</strong>
+              any structure where "type of X" and "implementation of Y" vary
+              separately and you don't want to create a subclass for every
+              combination.
+            </li>
+            <li>
+              <strong>When abstraction and implementation must be independently
+              extensible:</strong> different teams maintain each axis; new
+              implementations shouldn't affect the abstractions and vice versa.
+            </li>
+            <li>
+              <strong>When you want to swap the implementation at runtime:</strong>
+              since the implementor is injected through composition, it can be
+              replaced without recreating the abstraction.
+            </li>
+            <li>
+              <strong>To hide implementation details from client code:</strong>
+              the client only knows the abstraction's interface; the
+              ConcreteImplementors remain fully encapsulated.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>When there's only one axis of variation:</strong> if only
+              the implementation varies (and not the abstraction), a simple
+              Strategy already solves it without the Bridge's extra structure.
+            </li>
+            <li>
+              <strong>When the design isn't clear yet:</strong> the Bridge
+              requires identifying the two axes of variation ahead of time.
+              Applying it too early to an unstable design creates premature
+              abstraction that hinders subsequent changes.
+            </li>
+            <li>
+              <strong>When the hierarchy is small and stable:</strong> if you
+              have 2 types and 2 implementations that rarely change, 4 direct
+              subclasses can be simpler and more readable than the Bridge's
+              formal structure.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Eliminates the combinatorial explosion of subclasses — N + M classes instead of N × M.</li>
+            <li>Open/Closed Principle: new abstraction or implementation types can be added without changing the other axis.</li>
+            <li>Single Responsibility Principle: each class has a single axis of variation.</li>
+            <li>Allows swapping the implementation at runtime through dependency injection.</li>
+            <li>Hides implementation details from client code — only the abstraction is exposed.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Adds structural complexity — more classes, more indirection, a steeper learning curve for whoever reads the code for the first time.</li>
+            <li>Requires identifying the two axes of variation in the initial design — can be difficult in systems that are still evolving.</li>
+            <li>The relationship between abstraction and implementation can be counterintuitive for developers unfamiliar with the pattern.</li>
+          </ul>
+        </section>
+
+        <!-- 8. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Using Bridge when Strategy would suffice</h3>
+          <p>
+            If only the implementation varies (and there's no hierarchy of
+            abstractions), the Bridge is needlessly complex. The rule of thumb:
+            if you have a single abstraction class and several implementors, use
+            Strategy. If you have hierarchies on both sides, use Bridge.
+          </p>
+
+          <h3>2. Confusing Bridge with Adapter</h3>
+          <p class="artigo__aviso">
+            <strong>Warning:</strong> the temptation to use Bridge as an Adapter
+            is common. Remember: the Adapter reconciles two incompatible
+            interfaces that already exist independently — it's a
+            <em>retroactive</em> solution. The Bridge is designed from the start
+            to separate two axes of variation — it's a <em>prospective</em>
+            decision. If you're "adapting" an existing interface, use Adapter. If
+            you're designing two independent axes, use Bridge.
+          </p>
+
+          <h3>3. Accidental coupling between the two axes</h3>
+          <p>
+            The goal of the Bridge is for abstraction and implementation to vary
+            independently. If the abstraction starts calling
+            ConcreteImplementor-specific methods (by downcasting or calling
+            methods beyond the <code>Implementor</code> interface), the
+            decoupling has been broken. The Implementor should expose only what
+            is necessary for all abstractions. If different abstractions need
+            different contracts from the implementor, reassess whether Bridge is
+            still the right pattern.
+          </p>
+
+          <h3>4. Not injecting the implementor — instantiating it inside the
+          abstraction</h3>
+          <p>
+            A subtle mistake is the abstraction concretely instantiating the
+            implementor inside itself
+            (<code>this.channel = new EmailSender()</code>). This restores the
+            coupling the Bridge is meant to eliminate. The implementor should
+            always be injected from outside — via constructor, setter, or
+            Abstract Factory — so both axes remain independent and testable.
+          </p>
+        </section>
+
+        <!-- 9. RELATED PATTERNS -->
+        <section class="artigo__secao">
+          <h2>Related patterns</h2>
+          <p>
+            The Bridge is frequently compared to other patterns that also use
+            composition to delegate behavior:
+          </p>
+          <!--
+            Link discipline: 12 of the 51 catalog patterns have an English
+            translation so far (5 from Batch 1 — singleton, factory-method,
+            abstract-factory, builder, prototype — plus this batch's 7 —
+            adapter, decorator, facade, proxy, composite, bridge, flyweight).
+            Adapter, Abstract Factory and Proxy are in this batch (or Batch 1)
+            → real ../slug/ links. Strategy is not translated yet → pt-BR
+            fallback.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../adapter/">Adapter</a></li>
+            <li><a href="../../../biblioteca/strategy/">Strategy</a></li>
+            <li><a href="../abstract-factory/">Abstract Factory</a></li>
+            <li><a href="../proxy/">Proxy</a></li>
+          </ul>
+          <p class="mt-1">
+            The <strong>Adapter</strong> is the pattern most confused with
+            Bridge: Adapter reconciles existing incompatible interfaces
+            (retroactive solution); Bridge separates two independent axes from
+            the design stage (prospective solution). The <strong>Strategy</strong>
+            also uses composition to delegate, but has a single axis of variation
+            (the algorithm); Bridge has two axes with their own hierarchies. The
+            <strong>Abstract Factory</strong> can be combined with Bridge to
+            create the abstraction + implementor pair consistently — the factory
+            instantiates the correct implementation and injects it into the
+            abstraction. The <strong>Proxy</strong> also uses composition, but
+            represents a single object and controls access to it; Bridge
+            structurally separates two independent axes of variation.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="9898989898"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

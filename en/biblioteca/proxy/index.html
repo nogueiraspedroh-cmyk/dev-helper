@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Proxy — Design Patterns | Dev Helper Library</title>
+  <meta name="description" content="Learn the Proxy pattern (GoF) in depth: intent, problem, solution, structure, examples in TypeScript and PHP, when to use it, when to avoid it, and common pitfalls." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/proxy/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Proxy</span>
+        </nav>
+        <span class="artigo__categoria">Structural Pattern (GoF)</span>
+        <h1 class="artigo__titulo">Proxy</h1>
+        <p class="artigo__subtitulo">
+          Provides a substitute or placeholder for another object, controlling
+          access to it — without changing the interface the client already knows.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Control access to an object</strong> by interposing a
+            substitute (the proxy) that implements exactly the same interface as
+            the real object. The client sees no difference — it programs against
+            the contract, and the proxy decides when, how, and whether to delegate
+            the call to the real object.
+          </p>
+          <p>
+            Cataloged by the GoF (1994) as a structural pattern, the Proxy is the
+            natural choice whenever direct access to the real object needs to be
+            mediated: the object is expensive to create, lives in another process
+            or machine, requires authorization, or deserves to have its calls
+            logged or cached.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Imagine a <code>FullReport</code> object that loads and processes
+            hundreds of megabytes of data as soon as it's instantiated. Your
+            application creates this object at startup, but the user rarely opens
+            the full report — in most sessions, they only check the summary.
+          </p>
+          <p>
+            Direct access to the real object creates concrete problems:
+          </p>
+          <ul>
+            <li>
+              <strong>Unnecessary cost:</strong> the object is created and all the
+              processing runs even if the result is never used in the session.
+            </li>
+            <li>
+              <strong>No control point:</strong> there's nowhere to check
+              permissions, log accesses, or return a cached result without
+              modifying the original object or the client.
+            </li>
+            <li>
+              <strong>Coupling to the lifecycle:</strong> the client needs to know
+              exactly when to create, destroy, and cache the real object.
+            </li>
+          </ul>
+          <p>
+            The naive solution would be to add conditionals in the client,
+            creating coupling and mixing responsibilities. The Proxy solves this
+            transparently: it replaces the real object with an intermediary that
+            the client uses in exactly the same way.
+          </p>
+
+          <h3>Proxy vs Decorator: the key difference</h3>
+          <p>
+            Both the Proxy and the <a href="../decorator/">Decorator</a> wrap an
+            object while keeping the same interface. The distinction lies in the
+            <em>intent</em>:
+          </p>
+          <ul>
+            <li>
+              The <strong>Decorator</strong> adds business responsibilities to the
+              object — timestamp, operation logging, content encryption. The focus
+              is enriching what the object does.
+            </li>
+            <li>
+              The <strong>Proxy</strong> controls access to the object — lazy
+              loading, caching, permission checking, remote communication. The
+              focus is <em>when</em> and <em>whether</em> the real object is
+              accessed, not what it does.
+            </li>
+          </ul>
+          <p>
+            In practice, the Proxy frequently manages the lifecycle of the real
+            object (creates it on demand or keeps it cached), while the Decorator
+            assumes the object already exists and just adds behavior around the
+            calls.
+          </p>
+
+          <h3>Proxy vs Adapter</h3>
+          <p>
+            The <a href="../adapter/">Adapter</a> changes the object's interface —
+            it converts an incompatible contract into the one the client expects.
+            The Proxy keeps exactly the same interface as the real object: the
+            client doesn't know it's talking to an intermediary.
+          </p>
+        </section>
+
+        <!-- 3. SOLUTION -->
+        <section class="artigo__secao">
+          <h2>Solution</h2>
+          <p>The Proxy organizes the code into three participants:</p>
+          <ol>
+            <li>
+              <strong>Subject (interface):</strong> the contract shared by the
+              real object and the proxy. Defines the operations the client can
+              call. E.g.: <code>Report</code> interface with the method
+              <code>generate(): string</code>.
+            </li>
+            <li>
+              <strong>RealSubject:</strong> the real object that does the work.
+              E.g.: <code>FullReport</code> — loads data, processes it, and
+              returns the report. Can be expensive to create or require
+              privileged access.
+            </li>
+            <li>
+              <strong>Proxy:</strong> implements Subject and keeps a reference to
+              the RealSubject (created on demand or injected). Intercepts client
+              calls, runs its control logic (lazy init, permission check, cache,
+              log) and, when appropriate, delegates to the RealSubject.
+            </li>
+          </ol>
+
+          <h3>Main Proxy types</h3>
+          <ul>
+            <li>
+              <strong>Virtual (lazy-loading):</strong> defers creating the real
+              object until first use. Ideal for objects expensive to initialize.
+            </li>
+            <li>
+              <strong>Protection:</strong> checks permissions before delegating.
+              A client with insufficient access is denied without ever reaching
+              the real object.
+            </li>
+            <li>
+              <strong>Remote:</strong> represents an object that resides in
+              another process or machine. The proxy handles serialization and
+              network communication.
+            </li>
+            <li>
+              <strong>Cache/logging:</strong> stores the result of the first call
+              and returns it on subsequent ones, or logs every access for
+              auditing.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 4. STRUCTURE -->
+        <section class="artigo__secao">
+          <h2>Structure</h2>
+          <div class="code-bloco">
+<pre><code>      «interface» Subject
+      ┌──────────────────────┐
+      │ + generate(): string │
+      └──────────────────────┘
+    ▲                              ▲
+  implements                     implements
+  FullReport                     ReportProxy
+   (RealSubject)                   (Proxy)
+  ┌─────────────────────────┐    ┌────────────────────────────────┐
+  │ + generate(): string    │    │ - real: FullReport | null      │
+  │   (expensive operation) │    │ - cache: string | null         │
+  └─────────────────────────┘    │ + generate(): string           │
+                                 │   1. returns cache, if present │
+                                 │   2. creates FullReport (lazy) │
+                                 │   3. delegates & stores result │
+                                 └────────────────────────────────┘
+                                                  │ delegates (on demand)
+                                                  ▼
+                                             FullReport
+
+
+Flow — first call (object doesn't exist yet):
+
+  client.generate()
+      │
+      ▼ (via the Subject interface)
+  ReportProxy.generate()
+      │ cache == null → creates FullReport
+      │ delegates to real.generate()
+      │ stores the result in cache
+      ▼
+  returns string to the client
+
+
+Flow — subsequent call (cache populated):
+
+  client.generate()
+      │
+      ▼
+  ReportProxy.generate()
+      │ cache != null → returns immediately
+      ▼
+  returns string (without creating or calling RealSubject)
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. CODE EXAMPLES -->
+        <section class="artigo__secao">
+          <h2>Code examples</h2>
+
+          <h3>Example 1 — Virtual proxy with lazy loading and cache</h3>
+          <p>
+            The proxy creates the real object only on first access and caches the
+            result, eliminating the cost of initialization and reprocessing. The
+            client uses exactly the same interface as the real object.
+          </p>
+
+          <!-- TAB GROUP 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 1 — virtual proxy with cache">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Subject — interface shared by real and proxy ──────────────
+interface Report {
+  generate(): string;
+}
+
+// ── RealSubject — expensive to create and run ─────────────────
+class FullReport implements Report {
+  constructor() {
+    // Simulates costly initialization (DB reads, processing...)
+    console.log("[FullReport] Initializing and loading data...");
+  }
+
+  generate(): string {
+    console.log("[FullReport] Generating report...");
+    return "=== FULL REPORT ===\nSales: $1,234,567\nCustomers: 4,892";
+  }
+}
+
+// ── Virtual proxy with lazy loading and cache ─────────────────
+class ReportProxy implements Report {
+  private real: FullReport | null = null;
+  private cache: string | null = null;
+
+  generate(): string {
+    if (this.cache !== null) {
+      console.log("[Proxy] Returning cached result.");
+      return this.cache;
+    }
+    // Creates the real object only when needed (lazy)
+    if (this.real === null) {
+      this.real = new FullReport();
+    }
+    this.cache = this.real.generate();
+    return this.cache;
+  }
+}
+
+// ── Client code — only knows the Report interface ─────────────
+function displayReport(report: Report): void {
+  console.log(report.generate());
+}
+
+const proxy = new ReportProxy();
+// Nothing has been created yet — the real object doesn't exist.
+
+console.log("--- First call ---");
+displayReport(proxy);
+// [FullReport] Initializing and loading data...
+// [FullReport] Generating report...
+// === FULL REPORT ===
+
+console.log("--- Second call ---");
+displayReport(proxy);
+// [Proxy] Returning cached result.
+// === FULL REPORT ===</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Subject — interface shared by real and proxy ──────────────
+interface Report
+{
+    public function generate(): string;
+}
+
+// ── RealSubject — expensive to create and run ─────────────────
+class FullReport implements Report
+{
+    public function __construct()
+    {
+        // Simulates costly initialization (DB reads, processing...)
+        echo "[FullReport] Initializing and loading data..." . PHP_EOL;
+    }
+
+    public function generate(): string
+    {
+        echo "[FullReport] Generating report..." . PHP_EOL;
+        return "=== FULL REPORT ===\nSales: \$1,234,567\nCustomers: 4,892";
+    }
+}
+
+// ── Virtual proxy with lazy loading and cache ─────────────────
+class ReportProxy implements Report
+{
+    private ?FullReport $real = null;
+    private ?string $cache = null;
+
+    public function generate(): string
+    {
+        if ($this-&gt;cache !== null) {
+            echo "[Proxy] Returning cached result." . PHP_EOL;
+            return $this-&gt;cache;
+        }
+        // Creates the real object only when needed (lazy)
+        if ($this-&gt;real === null) {
+            $this-&gt;real = new FullReport();
+        }
+        $this-&gt;cache = $this-&gt;real-&gt;generate();
+        return $this-&gt;cache;
+    }
+}
+
+// ── Client code — only knows the Report interface ─────────────
+function displayReport(Report $report): void
+{
+    echo $report-&gt;generate() . PHP_EOL;
+}
+
+$proxy = new ReportProxy();
+// Nothing has been created yet — the real object doesn't exist.
+
+echo "--- First call ---" . PHP_EOL;
+displayReport($proxy);
+// [FullReport] Initializing and loading data...
+// [FullReport] Generating report...
+// === FULL REPORT ===
+
+echo "--- Second call ---" . PHP_EOL;
+displayReport($proxy);
+// [Proxy] Returning cached result.
+// === FULL REPORT ===</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 1) -->
+
+          <h3>Example 2 — Protection proxy with permission checking</h3>
+          <p>
+            The proxy intercepts the call and checks whether the user has the
+            required permission before delegating to the real object. The client
+            doesn't need to implement this logic — and the real object doesn't
+            need to know an access control layer exists around it either.
+          </p>
+
+          <!-- TAB GROUP 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 2 — protection proxy">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Subject ───────────────────────────────────────────────────
+interface FileService {
+  read(path: string): string;
+  write(path: string, content: string): void;
+}
+
+// ── RealSubject ───────────────────────────────────────────────
+class RealFileService implements FileService {
+  read(path: string): string {
+    return `[content of ${path}]`;
+  }
+  write(path: string, content: string): void {
+    console.log(`[Disk] Writing to ${path}: ${content}`);
+  }
+}
+
+// ── Supporting types ──────────────────────────────────────────
+type Role = "read" | "write" | "admin";
+
+interface User {
+  name: string;
+  roles: Role[];
+}
+
+// ── Protection proxy ──────────────────────────────────────────
+class ProtectedFileService implements FileService {
+  constructor(
+    private readonly real: RealFileService,
+    private readonly user: User
+  ) {}
+
+  private hasPermission(role: Role): boolean {
+    return this.user.roles.includes(role) ||
+           this.user.roles.includes("admin");
+  }
+
+  read(path: string): string {
+    if (!this.hasPermission("read")) {
+      throw new Error(`User "${this.user.name}" doesn't have read permission.`);
+    }
+    console.log(`[Proxy] Read access granted to ${this.user.name}.`);
+    return this.real.read(path);
+  }
+
+  write(path: string, content: string): void {
+    if (!this.hasPermission("write")) {
+      throw new Error(`User "${this.user.name}" doesn't have write permission.`);
+    }
+    console.log(`[Proxy] Write access granted to ${this.user.name}.`);
+    this.real.write(path, content);
+  }
+}
+
+// ── Usage ───────────────────────────────────────────────────────
+const real = new RealFileService();
+
+const reader: User = { name: "Ana", roles: ["read"] };
+const readProxy = new ProtectedFileService(real, reader);
+
+console.log(readProxy.read("/data/sales.csv"));
+// [Proxy] Read access granted to Ana.
+// [content of /data/sales.csv]
+
+try {
+  readProxy.write("/data/sales.csv", "new data");
+} catch (e) {
+  console.error((e as Error).message);
+  // User "Ana" doesn't have write permission.
+}
+
+const admin: User = { name: "Carlos", roles: ["admin"] };
+const adminProxy = new ProtectedFileService(real, admin);
+adminProxy.write("/data/sales.csv", "updated data");
+// [Proxy] Write access granted to Carlos.
+// [Disk] Writing to /data/sales.csv: updated data</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Subject ───────────────────────────────────────────────────
+interface FileService
+{
+    public function read(string $path): string;
+    public function write(string $path, string $content): void;
+}
+
+// ── RealSubject ───────────────────────────────────────────────
+class RealFileService implements FileService
+{
+    public function read(string $path): string
+    {
+        return "[content of {$path}]";
+    }
+
+    public function write(string $path, string $content): void
+    {
+        echo "[Disk] Writing to {$path}: {$content}" . PHP_EOL;
+    }
+}
+
+// ── User value object ─────────────────────────────────────────
+class User
+{
+    /** @param string[] $roles */
+    public function __construct(
+        public readonly string $name,
+        public readonly array $roles
+    ) {}
+
+    public function hasPermission(string $role): bool
+    {
+        return in_array($role, $this-&gt;roles, true)
+            || in_array('admin', $this-&gt;roles, true);
+    }
+}
+
+// ── Protection proxy ──────────────────────────────────────────
+class ProtectedFileService implements FileService
+{
+    public function __construct(
+        private readonly RealFileService $real,
+        private readonly User $user
+    ) {}
+
+    public function read(string $path): string
+    {
+        if (!$this-&gt;user-&gt;hasPermission('read')) {
+            throw new \RuntimeException(
+                "User \"{$this-&gt;user-&gt;name}\" doesn't have read permission."
+            );
+        }
+        echo "[Proxy] Read access granted to {$this-&gt;user-&gt;name}." . PHP_EOL;
+        return $this-&gt;real-&gt;read($path);
+    }
+
+    public function write(string $path, string $content): void
+    {
+        if (!$this-&gt;user-&gt;hasPermission('write')) {
+            throw new \RuntimeException(
+                "User \"{$this-&gt;user-&gt;name}\" doesn't have write permission."
+            );
+        }
+        echo "[Proxy] Write access granted to {$this-&gt;user-&gt;name}." . PHP_EOL;
+        $this-&gt;real-&gt;write($path, $content);
+    }
+}
+
+// ── Usage ───────────────────────────────────────────────────────
+$real = new RealFileService();
+
+$reader = new User('Ana', ['read']);
+$readProxy = new ProtectedFileService($real, $reader);
+
+echo $readProxy-&gt;read('/data/sales.csv') . PHP_EOL;
+// [Proxy] Read access granted to Ana.
+// [content of /data/sales.csv]
+
+try {
+    $readProxy-&gt;write('/data/sales.csv', 'new data');
+} catch (\RuntimeException $e) {
+    echo $e-&gt;getMessage() . PHP_EOL;
+    // User "Ana" doesn't have write permission.
+}
+
+$admin = new User('Carlos', ['admin']);
+$adminProxy = new ProtectedFileService($real, $admin);
+$adminProxy-&gt;write('/data/sales.csv', 'updated data');
+// [Proxy] Write access granted to Carlos.
+// [Disk] Writing to /data/sales.csv: updated data</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 2) -->
+
+        </section><!-- /.artigo__secao (examples) -->
+
+        <!-- 6. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>Lazy initialization (virtual Proxy):</strong> when creating
+              the real object is expensive (in time, memory, or I/O) and it might
+              not be needed in the current session — defer creation until first
+              access.
+            </li>
+            <li>
+              <strong>Access control (protection Proxy):</strong> when different
+              clients should have different permissions over the same object. The
+              proxy centralizes the check without polluting the real object or
+              the client.
+            </li>
+            <li>
+              <strong>Caching results:</strong> when the result of an expensive
+              operation can be reused in subsequent calls with the same
+              parameters — the proxy stores and returns it without delegating
+              again.
+            </li>
+            <li>
+              <strong>Logging and auditing:</strong> when you need to log every
+              call to an object without modifying its class.
+            </li>
+            <li>
+              <strong>Remote proxy:</strong> when the real object lives in another
+              process or server. The local proxy handles serialization and
+              communication.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>When latency is critically important:</strong> every call
+              goes through an extra layer. In high-performance loops, the
+              indirection can be noticeable.
+            </li>
+            <li>
+              <strong>When the real object's interface changes often:</strong> the
+              proxy needs to keep up with every contract change — if the Subject
+              is unstable, the maintenance cost can outweigh the benefit.
+            </li>
+            <li>
+              <strong>As a substitute for dependency injection:</strong> a
+              protection Proxy that handles global authentication can be a sign
+              that the authorization design needs to be revisited at the
+              architectural level.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Controls the lifecycle of the real object without the client knowing — lazy creation, caching, on-demand destruction.</li>
+            <li>Adds cross-cutting behavior (logging, security, caching) without modifying the real object or the client.</li>
+            <li>Open/Closed Principle: new kinds of control require only new proxies, without touching the RealSubject.</li>
+            <li>Makes testing easier: in test contexts, a proxy can simulate the real object's behavior without depending on external resources.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Adds an indirection layer that can make the execution flow less obvious when reading the code.</li>
+            <li>The proxy needs to implement the entire Subject interface — large interfaces generate a lot of delegation boilerplate.</li>
+            <li>The system's behavior changes silently depending on which Subject implementation was injected — can make debugging harder.</li>
+          </ul>
+        </section>
+
+        <!-- 8. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Confusing Proxy with Decorator</h3>
+          <p>
+            The most frequent pitfall is implementing a Proxy when the intent is
+            Decorator — or vice versa. The decisive question: <em>are you
+            controlling access to the object (Proxy) or adding business behavior
+            to it (Decorator)?</em> A cache proxy returns the result without
+            calling the real object the second time — that's access control. A
+            logging decorator logs the call and always delegates — that's
+            behavior enrichment. The structure is the same; the intent is
+            different.
+          </p>
+
+          <h3>2. Shared state in the cache</h3>
+          <p class="artigo__aviso">
+            <strong>Warning:</strong> a proxy with a cache needs a clear
+            invalidation policy. If the real object's underlying state can change
+            (e.g.: database data updated by another part of the system), the
+            proxy's cache will become stale. Define explicitly: is the cache
+            permanent for the session, does it have a TTL, or is it invalidated
+            by an event?
+          </p>
+
+          <h3>3. Proxy is not domain authorization</h3>
+          <p>
+            A protection Proxy is suitable for simple, cross-cutting controls
+            (e.g.: checking whether the logged-in user has the required role).
+            Don't use Proxy for complex authorization business rules that depend
+            on data state — in that case, the logic belongs to the domain or to a
+            dedicated authorization service.
+          </p>
+
+          <h3>4. Forgetting to delegate every method</h3>
+          <p>
+            If the Subject has five methods and the Proxy only intercepts one,
+            the other four still need to be implemented — usually delegating
+            directly to the real object. It's easy to forget a method and
+            introduce a silent bug where the call "disappears" without doing
+            anything (or throws an unexpected runtime exception in dynamic
+            languages).
+          </p>
+        </section>
+
+        <!-- 9. RELATED PATTERNS -->
+        <section class="artigo__secao">
+          <h2>Related patterns</h2>
+          <p>
+            The Proxy shares structure with other patterns and is frequently
+            compared or combined with them:
+          </p>
+          <!--
+            Link discipline: 12 of the 51 catalog patterns have an English
+            translation so far (5 from Batch 1 — singleton, factory-method,
+            abstract-factory, builder, prototype — plus this batch's 7 —
+            adapter, decorator, facade, proxy, composite, bridge, flyweight).
+            Decorator, Adapter, Composite and Bridge are all in this same
+            batch → real ../slug/ links.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../decorator/">Decorator</a></li>
+            <li><a href="../adapter/">Adapter</a></li>
+            <li><a href="../composite/">Composite</a></li>
+            <li><a href="../bridge/">Bridge</a></li>
+          </ul>
+          <p class="mt-1">
+            The <strong>Decorator</strong> is the pattern with the greatest
+            structural similarity: both wrap the real object implementing the
+            same interface. The difference is in the intent — Proxy controls
+            access, Decorator adds behavior. The <strong>Adapter</strong> also
+            wraps the object, but changes its interface; the Proxy never changes
+            the interface. The <strong>Composite</strong> composes multiple
+            objects into a tree — the Proxy always represents exactly one real
+            object. The <strong>Bridge</strong> separates two independent axes of
+            variation into their own hierarchies — a prospective design decision.
+            The Proxy doesn't separate axes: it represents exactly one real
+            object, keeps the same interface, and controls access to it; Bridge
+            and Proxy have fundamentally different intents and structures.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="9696969696"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

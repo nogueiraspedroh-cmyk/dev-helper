@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Decorator — Design Patterns | Dev Helper Library</title>
+  <meta name="description" content="Learn the Decorator pattern (GoF) in depth: intent, problem, solution, structure, examples in TypeScript and PHP, when to use it, when to avoid it, and common pitfalls." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/decorator/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Decorator</span>
+        </nav>
+        <span class="artigo__categoria">Structural Pattern (GoF)</span>
+        <h1 class="artigo__titulo">Decorator</h1>
+        <p class="artigo__subtitulo">
+          Attaches additional responsibilities to an object dynamically, wrapping it
+          in a wrapper that implements the same interface — a flexible alternative
+          to inheritance for extending behavior.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Add responsibilities to an object dynamically</strong>, without
+            altering its class. The Decorator wraps the original object in a
+            wrapper that implements the same interface — delegating calls to the
+            inner object and adding behavior before, after, or around the
+            delegation. Decorators can be stacked in any order and combination.
+          </p>
+          <p>
+            Cataloged by the GoF (1994) as a structural pattern, the Decorator is
+            the elegant answer to the <em>subclass explosion</em> problem: when you
+            need varied combinations of behavior, creating a subclass for every
+            combination scales unsustainably.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Consider a notification system that needs to support optional
+            features: adding a timestamp to the message, logging the notification,
+            and encrypting the content before sending. These features can be
+            combined freely — with or without timestamp, with or without logging,
+            with or without encryption.
+          </p>
+          <p>
+            With an inheritance approach, you would need a subclass for every
+            combination: <code>NotifierWithTimestamp</code>,
+            <code>NotifierWithLog</code>, <code>NotifierWithTimestampAndLog</code>,
+            <code>NotifierWithEncryption</code>,
+            <code>NotifierWithTimestampAndEncryption</code>, and so on. With just
+            three optional features, that's up to 8 possible combinations (2³).
+            With four, it's 16. The growth is exponential.
+          </p>
+          <p>
+            Moreover, inheritance is static — the combination of behaviors is
+            fixed at compile time and can't be changed at runtime as needs change.
+          </p>
+
+          <h3>Decorator vs Adapter: the key difference</h3>
+          <p>
+            It's important not to confuse the two patterns. The
+            <strong>Adapter</strong> changes an object's interface — its goal is
+            compatibility between incompatible interfaces. The
+            <strong>Decorator</strong> keeps exactly the same interface as the
+            object it wraps — its goal is to add behavior to the same contract. If
+            you see a wrapper that changes the interface, it's an Adapter; if it
+            keeps the interface and adds functionality, it's a Decorator.
+          </p>
+        </section>
+
+        <!-- 3. SOLUTION -->
+        <section class="artigo__secao">
+          <h2>Solution</h2>
+          <p>The Decorator organizes the code into four participants:</p>
+          <ol>
+            <li>
+              <strong>Component (interface):</strong> defines the contract shared
+              between the concrete object and all decorators. E.g.:
+              <code>Notifier</code> interface with the method
+              <code>send(message)</code>.
+            </li>
+            <li>
+              <strong>ConcreteComponent:</strong> the base implementation, without
+              decorations. E.g.: <code>EmailNotifier</code> — sends the e-mail and
+              nothing else.
+            </li>
+            <li>
+              <strong>Decorator (abstract base class, optional):</strong>
+              implements Component and keeps a reference to another Component (the
+              wrapped object). Delegates all calls to the inner object. In
+              TypeScript, this can be an abstract class or simply have each
+              concrete decorator keep the reference itself.
+            </li>
+            <li>
+              <strong>ConcreteDecorator:</strong> extends the Decorator and adds
+              behavior before, after, or around the delegated call. E.g.:
+              <code>TimestampNotifier</code>, <code>LoggingNotifier</code>.
+            </li>
+          </ol>
+          <p>
+            The key is that the result of a decorator is itself a Component —
+            which allows stacking decorators freely:
+            <code>new LoggingNotifier(new TimestampNotifier(new EmailNotifier()))</code>.
+          </p>
+        </section>
+
+        <!-- 4. STRUCTURE -->
+        <section class="artigo__secao">
+          <h2>Structure</h2>
+          <div class="code-bloco">
+<pre><code>        «interface»
+      Notifier
+    ┌───────────────────┐
+    │ + send(msg): void │
+    └───────────────────┘
+      ▲              ▲
+      │              │ implements (and wraps another Notifier)
+EmailNotifier     NotifierDecorator (abstract base)
+(ConcreteComp.)   ┌───────────────────────────────┐
+                  │ # wrapped: Notifier           │
+                  │ + send(msg): void             │
+                  │   → delegates to this.wrapped │
+                  └───────────────────────────────┘
+                                  ▲
+                      ┌───────────┴──────────┐
+                      │                      │
+                    TimestampNotifier      LoggingNotifier
+                    (ConcreteDecorator)    (ConcreteDecorator)
+                    send(msg):             send(msg):
+                      msg = "[ts] " + msg    this.wrapped.send(msg)
+                      this.wrapped.send(msg) logMessage(msg)
+
+
+Stacking (right to left in the code):
+
+  new LoggingNotifier(
+    new TimestampNotifier(
+      new EmailNotifier()
+    )
+  )
+
+  → send("Hello") calls:
+    1. LoggingNotifier.send    → logs the message
+    2. TimestampNotifier.send  → prepends timestamp
+    3. EmailNotifier.send      → sends the e-mail
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. CODE EXAMPLES -->
+        <section class="artigo__secao">
+          <h2>Code examples</h2>
+
+          <h3>Example 1 — Notifier with optional layers</h3>
+          <p>
+            Each decorator adds one responsibility. The combination and the order
+            are defined at runtime — without creating subclasses for every
+            combination.
+          </p>
+
+          <!-- TAB GROUP 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 1 — decorated notifier">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Component ─────────────────────────────────────────────────
+interface Notifier {
+  send(message: string): void;
+}
+
+// ── ConcreteComponent ─────────────────────────────────────────
+class EmailNotifier implements Notifier {
+  send(message: string): void {
+    console.log(`[EMAIL] ${message}`);
+  }
+}
+
+// ── Decorators ────────────────────────────────────────────────
+
+// Adds a timestamp to the message before delegating.
+class TimestampNotifier implements Notifier {
+  constructor(private readonly wrapped: Notifier) {}
+
+  send(message: string): void {
+    const ts = new Date().toISOString();
+    this.wrapped.send(`[${ts}] ${message}`);
+  }
+}
+
+// Logs the message before delegating.
+class LoggingNotifier implements Notifier {
+  private readonly history: string[] = [];
+
+  constructor(private readonly wrapped: Notifier) {}
+
+  send(message: string): void {
+    this.history.push(message);
+    console.log(`[LOG] Message logged. Total: ${this.history.length}`);
+    this.wrapped.send(message);
+  }
+
+  getHistory(): readonly string[] {
+    return this.history;
+  }
+}
+
+// Simulates simple encryption before delegating.
+class EncryptingNotifier implements Notifier {
+  constructor(private readonly wrapped: Notifier) {}
+
+  send(message: string): void {
+    // Simulation: we reverse the string as "encryption"
+    const encrypted = message.split("").reverse().join("");
+    this.wrapped.send(`[ENC:${encrypted}]`);
+  }
+}
+
+// ── Usage — composing decorators at runtime ───────────────────
+const base = new EmailNotifier();
+
+// Timestamp only:
+const withTimestamp = new TimestampNotifier(base);
+withTimestamp.send("Your invoice has arrived");
+// [EMAIL] [2026-06-25T...] Your invoice has arrived
+
+// Log + timestamp (log is the outermost):
+const loggedNotifier = new LoggingNotifier(
+  new TimestampNotifier(base)
+);
+loggedNotifier.send("Order confirmed");
+// [LOG] Message logged. Total: 1
+// [EMAIL] [2026-06-25T...] Order confirmed
+
+// All three, in order: log → encryption → timestamp → email
+const full = new LoggingNotifier(
+  new EncryptingNotifier(
+    new TimestampNotifier(base)
+  )
+);
+full.send("Hi");
+// [LOG] Message logged. Total: 1
+// [EMAIL] [2026-06-25T...] [ENC:iH]</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Component ─────────────────────────────────────────────────
+interface Notifier
+{
+    public function send(string $message): void;
+}
+
+// ── ConcreteComponent ─────────────────────────────────────────
+class EmailNotifier implements Notifier
+{
+    public function send(string $message): void
+    {
+        echo "[EMAIL] {$message}" . PHP_EOL;
+    }
+}
+
+// ── Decorators ────────────────────────────────────────────────
+
+// Adds a timestamp to the message before delegating.
+class TimestampNotifier implements Notifier
+{
+    public function __construct(private readonly Notifier $wrapped) {}
+
+    public function send(string $message): void
+    {
+        $ts = (new \DateTimeImmutable())-&gt;format(\DateTimeInterface::ATOM);
+        $this-&gt;wrapped-&gt;send("[{$ts}] {$message}");
+    }
+}
+
+// Logs the message before delegating.
+class LoggingNotifier implements Notifier
+{
+    /** @var string[] */
+    private array $history = [];
+
+    public function __construct(private readonly Notifier $wrapped) {}
+
+    public function send(string $message): void
+    {
+        $this-&gt;history[] = $message;
+        $total = count($this-&gt;history);
+        echo "[LOG] Message logged. Total: {$total}" . PHP_EOL;
+        $this-&gt;wrapped-&gt;send($message);
+    }
+
+    /** @return string[] */
+    public function getHistory(): array
+    {
+        return $this-&gt;history;
+    }
+}
+
+// Simulates simple encryption before delegating.
+class EncryptingNotifier implements Notifier
+{
+    public function __construct(private readonly Notifier $wrapped) {}
+
+    public function send(string $message): void
+    {
+        $encrypted = strrev($message);
+        $this-&gt;wrapped-&gt;send("[ENC:{$encrypted}]");
+    }
+}
+
+// ── Usage — composing decorators at runtime ───────────────────
+$base = new EmailNotifier();
+
+// Timestamp only:
+$withTimestamp = new TimestampNotifier($base);
+$withTimestamp-&gt;send('Your invoice has arrived');
+// [EMAIL] [2026-06-25T...] Your invoice has arrived
+
+// Log + timestamp:
+$loggedNotifier = new LoggingNotifier(
+    new TimestampNotifier($base)
+);
+$loggedNotifier-&gt;send('Order confirmed');
+// [LOG] Message logged. Total: 1
+// [EMAIL] [2026-06-25T...] Order confirmed
+
+// All three:
+$full = new LoggingNotifier(
+    new EncryptingNotifier(
+        new TimestampNotifier($base)
+    )
+);
+$full-&gt;send('Hi');
+// [LOG] Message logged. Total: 1
+// [EMAIL] [2026-06-25T...] [ENC:iH]</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 1) -->
+
+          <h3>Example 2 — Beverage price with add-ons (classic GoF example)</h3>
+          <p>
+            The coffee-with-add-ons example is canonical in the Decorator
+            literature. Each add-on (milk, caramel, whipped cream) is a decorator
+            that adds its price to the total of the wrapped component. The final
+            result correctly accumulates all values.
+          </p>
+
+          <!-- TAB GROUP 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 2 — beverage with add-ons">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Component ─────────────────────────────────────────────────
+interface Beverage {
+  description(): string;
+  price(): number; // in cents
+}
+
+// ── ConcreteComponents ────────────────────────────────────────
+class Espresso implements Beverage {
+  description(): string { return "Espresso"; }
+  price(): number       { return 300; } // $3.00
+}
+
+class Americano implements Beverage {
+  description(): string { return "Americano"; }
+  price(): number       { return 200; } // $2.00
+}
+
+// ── Add-on decorators ─────────────────────────────────────────
+class WithMilk implements Beverage {
+  constructor(private readonly beverage: Beverage) {}
+  description(): string { return `${this.beverage.description()}, Milk`; }
+  price(): number       { return this.beverage.price() + 50; } // +$0.50
+}
+
+class WithCaramel implements Beverage {
+  constructor(private readonly beverage: Beverage) {}
+  description(): string { return `${this.beverage.description()}, Caramel`; }
+  price(): number       { return this.beverage.price() + 75; } // +$0.75
+}
+
+class WithWhippedCream implements Beverage {
+  constructor(private readonly beverage: Beverage) {}
+  description(): string { return `${this.beverage.description()}, Whipped Cream`; }
+  price(): number       { return this.beverage.price() + 100; } // +$1.00
+}
+
+// ── Usage ───────────────────────────────────────────────────────
+const plain = new Espresso();
+console.log(`${plain.description()}: $${(plain.price() / 100).toFixed(2)}`);
+// Espresso: $3.00
+
+const cappuccino = new WithWhippedCream(new WithMilk(new Espresso()));
+console.log(`${cappuccino.description()}: $${(cappuccino.price() / 100).toFixed(2)}`);
+// Espresso, Milk, Whipped Cream: $4.50
+// (300 + 50 + 100 = 450 cents = $4.50 ✓)
+
+const special = new WithCaramel(new WithWhippedCream(new WithMilk(new Americano())));
+console.log(`${special.description()}: $${(special.price() / 100).toFixed(2)}`);
+// Americano, Milk, Whipped Cream, Caramel: $4.25
+// (200 + 50 + 100 + 75 = 425 cents = $4.25 ✓)</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Component ─────────────────────────────────────────────────
+interface Beverage
+{
+    public function description(): string;
+    public function price(): int; // in cents
+}
+
+// ── ConcreteComponents ────────────────────────────────────────
+class Espresso implements Beverage
+{
+    public function description(): string { return 'Espresso'; }
+    public function price(): int          { return 300; } // $3.00
+}
+
+class Americano implements Beverage
+{
+    public function description(): string { return 'Americano'; }
+    public function price(): int          { return 200; } // $2.00
+}
+
+// ── Add-on decorators ─────────────────────────────────────────
+class WithMilk implements Beverage
+{
+    public function __construct(private readonly Beverage $beverage) {}
+    public function description(): string { return $this-&gt;beverage-&gt;description() . ', Milk'; }
+    public function price(): int          { return $this-&gt;beverage-&gt;price() + 50; } // +$0.50
+}
+
+class WithCaramel implements Beverage
+{
+    public function __construct(private readonly Beverage $beverage) {}
+    public function description(): string { return $this-&gt;beverage-&gt;description() . ', Caramel'; }
+    public function price(): int          { return $this-&gt;beverage-&gt;price() + 75; } // +$0.75
+}
+
+class WithWhippedCream implements Beverage
+{
+    public function __construct(private readonly Beverage $beverage) {}
+    public function description(): string { return $this-&gt;beverage-&gt;description() . ', Whipped Cream'; }
+    public function price(): int          { return $this-&gt;beverage-&gt;price() + 100; } // +$1.00
+}
+
+// ── Usage ───────────────────────────────────────────────────────
+$plain = new Espresso();
+printf("%s: $%.2f\n", $plain-&gt;description(), $plain-&gt;price() / 100);
+// Espresso: $3.00
+
+$cappuccino = new WithWhippedCream(new WithMilk(new Espresso()));
+printf("%s: $%.2f\n", $cappuccino-&gt;description(), $cappuccino-&gt;price() / 100);
+// Espresso, Milk, Whipped Cream: $4.50
+// (300 + 50 + 100 = 450 cents = $4.50 ✓)
+
+$special = new WithCaramel(new WithWhippedCream(new WithMilk(new Americano())));
+printf("%s: $%.2f\n", $special-&gt;description(), $special-&gt;price() / 100);
+// Americano, Milk, Whipped Cream, Caramel: $4.25
+// (200 + 50 + 100 + 75 = 425 cents = $4.25 ✓)</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 2) -->
+
+        </section><!-- /.artigo__secao (examples) -->
+
+        <!-- 6. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>When you need to add responsibilities to objects
+              dynamically</strong> and reversibly, without modifying the original
+              class.
+            </li>
+            <li>
+              <strong>To avoid subclass explosion</strong> in scenarios where
+              behaviors are optional and combined freely (e.g.: logging + auth +
+              caching middleware).
+            </li>
+            <li>
+              <strong>When extension via inheritance is impractical</strong>
+              because the class is <code>final</code>, or because the possible
+              combinations are too many to model statically.
+            </li>
+            <li>
+              <strong>Pipelines and middleware:</strong> the middleware stack in
+              Express, Laravel, ASP.NET and similar frameworks is a direct
+              application of the Decorator — each middleware is a decorator over
+              the next handler.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>When there's a single fixed additional behavior:</strong> a
+              simple subclass or direct composition is more readable than
+              building the full Decorator structure.
+            </li>
+            <li>
+              <strong>When the order of decorators is sensitive and
+              undocumented:</strong> decorator stacks can produce unexpected
+              behavior if assembled in the wrong order. If this is frequent,
+              consider a Builder to construct the stack in a controlled way.
+            </li>
+            <li>
+              <strong>When you need to reference the concrete component:</strong>
+              code that downcasts to obtain the <code>ConcreteComponent</code>
+              from inside the decorator stack breaks encapsulation and invalidates
+              the pattern.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Extends the behavior of objects without altering the original class (Open/Closed Principle).</li>
+            <li>Combines responsibilities at runtime — much more flexible than static inheritance.</li>
+            <li>Avoids huge class hierarchies to cover every possible combination.</li>
+            <li>Each decorator has a single responsibility — easier to test in isolation.</li>
+            <li>Decorators can be reused in different combinations and over different components.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Deep decorator stacks make debugging hard — tracing which decorator caused an unexpected behavior requires inspecting the whole chain.</li>
+            <li>The order of decorators matters and can be counterintuitive.</li>
+            <li>Large interfaces (many methods) are cumbersome to decorate — each decorator must implement every method, even if it only overrides one.</li>
+            <li>It can be hard to remove a specific decorator from the middle of a stack.</li>
+          </ul>
+        </section>
+
+        <!-- 8. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Confusing Decorator with Adapter</h3>
+          <p>
+            The essential distinction: the <strong>Decorator</strong> keeps the
+            same interface as the object it wraps. If the wrapper returns a
+            different interface from the object it wraps, it's an Adapter, not a
+            Decorator. When you notice the wrapper is "translating" calls to a
+            different API, reconsider whether the correct pattern isn't Adapter.
+          </p>
+
+          <h3>2. Decorators with shared state</h3>
+          <p class="artigo__aviso">
+            <strong>Warning:</strong> each decorator instance has its own state
+            (like the <code>history</code> of <code>LoggingNotifier</code>). If the
+            same decorator is reused across different contexts without being
+            reinstantiated, accumulated state from one context can leak into
+            another. Prefer stateless decorators whenever possible; when state is
+            needed, clearly document the expected lifecycle.
+          </p>
+
+          <h3>3. Large interfaces are hard to decorate</h3>
+          <p>
+            If the Component interface has 10 methods, each decorator must
+            implement all 10 — even if it only wants to override 1. This creates
+            repetitive delegation code. The classic solution is to create an
+            abstract Decorator base class that delegates all methods to
+            <code>wrapped</code>, letting the concrete decorators override only
+            what they need.
+          </p>
+
+          <h3>4. Order matters more than it seems</h3>
+          <p>
+            In Example 1, <code>new LoggingNotifier(new TimestampNotifier(base))</code>
+            logs the message <em>without</em> a timestamp (because the log is the
+            outermost layer). Reversing the order —
+            <code>new TimestampNotifier(new LoggingNotifier(base))</code> — would
+            make the log record the message <em>with</em> a timestamp. It's not
+            always obvious which order is the intended one. Document the expected
+            order and, if necessary, use a Builder to guarantee the correct
+            assembly.
+          </p>
+        </section>
+
+        <!-- 9. RELATED PATTERNS -->
+        <section class="artigo__secao">
+          <h2>Related patterns</h2>
+          <p>
+            The Decorator interacts with several patterns, especially the other
+            structural ones:
+          </p>
+          <!--
+            Link discipline: 12 of the 51 catalog patterns have an English
+            translation so far (5 from Batch 1 — singleton, factory-method,
+            abstract-factory, builder, prototype — plus this batch's 7 —
+            adapter, decorator, facade, proxy, composite, bridge, flyweight).
+            Adapter, Facade, Composite and Proxy are in this same batch → real
+            ../slug/ links. Strategy is not translated yet → pt-BR fallback.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../adapter/">Adapter</a></li>
+            <li><a href="../facade/">Facade</a></li>
+            <li><a href="../../../biblioteca/strategy/">Strategy</a></li>
+            <li><a href="../composite/">Composite</a></li>
+            <li><a href="../proxy/">Proxy</a></li>
+          </ul>
+          <p class="mt-1">
+            The <strong>Adapter</strong> changes the interface; the Decorator
+            keeps the interface and adds behavior — that's the fundamental
+            difference between the two. The <strong>Facade</strong> simplifies
+            access to a subsystem; a Facade can be internally built with
+            Decorators over the subsystem's components. The
+            <strong>Strategy</strong> also varies behavior, but by substitution:
+            it swaps the entire algorithm for a different one (the context
+            chooses which Strategy to use). The Decorator accumulates behaviors
+            in layers — it doesn't replace, it adds. The
+            <strong>Composite</strong> shares the same recursive structure (an
+            object that contains others of the same type), but for the purpose of
+            treating a group of objects as one, not adding responsibilities. The
+            <strong>Proxy</strong> also wraps an object keeping the same
+            interface, but with the goal of controlling access (lazy loading,
+            caching, security) — not adding business responsibilities.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="8282828282"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

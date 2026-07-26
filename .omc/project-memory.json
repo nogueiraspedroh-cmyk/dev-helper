@@ -1,0 +1,423 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1785020668355,
+  "projectRoot": "/home/casa/projetos/dev-helper",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "docs",
+      "pages"
+    ],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "biblioteca": {
+      "path": "biblioteca",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1785020668341,
+      "keyFiles": [
+        "index.html"
+      ]
+    },
+    "css": {
+      "path": "css",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1785020668347,
+      "keyFiles": [
+        "styles.css"
+      ]
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 3,
+      "lastAccessed": 1785020668348,
+      "keyFiles": [
+        "MELHORIA-CONTINUA-AGENTES.md",
+        "PLANEJAMENTO.md",
+        "ROADMAP.md"
+      ]
+    },
+    "en": {
+      "path": "en",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1785020668349,
+      "keyFiles": [
+        "index.html"
+      ]
+    },
+    "js": {
+      "path": "js",
+      "purpose": null,
+      "fileCount": 2,
+      "lastAccessed": 1785020668349,
+      "keyFiles": [
+        "biblioteca.js",
+        "main.js"
+      ]
+    },
+    "pages": {
+      "path": "pages",
+      "purpose": "Page components",
+      "fileCount": 2,
+      "lastAccessed": 1785020668350,
+      "keyFiles": [
+        "contato.html",
+        "sobre.html"
+      ]
+    },
+    "tools": {
+      "path": "tools",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1785020668350,
+      "keyFiles": []
+    },
+    "en/pages": {
+      "path": "en/pages",
+      "purpose": "Page components",
+      "fileCount": 2,
+      "lastAccessed": 1785020668353,
+      "keyFiles": [
+        "about.html",
+        "contact.html"
+      ]
+    },
+    "js/lib": {
+      "path": "js/lib",
+      "purpose": "Library code",
+      "fileCount": 1,
+      "lastAccessed": 1785020668354,
+      "keyFiles": [
+        "qrcode-core.js"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "js/main.js",
+      "accessCount": 42,
+      "lastAccessed": 1785042914855,
+      "type": "file"
+    },
+    {
+      "path": "en/index.html",
+      "accessCount": 21,
+      "lastAccessed": 1785023348627,
+      "type": "file"
+    },
+    {
+      "path": "en/tools/json/index.html",
+      "accessCount": 6,
+      "lastAccessed": 1785039665488,
+      "type": "file"
+    },
+    {
+      "path": "js/tools-en/cron.js",
+      "accessCount": 4,
+      "lastAccessed": 1785022301068,
+      "type": "file"
+    },
+    {
+      "path": "en/tools/senha/index.html",
+      "accessCount": 3,
+      "lastAccessed": 1785022043166,
+      "type": "file"
+    },
+    {
+      "path": "js/tools-en/fuso-horario.js",
+      "accessCount": 3,
+      "lastAccessed": 1785022300100,
+      "type": "file"
+    },
+    {
+      "path": "docs/PLANEJAMENTO.md",
+      "accessCount": 3,
+      "lastAccessed": 1785022780303,
+      "type": "file"
+    },
+    {
+      "path": "en/tools/cidr/index.html",
+      "accessCount": 3,
+      "lastAccessed": 1785022788820,
+      "type": "file"
+    },
+    {
+      "path": "tools/json/index.html",
+      "accessCount": 3,
+      "lastAccessed": 1785022973413,
+      "type": "file"
+    },
+    {
+      "path": "en/tools/hash/index.html",
+      "accessCount": 2,
+      "lastAccessed": 1785021090761,
+      "type": "file"
+    },
+    {
+      "path": "en/tools/jwt/index.html",
+      "accessCount": 2,
+      "lastAccessed": 1785021091397,
+      "type": "file"
+    },
+    {
+      "path": "en/tools/uuid/index.html",
+      "accessCount": 2,
+      "lastAccessed": 1785021094755,
+      "type": "file"
+    },
+    {
+      "path": "en/tools/base64/index.html",
+      "accessCount": 2,
+      "lastAccessed": 1785021095218,
+      "type": "file"
+    },
+    {
+      "path": "js/tools-en/senha.js",
+      "accessCount": 2,
+      "lastAccessed": 1785021399175,
+      "type": "file"
+    },
+    {
+      "path": "tools/cidr/index.html",
+      "accessCount": 2,
+      "lastAccessed": 1785021812743,
+      "type": "file"
+    },
+    {
+      "path": "tools/cron/index.html",
+      "accessCount": 2,
+      "lastAccessed": 1785021814651,
+      "type": "file"
+    },
+    {
+      "path": "tools/timestamp/index.html",
+      "accessCount": 2,
+      "lastAccessed": 1785021817188,
+      "type": "file"
+    },
+    {
+      "path": "tools/fuso-horario/index.html",
+      "accessCount": 2,
+      "lastAccessed": 1785021818900,
+      "type": "file"
+    },
+    {
+      "path": "tools/qrcode/index.html",
+      "accessCount": 2,
+      "lastAccessed": 1785021821126,
+      "type": "file"
+    },
+    {
+      "path": "tools/meta-tags/index.html",
+      "accessCount": 2,
+      "lastAccessed": 1785021823275,
+      "type": "file"
+    },
+    {
+      "path": "tools/gitignore/index.html",
+      "accessCount": 2,
+      "lastAccessed": 1785021825108,
+      "type": "file"
+    },
+    {
+      "path": "tools/horas-trabalhadas/index.html",
+      "accessCount": 2,
+      "lastAccessed": 1785021827094,
+      "type": "file"
+    },
+    {
+      "path": "js/tools/cron.js",
+      "accessCount": 2,
+      "lastAccessed": 1785022057263,
+      "type": "file"
+    },
+    {
+      "path": "js/tools-en/timestamp.js",
+      "accessCount": 2,
+      "lastAccessed": 1785022292179,
+      "type": "file"
+    },
+    {
+      "path": "js/tools-en/hash.js",
+      "accessCount": 1,
+      "lastAccessed": 1785020820863,
+      "type": "file"
+    },
+    {
+      "path": "js/tools-en/jwt.js",
+      "accessCount": 1,
+      "lastAccessed": 1785020840625,
+      "type": "file"
+    },
+    {
+      "path": "js/tools-en/uuid.js",
+      "accessCount": 1,
+      "lastAccessed": 1785020856889,
+      "type": "file"
+    },
+    {
+      "path": "js/tools-en/base64.js",
+      "accessCount": 1,
+      "lastAccessed": 1785020868329,
+      "type": "file"
+    },
+    {
+      "path": "tools/senha/index.html",
+      "accessCount": 1,
+      "lastAccessed": 1785020883880,
+      "type": "file"
+    },
+    {
+      "path": "tools/hash/index.html",
+      "accessCount": 1,
+      "lastAccessed": 1785020889682,
+      "type": "file"
+    },
+    {
+      "path": "tools/jwt/index.html",
+      "accessCount": 1,
+      "lastAccessed": 1785020896017,
+      "type": "file"
+    },
+    {
+      "path": "tools/uuid/index.html",
+      "accessCount": 1,
+      "lastAccessed": 1785020901705,
+      "type": "file"
+    },
+    {
+      "path": "tools/base64/index.html",
+      "accessCount": 1,
+      "lastAccessed": 1785020907554,
+      "type": "file"
+    },
+    {
+      "path": "js/tools/cidr.js",
+      "accessCount": 1,
+      "lastAccessed": 1785021325031,
+      "type": "file"
+    },
+    {
+      "path": "js/tools/timestamp.js",
+      "accessCount": 1,
+      "lastAccessed": 1785021331723,
+      "type": "file"
+    },
+    {
+      "path": "js/tools/fuso-horario.js",
+      "accessCount": 1,
+      "lastAccessed": 1785021332599,
+      "type": "file"
+    },
+    {
+      "path": "js/tools/qrcode.js",
+      "accessCount": 1,
+      "lastAccessed": 1785021345379,
+      "type": "file"
+    },
+    {
+      "path": "js/tools/meta-tags.js",
+      "accessCount": 1,
+      "lastAccessed": 1785021351677,
+      "type": "file"
+    },
+    {
+      "path": "js/tools/gitignore.js",
+      "accessCount": 1,
+      "lastAccessed": 1785021355863,
+      "type": "file"
+    },
+    {
+      "path": "js/tools/horas-trabalhadas.js",
+      "accessCount": 1,
+      "lastAccessed": 1785021359705,
+      "type": "file"
+    },
+    {
+      "path": "js/tools-en/cidr.js",
+      "accessCount": 1,
+      "lastAccessed": 1785021460208,
+      "type": "file"
+    },
+    {
+      "path": "en/tools/cron/index.html",
+      "accessCount": 1,
+      "lastAccessed": 1785021477310,
+      "type": "file"
+    },
+    {
+      "path": "en/tools/timestamp/index.html",
+      "accessCount": 1,
+      "lastAccessed": 1785021542488,
+      "type": "file"
+    },
+    {
+      "path": "en/tools/fuso-horario/index.html",
+      "accessCount": 1,
+      "lastAccessed": 1785021596883,
+      "type": "file"
+    },
+    {
+      "path": "en/tools/qrcode/index.html",
+      "accessCount": 1,
+      "lastAccessed": 1785021646165,
+      "type": "file"
+    },
+    {
+      "path": "js/tools-en/qrcode.js",
+      "accessCount": 1,
+      "lastAccessed": 1785021664210,
+      "type": "file"
+    },
+    {
+      "path": "en/tools/meta-tags/index.html",
+      "accessCount": 1,
+      "lastAccessed": 1785021683947,
+      "type": "file"
+    },
+    {
+      "path": "js/tools-en/meta-tags.js",
+      "accessCount": 1,
+      "lastAccessed": 1785021706457,
+      "type": "file"
+    },
+    {
+      "path": "en/tools/gitignore/index.html",
+      "accessCount": 1,
+      "lastAccessed": 1785021724145,
+      "type": "file"
+    },
+    {
+      "path": "js/tools-en/gitignore.js",
+      "accessCount": 1,
+      "lastAccessed": 1785021748362,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

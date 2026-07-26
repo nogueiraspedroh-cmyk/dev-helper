@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Composite — Design Patterns | Dev Helper Library</title>
+  <meta name="description" content="Learn the Composite pattern (GoF) in depth: intent, problem, solution, structure, examples in TypeScript and PHP, when to use it, when to avoid it, and common pitfalls." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/composite/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Composite</span>
+        </nav>
+        <span class="artigo__categoria">Structural Pattern (GoF)</span>
+        <h1 class="artigo__titulo">Composite</h1>
+        <p class="artigo__subtitulo">
+          Composes objects into tree structures to represent part-whole
+          hierarchies, letting the client treat individual objects and
+          compositions uniformly through a common interface.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Compose objects into part-whole trees</strong> and let client
+            code treat an individual object (leaf) and a composition of objects
+            (composite node) in exactly the same way — through a common
+            interface.
+          </p>
+          <p>
+            Cataloged by the GoF (1994) as a structural pattern, the Composite is
+            the elegant answer to hierarchical structures where the logic applied
+            to a single element must propagate recursively through the entire
+            tree. The <code>size()</code> operation on a file returns its fixed
+            size; the same operation on a directory sums the sizes of all its
+            children — but the code calling <code>size()</code> doesn't need to
+            tell the two apart.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Imagine a file system. It has files — simple objects with a name and
+            a fixed size — and directories, which contain other files and
+            directories. You want to compute the total size of any item: either a
+            single file or an entire directory (recursively summing everything
+            inside it).
+          </p>
+          <p>
+            Without Composite, the client code needs to distinguish the two cases
+            at every turn:
+          </p>
+          <ul>
+            <li>
+              If it's a file, return its size directly.
+            </li>
+            <li>
+              If it's a directory, iterate over the children, check whether each
+              child is a file or a directory, and recurse if needed.
+            </li>
+          </ul>
+          <p>
+            This results in conditionals scattered throughout the client code —
+            and every time you add a new node type (e.g.: symbolic link), you need
+            to update all of those spots. Composite eliminates this problem:
+            leaves and composites implement the same interface; the recursion is
+            encapsulated inside the composite.
+          </p>
+
+          <h3>Transparency vs Safety</h3>
+          <p>
+            The GoF describes two approaches for where to place the
+            child-management methods (<code>add</code>, <code>remove</code>):
+          </p>
+          <ul>
+            <li>
+              <strong>Transparency (in the Component interface):</strong> both
+              leaves and composites declare the management methods. The client
+              treats everything uniformly — but leaves need to implement methods
+              that make no sense for them (usually throwing an exception or doing
+              nothing), which violates the Liskov Substitution Principle.
+            </li>
+            <li>
+              <strong>Safety (only in the Composite):</strong> only the composite
+              exposes <code>add</code> and <code>remove</code>. A client that
+              needs to manage children must obtain a reference typed as
+              <code>Directory</code>, not as <code>Component</code>. Some
+              uniformity is lost, but the code remains safe and correct at
+              compile time. This is the preferable approach in TypeScript and
+              PHP.
+            </li>
+          </ul>
+          <p>
+            The examples below adopt the safety approach: <code>add</code> exists
+            only on <code>Directory</code> (the Composite), not on the
+            <code>Component</code> interface.
+          </p>
+        </section>
+
+        <!-- 3. SOLUTION -->
+        <section class="artigo__secao">
+          <h2>Solution</h2>
+          <p>The Composite organizes the code into three participants:</p>
+          <ol>
+            <li>
+              <strong>Component (interface):</strong> the contract shared by
+              leaves and composites. Defines the operations the client can call
+              uniformly. E.g.: <code>Component</code> interface with
+              <code>name(): string</code> and <code>size(): number</code>.
+            </li>
+            <li>
+              <strong>Leaf:</strong> implements Component and has no children.
+              Represents the primitive object in the hierarchy. E.g.:
+              <code>File</code> — returns its size directly.
+            </li>
+            <li>
+              <strong>Composite:</strong> implements Component and keeps a list of
+              children of type Component. Implements the operations by recursing
+              into the children. E.g.: <code>Directory</code> — sums the size of
+              all children, which can be other directories or files.
+            </li>
+          </ol>
+          <p>
+            The key to the pattern is that the Composite stores references of
+            type <code>Component</code> (the interface), not the concrete type.
+            This allows mixing leaves and other composites in the same children
+            list, creating trees of arbitrary depth.
+          </p>
+        </section>
+
+        <!-- 4. STRUCTURE -->
+        <section class="artigo__secao">
+          <h2>Structure</h2>
+          <div class="code-bloco">
+<pre><code>        «interface» Component
+        ┌──────────────────┐
+        │ + name(): string │
+        │ + size(): number │
+        └──────────────────┘
+    ▲                      ▲
+    │ implements           │ implements
+    File                   Directory
+   (Leaf)                 (Composite)
+  ┌──────────────────┐   ┌───────────────────────────┐
+  │ - _name: string  │   │ - children: Component[]   │
+  │ - _size: number  │   │ + add(c: Component): this │
+  │ + name(): string │   │ + name(): string          │
+  │ + size(): number │   │ + size(): number          │
+  └──────────────────┘   │   → sums children sizes   │
+                         └───────────────────────────┘
+                                       │ children
+                               ┌───────┴──────┐
+                               ▼              ▼
+                            File           Directory
+                            (leaf)   (can contain more children)
+
+
+Example tree:
+
+  root/                        ← Directory
+  ├── src/                     ← Directory
+  │   ├── main.ts              ← File (1200 bytes)
+  │   └── util.ts              ← File  (800 bytes)
+  ├── dist/                    ← Directory
+  │   └── main.js              ← File (3500 bytes)
+  └── package.json             ← File  (400 bytes)
+
+  root.size()  == 5900   (recursive sum of everything)
+  src.size()   == 2000
+  dist.size()  == 3500
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. CODE EXAMPLES -->
+        <section class="artigo__secao">
+          <h2>Code examples</h2>
+
+          <h3>Example 1 — File system with recursive size calculation</h3>
+          <p>
+            The client calls <code>size()</code> on any <code>Component</code>
+            without knowing whether it's dealing with a single file or an entire
+            directory. The recursion is encapsulated inside <code>Directory</code>.
+          </p>
+
+          <!-- TAB GROUP 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 1 — file system">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Component — interface common to leaves and composites ────
+interface Component {
+  name(): string;
+  size(): number; // in bytes
+}
+
+// ── Leaf — object with no children ────────────────────────────
+class File implements Component {
+  constructor(
+    private readonly _name: string,
+    private readonly _size: number
+  ) {}
+
+  name(): string { return this._name; }
+  size(): number { return this._size; }
+}
+
+// ── Composite — aggregates and recurses into children ─────────
+class Directory implements Component {
+  private readonly children: Component[] = [];
+
+  constructor(private readonly _name: string) {}
+
+  name(): string { return this._name; }
+
+  add(component: Component): this {
+    this.children.push(component);
+    return this; // fluent — allows chaining calls
+  }
+
+  size(): number {
+    // Recurses into children — doesn't distinguish File from Directory
+    return this.children.reduce((acc, child) => acc + child.size(), 0);
+  }
+
+  list(level = 0): void {
+    const p = "  ".repeat(level);
+    console.log(`${p}[DIR]  ${this._name}/ (${this.size()} bytes)`);
+    for (const child of this.children) {
+      if (child instanceof Directory) {
+        child.list(level + 1);
+      } else {
+        console.log(`${p}  [FILE] ${child.name()} (${child.size()} bytes)`);
+      }
+    }
+  }
+}
+
+// ── Client code — operates on Component uniformly ─────────────
+function displaySize(component: Component): void {
+  console.log(`"${component.name()}" takes up ${component.size()} bytes`);
+}
+
+// ── Assembling the tree ────────────────────────────────────────
+const root = new Directory("root");
+const src  = new Directory("src");
+const dist = new Directory("dist");
+
+src.add(new File("main.ts", 1200))
+   .add(new File("util.ts", 800));
+
+dist.add(new File("main.js", 3500));
+
+root.add(src)
+    .add(dist)
+    .add(new File("package.json", 400));
+
+root.list();
+// [DIR]  root/ (5900 bytes)
+//   [DIR]  src/ (2000 bytes)
+//     [FILE] main.ts (1200 bytes)
+//     [FILE] util.ts (800 bytes)
+//   [DIR]  dist/ (3500 bytes)
+//     [FILE] main.js (3500 bytes)
+//   [FILE] package.json (400 bytes)
+
+// Same call — without distinguishing leaf from composite:
+displaySize(new File("readme.md", 200));
+// "readme.md" takes up 200 bytes
+displaySize(root);
+// "root" takes up 5900 bytes</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Component — interface common to leaves and composites ────
+interface Component
+{
+    public function name(): string;
+    public function size(): int; // in bytes
+}
+
+// ── Leaf — object with no children ────────────────────────────
+class File implements Component
+{
+    public function __construct(
+        private readonly string $name,
+        private readonly int $size
+    ) {}
+
+    public function name(): string { return $this-&gt;name; }
+    public function size(): int    { return $this-&gt;size; }
+}
+
+// ── Composite — aggregates and recurses into children ─────────
+class Directory implements Component
+{
+    /** @var Component[] */
+    private array $children = [];
+
+    public function __construct(private readonly string $name) {}
+
+    public function name(): string { return $this-&gt;name; }
+
+    public function add(Component $component): static
+    {
+        $this-&gt;children[] = $component;
+        return $this; // fluent — allows chaining calls
+    }
+
+    public function size(): int
+    {
+        // Recurses into children — doesn't distinguish File from Directory
+        return array_sum(array_map(
+            fn(Component $child) =&gt; $child-&gt;size(),
+            $this-&gt;children
+        ));
+    }
+
+    public function list(int $level = 0): void
+    {
+        $p = str_repeat('  ', $level);
+        echo "{$p}[DIR]  {$this-&gt;name}/ ({$this-&gt;size()} bytes)" . PHP_EOL;
+        foreach ($this-&gt;children as $child) {
+            if ($child instanceof Directory) {
+                $child-&gt;list($level + 1);
+            } else {
+                echo "{$p}  [FILE] {$child-&gt;name()} ({$child-&gt;size()} bytes)" . PHP_EOL;
+            }
+        }
+    }
+}
+
+// ── Client code — operates on Component uniformly ─────────────
+function displaySize(Component $component): void
+{
+    echo "\"{$component-&gt;name()}\" takes up {$component-&gt;size()} bytes" . PHP_EOL;
+}
+
+// ── Assembling the tree ────────────────────────────────────────
+$root = new Directory('root');
+$src  = new Directory('src');
+$dist = new Directory('dist');
+
+$src-&gt;add(new File('main.ts', 1200))
+    -&gt;add(new File('util.ts', 800));
+
+$dist-&gt;add(new File('main.js', 3500));
+
+$root-&gt;add($src)
+     -&gt;add($dist)
+     -&gt;add(new File('package.json', 400));
+
+$root-&gt;list();
+// [DIR]  root/ (5900 bytes)
+//   [DIR]  src/ (2000 bytes)
+//     [FILE] main.ts (1200 bytes)
+//     [FILE] util.ts (800 bytes)
+//   [DIR]  dist/ (3500 bytes)
+//     [FILE] main.js (3500 bytes)
+//   [FILE] package.json (400 bytes)
+
+displaySize(new File('readme.md', 200));
+// "readme.md" takes up 200 bytes
+displaySize($root);
+// "root" takes up 5900 bytes</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 1) -->
+
+          <h3>Example 2 — Org chart with recursive payroll calculation</h3>
+          <p>
+            The same pattern applies to any part-whole hierarchy. An
+            <code>Employee</code> (leaf) has a fixed salary; a
+            <code>Department</code> (composite) sums the salaries of all its
+            members, which can be employees or other nested departments.
+          </p>
+
+          <!-- TAB GROUP 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 2 — org chart">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Component ─────────────────────────────────────────────────
+interface OrgUnit {
+  title(): string;
+  totalSalary(): number; // in cents
+}
+
+// ── Leaf ──────────────────────────────────────────────────────
+class Employee implements OrgUnit {
+  constructor(
+    private readonly _title: string,
+    private readonly _salary: number
+  ) {}
+
+  title(): string        { return this._title; }
+  totalSalary(): number  { return this._salary; }
+}
+
+// ── Composite ─────────────────────────────────────────────────
+class Department implements OrgUnit {
+  private readonly members: OrgUnit[] = [];
+
+  constructor(private readonly _title: string) {}
+
+  title(): string { return this._title; }
+
+  add(member: OrgUnit): this {
+    this.members.push(member);
+    return this;
+  }
+
+  totalSalary(): number {
+    return this.members.reduce((acc, m) => acc + m.totalSalary(), 0);
+  }
+}
+
+// ── Usage ───────────────────────────────────────────────────────
+const engineering = new Department("Engineering");
+engineering
+  .add(new Employee("Alice", 1200000))  // $12,000
+  .add(new Employee("Bruno",  950000)); // $ 9,500
+
+const design = new Department("Design");
+design.add(new Employee("Carla", 800000)); // $8,000
+
+const company = new Department("Company");
+company
+  .add(engineering)
+  .add(design)
+  .add(new Employee("Diana (CEO)", 2500000)); // $25,000
+
+// The client operates on OrgUnit — doesn't distinguish leaf from composite
+const items: OrgUnit[] = [engineering, design, company];
+for (const item of items) {
+  const value = (item.totalSalary() / 100).toFixed(2);
+  console.log(`${item.title()}: $${value}`);
+}
+// Engineering: $21500.00   (12000 + 9500)
+// Design:      $8000.00
+// Company:     $54500.00   (21500 + 8000 + 25000 ✓)</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Component ─────────────────────────────────────────────────
+interface OrgUnit
+{
+    public function title(): string;
+    public function totalSalary(): int; // in cents
+}
+
+// ── Leaf ──────────────────────────────────────────────────────
+class Employee implements OrgUnit
+{
+    public function __construct(
+        private readonly string $title,
+        private readonly int $salary
+    ) {}
+
+    public function title(): string       { return $this-&gt;title; }
+    public function totalSalary(): int    { return $this-&gt;salary; }
+}
+
+// ── Composite ─────────────────────────────────────────────────
+class Department implements OrgUnit
+{
+    /** @var OrgUnit[] */
+    private array $members = [];
+
+    public function __construct(private readonly string $title) {}
+
+    public function title(): string { return $this-&gt;title; }
+
+    public function add(OrgUnit $member): static
+    {
+        $this-&gt;members[] = $member;
+        return $this;
+    }
+
+    public function totalSalary(): int
+    {
+        return array_sum(array_map(
+            fn(OrgUnit $m) =&gt; $m-&gt;totalSalary(),
+            $this-&gt;members
+        ));
+    }
+}
+
+// ── Usage ───────────────────────────────────────────────────────
+$engineering = new Department('Engineering');
+$engineering
+    -&gt;add(new Employee('Alice', 1200000))   // $12,000
+    -&gt;add(new Employee('Bruno',  950000));  // $ 9,500
+
+$design = new Department('Design');
+$design-&gt;add(new Employee('Carla', 800000)); // $8,000
+
+$company = new Department('Company');
+$company
+    -&gt;add($engineering)
+    -&gt;add($design)
+    -&gt;add(new Employee('Diana (CEO)', 2500000)); // $25,000
+
+// The client operates on OrgUnit — doesn't distinguish leaf from composite
+$items = [$engineering, $design, $company];
+foreach ($items as $item) {
+    printf("%s: $%.2f\n", $item-&gt;title(), $item-&gt;totalSalary() / 100);
+}
+// Engineering: $21500.00   (12000 + 9500)
+// Design:      $8000.00
+// Company:     $54500.00   (21500 + 8000 + 25000 ✓)</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 2) -->
+
+        </section><!-- /.artigo__secao (examples) -->
+
+        <!-- 6. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>When the structure is naturally hierarchical
+              (part-whole):</strong> file systems, navigation menus, org charts,
+              arithmetic expression trees, nested UI components. If the structure
+              is a tree, Composite is the natural choice.
+            </li>
+            <li>
+              <strong>When the client must treat simple and composite objects
+              uniformly:</strong> if the code that walks the hierarchy shouldn't
+              care whether the current node is a leaf or a composite, use
+              Composite.
+            </li>
+            <li>
+              <strong>When operations need to propagate recursively:</strong>
+              computing totals, rendering, serializing, applying permissions —
+              any operation that needs to visit every node in the tree.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>When the hierarchy is flat or fixed:</strong> if the
+              objects don't form a real tree (e.g.: a list of same-level items),
+              the structural overhead of Composite isn't justified.
+            </li>
+            <li>
+              <strong>When different types require very distinct
+              interfaces:</strong> if leaf and composite need very different
+              methods, forcing an inflated common interface creates more problems
+              than it solves.
+            </li>
+            <li>
+              <strong>When performance is critical in very deep trees:</strong>
+              Composite's recursion walks every node. In extremely deep trees, the
+              call overhead can be significant — consider caching intermediate
+              results or an iterative traversal.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Eliminates conditionals scattered in the client to distinguish leaf from composite — polymorphism handles that.</li>
+            <li>Open/Closed Principle: new leaf or composite types can be added without changing the client code or the other nodes.</li>
+            <li>Allows building structures of arbitrary depth with the same set of classes.</li>
+            <li>The operation propagates naturally through the tree — no traversal code in the client.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Can be hard to restrict which component types can be children of which composites — the common interface doesn't express those restrictions.</li>
+            <li>The transparency approach (add/remove methods in the Component interface) violates the Liskov Substitution Principle when applied to leaves.</li>
+            <li>Debugging deep trees can be laborious — tracing the origin of a recursive value requires walking the whole chain.</li>
+          </ul>
+        </section>
+
+        <!-- 8. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Inflated interface — management methods on leaves</h3>
+          <p>
+            The temptation to put <code>add()</code> and <code>remove()</code> in
+            the <code>Component</code> interface (transparency approach) is real:
+            the client gains total uniformity. The price is that <code>File</code>
+            needs to implement those methods even though it has no children. The
+            idiomatic practice in TypeScript and PHP is to keep them only on
+            <code>Directory</code> (safety approach). When the client needs to
+            call <code>add()</code>, it already knows it's dealing with a
+            composite — the type system confirms this at compile time.
+          </p>
+
+          <h3>2. Cycles in the tree</h3>
+          <p class="artigo__aviso">
+            <strong>Warning:</strong> if a node is added as a child of itself — or
+            as a descendant of one of its own descendants — the recursion in
+            <code>size()</code> will enter an infinite loop. Composite doesn't
+            prevent cycles by default. If the domain allows this possibility
+            (e.g.: symbolic links in real file systems), implement cycle
+            detection: keep a <code>Set</code> of already-visited nodes during
+            the recursion and abort if a repeated one is found.
+          </p>
+
+          <h3>3. Confusing Composite with Decorator</h3>
+          <p>
+            Both use recursive composition and implement the same interface as
+            the object they wrap. The difference lies in intent and cardinality:
+            the <strong>Decorator</strong> wraps exactly <em>one</em> object and
+            adds responsibility around its calls. The <strong>Composite</strong>
+            aggregates <em>N</em> children and its primary operation is to
+            accumulate or propagate the result through the children. If you have
+            a "wrapper around a single object" that adds behavior, it's a
+            Decorator. If you have a node that aggregates and delegates to
+            multiple children, it's a Composite.
+          </p>
+
+          <h3>4. Missing caching in large trees</h3>
+          <p>
+            Every call to <code>size()</code> on a root directory walks the
+            entire tree. If the tree is large and immutable (or rarely changes),
+            compute and cache the result in the composite, invalidating it only
+            when a child is added or removed. Without this care, repeated
+            operations on the root have O(n) cost on every call.
+          </p>
+        </section>
+
+        <!-- 9. RELATED PATTERNS -->
+        <section class="artigo__secao">
+          <h2>Related patterns</h2>
+          <p>
+            The Composite is frequently combined with or compared to other
+            patterns that also deal with composition and traversal of
+            structures:
+          </p>
+          <!--
+            Link discipline: 12 of the 51 catalog patterns have an English
+            translation so far (5 from Batch 1 — singleton, factory-method,
+            abstract-factory, builder, prototype — plus this batch's 7 —
+            adapter, decorator, facade, proxy, composite, bridge, flyweight).
+            Decorator and Proxy are in this same batch → real ../slug/ links.
+            Visitor and Iterator are not translated yet → pt-BR fallback.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../decorator/">Decorator</a></li>
+            <li><a href="../proxy/">Proxy</a></li>
+            <li><a href="../../../biblioteca/visitor/">Visitor</a></li>
+            <li><a href="../../../biblioteca/iterator/">Iterator</a></li>
+          </ul>
+          <p class="mt-1">
+            The <strong>Decorator</strong> is the pattern with the greatest
+            structural similarity: both use recursive composition with a common
+            interface. The difference lies in cardinality and intent — Decorator
+            wraps a single object to add responsibility; Composite aggregates N
+            children to propagate operations. The <strong>Proxy</strong> also
+            controls access to a single object and can be applied to nodes of a
+            Composite tree to, for example, load them on demand (lazy loading of
+            subtrees). The <strong>Visitor</strong> is the natural complement to
+            Composite: it separates the traversal and processing logic of the
+            nodes from the structure itself, allowing new operations to be added
+            without modifying the node classes. The <strong>Iterator</strong> can
+            be used to walk the tree uniformly without exposing its internal
+            structure.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="9797979797"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Password Generator — Dev Helper</title>
+  <meta name="description" content="Generate secure passwords directly in your browser using native cryptography (Web Crypto API). Control length, character sets, generate several at once and see the entropy indicator." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../tools/senha/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!--
+    AdSense — biblioteca carregada UMA vez por página.
+    Substitua ca-pub-5784678562772792 pelo seu pub-ID real antes do deploy.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../../biblioteca/">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Password Generator</h1>
+        <p>Generate secure passwords using the Web Crypto API.</p>
+      </header>
+
+      <div class="tool__controls">
+
+        <!-- Password length -->
+        <div class="tool__actions">
+          <label class="tool__label" for="senha-comprimento">Length:</label>
+          <input
+            type="number"
+            id="senha-comprimento"
+            class="tool__select senha-comprimento-input"
+            min="4"
+            max="64"
+            value="16"
+          />
+          <input
+            type="range"
+            id="senha-range"
+            min="4"
+            max="64"
+            value="16"
+            class="senha-range-input"
+          />
+        </div>
+
+        <!-- Quantity (batch generation) -->
+        <div class="tool__actions">
+          <label class="tool__label" for="senha-quantidade">Quantity:</label>
+          <input
+            type="number"
+            id="senha-quantidade"
+            class="tool__select senha-comprimento-input"
+            min="1"
+            max="50"
+            value="1"
+          />
+        </div>
+
+        <!-- Character sets -->
+        <fieldset class="tool__fieldset">
+          <legend class="tool__legend">Character sets</legend>
+          <div class="senha-opcoes-grid">
+            <label class="tool__checkbox-label">
+              <input type="checkbox" id="chk-maiusculas" checked />
+              Uppercase (A-Z)
+            </label>
+            <label class="tool__checkbox-label">
+              <input type="checkbox" id="chk-minusculas" checked />
+              Lowercase (a-z)
+            </label>
+            <label class="tool__checkbox-label">
+              <input type="checkbox" id="chk-numeros" checked />
+              Numbers (0-9)
+            </label>
+            <label class="tool__checkbox-label">
+              <input type="checkbox" id="chk-simbolos" checked />
+              Symbols (!@#$%…)
+            </label>
+          </div>
+        </fieldset>
+
+        <!-- Option: avoid ambiguous characters -->
+        <label class="tool__checkbox-label">
+          <input type="checkbox" id="chk-ambiguos" />
+          Avoid ambiguous characters (removes 0, O, o, 1, l, I)
+        </label>
+
+        <!-- Action buttons -->
+        <div class="tool__actions">
+          <button id="btn-gerar-senha" class="button" type="button">Generate password</button>
+          <button id="btn-copiar-senha" class="button--secondary" type="button">Copy</button>
+        </div>
+      </div>
+
+      <!-- Output -->
+      <div class="tool__output">
+        <!-- Generated password -->
+        <input
+          id="output-senha"
+          class="tool__result-input senha-saida"
+          type="text"
+          readonly
+          placeholder="The generated password will appear here..."
+          spellcheck="false"
+          autocorrect="off"
+          autocapitalize="off"
+        />
+
+        <!-- Strength / entropy indicator -->
+        <div id="senha-forca-wrapper" class="senha-forca-wrapper">
+          <div class="senha-forca-linha">
+            <span id="senha-forca-label" class="senha-forca-badge"></span>
+            <span id="senha-forca-bits" class="senha-forca-bits"></span>
+          </div>
+          <div class="senha-forca-barra-bg">
+            <div id="senha-forca-barra" class="senha-forca-barra"></div>
+          </div>
+        </div>
+
+        <!-- Error message (no character set selected) -->
+        <p id="senha-error" class="error-msg" role="alert" hidden></p>
+
+        <!-- Batch output (quantity > 1) -->
+        <div id="senha-lote-wrapper" class="tool__output" hidden>
+          <textarea
+            id="output-senha-lote"
+            class="result"
+            rows="8"
+            readonly
+            spellcheck="false"
+            aria-label="Generated passwords"
+          ></textarea>
+          <div class="tool__actions">
+            <button id="btn-copiar-lote" class="button--secondary" type="button">Copy all</button>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- Ad block — below the tool's result area -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="6666666666"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Real content — required by AdSense -->
+    <section>
+      <h2>How this tool generates secure passwords</h2>
+      <p>
+        This tool uses the <strong>Web Crypto API</strong>
+        (<code>window.crypto.getRandomValues</code>), available in all modern browsers,
+        which produces cryptographically secure random numbers — that is, unpredictable by
+        design, unlike JavaScript's <code>Math.random()</code>, which uses a simple
+        pseudorandom generator not suited for cryptography.
+      </p>
+      <p>
+        In addition, the algorithm guarantees <strong>no modulo bias</strong>: when choosing
+        a character from the alphabet, values outside the largest multiple of the alphabet
+        size are rejected and a new value is drawn. This ensures a uniform distribution among
+        all possible characters. The result is then shuffled with Fisher-Yates using the same
+        cryptographic source, guaranteeing at least one character from each selected set.
+      </p>
+
+      <h2>What is password entropy?</h2>
+      <p>
+        <strong>Entropy</strong> is a measure of a password's unpredictability, expressed in
+        bits. The basic formula is:
+      </p>
+      <p class="exemplo-mono">
+        entropy (bits) = length × log₂(alphabet size)
+      </p>
+      <p>
+        For example, a 16-character password using uppercase + lowercase + numbers
+        (62-symbol alphabet) has entropy of 16 × log₂(62) ≈ <strong>95 bits</strong>.
+        With symbols added (alphabet ~90), it rises to about <strong>102 bits</strong>.
+      </p>
+
+      <table class="info-table">
+        <thead>
+          <tr>
+            <th>Entropy range</th>
+            <th>Rating</th>
+            <th>Typical use</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Below 40 bits</td>
+            <td>Weak</td>
+            <td>Avoid in any real context</td>
+          </tr>
+          <tr>
+            <td>40–59 bits</td>
+            <td>Medium</td>
+            <td>Acceptable for low-risk contexts</td>
+          </tr>
+          <tr>
+            <td>60–127 bits</td>
+            <td>Strong</td>
+            <td>Recommended for accounts and systems</td>
+          </tr>
+          <tr>
+            <td>128 bits or more</td>
+            <td>Very strong</td>
+            <td>Standard for cryptography and critical systems</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Tips for more secure passwords</h2>
+      <ul>
+        <li>Use lengths of <strong>16 characters or more</strong> — length exponentially impacts entropy.</li>
+        <li>Include all available character sets (uppercase, lowercase, numbers and symbols) to maximize the alphabet.</li>
+        <li>Never reuse the same password across multiple services.</li>
+        <li>Use a <strong>password manager</strong> to store generated passwords — don't memorize them manually.</li>
+        <li>Change passwords whenever you suspect a compromise or data breach.</li>
+        <li>Enable two-factor authentication (2FA) as an extra layer of protection.</li>
+      </ul>
+
+      <h2>Frequently Asked Questions (FAQ)</h2>
+
+      <h3>Why use <code>crypto.getRandomValues</code> instead of <code>Math.random</code>?</h3>
+      <p>
+        <code>Math.random()</code> uses a pseudorandom generator (PRNG) designed for speed,
+        not security. On some engines, its state can be inferred from previous outputs.
+        <code>window.crypto.getRandomValues</code> uses the operating system's entropy source
+        (equivalent to <code>/dev/urandom</code> on Linux), suitable for cryptographic use.
+      </p>
+
+      <h3>What is modulo bias and how is it avoided?</h3>
+      <p>
+        If the alphabet size isn't an exact divisor of the random number's range (0–255 for a
+        byte, for example), some characters appear with slightly higher probability — this is
+        called modulo bias. This tool rejects values outside the largest multiple of the
+        alphabet size and draws again, guaranteeing a perfectly uniform distribution.
+      </p>
+
+      <h3>What are ambiguous characters?</h3>
+      <p>
+        These are visually similar characters that can cause confusion when transcribing
+        passwords manually: <code>0</code> (zero) and <code>O</code> (letter O), <code>1</code>
+        (one), <code>l</code> (lowercase L) and <code>I</code> (uppercase i). The
+        <em>Avoid ambiguous characters</em> option removes them from the alphabet, slightly
+        reducing entropy but making manual transcription easier when needed.
+      </p>
+
+      <h3>Is the displayed entropy a security guarantee?</h3>
+      <p>
+        Entropy indicates the password's <em>theoretical unpredictability</em>, assuming the
+        generator is truly random. It does not account for side-channel attacks or device
+        compromise. It is a useful, well-founded metric, but does not replace good general
+        security practices.
+      </p>
+
+      <h3>Can I use this tool to generate production passwords?</h3>
+      <p>
+        Yes — generation is cryptographically secure. However, remember that the
+        responsibility for storing and using the password securely is yours. Use a password
+        manager to store generated passwords, never store them in plain text.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/tools-en/senha.js"></script>
+</body>
+</html>

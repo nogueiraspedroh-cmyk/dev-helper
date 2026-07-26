@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meta Tags Generator and Open Graph Preview — Dev Helper</title>
+  <meta name="description" content="Generate Open Graph and Twitter Card meta tags manually and see a preview of the sharing card. No scraping or URL fetching — generated from the fields you fill in." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../tools/meta-tags/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../../biblioteca/">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Meta Tags / Open Graph Generator</h1>
+        <p>Fill in the fields and generate the <strong>meta tags</strong> block (Open Graph + Twitter Card + description) to paste into your site's <code>&lt;head&gt;</code>. Also see a <strong>preview</strong> of the sharing card. It's <strong>manual generation</strong> — the tool does not access or scrape any URL.</p>
+      </header>
+
+      <div class="tool__controls">
+        <label class="tool__label" for="mt-title">Title</label>
+        <input type="text" id="mt-title" class="tool__input-inline" autocomplete="off" placeholder="Page title" value="My amazing page" />
+
+        <label class="tool__label" for="mt-desc">Description</label>
+        <input type="text" id="mt-desc" class="tool__input-inline" autocomplete="off" placeholder="Short description (up to ~160 characters)" value="A short, clear description of this page's content." />
+
+        <label class="tool__label" for="mt-url">URL</label>
+        <input type="text" id="mt-url" class="tool__input-inline" spellcheck="false" autocomplete="off" placeholder="https://example.com/page" value="https://example.com/page" />
+
+        <label class="tool__label" for="mt-image">Image (URL)</label>
+        <input type="text" id="mt-image" class="tool__input-inline" spellcheck="false" autocomplete="off" placeholder="https://example.com/image.png" />
+
+        <label class="tool__label" for="mt-site">Site name</label>
+        <input type="text" id="mt-site" class="tool__input-inline" autocomplete="off" placeholder="Site name" value="My Site" />
+
+        <label class="tool__label" for="mt-type">Type (og:type)</label>
+        <select id="mt-type" class="tool__select">
+          <option value="website" selected>website</option>
+          <option value="article">article</option>
+        </select>
+
+        <label class="tool__label" for="mt-card">Twitter card</label>
+        <select id="mt-card" class="tool__select">
+          <option value="summary" selected>summary</option>
+          <option value="summary_large_image">summary_large_image</option>
+        </select>
+      </div>
+
+      <section class="tool__output">
+        <label class="tool__label" for="mt-output">Generated meta tags</label>
+        <textarea id="mt-output" class="result" readonly spellcheck="false" rows="12"></textarea>
+        <div class="tool__actions">
+          <button id="mt-copy" class="button--secondary" type="button">Copy meta tags</button>
+        </div>
+
+        <h2 class="tool__section-title">Card preview</h2>
+        <div id="mt-preview-card" class="mt-card">
+          <img id="mt-preview-image" class="mt-card__img" alt="Sharing image" hidden />
+          <div class="mt-card__body">
+            <span id="mt-preview-domain" class="mt-card__domain"></span>
+            <span id="mt-preview-title" class="mt-card__title"></span>
+            <span id="mt-preview-desc" class="mt-card__desc"></span>
+          </div>
+        </div>
+      </section>
+    </article>
+
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="3737373737"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <section>
+      <h2>What are sharing meta tags for?</h2>
+      <p>
+        When someone shares a link on WhatsApp, LinkedIn, Facebook, X (Twitter) or Slack, those
+        networks read the <strong>Open Graph</strong> (<code>og:*</code>) and <strong>Twitter
+        Card</strong> (<code>twitter:*</code>) meta tags from the page's <code>&lt;head&gt;</code> to
+        build the preview card: title, description, image and domain. Without them, the link
+        appears "bland" or with incorrect information.
+      </p>
+
+      <h2>How to use it</h2>
+      <p>
+        Fill in the fields, copy the generated block and paste it inside the <code>&lt;head&gt;</code>
+        of each page (ideally one per page, with specific values). The <code>og:image</code> must be
+        an <strong>absolute</strong> URL and, for the large card, an image around 1200×630 px
+        (~1.91:1 ratio) is recommended.
+      </p>
+
+      <h2>Frequently Asked Questions (FAQ)</h2>
+
+      <h3>Does the tool fetch data from a URL automatically?</h3>
+      <p>
+        <strong>No.</strong> This site is 100% static (no backend), so there's no way to fetch or
+        scrape external pages. Generation is <strong>manual</strong>: you type in the values and
+        the tool assembles the tags and the preview.
+      </p>
+
+      <h3>Is the preview exactly the same as each network's?</h3>
+      <p>
+        It's an <strong>approximation</strong>. Each network has its own layout, character limits
+        and caching rules. Use the preview as a reference and validate it in each platform's
+        official debugger.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/tools-en/meta-tags.js"></script>
+</body>
+</html>

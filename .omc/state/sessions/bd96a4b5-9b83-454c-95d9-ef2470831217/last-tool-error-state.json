@@ -1,7 +1,7 @@
 {
   "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"omc() { node /home/casa/.claude/plugins/cache/omc/oh-my-claudecode/4.15.4/bin/oh-my-claudecode.js \\\"$@\\\"; }\\ncd /home/casa/projetos/dev-helper\\nomc ultragoal checkpoint \\\\\\n  --goal-id G00...",
-  "error": "Exit code 1\n[ultragoal] Claude goal objective mismatch: expected \"Complete all ultragoal stories in .omc/ultragoal/goals.json: G001-faseb-lote1-docfinanceiro FaseB-Lote1-DocFinanceiro; G002-faseb-lote2-textodados FaseB-Lote2-TextoDados; G003-faseb-lote3-seguranca FaseB-Lote3-Seguranca; G004-faseb-lote4-webrede FaseB-Lote4-WebRede; G005-faseb-lote5-conversores FaseB-Lote5-Conversores; G006-faseb-integracao FaseB-Integracao; G007-fasec-infra FaseC-Infra; G008-fasec-lote1-criacao FaseC-Lote1-Criaca...",
-  "timestamp": "2026-07-25T15:38:51.805Z",
+  "tool_input_preview": "{\"command\":\"declare -A links\\nlinks[adapter]=\\\"../decorator/ ../facade/ ../proxy/ ../bridge/\\\"\\nlinks[decorator]=\\\"../adapter/ ../facade/ ../../../biblioteca/strategy/ ../composite/ ../proxy/\\\"\\nlinks...",
+  "error": "Exit code 1\n(eval):19: read-only variable: status",
+  "timestamp": "2026-07-26T05:17:40.567Z",
   "retry_count": 1
 }

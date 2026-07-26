@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Color Converter + WCAG Contrast — HEX, RGB, HSL — Dev Helper</title>
+  <meta name="description" content="Convert colors between HEX, RGB and HSL live, with preview, and check WCAG 2.x contrast between text and background (contrast ratio and AA/AAA pass)." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../tools/cor/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../../biblioteca/">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Color Converter + WCAG Contrast</h1>
+        <p>Convert a color between <strong>HEX</strong>, <strong>RGB</strong> and <strong>HSL</strong> live — edit any format and the others update. Then check the <strong>WCAG contrast</strong> between the text color and the background color.</p>
+      </header>
+
+      <div class="tool__controls">
+        <h2 class="tool__subtitle">HEX / RGB / HSL Converter</h2>
+        <div class="cor-converter">
+          <div class="cor-swatch" id="cor-swatch" aria-hidden="true"></div>
+
+          <div class="cor-fields">
+            <div class="cor-field">
+              <label class="tool__label" for="cor-hex">HEX</label>
+              <div class="cor-hex-row">
+                <input type="color" id="cor-picker" class="cor-picker" value="#4f46e5" aria-label="Color picker" />
+                <input type="text" id="cor-hex" class="tool__input-inline" spellcheck="false" autocomplete="off" value="#4f46e5" placeholder="#4f46e5" />
+              </div>
+            </div>
+
+            <div class="cor-field">
+              <span class="tool__label">RGB (0–255)</span>
+              <div class="cor-triple">
+                <input type="number" id="cor-r" class="tool__select cor-num" min="0" max="255" aria-label="Red (R)" />
+                <input type="number" id="cor-g" class="tool__select cor-num" min="0" max="255" aria-label="Green (G)" />
+                <input type="number" id="cor-b" class="tool__select cor-num" min="0" max="255" aria-label="Blue (B)" />
+              </div>
+            </div>
+
+            <div class="cor-field">
+              <span class="tool__label">HSL (H 0–360, S/L 0–100)</span>
+              <div class="cor-triple">
+                <input type="number" id="cor-h" class="tool__select cor-num" min="0" max="360" aria-label="Hue (H)" />
+                <input type="number" id="cor-s" class="tool__select cor-num" min="0" max="100" aria-label="Saturation (S)" />
+                <input type="number" id="cor-l" class="tool__select cor-num" min="0" max="100" aria-label="Lightness (L)" />
+              </div>
+            </div>
+          </div>
+          <p id="cor-error" class="error-msg" role="alert" hidden></p>
+        </div>
+      </div>
+    </article>
+
+    <article class="tool">
+      <div class="tool__controls">
+        <h2 class="tool__subtitle">WCAG Contrast Checker</h2>
+        <div class="cor-fields">
+          <div class="cor-field">
+            <label class="tool__label" for="cor-ct-text-hex">Text color</label>
+            <div class="cor-hex-row">
+              <input type="color" id="cor-ct-text" class="cor-picker" value="#1a1a1a" aria-label="Text color picker" />
+              <input type="text" id="cor-ct-text-hex" class="tool__input-inline" spellcheck="false" autocomplete="off" value="#1a1a1a" />
+            </div>
+          </div>
+          <div class="cor-field">
+            <label class="tool__label" for="cor-ct-bg-hex">Background color</label>
+            <div class="cor-hex-row">
+              <input type="color" id="cor-ct-bg" class="cor-picker" value="#ffffff" aria-label="Background color picker" />
+              <input type="text" id="cor-ct-bg-hex" class="tool__input-inline" spellcheck="false" autocomplete="off" value="#ffffff" />
+            </div>
+          </div>
+        </div>
+
+        <div class="cor-contrast-result">
+          <div class="cor-ct-preview" id="cor-ct-preview">
+            <span class="cor-ct-preview__big">Large sample text</span>
+            <span class="cor-ct-preview__small">Normal sample text to evaluate readability.</span>
+          </div>
+          <div class="cor-ct-summary">
+            <span class="tool__label">Contrast ratio</span>
+            <span class="cor-ratio" id="cor-ct-ratio">—</span>
+            <div class="cor-badges" id="cor-ct-badges"></div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="2828282828"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <section>
+      <h2>How colors are represented</h2>
+      <p>
+        The same pixel can be described in several ways. <strong>HEX</strong>
+        (<code>#4f46e5</code>) is the hexadecimal notation used in CSS and HTML. <strong>RGB</strong>
+        describes the color through three channels (red, green and blue), each from 0 to
+        255. <strong>HSL</strong> uses hue (0–360°), saturation and lightness — more
+        intuitive for lightening/darkening or rotating the hue. This tool converts between all three at the
+        same time: edit any field and the others adjust.
+      </p>
+
+      <h2>What is WCAG contrast?</h2>
+      <p>
+        The <strong>WCAG</strong> (Web Content Accessibility Guidelines) define a minimum
+        <strong>contrast ratio</strong> between text and background to ensure readability,
+        including for people with low vision. The ratio ranges from <code>1:1</code> (identical colors) to
+        <code>21:1</code> (black on white). The calculation follows WCAG 2.x: each sRGB channel is
+        linearized, the <strong>relative luminance</strong> of each color is combined
+        (<code>0.2126·R + 0.7152·G + 0.0722·B</code>) and
+        <code>(L<sub>light</sub> + 0.05) / (L<sub>dark</sub> + 0.05)</code> is applied.
+      </p>
+
+      <table class="info-table">
+        <thead>
+          <tr><th>Criterion</th><th>Normal text</th><th>Large text</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>AA (minimum)</td><td>4.5:1</td><td>3:1</td></tr>
+          <tr><td>AAA (enhanced)</td><td>7:1</td><td>4.5:1</td></tr>
+        </tbody>
+      </table>
+      <p>
+        "Large text" is defined as at least <strong>18pt</strong> (24px) regular, or
+        <strong>14pt</strong> (18.66px) bold.
+      </p>
+
+      <h2>Frequently Asked Questions (FAQ)</h2>
+
+      <h3>Why did the RGB value change slightly after converting to HSL and back?</h3>
+      <p>
+        HSL uses integer values for hue/saturation/lightness, so the round trip can round
+        1 unit in some RGB channel. This is expected and visually imperceptible.
+      </p>
+
+      <h3>Does the contrast ratio account for transparency (alpha)?</h3>
+      <p>
+        No. The calculation assumes opaque colors, as WCAG recommends for the base test. For
+        translucent elements, evaluate the effective color already composited over the background.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/tools-en/cor.js"></script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 # ads.txt — autoriza quem pode vender os anúncios do seu site.
 # O Google lê este arquivo em https://SEU-DOMINIO/ads.txt (precisa estar na RAIZ).
-# Troque "pub-0000000000000000" pelo número do SEU pub-ID (sem o prefixo "ca-").
+# pub-ID atual: pub-5784678562772792 (sem o prefixo "ca-").
 # Linha no formato: <domínio do parceiro>, <ID do editor>, <tipo>, <ID de certificação>
-google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0
+google.com, pub-5784678562772792, DIRECT, f08c47fec0942fa0

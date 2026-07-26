@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-07-25T15:39:38.960Z",
+  "updatedAt": "2026-07-26T05:19:07.227Z",
   "missions": [
     {
       "id": "session:bd96a4b5-9b83-454c-95d9-ef2470831217:none",
@@ -7,15 +7,15 @@
       "name": "none",
       "objective": "Session mission",
       "createdAt": "2026-07-25T14:38:34.214Z",
-      "updatedAt": "2026-07-25T15:39:38.960Z",
+      "updatedAt": "2026-07-26T05:19:07.227Z",
       "status": "running",
-      "workerCount": 8,
+      "workerCount": 25,
       "taskCounts": {
-        "total": 8,
+        "total": 25,
         "pending": 0,
         "blocked": 0,
         "inProgress": 1,
-        "completed": 7,
+        "completed": 24,
         "failed": 0
       },
       "agents": [
@@ -98,32 +98,210 @@
           "latestUpdate": null,
           "completedSummary": null,
           "updatedAt": "2026-07-25T15:39:38.960Z"
+        },
+        {
+          "name": "dev-typescript:ab9036d",
+          "role": "dev-typescript",
+          "ownership": "ab9036d705250e130",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-07-25T22:56:12.543Z"
+        },
+        {
+          "name": "code-reviewer:afaad5e",
+          "role": "code-reviewer",
+          "ownership": "afaad5ea6a8b588e3",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-07-25T23:01:52.132Z"
+        },
+        {
+          "name": "dev-typescript:a698d4a",
+          "role": "dev-typescript",
+          "ownership": "a698d4abb059d8f72",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-07-25T23:10:36.375Z"
+        },
+        {
+          "name": "code-reviewer:af5944a",
+          "role": "code-reviewer",
+          "ownership": "af5944a1be82bcde8",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-07-25T23:14:04.738Z"
+        },
+        {
+          "name": "dev-typescript:aa827c0",
+          "role": "dev-typescript",
+          "ownership": "aa827c07305f1e6e1",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-07-25T23:26:39.068Z"
+        },
+        {
+          "name": "code-reviewer:a160f9f",
+          "role": "code-reviewer",
+          "ownership": "a160f9fcc742e85dc",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-07-25T23:31:10.722Z"
+        },
+        {
+          "name": "dev-typescript:a6e393b",
+          "role": "dev-typescript",
+          "ownership": "a6e393becc574a88a",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-07-25T23:32:42.015Z"
+        },
+        {
+          "name": "dev-typescript:a029fc8",
+          "role": "dev-typescript",
+          "ownership": "a029fc81a657e0dd7",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-07-25T23:39:15.725Z"
+        },
+        {
+          "name": "code-reviewer:a82a2b4",
+          "role": "code-reviewer",
+          "ownership": "a82a2b4a5b1476463",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-07-25T23:42:08.048Z"
+        },
+        {
+          "name": "dev-typescript:a571fb2",
+          "role": "dev-typescript",
+          "ownership": "a571fb264508256e2",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-07-25T23:43:45.349Z"
+        },
+        {
+          "name": "documentador-fluxos:ac3775e",
+          "role": "documentador-fluxos",
+          "ownership": "ac3775ed916cf950d",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-07-25T23:46:21.034Z"
+        },
+        {
+          "name": "dev-typescript:a542b10",
+          "role": "dev-typescript",
+          "ownership": "a542b10777695a441",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-07-25T23:56:18.173Z"
+        },
+        {
+          "name": "code-reviewer:a6f20fe",
+          "role": "code-reviewer",
+          "ownership": "a6f20fe036537de4e",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-07-26T04:17:45.193Z"
+        },
+        {
+          "name": "dev-typescript:a201941",
+          "role": "dev-typescript",
+          "ownership": "a2019416336cf7bfd",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-07-26T04:35:07.626Z"
+        },
+        {
+          "name": "code-reviewer:aab7fcb",
+          "role": "code-reviewer",
+          "ownership": "aab7fcb344913f273",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-07-26T04:47:30.089Z"
+        },
+        {
+          "name": "dev-typescript:add7c5d",
+          "role": "dev-typescript",
+          "ownership": "add7c5dbce2562454",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-07-26T04:54:43.158Z"
+        },
+        {
+          "name": "dev-typescript:a08b468",
+          "role": "dev-typescript",
+          "ownership": "a08b4680452b2e161",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-07-26T05:19:07.227Z"
         }
       ],
       "timeline": [
         {
-          "id": "session-start:a7ecd5bb3fc7eca44:2026-07-25T15:34:39.974Z",
-          "at": "2026-07-25T15:34:39.974Z",
+          "id": "session-start:add7c5dbce2562454:2026-07-26T04:48:08.622Z",
+          "at": "2026-07-26T04:48:08.622Z",
           "kind": "update",
-          "agent": "code-reviewer:a7ecd5b",
-          "detail": "started code-reviewer:a7ecd5b",
-          "sourceKey": "session-start:a7ecd5bb3fc7eca44"
+          "agent": "dev-typescript:add7c5d",
+          "detail": "started dev-typescript:add7c5d",
+          "sourceKey": "session-start:add7c5dbce2562454"
         },
         {
-          "id": "session-stop:a7ecd5bb3fc7eca44:2026-07-25T15:38:33.591Z",
-          "at": "2026-07-25T15:38:33.591Z",
+          "id": "session-stop:add7c5dbce2562454:2026-07-26T04:54:43.158Z",
+          "at": "2026-07-26T04:54:43.158Z",
           "kind": "completion",
-          "agent": "code-reviewer:a7ecd5b",
+          "agent": "dev-typescript:add7c5d",
           "detail": "completed",
-          "sourceKey": "session-stop:a7ecd5bb3fc7eca44"
+          "sourceKey": "session-stop:add7c5dbce2562454"
         },
         {
-          "id": "session-start:ad6fc7d8b97c7ba1b:2026-07-25T15:39:38.960Z",
-          "at": "2026-07-25T15:39:38.960Z",
+          "id": "session-start:a08b4680452b2e161:2026-07-26T04:56:42.959Z",
+          "at": "2026-07-26T04:56:42.959Z",
           "kind": "update",
-          "agent": "dev-typescript:ad6fc7d",
-          "detail": "started dev-typescript:ad6fc7d",
-          "sourceKey": "session-start:ad6fc7d8b97c7ba1b"
+          "agent": "dev-typescript:a08b468",
+          "detail": "started dev-typescript:a08b468",
+          "sourceKey": "session-start:a08b4680452b2e161"
+        },
+        {
+          "id": "session-stop:a08b4680452b2e161:2026-07-26T05:19:07.227Z",
+          "at": "2026-07-26T05:19:07.227Z",
+          "kind": "completion",
+          "agent": "dev-typescript:a08b468",
+          "detail": "completed",
+          "sourceKey": "session-stop:a08b4680452b2e161"
         }
       ]
     }

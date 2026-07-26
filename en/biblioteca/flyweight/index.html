@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flyweight — Design Patterns | Dev Helper Library</title>
+  <meta name="description" content="Learn the Flyweight pattern (GoF) in depth: intent, problem, solution, structure, examples in TypeScript and PHP, when to use it, when to avoid it, and common pitfalls." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/flyweight/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Flyweight</span>
+        </nav>
+        <span class="artigo__categoria">Structural Pattern (GoF)</span>
+        <h1 class="artigo__titulo">Flyweight</h1>
+        <p class="artigo__subtitulo">
+          Shares immutable intrinsic state across large numbers of similar
+          objects, externalizing the context-dependent extrinsic state — drastically
+          reducing memory usage when there are thousands of near-identical
+          instances.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Share fine-grained objects</strong> to support large numbers
+            of them efficiently. The Flyweight splits an object's state into two
+            parts: the <em>intrinsic state</em> (immutable, context-independent,
+            shared across many instances) and the <em>extrinsic state</em>
+            (variable, context-dependent, supplied by the client at the moment of
+            use).
+          </p>
+          <p>
+            Cataloged by the GoF (1994) as a structural pattern, the Flyweight is
+            indicated exclusively in scenarios where the number of objects is so
+            large that the memory cost becomes prohibitive. A central factory
+            (<code>FlyweightFactory</code>) works as a cache: it returns the same
+            instance for objects with the same intrinsic state, instead of
+            creating a new object every time. The client passes the extrinsic
+            state as an argument at the moment it uses the Flyweight — never
+            storing it inside the shared object.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Imagine a particle-based game where explosions create thousands of
+            fragments simultaneously. The naive approach creates a full object
+            for every particle:
+          </p>
+          <div class="code-bloco">
+<pre><code>// Naive approach — do NOT do this with 100,000 particles:
+class Particle {
+  type: string;        // "fire" | "smoke" | "debris"
+  color: string;       // "#FF4500"
+  texture: string;     // sprite data — can be kilobytes
+  x: number;
+  y: number;
+  velocityX: number;
+  velocityY: number;
+}
+
+// 100,000 instances × (type + color + texture) = memory exhausted
+const particles: Particle[] = [];
+for (let i = 0; i &lt; 100_000; i++) {
+  particles.push({
+    type: 'fire', color: '#FF4500', texture: fireSprite, // repeated 100,000×
+    x: Math.random() * 800, y: Math.random() * 600,
+    velocityX: Math.random(), velocityY: Math.random(),
+  });
+}</code></pre>
+          </div>
+          <p>
+            The problem is obvious: <code>type</code>, <code>color</code> and
+            <code>texture</code> are identical for every particle of the same
+            type. We're replicating that data 100,000 times, while only
+            <code>x</code>, <code>y</code>, <code>velocityX</code> and
+            <code>velocityY</code> vary per instance. The Flyweight solves this by
+            sharing what's common and receiving what varies as an argument.
+          </p>
+          <p>
+            The pattern's core distinction:
+          </p>
+          <ul>
+            <li>
+              <strong>Intrinsic state</strong> — immutable, context-independent:
+              particle type, color, texture/sprite data. This is what can be
+              safely shared because it never changes per instance.
+            </li>
+            <li>
+              <strong>Extrinsic state</strong> — variable, context-dependent:
+              x/y position, velocity, lifespan. It's supplied by the client
+              (<code>ParticleContext</code>) on every operation — it's never
+              stored inside the Flyweight.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. SOLUTION -->
+        <section class="artigo__secao">
+          <h2>Solution</h2>
+          <p>The Flyweight organizes the code into three participants:</p>
+          <ol>
+            <li>
+              <strong>Flyweight:</strong> stores exclusively the intrinsic state.
+              Its methods receive the extrinsic state as a parameter — never
+              store it as a field. E.g.: <code>ParticleType</code> with
+              <code>type</code>, <code>color</code> and <code>texture</code>.
+            </li>
+            <li>
+              <strong>FlyweightFactory:</strong> keeps a cache (<code>Map</code>)
+              of Flyweight instances indexed by the intrinsic state's key.
+              Returns an existing instance if the key already exists, or creates
+              and stores a new one. It's the central element of the pattern —
+              without it, sharing doesn't happen. It's frequently implemented as
+              a Singleton.
+            </li>
+            <li>
+              <strong>Context (client):</strong> stores the extrinsic state and a
+              reference to the shared Flyweight. E.g.: <code>ParticleContext</code>
+              with <code>x</code>, <code>y</code>, <code>velocityX</code>,
+              <code>velocityY</code> and a reference to <code>ParticleType</code>.
+              The number of Contexts can be huge; the number of Flyweights is
+              small (one per unique intrinsic state value).
+            </li>
+          </ol>
+          <p>
+            The memory savings come from the number of Flyweight instances
+            created. If there are 3 particle types and 100,000 particles, there
+            are only <strong>3 Flyweight objects</strong> — not 100,000.
+          </p>
+        </section>
+
+        <!-- 4. STRUCTURE -->
+        <section class="artigo__secao">
+          <h2>Structure</h2>
+          <div class="code-bloco">
+<pre><code>           ParticleType (Flyweight)
+  ┌─────────────────────────────────────────┐
+  │ + type: string        ← intrinsic       │
+  │ + color: string       ← intrinsic       │
+  │ + texture: string     ← intrinsic       │
+  │                                         │
+  │ + render(x, y, vx, vy): void            │
+  │   ↑ extrinsic state passed as argument  │
+  └─────────────────────────────────────────┘
+                       ▲ created and cached by
+  ┌─────────────────────────────────────────┐
+  │ ParticleTypeFactory (Factory)           │
+  │                                         │
+  │ - cache: Map&lt;string, ParticleType&gt;      │
+  │ + get(type, color, texture):            │
+  │     ParticleType                        │
+  │   → returns from cache or creates new   │
+  │ + countInstances(): number              │
+  └─────────────────────────────────────────┘
+                       ▲ referenced by
+  ┌─────────────────────────────────────────┐
+  │ ParticleContext (Context)               │
+  │                                         │
+  │ - x: number             ← extrinsic     │
+  │ - y: number              ← extrinsic    │
+  │ - velocityX: number     ← extrinsic     │
+  │ - velocityY: number     ← extrinsic     │
+  │ - type: ParticleType    ← flyweight ref │
+  │                                         │
+  │ + move(): void                          │
+  │ + render(): void                        │
+  │   → this.type.render(x, y, vx, vy)      │
+  └─────────────────────────────────────────┘
+
+
+Instance count (example with 100,000 particles):
+
+  Without Flyweight:  100,000 full Particle objects
+  With Flyweight:           3 ParticleType objects (fire, smoke, debris)
+                    + 100,000 ParticleContext objects (light — just numbers)
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. CODE EXAMPLES -->
+        <section class="artigo__secao">
+          <h2>Code examples</h2>
+
+          <h3>Example 1 — Particles in a game with a FlyweightFactory and instance counting</h3>
+          <p>
+            The example below demonstrates the split between intrinsic state
+            (<code>ParticleType</code>) and extrinsic state
+            (<code>ParticleContext</code>), the factory with cache, and the
+            count of created instances — highlighting the memory savings.
+          </p>
+
+          <!-- TAB GROUP 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 1 — particles in a game">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Flyweight — stores ONLY intrinsic state ────────────────────
+class ParticleType {
+  constructor(
+    readonly type: string,       // intrinsic: immutable
+    readonly color: string,      // intrinsic: immutable
+    readonly texture: string     // intrinsic: heavy sprite/data
+  ) {}
+
+  // Extrinsic state (x, y, vx, vy) arrives as an argument — never a field.
+  render(x: number, y: number, vx: number, vy: number): void {
+    console.log(
+      `[${this.type}] color=${this.color} @ (${x.toFixed(1)},${y.toFixed(1)})` +
+      ` vel=(${vx.toFixed(2)},${vy.toFixed(2)})`
+    );
+  }
+}
+
+// ── FlyweightFactory — cache of instances by intrinsic key ─────
+class ParticleTypeFactory {
+  private static readonly cache = new Map&lt;string, ParticleType&gt;();
+
+  static get(type: string, color: string, texture: string): ParticleType {
+    const key = `${type}|${color}`;
+    if (!ParticleTypeFactory.cache.has(key)) {
+      console.log(`  [Factory] Creating new Flyweight: "${key}"`);
+      ParticleTypeFactory.cache.set(key, new ParticleType(type, color, texture));
+    }
+    return ParticleTypeFactory.cache.get(key)!;
+  }
+
+  static countInstances(): number {
+    return ParticleTypeFactory.cache.size;
+  }
+}
+
+// ── Context — stores extrinsic state + reference to the Flyweight
+class ParticleContext {
+  private type: ParticleType;
+
+  constructor(
+    typeName: string,
+    color: string,
+    texture: string,
+    private x: number,
+    private y: number,
+    private velocityX: number,
+    private velocityY: number
+  ) {
+    // Gets (or creates) the shared Flyweight
+    this.type = ParticleTypeFactory.get(typeName, color, texture);
+  }
+
+  move(dt: number): void {
+    this.x += this.velocityX * dt;
+    this.y += this.velocityY * dt;
+  }
+
+  render(): void {
+    // Passes extrinsic state as an argument — not stored in the Flyweight
+    this.type.render(this.x, this.y, this.velocityX, this.velocityY);
+  }
+}
+
+// ── Simulation ────────────────────────────────────────────────
+const TOTAL = 10_000;
+const TYPES = [
+  { type: 'fire',   color: '#FF4500', texture: 'sprite_fire.png'   },
+  { type: 'smoke',  color: '#808080', texture: 'sprite_smoke.png'  },
+  { type: 'debris', color: '#C0C0C0', texture: 'sprite_debris.png' },
+];
+
+console.log(`Creating ${TOTAL} particles of ${TYPES.length} types:`);
+
+const particles: ParticleContext[] = [];
+for (let i = 0; i &lt; TOTAL; i++) {
+  const t = TYPES[i % TYPES.length];
+  particles.push(new ParticleContext(
+    t.type, t.color, t.texture,
+    Math.random() * 800,
+    Math.random() * 600,
+    (Math.random() - 0.5) * 5,
+    (Math.random() - 0.5) * 5
+  ));
+}
+
+// Result:
+//   [Factory] Creating new Flyweight: "fire|#FF4500"
+//   [Factory] Creating new Flyweight: "smoke|#808080"
+//   [Factory] Creating new Flyweight: "debris|#C0C0C0"
+
+console.log(`\nParticleType instances (Flyweight): ${ParticleTypeFactory.countInstances()}`);
+console.log(`ParticleContext instances (Context): ${TOTAL}`);
+// ParticleType instances (Flyweight): 3
+// ParticleContext instances (Context): 10000
+
+// Renders the first 3 to demonstrate
+particles.slice(0, 3).forEach(p =&gt; p.render());
+// [fire]   color=#FF4500 @ (327.4,198.6) vel=( 2.13,-1.07)
+// [smoke]  color=#808080 @ (542.1,391.2) vel=(-0.87, 3.45)
+// [debris] color=#C0C0C0 @ ( 12.9,544.8) vel=( 1.22,-2.98)</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Flyweight — stores ONLY intrinsic state ────────────────────
+class ParticleType
+{
+    public function __construct(
+        public readonly string $type,
+        public readonly string $color,
+        public readonly string $texture
+    ) {}
+
+    // Extrinsic state arrives as an argument — never a property.
+    public function render(
+        float $x, float $y, float $vx, float $vy
+    ): void {
+        printf(
+            "[%s] color=%s @ (%.1f,%.1f) vel=(%.2f,%.2f)\n",
+            $this-&gt;type, $this-&gt;color, $x, $y, $vx, $vy
+        );
+    }
+}
+
+// ── FlyweightFactory — cache of instances by intrinsic key ─────
+class ParticleTypeFactory
+{
+    /** @var array&lt;string, ParticleType&gt; */
+    private static array $cache = [];
+
+    public static function get(
+        string $type, string $color, string $texture
+    ): ParticleType {
+        $key = "{$type}|{$color}";
+        if (!isset(self::$cache[$key])) {
+            echo "  [Factory] Creating new Flyweight: \"{$key}\"\n";
+            self::$cache[$key] = new ParticleType($type, $color, $texture);
+        }
+        return self::$cache[$key];
+    }
+
+    public static function countInstances(): int
+    {
+        return count(self::$cache);
+    }
+}
+
+// ── Context — stores extrinsic state + reference to the Flyweight
+class ParticleContext
+{
+    private ParticleType $type;
+
+    public function __construct(
+        string $typeName,
+        string $color,
+        string $texture,
+        private float $x,
+        private float $y,
+        private float $velocityX,
+        private float $velocityY
+    ) {
+        $this-&gt;type = ParticleTypeFactory::get($typeName, $color, $texture);
+    }
+
+    public function move(float $dt): void
+    {
+        $this-&gt;x += $this-&gt;velocityX * $dt;
+        $this-&gt;y += $this-&gt;velocityY * $dt;
+    }
+
+    public function render(): void
+    {
+        $this-&gt;type-&gt;render(
+            $this-&gt;x, $this-&gt;y,
+            $this-&gt;velocityX, $this-&gt;velocityY
+        );
+    }
+}
+
+// ── Simulation ────────────────────────────────────────────────
+const TOTAL = 10000;
+$types = [
+    ['type' =&gt; 'fire',   'color' =&gt; '#FF4500', 'texture' =&gt; 'sprite_fire.png'],
+    ['type' =&gt; 'smoke',  'color' =&gt; '#808080', 'texture' =&gt; 'sprite_smoke.png'],
+    ['type' =&gt; 'debris', 'color' =&gt; '#C0C0C0', 'texture' =&gt; 'sprite_debris.png'],
+];
+
+echo "Creating " . TOTAL . " particles of " . count($types) . " types:\n";
+
+$particles = [];
+for ($i = 0; $i &lt; TOTAL; $i++) {
+    $t = $types[$i % count($types)];
+    $particles[] = new ParticleContext(
+        $t['type'], $t['color'], $t['texture'],
+        (float)(mt_rand(0, 8000) / 10),
+        (float)(mt_rand(0, 6000) / 10),
+        (mt_rand(-500, 500) / 100),
+        (mt_rand(-500, 500) / 100)
+    );
+}
+
+// [Factory] Creating new Flyweight: "fire|#FF4500"
+// [Factory] Creating new Flyweight: "smoke|#808080"
+// [Factory] Creating new Flyweight: "debris|#C0C0C0"
+
+echo "\nParticleType instances (Flyweight): "
+    . ParticleTypeFactory::countInstances() . "\n";
+echo "ParticleContext instances (Context): " . TOTAL . "\n";
+// ParticleType instances (Flyweight): 3
+// ParticleContext instances (Context): 10000
+
+// Renders the first 3 to demonstrate
+foreach (array_slice($particles, 0, 3) as $p) {
+    $p-&gt;render();
+}</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 1) -->
+
+          <h3>Example 2 — Typographic characters in a text editor</h3>
+          <p>
+            The classic GoF example: an editor with 500,000 characters. The
+            intrinsic state is the glyph's shape (family, weight, font size —
+            immutable for every "A" in the same font). The extrinsic state is
+            each character's position on the page (row, column — unique per
+            instance). Without Flyweight: 500,000 objects with repeated font
+            data. With Flyweight: one object per unique glyph, shared by every
+            occurrence.
+          </p>
+
+          <!-- TAB GROUP 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 2 — typographic glyphs">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Flyweight: font data (intrinsic) ───────────────────────────
+class Glyph {
+  constructor(
+    readonly character: string,
+    readonly family: string,    // e.g.: "Helvetica"
+    readonly weight: string,    // e.g.: "regular" | "bold"
+    readonly size: number       // e.g.: 12 (pt)
+  ) {}
+
+  // Position (extrinsic) comes as an argument
+  draw(row: number, column: number): void {
+    console.log(
+      `'${this.character}' [${this.family} ${this.weight} ${this.size}pt]` +
+      ` → row ${row}, col ${column}`
+    );
+  }
+}
+
+// ── FlyweightFactory ──────────────────────────────────────────
+class GlyphFactory {
+  private readonly cache = new Map&lt;string, Glyph&gt;();
+
+  get(
+    character: string,
+    family: string,
+    weight: string,
+    size: number
+  ): Glyph {
+    const key = `${character}|${family}|${weight}|${size}`;
+    if (!this.cache.has(key)) {
+      this.cache.set(key, new Glyph(character, family, weight, size));
+    }
+    return this.cache.get(key)!;
+  }
+
+  countGlyphs(): number { return this.cache.size; }
+}
+
+// ── Context: position of each character in the document ───────
+class CharacterInDocument {
+  private readonly glyph: Glyph;
+
+  constructor(
+    character: string,
+    family: string,
+    weight: string,
+    size: number,
+    private readonly row: number,
+    private readonly column: number,
+    factory: GlyphFactory
+  ) {
+    this.glyph = factory.get(character, family, weight, size);
+  }
+
+  render(): void {
+    this.glyph.draw(this.row, this.column);
+  }
+}
+
+// ── Usage ────────────────────────────────────────────────────
+const factory = new GlyphFactory();
+const text    = 'Hello'; // each letter occurs at multiple positions
+
+// Simulates two lines with the same text — same glyphs, different positions
+const document: CharacterInDocument[] = [];
+for (let row = 0; row &lt; 2; row++) {
+  for (let col = 0; col &lt; text.length; col++) {
+    document.push(new CharacterInDocument(
+      text[col], 'Helvetica', 'regular', 12,
+      row, col, factory
+    ));
+  }
+}
+
+// "Hello" × 2 lines = 10 CharacterInDocument instances
+// but only 4 unique glyphs (H,e,l,o — 'l' reused 4×)
+console.log(`Unique glyphs (Flyweight): ${factory.countGlyphs()}`); // 4
+console.log(`Contexts (instances):      ${document.length}`);       // 10
+
+// Renders row 0
+document.filter((_, i) =&gt; i &lt; text.length).forEach(c =&gt; c.render());
+// 'H' [Helvetica regular 12pt] → row 0, col 0
+// 'e' [Helvetica regular 12pt] → row 0, col 1
+// 'l' [Helvetica regular 12pt] → row 0, col 2
+// 'l' [Helvetica regular 12pt] → row 0, col 3  ← same Glyph 'l'
+// 'o' [Helvetica regular 12pt] → row 0, col 4</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Flyweight: font data (intrinsic) ───────────────────────────
+class Glyph
+{
+    public function __construct(
+        public readonly string $character,
+        public readonly string $family,
+        public readonly string $weight,
+        public readonly int $size
+    ) {}
+
+    public function draw(int $row, int $column): void
+    {
+        printf(
+            "'%s' [%s %s %dpt] → row %d, col %d\n",
+            $this-&gt;character, $this-&gt;family,
+            $this-&gt;weight, $this-&gt;size,
+            $row, $column
+        );
+    }
+}
+
+// ── FlyweightFactory ──────────────────────────────────────────
+class GlyphFactory
+{
+    /** @var array&lt;string, Glyph&gt; */
+    private array $cache = [];
+
+    public function get(
+        string $character,
+        string $family,
+        string $weight,
+        int $size
+    ): Glyph {
+        $key = "{$character}|{$family}|{$weight}|{$size}";
+        if (!isset($this-&gt;cache[$key])) {
+            $this-&gt;cache[$key] = new Glyph($character, $family, $weight, $size);
+        }
+        return $this-&gt;cache[$key];
+    }
+
+    public function countGlyphs(): int
+    {
+        return count($this-&gt;cache);
+    }
+}
+
+// ── Context: position of each character in the document ───────
+class CharacterInDocument
+{
+    private Glyph $glyph;
+
+    public function __construct(
+        string $character,
+        string $family,
+        string $weight,
+        int $size,
+        private readonly int $row,
+        private readonly int $column,
+        GlyphFactory $factory
+    ) {
+        $this-&gt;glyph = $factory-&gt;get($character, $family, $weight, $size);
+    }
+
+    public function render(): void
+    {
+        $this-&gt;glyph-&gt;draw($this-&gt;row, $this-&gt;column);
+    }
+}
+
+// ── Usage ────────────────────────────────────────────────────
+$factory = new GlyphFactory();
+$text    = 'Hello';
+
+$document = [];
+for ($row = 0; $row &lt; 2; $row++) {
+    for ($col = 0; $col &lt; strlen($text); $col++) {
+        $document[] = new CharacterInDocument(
+            $text[$col], 'Helvetica', 'regular', 12,
+            $row, $col, $factory
+        );
+    }
+}
+
+echo "Unique glyphs (Flyweight): " . $factory-&gt;countGlyphs() . "\n"; // 4
+echo "Contexts (instances):      " . count($document) . "\n";         // 10
+
+// Renders row 0
+foreach (array_slice($document, 0, strlen($text)) as $c) {
+    $c-&gt;render();
+}
+// 'H' [Helvetica regular 12pt] → row 0, col 0
+// 'e' [Helvetica regular 12pt] → row 0, col 1
+// 'l' [Helvetica regular 12pt] → row 0, col 2
+// 'l' [Helvetica regular 12pt] → row 0, col 3  ← same Glyph 'l'
+// 'o' [Helvetica regular 12pt] → row 0, col 4</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 2) -->
+
+        </section><!-- /.artigo__secao (examples) -->
+
+        <!-- 6. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>When the number of objects is very large and the memory
+              cost is measurable:</strong> Flyweight only pays off after
+              profiling. The criterion is objective: there's a real memory
+              bottleneck caused by near-identical objects in massive quantities
+              (thousands or more).
+            </li>
+            <li>
+              <strong>When most of each object's state is identical across
+              instances:</strong> if objects differ only in a few numeric fields
+              (position, lifespan), but share heavy data (sprites, color
+              schemes, business rules), the shareable intrinsic state is
+              substantial.
+            </li>
+            <li>
+              <strong>When object identity doesn't matter to the client:</strong>
+              the client can't distinguish a reused Flyweight from a new object —
+              and doesn't need to. If instance identity is relevant (e.g.: two
+              "equal" objects have independent lifecycles), Flyweight isn't
+              suitable.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>Before profiling:</strong> Flyweight introduces real
+              complexity — extrinsic state becomes the client's responsibility,
+              the code becomes harder to understand and debug. Applying it
+              without evidence of a memory problem is classic over-engineering.
+            </li>
+            <li>
+              <strong>When the intrinsic state is small or non-repetitive:</strong>
+              if every object has unique data, there's nothing to share. The
+              pattern brings no benefit at all.
+            </li>
+            <li>
+              <strong>When the number of objects is reasonable:</strong> hundreds
+              of objects with duplicated data don't justify the complexity. Rule
+              of thumb: if the memory footprint isn't a measurable problem, don't
+              apply it.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Drastic reduction in memory usage when there are many objects with shareable intrinsic state.</li>
+            <li>Can improve CPU cache performance by reducing the number of distinct objects walked.</li>
+            <li>The FlyweightFactory centralizes creation and sharing — the client doesn't need to manage the cache manually.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>The extrinsic state becomes the client's responsibility — whoever calls the Flyweight must supply and manage that data, increasing coupling.</li>
+            <li>Increases code complexity: what was a single object becomes a Flyweight + Context pair, plus the factory.</li>
+            <li>Can introduce subtle bugs if mutable state leaks into the shared Flyweight (violates the intrinsic-immutability premise).</li>
+            <li>The memory benefit can be negated by the overhead of managing and passing the extrinsic state on every operation.</li>
+          </ul>
+        </section>
+
+        <!-- 8. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Mutable intrinsic state</h3>
+          <p>
+            The fundamental premise of the Flyweight is that the intrinsic state
+            is <strong>immutable</strong>. If a shared Flyweight is mutated by
+            one client, every other Context referencing it will be affected — a
+            subtle and hard-to-trace bug. The protection in TypeScript is to use
+            <code>readonly</code> on every field and not expose setters.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Rule:</strong> if you feel the need to modify a field of the
+            Flyweight, that field is probably extrinsic and belongs to the
+            Context — not to the Flyweight.
+          </p>
+
+          <h3>2. Applying it before profiling (over-engineering)</h3>
+          <p>
+            The Flyweight is a memory-optimization pattern — not a design one.
+            Applying it before identifying a real bottleneck is cost without
+            benefit: the split between intrinsic and extrinsic state makes the
+            code significantly more complex. Use a profiler to confirm that
+            memory usage from repeated objects is the real problem before
+            refactoring.
+          </p>
+
+          <h3>3. Extrinsic state accidentally becoming intrinsic</h3>
+          <p>
+            The distinction between intrinsic and extrinsic isn't always
+            obvious. A field like <code>color</code> can be intrinsic (every bold
+            "A" is blue) or extrinsic (each character can have an independent
+            color). Classifying it incorrectly means the Flyweight will hold
+            state that should vary per instance — making the sharing incorrect.
+          </p>
+          <p>
+            The diagnostic question: <em>"if two objects have this value
+            differently, can they still share the same Flyweight instance?"</em>
+            If not, the field is extrinsic.
+          </p>
+
+          <h3>4. Flyweight objects used by multiple threads</h3>
+          <p>
+            Because Flyweights are shared and (by design) immutable, they're
+            naturally thread-safe for reading. The risk is the
+            <code>FlyweightFactory</code> itself: creation and insertion into the
+            cache must be protected in multithreaded environments (mutex,
+            synchronization) to avoid two threads creating the same Flyweight
+            simultaneously.
+          </p>
+        </section>
+
+        <!-- 9. RELATED PATTERNS -->
+        <section class="artigo__secao">
+          <h2>Related patterns</h2>
+          <p>
+            The Flyweight interacts with patterns that also deal with sharing,
+            object composition and centralized creation:
+          </p>
+          <!--
+            Link discipline: 12 of the 51 catalog patterns have an English
+            translation so far (5 from Batch 1 — singleton, factory-method,
+            abstract-factory, builder, prototype — plus this batch's 7 —
+            adapter, decorator, facade, proxy, composite, bridge, flyweight).
+            Composite and Singleton are in this batch (or Batch 1) → real
+            ../slug/ links. Visitor has no article yet even in pt-BR (kept
+            as a pending span in the source article) → mirrored here as a
+            pending span, not a link, to preserve structural parity with the
+            pt-BR original.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../composite/">Composite</a></li>
+            <li><a href="../singleton/">Singleton</a></li>
+            <li><span class="artigo__padrao-pendente">Visitor (coming soon)</span></li>
+          </ul>
+          <p class="mt-1">
+            The <strong>Composite</strong> frequently uses Flyweight: when a
+            Composite tree contains many repeated leaves (e.g.: characters in a
+            document, tiles in a map), the leaves can be implemented as
+            Flyweights to save memory — the tree grows, but the number of unique
+            objects doesn't. The <strong>Singleton</strong> is the pattern
+            closest to the <code>FlyweightFactory</code>: the factory is
+            frequently implemented as a Singleton to guarantee the Flyweight
+            cache is unique across the whole application. The
+            <strong>Visitor</strong> can be combined with Flyweight to traverse
+            and operate over the instances without requiring each one to have the
+            visiting behavior built in — the Visitor receives the extrinsic state
+            from the Context and the shared Flyweight as parameters.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="4141414141"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Number Base Converter — Binary, Octal, Decimal, Hexadecimal — Dev Helper</title>
+  <meta name="description" content="Convert a number between binary, octal, decimal and hexadecimal at once — edit any field and the others update. Supports large numbers with BigInt and validates digits per base." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../tools/base-numerica/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../../biblioteca/">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Number Base Converter</h1>
+        <p>Convert a number between <strong>binary</strong>, <strong>octal</strong>, <strong>decimal</strong> and <strong>hexadecimal</strong> at once. Edit any field and the others update live. Supports <strong>large numbers</strong> with no loss of precision (BigInt).</p>
+      </header>
+
+      <div class="tool__controls">
+        <label class="tool__label" for="bn-bin">Binary (base 2)</label>
+        <input type="text" id="bn-bin" class="tool__input-inline" spellcheck="false" autocomplete="off" placeholder="e.g.: 11111111" />
+
+        <label class="tool__label" for="bn-oct">Octal (base 8)</label>
+        <input type="text" id="bn-oct" class="tool__input-inline" spellcheck="false" autocomplete="off" placeholder="e.g.: 377" />
+
+        <label class="tool__label" for="bn-dec">Decimal (base 10)</label>
+        <input type="text" id="bn-dec" class="tool__input-inline" spellcheck="false" autocomplete="off" placeholder="e.g.: 255" />
+
+        <label class="tool__label" for="bn-hex">Hexadecimal (base 16)</label>
+        <input type="text" id="bn-hex" class="tool__input-inline" spellcheck="false" autocomplete="off" placeholder="e.g.: ff" />
+
+        <p id="bn-error" class="error-msg" role="alert" hidden></p>
+
+        <div class="tool__actions tool__actions--mt">
+          <button id="bn-clear" class="button--secondary" type="button">Clear</button>
+        </div>
+      </div>
+    </article>
+
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="2727272727"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <section>
+      <h2>Number bases in programming</h2>
+      <p>
+        The same number can be written in different <strong>bases</strong>. <strong>Decimal</strong>
+        (base 10) is the everyday one; <strong>binary</strong> (base 2) is the native
+        language of computers; <strong>hexadecimal</strong> (base 16) is compact and common in
+        colors, memory addresses and bytes; <strong>octal</strong> (base 8) shows up, for example, in
+        Unix file permissions (<code>chmod 755</code>). Converting between them is a
+        frequent task for developers.
+      </p>
+
+      <h2>How to use</h2>
+      <p>
+        Type the number into any of the four fields. The other three are filled in
+        automatically. Each field only accepts the <strong>valid digits</strong> for its base — if
+        you type, for example, a <code>2</code> in the binary field or a <code>g</code> in the
+        hexadecimal field, a readable error message appears. A minus sign for negative numbers is
+        also accepted, as well as <code>_</code> or space as visual separators.
+      </p>
+
+      <h2>Large numbers</h2>
+      <p>
+        The conversion uses <strong>BigInt</strong>, JavaScript's arbitrary-precision integer
+        type. This means numbers with dozens of digits are converted <strong>without
+        rounding</strong> — something that would happen if we used the regular numeric type, limited to
+        about 15–16 significant digits.
+      </p>
+
+      <h2>Frequently Asked Questions (FAQ)</h2>
+
+      <h3>Does it work with fractional numbers?</h3>
+      <p>
+        No. The tool converts <strong>integers</strong> (including negative ones). Fractions in
+        different bases involve additional rules and are out of scope here.
+      </p>
+
+      <h3>Does the hexadecimal output use uppercase or lowercase?</h3>
+      <p>
+        The output uses <strong>lowercase</strong> (<code>ff</code>), but on input it doesn't matter — you can
+        type <code>FF</code> or <code>ff</code>.
+      </p>
+
+      <h3>Why did the field go blank when I erased everything?</h3>
+      <p>
+        When you clear a field, the others are reset to avoid showing a "stuck" value that no longer
+        corresponds to what you typed. Use "Clear" to reset all of them at once.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/tools-en/base-numerica.js"></script>
+</body>
+</html>

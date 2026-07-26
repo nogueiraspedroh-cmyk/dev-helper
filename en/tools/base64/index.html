@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Base64 and URL Encode/Decode — Dev Helper</title>
+  <meta name="description" content="Encode and decode text in Base64 or URL encoding (percent-encoding) directly in your browser, with support for accented characters and emojis (UTF-8). Handles invalid input with a clear error message." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../tools/base64/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!--
+    AdSense — biblioteca carregada UMA vez por página.
+    Substitua ca-pub-5784678562772792 pelo seu pub-ID real antes do deploy.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../../biblioteca/">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Base64 and URL — Encode / Decode</h1>
+        <p>Encode and decode text in <strong>Base64</strong> or <strong>URL encoding</strong> (percent-encoding), with full support for accented characters and emojis (UTF-8).</p>
+      </header>
+
+      <div class="tool__controls">
+        <!-- Mode -->
+        <fieldset class="tool__fieldset">
+          <legend class="tool__legend">Mode</legend>
+          <label class="tool__radio-label">
+            <input type="radio" name="b64-modo" value="base64" checked />
+            Base64
+          </label>
+          <label class="tool__radio-label">
+            <input type="radio" name="b64-modo" value="url" />
+            URL (encodeURIComponent)
+          </label>
+        </fieldset>
+
+        <!-- Textarea de entrada -->
+        <textarea
+          id="b64-input"
+          class="tool__input"
+          placeholder="Type or paste the text here..."
+          spellcheck="false"
+          autocorrect="off"
+          autocapitalize="off"
+        ></textarea>
+
+        <div class="tool__actions">
+          <button id="btn-b64-encode" class="button" type="button">Encode</button>
+          <button id="btn-b64-decode" class="button--secondary" type="button">Decode</button>
+          <button id="btn-b64-clear" class="button--secondary" type="button">Clear</button>
+          <button id="btn-b64-copy" class="button--secondary" type="button">Copy</button>
+        </div>
+      </div>
+
+      <!-- Error message (invalid input) -->
+      <p id="b64-error" class="error-msg" role="alert" hidden></p>
+
+      <!-- Output -->
+      <div class="tool__output">
+        <textarea
+          id="b64-output"
+          class="result"
+          placeholder="The result will appear here..."
+          readonly
+          spellcheck="false"
+          autocorrect="off"
+          autocapitalize="off"
+        ></textarea>
+      </div>
+    </article>
+
+    <!-- Ad block — below the tool's result area -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="1515151515"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Real content — required by AdSense -->
+    <section>
+      <h2>What is Base64?</h2>
+      <p>
+        <strong>Base64</strong> is an encoding scheme that represents binary data using only 64
+        "safe" ASCII characters (A–Z, a–z, 0–9, <code>+</code> and <code>/</code>). It is used
+        when binary data needs to travel through channels that only accept text — such as email
+        attachments, <em>data URIs</em> in CSS/HTML, tokens (the header and payload of a JWT
+        are Base64URL) and JSON fields. Encoding in Base64 <strong>is not encryption</strong>:
+        anyone can decode it. It increases the data size by about 33%.
+      </p>
+
+      <h2>What is URL encoding?</h2>
+      <p>
+        <strong>URL encoding</strong> (or <em>percent-encoding</em>) replaces characters that
+        have special meaning or are not allowed in a URL with <code>%</code> followed by the
+        hexadecimal code of the byte. For example, a space becomes <code>%20</code> and
+        <code>ã</code> becomes <code>%C3%A3</code>. It is essential when building query strings
+        and sending data in URLs. This tool uses <code>encodeURIComponent</code> in URL mode,
+        suitable for encoding individual parameter values.
+      </p>
+
+      <h2>UTF-8 support (accented characters and emojis)</h2>
+      <p>
+        The browser's native <code>btoa</code>/<code>atob</code> functions operate only on
+        8-bit (latin1) characters and break with accented characters or emojis. This tool
+        handles that by passing the text through <code>encodeURIComponent</code> before
+        encoding in Base64 — so <code>"hi 👋"</code> is encoded and decoded correctly, without
+        corrupting the characters.
+      </p>
+
+      <h2>Frequently Asked Questions (FAQ)</h2>
+
+      <h3>Is Base64 a form of encryption?</h3>
+      <p>
+        No. Base64 is just a reversible <em>encoding</em>, with no key or secret. Anyone can
+        decode it. Never use Base64 to "hide" passwords or sensitive data.
+      </p>
+
+      <h3>Why did I get an error while decoding?</h3>
+      <p>
+        In Base64 mode, the error appears when the text contains characters that don't belong
+        to the Base64 alphabet or has an invalid length. In URL mode, the error appears when
+        there is a malformed <code>%</code> sequence (e.g., <code>%ZZ</code> or a stray
+        <code>%</code>). Check whether you pasted the complete content and in the correct mode.
+      </p>
+
+      <h3>What's the difference between encodeURIComponent and encodeURI?</h3>
+      <p>
+        <code>encodeURIComponent</code> encodes practically all special characters, making it
+        ideal for query parameter <em>values</em>. <code>encodeURI</code> preserves structural
+        URL characters (such as <code>/</code>, <code>?</code> and <code>&amp;</code>), serving
+        to encode an entire URL. This tool uses <code>encodeURIComponent</code>.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/tools-en/base64.js"></script>
+</body>
+</html>

@@ -106,6 +106,12 @@
     return segments.length > 0 && segments[0] === "en";
   }
 
+  // Exposta para js/biblioteca.js (carregado DEPOIS de main.js em toda
+  // página da Biblioteca) reaproveitar a mesma lógica de detecção de idioma
+  // sem duplicar pathSegments/isEnglishPath ali — mesmo padrão de
+  // window.DevHelper.flashButton, acima.
+  window.DevHelper.isEnglishPath = isEnglishPath;
+
   // Lista única de ferramentas — fonte da verdade para a sidebar.
   // Ao adicionar uma ferramenta nova, inclua aqui (slug, título, ícone SVG)
   // e também um .tool-card correspondente em index.html.
@@ -413,8 +419,8 @@
   // ================================================================
   // VERSÃO EM INGLÊS de TOOLS/TOOL_CATEGORIES — usada pela sidebar quando
   // isEnglishPath(pathname) é true (ver buildToolsAccordion, mais abaixo).
-  // Só cobre a árvore /en/tools/*; a Biblioteca (BIBLIOTECA_CATEGORIES) fica
-  // de fora desta fase — ver comentário em buildBibliotecaAccordion.
+  // A Biblioteca tem sua própria versão EN (BIBLIOTECA_CATEGORIES_EN) —
+  // ver comentário em buildBibliotecaAccordion.
   //
   // Em vez de reescrever as 37 entradas (duplicando os 37 desenhos de ícone
   // SVG e arriscando as duas listas divergirem com o tempo), TOOLS_EN é
@@ -591,6 +597,105 @@
   ];
 
   // ================================================================
+  // VERSÃO EM INGLÊS de BIBLIOTECA_CATEGORIES — usada pela sidebar (e pelo
+  // catálogo en/biblioteca/index.html, montado à mão a partir dos mesmos
+  // labels) quando isEnglishPath(pathname) é true (ver
+  // buildBibliotecaAccordion, mais abaixo). Mesma técnica de
+  // TOOLS_EN/TOOL_CATEGORIES_EN acima: BIBLIOTECA_CATEGORIES_EN é MONTADA a
+  // partir de BIBLIOTECA_CATEGORIES via .map() — só `title`/`label` mudam,
+  // via os dicionários BIBLIOTECA_CATEGORY_TITLES_EN (6 categorias) e
+  // ARTICLE_LABELS_EN (55 slugs); `slug` é reaproveitado de
+  // BIBLIOTECA_CATEGORIES (fonte única da taxonomia). Nenhum artigo foi
+  // publicado em /en/biblioteca/<slug>/ ainda (ver TRANSLATED_PATHS/
+  // translatedArticleSlugs, abaixo) — este dicionário só cobre o texto
+  // (label em inglês), não a existência da página traduzida.
+  // ================================================================
+  var BIBLIOTECA_CATEGORY_TITLES_EN = {
+    "Padrões de Criação": "Creational Patterns",
+    "Padrões Estruturais": "Structural Patterns",
+    "Padrões Comportamentais": "Behavioral Patterns",
+    "Arquiteturas de Software": "Software Architectures",
+    "Organização de Código e Repositórios": "Code Organization & Repositories",
+    "Conceitos de Infraestrutura e Escala": "Infrastructure & Scale Concepts",
+  };
+
+  var ARTICLE_LABELS_EN = {
+    // Padrões de Criação
+    singleton: "Singleton",
+    "factory-method": "Factory Method",
+    "abstract-factory": "Abstract Factory",
+    builder: "Builder",
+    prototype: "Prototype",
+    // Padrões Estruturais
+    adapter: "Adapter",
+    decorator: "Decorator",
+    facade: "Facade",
+    proxy: "Proxy",
+    composite: "Composite",
+    bridge: "Bridge",
+    flyweight: "Flyweight",
+    // Padrões Comportamentais
+    strategy: "Strategy",
+    observer: "Observer",
+    state: "State",
+    "template-method": "Template Method",
+    command: "Command",
+    mediator: "Mediator",
+    iterator: "Iterator",
+    "chain-of-responsibility": "Chain of Responsibility",
+    memento: "Memento",
+    visitor: "Visitor",
+    interpreter: "Interpreter",
+    // Arquiteturas de Software
+    mvc: "MVC",
+    "arquitetura-em-camadas": "Layered Architecture",
+    "arquitetura-hexagonal": "Hexagonal Architecture",
+    "clean-architecture": "Clean Architecture",
+    "onion-architecture": "Onion Architecture",
+    mvp: "MVP",
+    mvvm: "MVVM",
+    cqrs: "CQRS",
+    "event-driven": "Event-Driven Architecture",
+    "monolito-vs-microsservicos": "Monolith vs Microservices",
+    // Organização de Código e Repositórios
+    "monolito-vs-monorepo": "Monorepo vs Multi-repo",
+    "feature-vs-layer": "Feature-based vs Layer-based Organization",
+    "estrutura-de-pastas": "Folder Structure Best Practices",
+    // Conceitos de Infraestrutura e Escala
+    "escalabilidade-horizontal-vertical": "Horizontal vs Vertical Scalability",
+    "load-balancing": "Load Balancing",
+    caching: "Caching",
+    "sql-vs-nosql": "SQL vs NoSQL",
+    "rest-vs-graphql-vs-grpc": "REST vs GraphQL vs gRPC",
+    "filas-de-mensagem": "Message Queues",
+    "circuit-breaker": "Circuit Breaker",
+    "sla-slo-sli": "SLA, SLO and SLI",
+    idempotencia: "Idempotency",
+    sharding: "Sharding and Partitioning",
+    "replicacao-de-banco": "Database Replication",
+    cdn: "CDN",
+    "api-gateway": "API Gateway",
+    saga: "Saga Pattern",
+    outbox: "Outbox Pattern",
+    "rate-limiting": "Rate Limiting",
+    observabilidade: "Observability",
+    "websockets-sse": "WebSockets and SSE",
+    consistencia: "Eventual vs Strong Consistency",
+  };
+
+  var BIBLIOTECA_CATEGORIES_EN = BIBLIOTECA_CATEGORIES.map(function (category) {
+    return {
+      title: BIBLIOTECA_CATEGORY_TITLES_EN[category.title] || category.title,
+      articles: category.articles.map(function (article) {
+        return {
+          slug: article.slug,
+          label: ARTICLE_LABELS_EN[article.slug] || article.label,
+        };
+      }),
+    };
+  });
+
+  // ================================================================
   // BUSCA UNIFICADA DA HOME (ferramentas + artigos da Biblioteca) —
   // só existe em index.html. Mesma técnica de js/biblioteca.js: normaliza
   // a query e compara com String.indexOf (nunca RegExp construída a partir
@@ -719,11 +824,12 @@
   // location.pathname de novo dentro de uma função que já tem esse
   // parâmetro/variável no escopo.
   //
-  // O grupo "Biblioteca" da sidebar continua sempre em pt-BR — a Biblioteca
-  // está fora do escopo desta fase de tradução (ver buildBibliotecaAccordion,
-  // abaixo). Só o RÓTULO do grupo muda para "Library" nas páginas /en/*, como
-  // fallback interino; os textos de busca/vazio continuam em pt-BR porque
-  // descrevem artigos que só existem em pt-BR.
+  // O grupo "Biblioteca"/"Library" da sidebar já tem chrome 100% traduzido
+  // (rótulo, filtro, labels de artigo — ver BIBLIOTECA_CATEGORIES_EN) mesmo
+  // enquanto os ARTIGOS ainda não têm tradução própria: os hrefs continuam
+  // apontando para o conteúdo pt-BR existente até cada artigo ganhar sua
+  // versão em /en/biblioteca/<slug>/ (ver buildBibliotecaAccordion, abaixo,
+  // e TRANSLATED_PATHS/translatedArticleSlugs).
   // ================================================================
   var UI_STRINGS = {
     pt: {
@@ -753,13 +859,17 @@
       toolsFilterPlaceholder: "Filter tools…",
       toolsFilterAriaLabel: "Filter tools by name",
       toolsFilterEmpty: "No tools found.",
-      // Fallback interino: a Biblioteca só tem conteúdo em pt-BR (fora de
-      // escopo desta fase) — rotula o grupo como "Library" nas páginas EN,
-      // mas os links/busca continuam em pt-BR (ver buildBibliotecaAccordion).
+      // Fallback interino: só os 5 artigos do Lote 1 (Fase C/G008 — Padrões
+      // de Criação: singleton, factory-method, abstract-factory, builder,
+      // prototype) têm tradução publicada até agora (ver TRANSLATED_PATHS/
+      // translatedArticleSlugs) — o grupo, o filtro e os labels de artigo já
+      // são 100% em inglês (BIBLIOTECA_CATEGORIES_EN), mas os hrefs dos
+      // demais 50 artigos ainda apontam para o conteúdo pt-BR existente até
+      // cada um ganhar sua tradução (ver buildBibliotecaAccordion).
       bibliotecaGroupTitle: "Library",
-      bibliotecaFilterPlaceholder: "Filtrar artigos…",
-      bibliotecaFilterAriaLabel: "Filtrar artigos por título",
-      bibliotecaFilterEmpty: "Nenhum artigo encontrado.",
+      bibliotecaFilterPlaceholder: "Filter articles…",
+      bibliotecaFilterAriaLabel: "Filter articles by title",
+      bibliotecaFilterEmpty: "No articles found.",
     },
   };
 
@@ -767,17 +877,33 @@
     return isEnglish ? UI_STRINGS.en : UI_STRINGS.pt;
   }
 
-  // Monta o accordion de categorias da Biblioteca. Por padrão todas as
-  // categorias começam fechadas — EXCETO a que contém o artigo atual
-  // (quando a página é um artigo da biblioteca), que abre automaticamente
-  // e recebe aria-current="page" no link correspondente.
+  // Monta o accordion de categorias da Biblioteca — MESMO padrão de
+  // buildToolsAccordion (abaixo): escolhe BIBLIOTECA_CATEGORIES vs
+  // BIBLIOTECA_CATEGORIES_EN via isEnglishPath(pathname), e decide o
+  // prefixo do href por artigo usando translatedArticleSlugs (derivado de
+  // TRANSLATED_PATHS filtrando `pt[0] === "biblioteca"`, definido mais
+  // abaixo neste arquivo — var já resolvida quando esta função roda, pois só
+  // é chamada a partir de buildSidebarMarkup, bem depois no fluxo do
+  // script). Por padrão todas as categorias começam fechadas — EXCETO a que
+  // contém o artigo atual (quando a página é um artigo da biblioteca), que
+  // abre automaticamente e recebe aria-current="page" no link
+  // correspondente.
   //
-  // SEMPRE usa BIBLIOTECA_CATEGORIES (pt-BR) e sempre linka para
-  // prefix + "biblioteca/..." — mesmo em páginas /en/* — porque a Biblioteca
-  // está fora do escopo desta fase de tradução (ver UI_STRINGS acima, campo
-  // bibliotecaGroupTitle, para o rótulo "Library" do grupo).
+  // Publicação em /en/biblioteca/<slug>/ é incremental por lote (Fase
+  // C/G008+; G007 só montou a infraestrutura). O Lote 1 (Padrões de
+  // Criação: singleton, factory-method, abstract-factory, builder,
+  // prototype) já está em translatedArticleSlugs, então esses 5 hrefs
+  // apontam para a versão traduzida (prefix + "en/" + "biblioteca/" + slug
+  // + "/"). Os demais artigos ainda não estão no array, então caem no
+  // fallback pt-BR (prefix + "biblioteca/" + slug + "/", sem "en/") mesmo
+  // em páginas /en/* — evita 404, mesma lição de buildToolsAccordion na
+  // Fase B. O label continua vindo de BIBLIOTECA_CATEGORIES_EN (texto em
+  // inglês) mesmo quando o href aponta para a página pt-BR.
   function buildBibliotecaAccordion(prefix, pathname) {
-    return BIBLIOTECA_CATEGORIES.map(function (category, catIndex) {
+    var isEnglish = isEnglishPath(pathname);
+    var categories = isEnglish ? BIBLIOTECA_CATEGORIES_EN : BIBLIOTECA_CATEGORIES;
+
+    return categories.map(function (category, catIndex) {
       var panelId = "sidebar-bib-panel-" + catIndex;
       var categoryHasActiveArticle = category.articles.some(function (article) {
         return pathname.indexOf("/biblioteca/" + article.slug + "/") !== -1;
@@ -785,7 +911,9 @@
 
       var articleLinks = category.articles
         .map(function (article) {
-          var href = prefix + "biblioteca/" + article.slug + "/";
+          var articlePrefix =
+            isEnglish && translatedArticleSlugs.indexOf(article.slug) !== -1 ? prefix + "en/" : prefix;
+          var href = articlePrefix + "biblioteca/" + article.slug + "/";
           var isActive = pathname.indexOf("/biblioteca/" + article.slug + "/") !== -1;
           var current = isActive ? ' aria-current="page"' : "";
           return (
@@ -1020,6 +1148,51 @@
     { pt: ["tools", "mock-data"], en: ["tools", "mock-data"] },
     { pt: ["tools", "escopo"], en: ["tools", "escopo"] },
     { pt: ["tools", "xml"], en: ["tools", "xml"] },
+    { pt: ["tools", "senha"], en: ["tools", "senha"] },
+    { pt: ["tools", "hash"], en: ["tools", "hash"] },
+    { pt: ["tools", "jwt"], en: ["tools", "jwt"] },
+    { pt: ["tools", "uuid"], en: ["tools", "uuid"] },
+    { pt: ["tools", "base64"], en: ["tools", "base64"] },
+    { pt: ["tools", "cidr"], en: ["tools", "cidr"] },
+    { pt: ["tools", "cron"], en: ["tools", "cron"] },
+    { pt: ["tools", "timestamp"], en: ["tools", "timestamp"] },
+    { pt: ["tools", "fuso-horario"], en: ["tools", "fuso-horario"] },
+    { pt: ["tools", "qrcode"], en: ["tools", "qrcode"] },
+    { pt: ["tools", "meta-tags"], en: ["tools", "meta-tags"] },
+    { pt: ["tools", "gitignore"], en: ["tools", "gitignore"] },
+    { pt: ["tools", "horas-trabalhadas"], en: ["tools", "horas-trabalhadas"] },
+    { pt: ["tools", "conversor-case"], en: ["tools", "conversor-case"] },
+    { pt: ["tools", "base-numerica"], en: ["tools", "base-numerica"] },
+    { pt: ["tools", "cor"], en: ["tools", "cor"] },
+    { pt: ["tools", "css-gradient"], en: ["tools", "css-gradient"] },
+    // Índice da Biblioteca (biblioteca/index.html <-> en/biblioteca/index.html,
+    // Fase C/G007) — path de conteúdo é só "biblioteca" (sem slug de
+    // artigo, ao contrário das entradas "tools" acima), então
+    // segmentsToPath trata como diretório (sem "." no último segmento) e
+    // resolve para "biblioteca/". Habilita o seletor de idioma em
+    // biblioteca/index.html ⇄ en/biblioteca/index.html.
+    { pt: ["biblioteca"], en: ["biblioteca"] },
+    { pt: ["biblioteca", "index.html"], en: ["biblioteca", "index.html"] },
+    // Artigos da Biblioteca traduzidos (Fase C/G008, Lote 1 — Padrões de
+    // Criação) — mesmo formato { pt: ["biblioteca", "<slug>"], en: [...] }
+    // das entradas "tools" acima. Cada entrada habilita o seletor de idioma
+    // no artigo e faz translatedArticleSlugs (abaixo) incluir o slug, o que
+    // faz buildBibliotecaAccordion apontar o link da sidebar para
+    // en/biblioteca/<slug>/ em vez do fallback pt-BR.
+    { pt: ["biblioteca", "singleton"], en: ["biblioteca", "singleton"] },
+    { pt: ["biblioteca", "factory-method"], en: ["biblioteca", "factory-method"] },
+    { pt: ["biblioteca", "abstract-factory"], en: ["biblioteca", "abstract-factory"] },
+    { pt: ["biblioteca", "builder"], en: ["biblioteca", "builder"] },
+    { pt: ["biblioteca", "prototype"], en: ["biblioteca", "prototype"] },
+    // Artigos da Biblioteca traduzidos (Fase C, Lote 2 — Padrões
+    // Estruturais) — mesmo formato das entradas do Lote 1, acima.
+    { pt: ["biblioteca", "adapter"], en: ["biblioteca", "adapter"] },
+    { pt: ["biblioteca", "decorator"], en: ["biblioteca", "decorator"] },
+    { pt: ["biblioteca", "facade"], en: ["biblioteca", "facade"] },
+    { pt: ["biblioteca", "proxy"], en: ["biblioteca", "proxy"] },
+    { pt: ["biblioteca", "composite"], en: ["biblioteca", "composite"] },
+    { pt: ["biblioteca", "bridge"], en: ["biblioteca", "bridge"] },
+    { pt: ["biblioteca", "flyweight"], en: ["biblioteca", "flyweight"] },
   ];
 
   /**
@@ -1035,6 +1208,28 @@
    */
   var translatedToolSlugs = TRANSLATED_PATHS.filter(function (entry) {
     return entry.pt[0] === "tools";
+  }).map(function (entry) {
+    return entry.pt[1];
+  });
+
+  /**
+   * Slugs de artigo da Biblioteca que já têm versão publicada em
+   * /en/biblioteca/<slug>/ — mesmo princípio de translatedToolSlugs, mas
+   * filtrando `pt[0] === "biblioteca"` e pegando o segundo segmento. Hoje
+   * cobre os 5 artigos do Lote 1 (Fase C/G008 — Padrões de Criação:
+   * singleton, factory-method, abstract-factory, builder, prototype); os
+   * demais 50 artigos ainda não estão em TRANSLATED_PATHS, então seus hrefs
+   * em buildBibliotecaAccordion caem no fallback pt-BR. Cresce sozinho
+   * conforme TRANSLATED_PATHS ganha entradas
+   * { pt: ["biblioteca", "<slug>"], en: ["biblioteca", "<slug>"] } nos
+   * próximos lotes.
+   */
+  var translatedArticleSlugs = TRANSLATED_PATHS.filter(function (entry) {
+    return (
+      entry.pt[0] === "biblioteca" &&
+      entry.pt.length > 1 &&
+      entry.pt[1] !== "index.html"
+    );
   }).map(function (entry) {
     return entry.pt[1];
   });

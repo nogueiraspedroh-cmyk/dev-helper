@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>.gitignore Generator — Dev Helper</title>
+  <meta name="description" content="Build a .gitignore file by combining blocks for languages, frameworks and tools (Node, Python, Java, Go, PHP, React, VS Code, JetBrains, macOS, Windows and more). Copy or download." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../tools/gitignore/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../../biblioteca/">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>.gitignore Generator</h1>
+        <p>Select the <strong>languages, frameworks and tools</strong> in your project and build a <code>.gitignore</code> file combining the matching blocks. Copy or download the result. The patterns are embedded in the page — there is no call to any API.</p>
+      </header>
+
+      <div class="tool__controls">
+        <fieldset class="tool__fieldset">
+          <legend class="tool__legend">Languages, frameworks and tools</legend>
+          <div id="gi-options" class="tool__checkbox-grid"></div>
+        </fieldset>
+
+        <div class="tool__actions tool__actions--mt">
+          <button id="gi-clear" class="button--secondary" type="button">Clear selection</button>
+        </div>
+
+        <div class="tool__output">
+          <label class="tool__label" for="gi-output">Generated .gitignore</label>
+          <textarea id="gi-output" class="result" readonly spellcheck="false" aria-label="Generated .gitignore"></textarea>
+          <p id="gi-empty" class="tool__hint">Select at least one option above to generate the file.</p>
+          <div class="tool__actions tool__actions--mt">
+            <button id="gi-copy" class="button--secondary" type="button">Copy</button>
+            <button id="gi-download" class="button--secondary" type="button">Download .gitignore</button>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="2525252525"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <section>
+      <h2>What is a .gitignore?</h2>
+      <p>
+        The <code>.gitignore</code> file tells Git which files and folders should <strong>not</strong>
+        be tracked: installed dependencies (<code>node_modules/</code>, <code>vendor/</code>),
+        build artifacts (<code>dist/</code>, <code>target/</code>), environment files
+        (<code>.env</code>), caches, and operating system or editor metadata. Keeping them out of
+        the repository reduces its size, avoids conflicts, and prevents accidental leaking of secrets.
+      </p>
+
+      <h2>How it works</h2>
+      <p>
+        Each option corresponds to a <strong>block of patterns</strong> tested for that technology.
+        When you check several, the blocks are concatenated in order, each with a header comment
+        (for example <code># Node</code>) so you know where each rule came from. You can copy the
+        content or download it already named <code>.gitignore</code>.
+      </p>
+
+      <h2>Available set</h2>
+      <p>
+        The tool covers a practical set: <strong>Node, Python, Java, Go, PHP, Ruby, Rust,
+        .NET</strong>, the <strong>React</strong> and <strong>Angular</strong> frameworks, the
+        <strong>VS Code</strong> and <strong>JetBrains</strong> editors, and the <strong>macOS,
+        Windows and Linux</strong> operating systems. The patterns are a solid starting point —
+        adjust them as your project needs.
+      </p>
+
+      <h2>Frequently Asked Questions (FAQ)</h2>
+
+      <h3>Do the patterns come from the GitHub API?</h3>
+      <p>
+        No. To keep the site backend-free, the <strong>dataset is static and embedded in the
+        page's own JavaScript</strong>. This means it works offline and without depending on
+        external services, at the cost of not being as exhaustive as the official templates.
+      </p>
+
+      <h3>Can I combine several technologies?</h3>
+      <p>Yes — check as many as you want. Some patterns may repeat across blocks (for example
+      <code>node_modules/</code> in both Node and React); this is harmless for Git.</p>
+
+      <h3>Where do I put the file?</h3>
+      <p>
+        In the repository root. Rules in a <code>.gitignore</code> apply to the folder where it is
+        located and its subfolders. Files already tracked by Git need to be removed from the index
+        (<code>git rm --cached</code>) for the ignore rule to take effect.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/tools-en/gitignore.js"></script>
+</body>
+</html>

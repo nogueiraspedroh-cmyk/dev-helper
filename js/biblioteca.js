@@ -174,16 +174,26 @@
     }
 
     if (headings.length) {
+      // Único texto visível hardcoded deste arquivo — reaproveita
+      // window.DevHelper.isEnglishPath (exposta em js/main.js, carregado
+      // antes deste script em toda página da Biblioteca) para não duplicar
+      // a lógica de detecção de idioma aqui.
+      var isEnglish =
+        window.DevHelper && typeof window.DevHelper.isEnglishPath === "function"
+          ? window.DevHelper.isEnglishPath(location.pathname)
+          : false;
+      var tocTitulo = isEnglish ? "On this page" : "Nesta página";
+
       var slugsUsados = Object.create(null);
       var nav = document.createElement("nav");
       var lista = document.createElement("ul");
 
       nav.className = "artigo-toc";
-      nav.setAttribute("aria-label", "Nesta página");
+      nav.setAttribute("aria-label", tocTitulo);
 
       var titulo = document.createElement("p");
       titulo.className = "artigo-toc__title";
-      titulo.textContent = "Nesta página";
+      titulo.textContent = tocTitulo;
       nav.appendChild(titulo);
 
       headings.forEach(function (heading) {

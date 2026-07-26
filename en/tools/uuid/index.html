@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UUID Generator — Dev Helper</title>
+  <meta name="description" content="Generate version 4 (random) UUIDs in your browser using the Web Crypto API. Generate several at once, with or without hyphens, in uppercase or lowercase, and copy individually or all at once." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../tools/uuid/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!--
+    AdSense — biblioteca carregada UMA vez por página.
+    Substitua ca-pub-5784678562772792 pelo seu pub-ID real antes do deploy.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../../biblioteca/">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>UUID Generator</h1>
+        <p>Generate universally unique identifiers (<strong>UUID v4</strong>) using the Web Crypto API — random and cryptographically secure.</p>
+      </header>
+
+      <div class="tool__controls">
+        <!-- Quantity -->
+        <div class="tool__actions">
+          <label class="tool__label" for="uuid-quantidade">Quantity:</label>
+          <input
+            type="number"
+            id="uuid-quantidade"
+            class="tool__select"
+            min="1"
+            max="100"
+            value="1"
+          />
+        </div>
+
+        <!-- Formatting options -->
+        <fieldset class="tool__fieldset">
+          <legend class="tool__legend">Formatting</legend>
+          <label class="tool__checkbox-label">
+            <input type="checkbox" id="uuid-hifens" checked />
+            With hyphens (8-4-4-4-12)
+          </label>
+          <label class="tool__checkbox-label">
+            <input type="checkbox" id="uuid-maiusculo" />
+            Uppercase
+          </label>
+        </fieldset>
+
+        <!-- Actions -->
+        <div class="tool__actions">
+          <button id="btn-uuid-gerar" class="button" type="button">Generate</button>
+          <button id="btn-uuid-copiar-todos" class="button--secondary" type="button" hidden>Copy all</button>
+        </div>
+      </div>
+
+      <!-- Error message (no crypto support) -->
+      <p id="uuid-error" class="error-msg" role="alert" hidden></p>
+
+      <!-- Output: list of UUIDs -->
+      <div class="tool__output">
+        <div id="uuid-lista" class="uuid-lista"></div>
+      </div>
+    </article>
+
+    <!-- Ad block — below the tool's result area -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="1414141414"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Real content — required by AdSense -->
+    <section>
+      <h2>What is a UUID?</h2>
+      <p>
+        A <strong>UUID</strong> (Universally Unique Identifier), also called a GUID in the
+        Microsoft world, is a 128-bit identifier designed to be unique in space and time
+        without needing a central authority. It is represented by 32 hexadecimal digits
+        grouped into five blocks separated by hyphens, in the format <code>8-4-4-4-12</code> —
+        for example, <code>3f2504e0-4f89-41d3-9a0c-0305e82c3301</code>.
+      </p>
+      <p>
+        UUIDs are widely used as database primary keys, API resource identifiers, temporary
+        file names and idempotency keys — situations where generating unique IDs in a
+        distributed way (across multiple servers, without coordination) is essential.
+      </p>
+
+      <h2>What is UUID v4?</h2>
+      <p>
+        Version 4 is the most common: almost all of its bits are <strong>random</strong>. This
+        tool uses <code>crypto.randomUUID()</code> when available — or, as a fallback,
+        <code>crypto.getRandomValues()</code> — both cryptographically secure generators from
+        the Web Crypto API. This guarantees high-quality randomness, without the
+        predictability of <code>Math.random()</code>.
+      </p>
+      <p>
+        With 122 effectively random bits, the probability of collision (two identical UUIDs)
+        is astronomically low — in practice, negligible even when generating billions of
+        identifiers.
+      </p>
+
+      <h2>Options in this tool</h2>
+      <ul>
+        <li><strong>Quantity:</strong> generate from 1 to 100 UUIDs at once.</li>
+        <li><strong>With/without hyphens:</strong> some systems prefer the "raw" UUID, without separators.</li>
+        <li><strong>Uppercase/lowercase:</strong> the default is lowercase, but some environments (e.g., GUID in .NET) display it in uppercase.</li>
+        <li><strong>Copy:</strong> copy a single UUID or all at once (one per line).</li>
+      </ul>
+
+      <h2>Frequently Asked Questions (FAQ)</h2>
+
+      <h3>Can I use these UUIDs in production?</h3>
+      <p>
+        Yes. They are valid UUID v4s, generated by a cryptographically secure generator. They
+        are suitable for database keys, API identifiers and the like.
+      </p>
+
+      <h3>Can two UUIDs come out the same?</h3>
+      <p>
+        In theory yes, but the probability is so low it is considered negligible in practice.
+        It would take billions of generated UUIDs for the chance of collision to become even
+        minimally relevant.
+      </p>
+
+      <h3>What's the difference between UUID and GUID?</h3>
+      <p>
+        They are essentially the same thing. GUID (Globally Unique Identifier) is the name
+        used by Microsoft; UUID is the RFC standard term. The 128-bit format is identical.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/tools-en/uuid.js"></script>
+</body>
+</html>

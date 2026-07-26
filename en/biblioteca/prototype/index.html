@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prototype — Design Patterns | Dev Helper Library</title>
+  <meta name="description" content="Learn the Prototype pattern (GoF) in depth: intent, problem, solution, structure, examples in TypeScript and PHP, shallow vs deep copy, when to use it, when to avoid it, and common pitfalls." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/prototype/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Prototype</span>
+        </nav>
+        <span class="artigo__categoria">Creational Pattern (GoF)</span>
+        <h1 class="artigo__titulo">Prototype</h1>
+        <p class="artigo__subtitulo">
+          Specifies the kinds of objects to create using a <strong>prototypical
+          instance</strong> and creates new objects by <strong>cloning</strong> that
+          prototype — avoiding instantiation via <code>new</code> and allowing
+          variants to be created from a pre-configured base state.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            Create new objects by <strong>cloning an existing instance</strong> (the
+            prototype) instead of instantiating via <code>new</code>. The client
+            code asks the prototype to clone itself — without needing to know the
+            concrete class of the object being created.
+          </p>
+          <p>
+            Cataloged by Gamma, Helm, Johnson and Vlissides in the book
+            <em>Design Patterns: Elements of Reusable Object-Oriented Software</em> (1994),
+            Prototype belongs to the <strong>creational patterns</strong> category.
+            It's useful when building an object from scratch is costly or complex,
+            when you want to create variations from a pre-configured base state, or
+            when the concrete class is only known at runtime.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Imagine a system that needs to create variations of a service
+            configuration. Each variant (staging, production, load testing) shares
+            a large set of base parameters and differs only in a few fields.
+            Building each variant from scratch — repeating every common parameter —
+            is tedious, error-prone and violates the DRY principle.
+          </p>
+          <p>
+            A naive solution is to copy and paste the instantiation, but that
+            scatters parameters across the code. Another is a Factory Method for
+            each variant, but if the variants are configured dynamically at runtime,
+            the number of factories can explode.
+          </p>
+          <p>
+            Prototype solves this: you create a fully configured base object (the
+            prototype), register it in a catalog, and, when you need a variation,
+            clone the closest prototype and adjust only what differs.
+          </p>
+
+          <h3>Prototype vs Factory</h3>
+          <ul>
+            <li>
+              <strong>Factory Method / Abstract Factory</strong> create objects
+              <em>from scratch</em>, instantiating the concrete classes on every
+              call. Configuration logic lives in the factory.
+            </li>
+            <li>
+              <strong>Prototype</strong> creates objects by <em>copying</em> an
+              existing, already-configured instance. Configuration logic lives in
+              the prototype's state — useful when creation involves accumulated
+              state that would be hard to reproduce every time.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. SOLUTION -->
+        <section class="artigo__secao">
+          <h2>Solution</h2>
+          <p>Prototype organizes the code into three participants:</p>
+          <ol>
+            <li>
+              <strong>Prototype (interface):</strong> declares the cloning method,
+              usually called <code>clone()</code>. Every cloneable class implements
+              this interface.
+            </li>
+            <li>
+              <strong>ConcretePrototype:</strong> implements the <code>clone()</code>
+              method, creating a copy of itself. It's the ConcretePrototype's
+              responsibility to guarantee that the copy is <em>deep</em> when
+              necessary — this is the pattern's most critical point.
+            </li>
+            <li>
+              <strong>Prototype Registry (optional):</strong> a catalog of
+              pre-configured prototypes. The client requests a clone by name,
+              without needing to know which concrete class is behind it. Replaces
+              Factory Method when the types are configured at runtime.
+            </li>
+          </ol>
+          <p>
+            The most critical point in the implementation is the distinction
+            between <strong>shallow copy</strong> and <strong>deep copy</strong>.
+            A shallow copy only copies references to nested objects — the clone
+            and the original end up sharing the same sub-objects, and modifying
+            one affects the other. A deep copy independently recreates every nested
+            object.
+          </p>
+        </section>
+
+        <!-- 4. STRUCTURE -->
+        <section class="artigo__secao">
+          <h2>Structure</h2>
+          <div class="code-bloco">
+<pre><code>            «interface»
+             Cloneable
+  ┌──────────────────────┐
+  │ + clone(): Cloneable │
+  └──────────────────────┘
+              ▲
+    ┌─────────┴──────────────────────┐
+    │                                │
+ConfigTemplate                 ConfigPremium
+(ConcretePrototype)            (ConcretePrototype)
+clone()                        clone()
+  → new ConfigTemplate(...)      → new ConfigPremium(...)
+  // deep copy of fields          // deep copy of fields
+
+
+            PrototypeRegistry
+  ┌─────────────────────────────────────────────────┐
+  │ - catalog: Map&lt;string, Cloneable&gt;               │
+  │ + register(key: string, proto: Cloneable): void │
+  │ + create(key: string): Cloneable                │
+  └─────────────────────────────────────────────────┘
+              │
+              │  catalog.get(key).clone()
+              ▼
+     new independent object (clone of the prototype)
+
+Flow:
+
+  registry.register("production", baseConfig)
+  const serv = registry.create("production")  // returns a clone
+  serv.name = "payments"                       // does not affect the prototype
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. CODE EXAMPLES -->
+        <section class="artigo__secao">
+          <h2>Code examples</h2>
+
+          <h3>Example 1 — Shallow copy vs Deep copy</h3>
+          <p>
+            Prototype's central pitfall: a shallow copy shares references to
+            nested objects between the clone and the original, causing unexpected
+            side effects. The <code>clone()</code> method must guarantee a deep
+            copy of every property that is a reference.
+          </p>
+
+          <!-- TAB GROUP 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 1 — shallow vs deep copy">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// In TypeScript, arrays and objects are passed by reference.
+// A shallow copy only copies the pointer — clone and original share
+// the same underlying object/array.
+
+class ConfigTemplate {
+  constructor(
+    public name: string,
+    public timeoutMs: number,
+    public tags: string[],                  // array — shared reference on shallow copy
+    public headers: Record&lt;string, string&gt;, // object — shared reference on shallow copy
+  ) {}
+
+  // ── WRONG: shallow copy via Object.assign ────────────────
+  // Object.assign only copies the first level: tags and headers still
+  // point to the SAME objects as the original instance.
+  cloneShallow(): ConfigTemplate {
+    return Object.assign(
+      new ConfigTemplate("", 0, [], {}),
+      this,
+    );
+  }
+
+  // ── Sufficient copy: 1 level is enough because the values are primitives ──
+  // tags: array of strings (primitives) → spread guarantees full independence.
+  // headers: object whose values are strings (primitives) → 1-level spread is safe.
+  // If the values were nested objects, they would need to be cloned recursively.
+  clone(): ConfigTemplate {
+    return new ConfigTemplate(
+      this.name,
+      this.timeoutMs,
+      [...this.tags],           // new independent array
+      { ...this.headers },      // new independent object (values are primitives)
+    );
+  }
+}
+
+// ── Demonstrating the problem ─────────────────────────────────
+const base = new ConfigTemplate(
+  "base-service",
+  5000,
+  ["production", "critical"],
+  { "X-Api-Key": "base-key" },
+);
+
+// Shallow copy — DANGEROUS:
+const shallow = base.cloneShallow();
+shallow.tags.push("debug");             // modifies the BASE array!
+shallow.headers["X-Debug"] = "true";   // modifies the BASE object!
+console.log(base.tags);                // ["production", "critical", "debug"] ← contaminated
+console.log("X-Debug" in base.headers); // true ← contaminated
+
+// Deep copy — CORRECT:
+const deep = base.clone();
+deep.name = "staging-service";
+deep.tags.push("verbose");
+deep.headers["X-Env"] = "staging";
+
+console.log(base.name);               // "base-service"    ← unchanged
+console.log(base.tags);               // ["production", "critical", "debug"] (from the shallow copy above)
+console.log("X-Env" in base.headers); // false             ← deep clone did not contaminate</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// In PHP, arrays are COPIED BY VALUE — `clone` already duplicates them
+// automatically. The danger lies in properties that are OBJECTS: without
+// __clone(), the clone and the original share the same nested object instance.
+
+class ConnectionConfig
+{
+    public function __construct(
+        public string $host,
+        public int    $port,
+    ) {}
+}
+
+class ConfigTemplate
+{
+    /** @param string[] $tags */
+    public function __construct(
+        public string           $name,
+        public int              $timeoutMs,
+        public array             $tags,       // array — PHP copies by VALUE on clone: safe
+        public ConnectionConfig $connection,  // object — needs explicit cloning
+    ) {}
+
+    // __clone() is automatically invoked by the `clone` operator.
+    // Without it, $this->connection would be the SAME instance as the original.
+    public function __clone(): void
+    {
+        // $tags: array is copied by value — no action needed.
+        // $connection: object needs to be cloned to guarantee independence.
+        $this-&gt;connection = clone $this-&gt;connection;
+    }
+}
+
+// ── Demonstrating the problem WITHOUT __clone ─────────────────
+class ConfigWithoutDeepClone
+{
+    public function __construct(
+        public string           $name,
+        public ConnectionConfig $connection,
+    ) {}
+    // Without __clone: the `clone` operator does not descend into object properties.
+}
+
+$baseWithout = new ConfigWithoutDeepClone('base', new ConnectionConfig('localhost', 5432));
+$shallowCopy = clone $baseWithout;
+$shallowCopy-&gt;connection-&gt;host = 'production.db'; // modifies the ORIGINAL!
+echo $baseWithout-&gt;connection-&gt;host . PHP_EOL;      // "production.db" ← contaminated!
+
+// ── Demonstrating WITH __clone (ConfigTemplate) ────────────────
+$base = new ConfigTemplate(
+    'base-service',
+    5000,
+    ['production', 'critical'],
+    new ConnectionConfig('localhost', 5432),
+);
+
+$copy = clone $base;             // __clone() is called automatically
+$copy-&gt;name              = 'staging-service';
+$copy-&gt;tags[]            = 'verbose';        // array: copied by value — safe
+$copy-&gt;connection-&gt;host  = 'staging.db';    // object: deep copy — safe
+
+echo $base-&gt;name . PHP_EOL;                   // "base-service"       ← unchanged
+echo implode(', ', $base-&gt;tags) . PHP_EOL;    // "production, critical" ← unchanged
+echo $base-&gt;connection-&gt;host . PHP_EOL;       // "localhost"          ← unchanged</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 1) -->
+
+          <h3>Example 2 — Prototype Registry</h3>
+          <p>
+            The Registry keeps a catalog of pre-configured prototypes. The client
+            requests a clone by name — without knowing the concrete class behind
+            it. It works like a Factory that creates by cloning instead of
+            instantiating.
+          </p>
+
+          <!-- TAB GROUP 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 2 — Prototype Registry">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Prototype Registry ────────────────────────────────────────
+// Catalog of pre-configured prototypes.
+// The client always receives a CLONE — never the original prototype.
+class PrototypeRegistry {
+  private readonly catalog = new Map&lt;string, ConfigTemplate&gt;();
+
+  register(key: string, proto: ConfigTemplate): void {
+    this.catalog.set(key, proto);
+  }
+
+  create(key: string): ConfigTemplate {
+    const proto = this.catalog.get(key);
+    if (!proto) {
+      throw new Error(`Prototype not found: "${key}".`);
+    }
+    return proto.clone(); // returns a CLONE — original prototype is never exposed
+  }
+}
+
+// ── Registering pre-configured prototypes ─────────────────────
+const registry = new PrototypeRegistry();
+
+registry.register("production", new ConfigTemplate(
+  "production",
+  3000,
+  ["critical", "monitored"],
+  { "X-Api-Key": "prod-key", "X-Env": "prod" },
+));
+
+registry.register("staging", new ConfigTemplate(
+  "staging",
+  10000,
+  ["debug", "verbose"],
+  { "X-Api-Key": "stg-key", "X-Env": "staging" },
+));
+
+// ── Creating variations by cloning ────────────────────────────
+const servA = registry.create("production");
+servA.name = "payments";              // customizes the clone, not the prototype
+
+const servB = registry.create("production"); // another independent clone
+servB.name = "users";
+servB.tags.push("audit");
+
+console.log(servA.name);              // "payments"
+console.log(servB.name);              // "users"
+console.log(servA.tags.join(", "));   // "critical, monitored"
+console.log(servB.tags.join(", "));   // "critical, monitored, audit"
+// Both clones are independent of each other and of the original prototype.</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Prototype Registry ────────────────────────────────────────
+class PrototypeRegistry
+{
+    /** @var array&lt;string, ConfigTemplate&gt; */
+    private array $catalog = [];
+
+    public function register(string $key, ConfigTemplate $proto): void
+    {
+        $this-&gt;catalog[$key] = $proto;
+    }
+
+    // Always returns a CLONE — the original prototype stays intact.
+    public function create(string $key): ConfigTemplate
+    {
+        if (!isset($this-&gt;catalog[$key])) {
+            throw new \InvalidArgumentException(
+                "Prototype not found: \"{$key}\"."
+            );
+        }
+        return clone $this-&gt;catalog[$key]; // __clone() guarantees deep copy
+    }
+}
+
+// ── Registering pre-configured prototypes ─────────────────────
+$registry = new PrototypeRegistry();
+
+$registry-&gt;register('production', new ConfigTemplate(
+    'production',
+    3000,
+    ['critical', 'monitored'],
+    new ConnectionConfig('db.prod.example.com', 5432),
+));
+
+$registry-&gt;register('staging', new ConfigTemplate(
+    'staging',
+    10000,
+    ['debug', 'verbose'],
+    new ConnectionConfig('db.staging.example.com', 5432),
+));
+
+// ── Creating variations by cloning ────────────────────────────
+$servA = $registry-&gt;create('production');
+$servA-&gt;name = 'payments';         // customizes the clone, not the prototype
+
+$servB = $registry-&gt;create('production'); // another independent clone
+$servB-&gt;name = 'users';
+$servB-&gt;tags[] = 'audit';
+
+echo $servA-&gt;name . PHP_EOL;                    // "payments"
+echo $servB-&gt;name . PHP_EOL;                    // "users"
+echo implode(', ', $servA-&gt;tags) . PHP_EOL;     // "critical, monitored"
+echo implode(', ', $servB-&gt;tags) . PHP_EOL;     // "critical, monitored, audit"
+// Both clones are independent of each other and of the original prototype.</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 2) -->
+
+        </section><!-- /.artigo__secao (examples) -->
+
+        <!-- 6. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>When building from scratch is costly or complex:</strong> if
+              initializing an object involves database queries, file reads or heavy
+              computations, cloning an already-ready prototype is more efficient.
+            </li>
+            <li>
+              <strong>When you need variations from a base state:</strong> the
+              prototype carries the common configuration; the clone receives only
+              that variant's specific adjustments.
+            </li>
+            <li>
+              <strong>When the concrete class isn't known at compile time:</strong>
+              the client calls <code>clone()</code> on the interface — without
+              needing to know the concrete class of the object being copied.
+            </li>
+            <li>
+              <strong>As an alternative to Factory Method for runtime-configured
+              types:</strong> the Prototype Registry replaces a hierarchy of
+              factories when the types are defined by configuration, not by code.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>When deep copying is too complex:</strong> objects with
+              circular reference graphs or deep hierarchies make correctly
+              implementing <code>clone()</code> very hard to maintain.
+            </li>
+            <li>
+              <strong>When direct instantiation is simple:</strong> if creating the
+              object from scratch is trivial and fast, cloning adds complexity
+              without benefit.
+            </li>
+            <li>
+              <strong>When objects have state that shouldn't be copied:</strong>
+              database connections, file descriptors and OS handles don't make
+              sense to clone — cloning an object with these resources can cause
+              undefined behavior.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Creates objects without coupling the client to the concrete class — the client only knows the <code>Cloneable</code> interface.</li>
+            <li>Eliminates repeated initialization code when many objects share the same base configuration.</li>
+            <li>Allows creating new objects with complex pre-built state that would be hard to replicate via a constructor.</li>
+            <li>The Prototype Registry works as a runtime-configurable factory — new types can be registered without recompiling.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Implementing <code>clone()</code> correctly (deep copy) can be hard for objects with complex hierarchies or circular references.</li>
+            <li>In PHP, every class that needs deep copying must explicitly implement <code>__clone()</code> — easy to forget in nested classes.</li>
+            <li>Cloning objects with external resources (connections, handles) can cause unexpected behavior if those resources aren't handled in the clone.</li>
+          </ul>
+        </section>
+
+        <!-- 8. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Shallow copy — the central pitfall</h3>
+          <p class="artigo__aviso">
+            <strong>Warning:</strong> This is Prototype's most frequent and most
+            subtle pitfall. A shallow copy only copies first-level references —
+            nested objects and arrays continue being shared between the clone and
+            the original. Modifying the <code>tags</code> array in the clone, for
+            example, changes the prototype. Always implement <code>clone()</code>
+            with a deep copy for every property that is a reference.
+          </p>
+          <p>
+            In TypeScript: use spread (<code>{ ...obj }</code>, <code>[...arr]</code>)
+            for one level when the values are primitives — the most common and
+            safest case. For arbitrarily deep sub-graphs of <em>pure data</em>
+            (with no class instances), <code>structuredClone()</code> is a
+            convenient option, but with important caveats: it preserves cycles and
+            depth, but <strong>discards the prototype chain</strong> — the result
+            isn't an instance of the original class, losing methods like
+            <code>clone()</code>. It also throws <code>DataCloneError</code> if the
+            graph contains functions or non-cloneable objects (like a <code>Map</code>
+            with class-instance values). To clone instances while preserving the
+            class, do the deep copy field by field inside <code>clone()</code>
+            itself, using <code>structuredClone()</code> only on pure-data
+            sub-graphs that contain no class instances.
+            In PHP: implement <code>__clone()</code> and explicitly clone every
+            object property — remember that <code>__clone()</code> must be
+            implemented in <em>every</em> class in the hierarchy that has
+            sub-objects.
+          </p>
+
+          <h3>2. Circular references in deep copy</h3>
+          <p>
+            When the object graph contains cycles (A references B which references
+            A), a naive recursive deep copy loops forever. The solution is to keep
+            a map of already-visited objects during cloning: if the object has
+            already been cloned, return the existing clone instead of recreating
+            it. Note that, although <code>structuredClone()</code> handles cycles
+            in pure data, it <strong>doesn't work for graphs of class instances</strong>
+            (it throws <code>DataCloneError</code> and loses the prototype). For
+            those cases, implement cycle control manually inside <code>clone()</code>,
+            passing a <code>Map</code> of already-visited objects as an auxiliary
+            parameter.
+          </p>
+
+          <h3>3. Cloning objects with external resources</h3>
+          <p>
+            Database connections, sockets, file descriptors and mutexes shouldn't be
+            cloned. If your object holds these resources, the <code>__clone()</code>
+            (PHP) or the <code>clone()</code> method (TypeScript) should close the
+            resource in the clone and create a new one — or throw an exception
+            stating the object isn't cloneable.
+          </p>
+
+          <h3>4. Confusing Prototype with accidental state copying</h3>
+          <p>
+            Prototype is an intentional pattern: you create a prototype
+            <em>on purpose</em> to serve as a base for clones. If you're cloning
+            objects just to avoid writing the constructor, reconsider — a Builder
+            with default values may be more explicit and safer, since it
+            centralizes creation logic without the risk of leaking state from the
+            prototype.
+          </p>
+        </section>
+
+        <!-- 9. RELATED PATTERNS -->
+        <section class="artigo__secao">
+          <h2>Related patterns</h2>
+          <p>
+            Prototype connects directly to the other creational patterns:
+          </p>
+          <!--
+            Link discipline: only 5 of the 51 catalog patterns have an
+            English translation so far (this batch — singleton,
+            factory-method, abstract-factory, builder, prototype). Siblings
+            within this batch link directly via ../slug/. Any pattern still
+            untranslated falls back to the pt-BR article via
+            ../../../biblioteca/slug/ (same fallback used in
+            en/biblioteca/index.html) instead of 404ing on a non-existent
+            /en/biblioteca/slug/ page. Abstract Factory and Builder are both
+            in this batch → real links; no fallback needed in this list.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../abstract-factory/">Abstract Factory</a></li>
+            <li><a href="../builder/">Builder</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Abstract Factory</strong> can use Prototype internally: instead
+            of creating products from scratch, the concrete factory clones
+            registered prototypes — reducing the number of subclasses needed.
+            <strong>Builder</strong> and Prototype are alternatives for creating
+            complex objects with a pre-defined initial state: Builder assembles the
+            object step by step with centralized validation; Prototype copies an
+            already-assembled, ready object. Choose Builder when the assembly
+            process matters; choose Prototype when the initial state already exists
+            and needs to be replicated with variations.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="9393939393"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

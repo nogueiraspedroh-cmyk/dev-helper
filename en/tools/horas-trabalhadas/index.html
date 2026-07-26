@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Worked Hours Calculator — Dev Helper</title>
+  <meta name="description" content="Calculate lunch break time, total hours worked and the balance against the expected work schedule, from clock-in, lunch and clock-out times. Supports overnight shifts." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../tools/horas-trabalhadas/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!--
+    AdSense — library loaded ONCE per page.
+    Replace ca-pub-5784678562772792 with your real pub-ID before deploying.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../../biblioteca/">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Worked Hours Calculator</h1>
+        <p>Enter the four times from your workday to calculate the lunch break time, the total hours worked and the balance against the expected work schedule.</p>
+      </header>
+
+      <div class="tool__controls">
+        <div class="horas-campos">
+          <div class="horas-campo">
+            <label class="tool__label" for="hs-entrada">Clock in</label>
+            <input type="time" id="hs-entrada" class="tool__input-inline" />
+          </div>
+          <div class="horas-campo">
+            <label class="tool__label" for="hs-saida-almoco">Lunch start</label>
+            <input type="time" id="hs-saida-almoco" class="tool__input-inline" />
+          </div>
+          <div class="horas-campo">
+            <label class="tool__label" for="hs-retorno-almoco">Lunch end</label>
+            <input type="time" id="hs-retorno-almoco" class="tool__input-inline" />
+          </div>
+          <div class="horas-campo">
+            <label class="tool__label" for="hs-saida">Clock out</label>
+            <input type="time" id="hs-saida" class="tool__input-inline" />
+          </div>
+          <div class="horas-campo">
+            <label class="tool__label" for="hs-carga">Expected work schedule</label>
+            <input type="time" id="hs-carga" class="tool__input-inline" value="08:00" />
+          </div>
+        </div>
+
+        <div class="tool__actions tool__actions--mt">
+          <button id="btn-limpar" class="button--secondary" type="button">Clear</button>
+        </div>
+      </div>
+
+      <p id="hs-error" class="error-msg" role="alert" hidden></p>
+
+      <div class="tool__output" id="hs-resultado" hidden>
+        <div class="horas-resultado-grid">
+          <div class="cartao-campo">
+            <span class="cartao-campo__label">Lunch break time</span>
+            <span id="hs-out-almoco" class="cartao-campo__valor cartao-campo__valor--mono"></span>
+          </div>
+          <div class="cartao-campo">
+            <span class="cartao-campo__label">Total worked</span>
+            <span id="hs-out-total" class="cartao-campo__valor cartao-campo__valor--mono"></span>
+          </div>
+        </div>
+        <p id="hs-out-saldo" class="horas-saldo"></p>
+      </div>
+    </article>
+
+    <!-- Ad block — below the tool's result area -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="7575757575"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Real content — required by AdSense -->
+    <section>
+      <h2>How the calculation works</h2>
+      <p>
+        The calculator uses the four times from your workday — <strong>clock in</strong>,
+        <strong>lunch start</strong>, <strong>lunch end</strong> and
+        <strong>clock out</strong> — to calculate:
+      </p>
+      <ul>
+        <li>
+          <strong>Lunch break time:</strong> the difference between the lunch end and the
+          lunch start.
+        </li>
+        <li>
+          <strong>Total worked:</strong> the sum of the morning period (clock in until
+          lunch start) and the afternoon period (lunch end until clock out).
+        </li>
+        <li>
+          <strong>Balance:</strong> the difference between the total worked and the
+          <strong>expected work schedule</strong> — positive when you worked more and
+          negative when you worked less.
+        </li>
+      </ul>
+
+      <h2>What is the "expected work schedule"?</h2>
+      <p>
+        It's the reference length of your workday — by default, <strong>08:00</strong> (8
+        hours), but the field is editable for any schedule (6h, 4h, part-time, etc.). The
+        balance is always calculated by comparing the total worked against this value.
+      </p>
+
+      <h2>Frequently Asked Questions (FAQ)</h2>
+
+      <h3>Does the calculator support overnight shifts (crossing midnight)?</h3>
+      <p>
+        Yes. If a time is chronologically "earlier" than the previous one in the sequence —
+        for example, clock in at 22:00 and clock out at 06:00 — the tool understands that
+        this time belongs to the next day and adds 24 hours to it before calculating. If
+        more than one time appears out of order in a way that doesn't correspond to a
+        single plausible overnight shift, an error is shown instead of an incorrect result.
+      </p>
+
+      <h3>Do the times need to be in increasing order?</h3>
+      <p>
+        In a regular workday (within the same day), yes: clock in, lunch start,
+        lunch end and clock out must be in increasing order. The only exception is the
+        overnight shift described above, handled automatically.
+      </p>
+
+      <h3>Does the calculator add up multiple days or keep an hour bank?</h3>
+      <p>
+        No. The calculation is done for a single workday, with no accumulation between days
+        and no data persistence — each calculation is independent.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/tools-en/horas-trabalhadas.js"></script>
+</body>
+</html>

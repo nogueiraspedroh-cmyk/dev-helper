@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Library — Dev Helper</title>
+  <meta name="description" content="Library of educational articles about Design Patterns (GoF), software architectures and code structure, with examples in TypeScript and PHP." />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../biblioteca/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="index.html">Library</a></li>
+        <li><a href="../pages/about.html">About</a></li>
+        <li><a href="../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container container--biblioteca">
+
+    <!-- Busca da Biblioteca — mesmo componente de biblioteca/index.html
+         (pt-BR), texto traduzido. Filtro 100% client-side sobre os
+         .tool-card já renderizados abaixo — ver js/biblioteca.js (nenhuma
+         chamada de rede, nenhum innerHTML com o texto digitado). -->
+    <section class="biblioteca-search">
+      <h1 class="biblioteca-search__titulo">Dev Helper Library</h1>
+      <div class="biblioteca-search__field">
+        <svg class="biblioteca-search__icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+        <input type="search"
+               id="biblioteca-busca"
+               class="biblioteca-search__input"
+               placeholder="Search by title or category…"
+               aria-label="Search an article by title or category"
+               autocomplete="off" />
+      </div>
+      <p class="biblioteca-search__empty" id="biblioteca-busca-vazio" role="status" aria-live="polite" hidden>
+        No articles found.
+      </p>
+    </section>
+
+    <!--
+      CATÁLOGO DE ARTIGOS (versão em inglês) — espelha biblioteca/index.html
+      (pt-BR). Fase C, Lote 1 (Padrões de Criação: singleton, factory-method,
+      abstract-factory, builder, prototype) e Lote 2 (Padrões Estruturais:
+      adapter, decorator, facade, proxy, composite, bridge, flyweight) já
+      publicados — esses 12 hrefs apontam para "<slug>/" (irmão dentro de
+      en/biblioteca/). Os demais 43 artigos ainda não foram traduzidos,
+      então continuam apontando para o fallback pt-BR
+      (../../biblioteca/<slug>/, não <slug>/) — mesmo padrão que en/index.html
+      usou na Fase A para o catálogo de ferramentas antes delas serem
+      traduzidas. Ao publicar a tradução de um artigo
+      (en/biblioteca/<slug>/index.html), troque o href correspondente aqui
+      para "<slug>/" e adicione a entrada em TRANSLATED_PATHS (js/main.js) —
+      o link da sidebar (buildBibliotecaAccordion) passa a apontar para a
+      versão traduzida automaticamente.
+
+      Títulos e taxonomia de categorias derivam de BIBLIOTECA_CATEGORIES_EN
+      em js/main.js (fonte da verdade para a sidebar) — mantenha os dois em
+      sincronia ao adicionar/renomear um artigo.
+    -->
+    <section class="catalog">
+      <h2 class="catalog__title">Available articles</h2>
+
+      <!-- CATEGORIA: Padrões de Criação (Creational) -->
+      <div class="catalog__category">
+        <h3 class="catalog__category-title">Creational Patterns</h3>
+        <div class="tool-grid">
+          <a href="singleton/" class="tool-card">
+            <span class="tool-card__title">Singleton</span>
+            <span class="tool-card__category">Creational</span>
+          </a>
+          <a href="factory-method/" class="tool-card">
+            <span class="tool-card__title">Factory Method</span>
+            <span class="tool-card__category">Creational</span>
+          </a>
+          <a href="abstract-factory/" class="tool-card">
+            <span class="tool-card__title">Abstract Factory</span>
+            <span class="tool-card__category">Creational</span>
+          </a>
+          <a href="builder/" class="tool-card">
+            <span class="tool-card__title">Builder</span>
+            <span class="tool-card__category">Creational</span>
+          </a>
+          <a href="prototype/" class="tool-card">
+            <span class="tool-card__title">Prototype</span>
+            <span class="tool-card__category">Creational</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- CATEGORIA: Padrões Estruturais -->
+      <div class="catalog__category">
+        <h3 class="catalog__category-title">Structural Patterns</h3>
+        <div class="tool-grid">
+          <a href="adapter/" class="tool-card">
+            <span class="tool-card__title">Adapter</span>
+            <span class="tool-card__category">Structural</span>
+          </a>
+          <a href="decorator/" class="tool-card">
+            <span class="tool-card__title">Decorator</span>
+            <span class="tool-card__category">Structural</span>
+          </a>
+          <a href="facade/" class="tool-card">
+            <span class="tool-card__title">Facade</span>
+            <span class="tool-card__category">Structural</span>
+          </a>
+          <a href="proxy/" class="tool-card">
+            <span class="tool-card__title">Proxy</span>
+            <span class="tool-card__category">Structural</span>
+          </a>
+          <a href="composite/" class="tool-card">
+            <span class="tool-card__title">Composite</span>
+            <span class="tool-card__category">Structural</span>
+          </a>
+          <a href="bridge/" class="tool-card">
+            <span class="tool-card__title">Bridge</span>
+            <span class="tool-card__category">Structural</span>
+          </a>
+          <a href="flyweight/" class="tool-card">
+            <span class="tool-card__title">Flyweight</span>
+            <span class="tool-card__category">Structural</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- CATEGORIA: Padrões Comportamentais (Behavioral) -->
+      <div class="catalog__category">
+        <h3 class="catalog__category-title">Behavioral Patterns</h3>
+        <div class="tool-grid">
+          <a href="../../biblioteca/strategy/" class="tool-card">
+            <span class="tool-card__title">Strategy</span>
+            <span class="tool-card__category">Behavioral</span>
+          </a>
+          <a href="../../biblioteca/observer/" class="tool-card">
+            <span class="tool-card__title">Observer</span>
+            <span class="tool-card__category">Behavioral</span>
+          </a>
+          <a href="../../biblioteca/state/" class="tool-card">
+            <span class="tool-card__title">State</span>
+            <span class="tool-card__category">Behavioral</span>
+          </a>
+          <a href="../../biblioteca/template-method/" class="tool-card">
+            <span class="tool-card__title">Template Method</span>
+            <span class="tool-card__category">Behavioral</span>
+          </a>
+          <a href="../../biblioteca/command/" class="tool-card">
+            <span class="tool-card__title">Command</span>
+            <span class="tool-card__category">Behavioral</span>
+          </a>
+          <a href="../../biblioteca/mediator/" class="tool-card">
+            <span class="tool-card__title">Mediator</span>
+            <span class="tool-card__category">Behavioral</span>
+          </a>
+          <a href="../../biblioteca/iterator/" class="tool-card">
+            <span class="tool-card__title">Iterator</span>
+            <span class="tool-card__category">Behavioral</span>
+          </a>
+          <a href="../../biblioteca/chain-of-responsibility/" class="tool-card">
+            <span class="tool-card__title">Chain of Responsibility</span>
+            <span class="tool-card__category">Behavioral</span>
+          </a>
+          <a href="../../biblioteca/memento/" class="tool-card">
+            <span class="tool-card__title">Memento</span>
+            <span class="tool-card__category">Behavioral</span>
+          </a>
+          <a href="../../biblioteca/visitor/" class="tool-card">
+            <span class="tool-card__title">Visitor</span>
+            <span class="tool-card__category">Behavioral</span>
+          </a>
+          <a href="../../biblioteca/interpreter/" class="tool-card">
+            <span class="tool-card__title">Interpreter</span>
+            <span class="tool-card__category">Behavioral</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- CATEGORIA: Arquiteturas -->
+      <div class="catalog__category">
+        <h3 class="catalog__category-title">Software Architectures</h3>
+        <div class="tool-grid">
+          <a href="../../biblioteca/mvc/" class="tool-card">
+            <span class="tool-card__title">MVC</span>
+            <span class="tool-card__category">Architecture</span>
+          </a>
+          <a href="../../biblioteca/arquitetura-em-camadas/" class="tool-card">
+            <span class="tool-card__title">Layered Architecture</span>
+            <span class="tool-card__category">Architecture</span>
+          </a>
+          <a href="../../biblioteca/arquitetura-hexagonal/" class="tool-card">
+            <span class="tool-card__title">Hexagonal Architecture</span>
+            <span class="tool-card__category">Architecture</span>
+          </a>
+          <a href="../../biblioteca/clean-architecture/" class="tool-card">
+            <span class="tool-card__title">Clean Architecture</span>
+            <span class="tool-card__category">Architecture</span>
+          </a>
+          <a href="../../biblioteca/onion-architecture/" class="tool-card">
+            <span class="tool-card__title">Onion Architecture</span>
+            <span class="tool-card__category">Architecture</span>
+          </a>
+          <a href="../../biblioteca/mvp/" class="tool-card">
+            <span class="tool-card__title">MVP</span>
+            <span class="tool-card__category">Architecture</span>
+          </a>
+          <a href="../../biblioteca/mvvm/" class="tool-card">
+            <span class="tool-card__title">MVVM</span>
+            <span class="tool-card__category">Architecture</span>
+          </a>
+          <a href="../../biblioteca/cqrs/" class="tool-card">
+            <span class="tool-card__title">CQRS</span>
+            <span class="tool-card__category">Architecture</span>
+          </a>
+          <a href="../../biblioteca/event-driven/" class="tool-card">
+            <span class="tool-card__title">Event-Driven Architecture</span>
+            <span class="tool-card__category">Architecture</span>
+          </a>
+          <a href="../../biblioteca/monolito-vs-microsservicos/" class="tool-card">
+            <span class="tool-card__title">Monolith vs Microservices</span>
+            <span class="tool-card__category">Architecture</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- CATEGORIA: Estruturas de Projeto -->
+      <div class="catalog__category">
+        <h3 class="catalog__category-title">Code Organization &amp; Repositories</h3>
+        <div class="tool-grid">
+          <a href="../../biblioteca/monolito-vs-monorepo/" class="tool-card">
+            <span class="tool-card__title">Monorepo vs Multi-repo</span>
+            <span class="tool-card__category">Organization</span>
+          </a>
+          <a href="../../biblioteca/feature-vs-layer/" class="tool-card">
+            <span class="tool-card__title">Feature-based vs Layer-based Organization</span>
+            <span class="tool-card__category">Organization</span>
+          </a>
+          <a href="../../biblioteca/estrutura-de-pastas/" class="tool-card">
+            <span class="tool-card__title">Folder Structure Best Practices</span>
+            <span class="tool-card__category">Organization</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- CATEGORIA: System Design -->
+      <div class="catalog__category">
+        <h3 class="catalog__category-title">Infrastructure &amp; Scale Concepts</h3>
+        <div class="tool-grid">
+          <a href="../../biblioteca/escalabilidade-horizontal-vertical/" class="tool-card">
+            <span class="tool-card__title">Horizontal vs Vertical Scalability</span>
+            <span class="tool-card__category">Infrastructure</span>
+          </a>
+          <a href="../../biblioteca/load-balancing/" class="tool-card">
+            <span class="tool-card__title">Load Balancing</span>
+            <span class="tool-card__category">Infrastructure</span>
+          </a>
+          <a href="../../biblioteca/caching/" class="tool-card">
+            <span class="tool-card__title">Caching</span>
+            <span class="tool-card__category">Infrastructure</span>
+          </a>
+          <a href="../../biblioteca/sql-vs-nosql/" class="tool-card">
+            <span class="tool-card__title">SQL vs NoSQL</span>
+            <span class="tool-card__category">Infrastructure</span>
+          </a>
+          <a href="../../biblioteca/rest-vs-graphql-vs-grpc/" class="tool-card">
+            <span class="tool-card__title">REST vs GraphQL vs gRPC</span>
+            <span class="tool-card__category">Infrastructure</span>
+          </a>
+          <a href="../../biblioteca/filas-de-mensagem/" class="tool-card">
+            <span class="tool-card__title">Message Queues</span>
+            <span class="tool-card__category">Infrastructure</span>
+          </a>
+          <a href="../../biblioteca/circuit-breaker/" class="tool-card">
+            <span class="tool-card__title">Circuit Breaker</span>
+            <span class="tool-card__category">Infrastructure</span>
+          </a>
+          <a href="../../biblioteca/sla-slo-sli/" class="tool-card">
+            <span class="tool-card__title">SLA, SLO and SLI</span>
+            <span class="tool-card__category">Infrastructure</span>
+          </a>
+          <a href="../../biblioteca/idempotencia/" class="tool-card">
+            <span class="tool-card__title">Idempotency</span>
+            <span class="tool-card__category">Infrastructure</span>
+          </a>
+          <a href="../../biblioteca/sharding/" class="tool-card">
+            <span class="tool-card__title">Sharding and Partitioning</span>
+            <span class="tool-card__category">Infrastructure</span>
+          </a>
+          <a href="../../biblioteca/replicacao-de-banco/" class="tool-card">
+            <span class="tool-card__title">Database Replication</span>
+            <span class="tool-card__category">Infrastructure</span>
+          </a>
+          <a href="../../biblioteca/cdn/" class="tool-card">
+            <span class="tool-card__title">CDN</span>
+            <span class="tool-card__category">Infrastructure</span>
+          </a>
+          <a href="../../biblioteca/api-gateway/" class="tool-card">
+            <span class="tool-card__title">API Gateway</span>
+            <span class="tool-card__category">Infrastructure</span>
+          </a>
+          <a href="../../biblioteca/saga/" class="tool-card">
+            <span class="tool-card__title">Saga Pattern</span>
+            <span class="tool-card__category">Infrastructure</span>
+          </a>
+          <a href="../../biblioteca/outbox/" class="tool-card">
+            <span class="tool-card__title">Outbox Pattern</span>
+            <span class="tool-card__category">Infrastructure</span>
+          </a>
+          <a href="../../biblioteca/rate-limiting/" class="tool-card">
+            <span class="tool-card__title">Rate Limiting</span>
+            <span class="tool-card__category">Infrastructure</span>
+          </a>
+          <a href="../../biblioteca/observabilidade/" class="tool-card">
+            <span class="tool-card__title">Observability</span>
+            <span class="tool-card__category">Infrastructure</span>
+          </a>
+          <a href="../../biblioteca/websockets-sse/" class="tool-card">
+            <span class="tool-card__title">WebSockets and SSE</span>
+            <span class="tool-card__category">Infrastructure</span>
+          </a>
+          <a href="../../biblioteca/consistencia/" class="tool-card">
+            <span class="tool-card__title">Eventual vs Strong Consistency</span>
+            <span class="tool-card__category">Infrastructure</span>
+          </a>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="7676767676"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/biblioteca.js"></script>
+</body>
+</html>

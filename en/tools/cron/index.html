@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cron Builder and Explainer — Cron Expressions in English — Dev Helper</title>
+  <meta name="description" content="Explain cron expressions (5 fields) in plain English and see the next 5 run times. Supports *, lists, ranges and steps." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../tools/cron/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../../biblioteca/">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Cron Builder / Explainer</h1>
+        <p>Type a 5-field <strong>cron expression</strong> (<code>minute hour day-of-month month day-of-week</code>) and see the <strong>description in plain English</strong> and the <strong>next 5 run times</strong>.</p>
+      </header>
+
+      <div class="tool__controls">
+        <label class="tool__label" for="cron-input">Cron expression</label>
+        <input type="text" id="cron-input" class="tool__input-inline" spellcheck="false" autocomplete="off" value="*/5 * * * *" placeholder="*/5 * * * *" />
+        <div class="tool__actions tool__actions--mt">
+          <button id="cron-explain" class="button" type="button">Explain</button>
+        </div>
+      </div>
+
+      <p id="cron-error" class="error-msg" role="alert" hidden></p>
+
+      <div id="cron-output" class="tool__output" hidden>
+        <h2 class="tool__section-title">Description</h2>
+        <p id="cron-desc" class="result"></p>
+        <h2 class="tool__section-title">Next 5 run times (local time)</h2>
+        <ul id="cron-runs" class="endereco-lista"></ul>
+      </div>
+    </article>
+
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="3535353535"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <section>
+      <h2>What is a cron expression?</h2>
+      <p>
+        <strong>Cron</strong> is the task scheduler used by Unix/Linux systems. A cron expression
+        describes <em>when</em> a task should run, using five space-separated fields:
+      </p>
+      <ul>
+        <li><strong>minute</strong> — 0 to 59</li>
+        <li><strong>hour</strong> — 0 to 23</li>
+        <li><strong>day of month</strong> — 1 to 31</li>
+        <li><strong>month</strong> — 1 to 12</li>
+        <li><strong>day of week</strong> — 0 to 6 (0 = Sunday)</li>
+      </ul>
+
+      <h2>Supported syntax</h2>
+      <ul>
+        <li><code>*</code> — any value (every minute, every hour, etc.).</li>
+        <li>Lists — <code>1,2,3</code> (specific values).</li>
+        <li>Ranges — <code>1-5</code> (Monday through Friday, for example).</li>
+        <li>Steps — <code>*/5</code> (every 5) or <code>1-30/5</code> (from 1 to 30, every 5).</li>
+      </ul>
+
+      <h2>Frequently Asked Questions (FAQ)</h2>
+
+      <h3>What is out of scope?</h3>
+      <p>
+        This tool covers the classic <strong>5-field</strong> format. There is no support for a
+        <strong>seconds</strong> field (the 6-field format used by some schedulers) nor for
+        spelled-out names such as <code>MON</code>/<code>SUN</code> or <code>JAN</code>/<code>DEC</code> —
+        use <strong>numbers</strong> only. There is also no support for shortcuts like <code>@daily</code>.
+      </p>
+
+      <h3>How do day-of-month and day-of-week combine?</h3>
+      <p>
+        It follows the classic cron rule: if <strong>both</strong> are restricted (different from
+        <code>*</code>), the task runs when <em>either one</em> matches (OR). If only one is
+        restricted, only that one applies.
+      </p>
+
+      <h3>Which time zone are the run times based on?</h3>
+      <p>The next run times are calculated in your browser's <strong>local time</strong>.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/tools-en/cron.js"></script>
+</body>
+</html>

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Unix Timestamp Converter — Date ↔ Epoch — Dev Helper</title>
+  <meta name="description" content="Convert a readable date to a Unix timestamp and a Unix timestamp to a readable date, with a choice of time zone (local or UTC) and granularity (seconds or milliseconds). Shortcut for the current time." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../tools/timestamp/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!--
+    AdSense — library loaded ONCE per page.
+    Replace ca-pub-5784678562772792 with your real pub-ID before deploying.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../../biblioteca/">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Unix Timestamp Converter</h1>
+        <p>Convert both ways: <strong>readable date → Unix timestamp</strong> and <strong>Unix timestamp → readable date</strong>, with a choice of time zone (local or UTC) and granularity (seconds or milliseconds).</p>
+      </header>
+
+      <div class="tool__actions">
+        <button id="btn-ts-now" class="button" type="button">Use now</button>
+      </div>
+
+      <!-- Section A: readable date -> timestamp -->
+      <section class="tool__section">
+        <h2 class="tool__section-title">Readable date → Timestamp</h2>
+        <div class="tool__controls">
+          <label class="tool__label" for="ts-date-input">Date and time</label>
+          <input type="datetime-local" id="ts-date-input" class="tool__input-inline" step="1" />
+
+          <fieldset class="tool__fieldset">
+            <legend class="tool__legend">Interpret the date as</legend>
+            <label class="tool__radio-label"><input type="radio" name="ts-a-tz" value="local" checked /> Local time</label>
+            <label class="tool__radio-label"><input type="radio" name="ts-a-tz" value="utc" /> UTC</label>
+          </fieldset>
+
+          <fieldset class="tool__fieldset">
+            <legend class="tool__legend">Output in</legend>
+            <label class="tool__radio-label"><input type="radio" name="ts-a-gran" value="sec" checked /> Seconds</label>
+            <label class="tool__radio-label"><input type="radio" name="ts-a-gran" value="ms" /> Milliseconds</label>
+          </fieldset>
+
+          <p id="ts-a-error" class="error-msg" role="alert" hidden></p>
+
+          <div class="tool__actions">
+            <input id="ts-a-output" class="tool__result-input" type="text" readonly spellcheck="false" aria-label="Resulting timestamp" />
+            <button id="btn-ts-a-copy" class="button--secondary" type="button">Copy</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section B: timestamp -> readable date -->
+      <section class="tool__section">
+        <h2 class="tool__section-title">Timestamp → Readable date</h2>
+        <div class="tool__controls">
+          <label class="tool__label" for="ts-ts-input">Unix timestamp</label>
+          <input type="number" id="ts-ts-input" class="tool__input-inline" placeholder="1700000000" spellcheck="false" />
+
+          <fieldset class="tool__fieldset">
+            <legend class="tool__legend">The timestamp is in</legend>
+            <label class="tool__radio-label"><input type="radio" name="ts-b-gran" value="sec" checked /> Seconds</label>
+            <label class="tool__radio-label"><input type="radio" name="ts-b-gran" value="ms" /> Milliseconds</label>
+          </fieldset>
+
+          <p id="ts-b-error" class="error-msg" role="alert" hidden></p>
+
+          <table class="info-table">
+            <tbody>
+              <tr><th scope="row">Local time</th><td id="ts-b-local"></td></tr>
+              <tr><th scope="row">UTC</th><td id="ts-b-utc"></td></tr>
+              <tr><th scope="row">ISO 8601</th><td id="ts-b-iso"></td></tr>
+              <tr><th scope="row">Relative to now</th><td id="ts-b-rel"></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </article>
+
+    <!-- Ad block — below the tool's result area -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="2020202020"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Real content — required by AdSense -->
+    <section>
+      <h2>What is a Unix timestamp?</h2>
+      <p>
+        The <strong>Unix timestamp</strong> (or <em>epoch time</em>) is the number of seconds elapsed
+        since <strong>January 1st, 1970 at 00:00:00 UTC</strong>, not counting leap seconds.
+        It is the most common way to represent an instant in time in computer systems, because it is
+        just an integer — easy to store, compare and transmit, and independent of time zone. Many
+        systems use <strong>milliseconds</strong> instead of seconds (JavaScript's <code>Date.now()</code>,
+        for example).
+      </p>
+
+      <h2>Seconds or milliseconds?</h2>
+      <p>
+        A timestamp in seconds like <code>1700000000</code> has 10 digits (for current dates); in
+        milliseconds, <code>1700000000000</code>, it has 13. When converting a timestamp to a date, choose
+        the correct granularity — interpreting milliseconds as seconds would push the date thousands of
+        years into the future. This tool lets you choose it in both directions.
+      </p>
+
+      <h2>Local vs UTC</h2>
+      <p>
+        The timestamp itself is always absolute (referenced to UTC). The time zone only matters when
+        <strong>displaying</strong> or <strong>interpreting</strong> a readable date. When converting
+        a date to a timestamp, you indicate whether the fields you typed are in your local time or in
+        UTC. When converting a timestamp to a date, the tool shows the result in both your local time
+        and UTC, as well as in ISO 8601.
+      </p>
+
+      <h2>Frequently Asked Questions (FAQ)</h2>
+
+      <h3>What is the "Year 2038 problem"?</h3>
+      <p>
+        Systems that store the Unix timestamp in a signed 32-bit integer overflow on
+        <strong>January 19, 2038</strong>. Modern languages (including JavaScript, which uses
+        64-bit floating point) don't have this problem for common dates.
+      </p>
+
+      <h3>Why might the local date differ from someone else's?</h3>
+      <p>
+        Because local time depends on the time zone configured on the device. The same timestamp
+        shows different hours in São Paulo and in Lisbon, but the UTC value and the ISO 8601 value
+        are the same everywhere.
+      </p>
+
+      <h3>Where does the "Use now" shortcut get the time from?</h3>
+      <p>
+        From your device's clock. It fills the readable date with the current local time and the
+        timestamp field with the corresponding epoch, respecting the selected granularity.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/tools-en/timestamp.js"></script>
+</body>
+</html>

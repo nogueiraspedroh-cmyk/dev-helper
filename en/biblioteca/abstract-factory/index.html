@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Abstract Factory — Design Patterns | Dev Helper Library</title>
+  <meta name="description" content="Learn the Abstract Factory pattern (GoF) in depth: intent, problem, solution, structure, examples in TypeScript and PHP, when to use it, when to avoid it, and common pitfalls." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/abstract-factory/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Abstract Factory</span>
+        </nav>
+        <span class="artigo__categoria">Creational Pattern (GoF)</span>
+        <h1 class="artigo__titulo">Abstract Factory</h1>
+        <p class="artigo__subtitulo">
+          Provides an interface for creating <strong>families of related objects</strong>
+          without specifying their concrete classes — guaranteeing that the products of
+          the same family are always compatible with each other.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            Define an <strong>interface (the abstract factory)</strong> that declares
+            creation methods for each product of a family. Each concrete implementation
+            of that interface — the concrete factory — creates a coherent variant of
+            the products. The client code works exclusively with the abstract
+            interfaces: of the factory and of the products. It never references
+            concrete classes directly.
+          </p>
+          <p>
+            Cataloged by Gamma, Helm, Johnson and Vlissides in the book
+            <em>Design Patterns: Elements of Reusable Object-Oriented Software</em> (1994),
+            Abstract Factory belongs to the <strong>creational patterns</strong> category.
+            It's often described as a "super-factory" or a "factory of factories",
+            but the essence is simpler: coordinating the creation of multiple products
+            that need to work together.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Imagine a GUI component toolkit that must work on two operating systems:
+            Windows and macOS. Each OS has its own look and behavior for buttons,
+            checkboxes, menus and windows. The central problem isn't creating an
+            isolated component — it's guaranteeing that every component used together
+            belongs to the same visual family. Mixing a Windows button with a macOS
+            checkbox results in an inconsistent interface.
+          </p>
+          <p>
+            The naive solution — an <code>if/switch</code> scattered through the
+            client code choosing which concrete class to instantiate — creates two
+            serious problems:
+          </p>
+          <ul>
+            <li>
+              <strong>Coupling to the OS:</strong> the business code needs to know
+              whether it's running on Windows or macOS, mixing platform decisions
+              with presentation logic.
+            </li>
+            <li>
+              <strong>Guaranteed inconsistency:</strong> it only takes one developer
+              forgetting an <code>if</code> somewhere to mix components from different
+              families. The compiler doesn't catch this error.
+            </li>
+          </ul>
+
+          <h3>Abstract Factory vs Factory Method</h3>
+          <p>
+            The pattern's most important distinction — and the one that causes the
+            most confusion:
+          </p>
+          <ul>
+            <li>
+              <strong>Factory Method</strong> creates <em>a single product</em>. The
+              variation is in which concrete class of that product gets instantiated,
+              controlled by Creator subclasses. It's an extension point for one
+              object type.
+            </li>
+            <li>
+              <strong>Abstract Factory</strong> creates <em>an entire family of
+              related products</em>. A single concrete factory is responsible for
+              creating button, checkbox and menu — all from the same theme/platform.
+              It's a coordination of multiple factory methods around a cohesive family.
+            </li>
+          </ul>
+          <p>
+            In fact, Abstract Factory's concrete factories often implement their
+            creation methods using the Factory Method pattern internally. Abstract
+            Factory is, conceptually, a composition of Factory Methods grouped by family.
+          </p>
+        </section>
+
+        <!-- 3. SOLUTION -->
+        <section class="artigo__secao">
+          <h2>Solution</h2>
+          <p>Abstract Factory organizes the code into five participants:</p>
+          <ol>
+            <li>
+              <strong>AbstractFactory (interface):</strong> declares the creation
+              methods for each product type of the family. E.g.: <code>createButton()</code>
+              and <code>createCheckbox()</code>.
+            </li>
+            <li>
+              <strong>ConcreteFactory:</strong> implements AbstractFactory, creating
+              products of a specific variant. E.g.: <code>WindowsFactory</code>
+              creates <code>WindowsButton</code> and <code>WindowsCheckbox</code>.
+            </li>
+            <li>
+              <strong>AbstractProduct (interface per type):</strong> defines the
+              contract for each product type. E.g.: <code>Button</code> with
+              <code>render()</code>, <code>Checkbox</code> with <code>check()</code>.
+            </li>
+            <li>
+              <strong>ConcreteProduct:</strong> implements the AbstractProduct for
+              a variant. E.g.: <code>WindowsButton</code>, <code>MacOsButton</code>.
+            </li>
+            <li>
+              <strong>Client:</strong> only uses the AbstractFactory and
+              AbstractProduct interfaces. Receives the concrete factory via injection
+              (constructor or parameter) — never instantiates it directly.
+            </li>
+          </ol>
+          <p>
+            To switch the whole family (change from the Windows theme to macOS),
+            you just provide a different concrete factory to the client. Not a
+            single line of client code needs to change.
+          </p>
+        </section>
+
+        <!-- 4. STRUCTURE -->
+        <section class="artigo__secao">
+          <h2>Structure</h2>
+          <p>
+            Simplified UML diagram with the per-platform UI kit example:
+          </p>
+          <div class="code-bloco">
+<pre><code>            «interface»                        «interface»
+              Button                            Checkbox
+          ┌─────────────┐                    ┌─────────────┐
+          │  + render() │                    │  + check()  │
+          └─────────────┘                    └─────────────┘
+                 ▲                                  ▲
+          ┌──────┴───────┐                  ┌───────┴────────┐
+          │              │                  │                │
+    WindowsButton   MacOsButton      WindowsCheckbox   MacOsCheckbox
+         (ConcreteProduct)                  (ConcreteProduct)
+
+
+          «interface»
+        UIFactory
+    ┌──────────────────────────┐
+    │ + createButton(): Button │
+    │ + createCheckbox():      │
+    │     Checkbox             │
+    └──────────────────────────┘
+              ▲
+    ┌─────────┴────────────────┐
+    │                          │
+WindowsFactory            MacOsFactory
+(ConcreteFactory)         (ConcreteFactory)
+createButton()            createButton()
+  → new WindowsButton()     → new MacOsButton()
+createCheckbox()          createCheckbox()
+  → new WindowsCheckbox()   → new MacOsCheckbox()
+
+
+Call flow:
+
+  client (receives UIFactory via injection)
+    │
+    │  const button   = factory.createButton()
+    │  const checkbox = factory.createCheckbox()
+    │  button.render()
+    │  checkbox.check()
+    ▼
+  Result: all components belong to the same family.
+  To switch platforms: inject a different factory.
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. CODE EXAMPLES -->
+        <section class="artigo__secao">
+          <h2>Code examples</h2>
+
+          <h3>Example 1 — UI kit by theme (Light / Dark)</h3>
+          <p>
+            The abstract factory guarantees that button and checkbox are always from
+            the same theme. The client renders the application without knowing which
+            theme is active.
+          </p>
+
+          <!-- TAB GROUP 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 1 — UI kit by theme">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── AbstractProducts ─────────────────────────────────────────
+interface Button {
+  render(): string;
+}
+
+interface Checkbox {
+  check(): string;
+}
+
+// ── ConcreteProducts — Light theme ───────────────────────────
+class LightButton implements Button {
+  render(): string {
+    return "[LIGHT] White button rendered";
+  }
+}
+
+class LightCheckbox implements Checkbox {
+  check(): string {
+    return "[LIGHT] Light checkbox checked";
+  }
+}
+
+// ── ConcreteProducts — Dark theme ────────────────────────────
+class DarkButton implements Button {
+  render(): string {
+    return "[DARK] Dark button rendered";
+  }
+}
+
+class DarkCheckbox implements Checkbox {
+  check(): string {
+    return "[DARK] Dark checkbox checked";
+  }
+}
+
+// ── AbstractFactory ───────────────────────────────────────────
+interface UIFactory {
+  createButton(): Button;
+  createCheckbox(): Checkbox;
+}
+
+// ── ConcreteFactories ─────────────────────────────────────────
+class LightFactory implements UIFactory {
+  createButton(): Button     { return new LightButton(); }
+  createCheckbox(): Checkbox { return new LightCheckbox(); }
+}
+
+class DarkFactory implements UIFactory {
+  createButton(): Button     { return new DarkButton(); }
+  createCheckbox(): Checkbox { return new DarkCheckbox(); }
+}
+
+// ── Client ───────────────────────────────────────────────────
+// Receives the factory via injection — never instantiates products directly.
+function renderApp(factory: UIFactory): void {
+  const button   = factory.createButton();
+  const checkbox = factory.createCheckbox();
+
+  console.log(button.render());
+  console.log(checkbox.check());
+}
+
+// Family selection happens at the application's edge, not in the client.
+const theme: "light" | "dark" = "dark";
+const factory: UIFactory = theme === "dark" ? new DarkFactory() : new LightFactory();
+
+renderApp(factory);
+// → [DARK] Dark button rendered
+// → [DARK] Dark checkbox checked</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── AbstractProducts ─────────────────────────────────────────
+interface Button
+{
+    public function render(): string;
+}
+
+interface Checkbox
+{
+    public function check(): string;
+}
+
+// ── ConcreteProducts — Light theme ───────────────────────────
+class LightButton implements Button
+{
+    public function render(): string
+    {
+        return '[LIGHT] White button rendered';
+    }
+}
+
+class LightCheckbox implements Checkbox
+{
+    public function check(): string
+    {
+        return '[LIGHT] Light checkbox checked';
+    }
+}
+
+// ── ConcreteProducts — Dark theme ────────────────────────────
+class DarkButton implements Button
+{
+    public function render(): string
+    {
+        return '[DARK] Dark button rendered';
+    }
+}
+
+class DarkCheckbox implements Checkbox
+{
+    public function check(): string
+    {
+        return '[DARK] Dark checkbox checked';
+    }
+}
+
+// ── AbstractFactory ───────────────────────────────────────────
+interface UIFactory
+{
+    public function createButton(): Button;
+    public function createCheckbox(): Checkbox;
+}
+
+// ── ConcreteFactories ─────────────────────────────────────────
+class LightFactory implements UIFactory
+{
+    public function createButton(): Button     { return new LightButton(); }
+    public function createCheckbox(): Checkbox { return new LightCheckbox(); }
+}
+
+class DarkFactory implements UIFactory
+{
+    public function createButton(): Button     { return new DarkButton(); }
+    public function createCheckbox(): Checkbox { return new DarkCheckbox(); }
+}
+
+// ── Client ───────────────────────────────────────────────────
+function renderApp(UIFactory $factory): void
+{
+    $button   = $factory-&gt;createButton();
+    $checkbox = $factory-&gt;createCheckbox();
+
+    echo $button-&gt;render() . PHP_EOL;
+    echo $checkbox-&gt;check() . PHP_EOL;
+}
+
+// Family selection happens at the application's edge, not in the client.
+$theme   = 'dark';
+$factory = $theme === 'dark' ? new DarkFactory() : new LightFactory();
+
+renderApp($factory);
+// → [DARK] Dark button rendered
+// → [DARK] Dark checkbox checked</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 1) -->
+
+          <h3>Example 2 — Database connection family (SQL / NoSQL)</h3>
+          <p>
+            The same principle applied to infrastructure: the factory guarantees
+            that connection, query builder and transaction always belong to the
+            same provider. Useful in tests, where the concrete factory points to
+            an in-memory database.
+          </p>
+
+          <!-- TAB GROUP 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 2 — connection family">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── AbstractProducts ─────────────────────────────────────────
+interface Connection {
+  connect(dsn: string): void;
+  close(): void;
+}
+
+interface QueryBuilder {
+  select(table: string): string;
+}
+
+// ── ConcreteProducts — PostgreSQL ─────────────────────────────
+class PgConnection implements Connection {
+  connect(dsn: string): void { console.log(`[PG] Connected: ${dsn}`); }
+  close(): void              { console.log("[PG] Connection closed"); }
+}
+
+class PgQueryBuilder implements QueryBuilder {
+  select(table: string): string {
+    return `SELECT * FROM "${table}";`;   // → SELECT * FROM "users";
+  }
+}
+
+// ── ConcreteProducts — SQLite (tests) ─────────────────────────
+class SqliteConnection implements Connection {
+  connect(dsn: string): void { console.log(`[SQLite] Connected: ${dsn}`); }
+  close(): void              { console.log("[SQLite] Connection closed"); }
+}
+
+class SqliteQueryBuilder implements QueryBuilder {
+  select(table: string): string {
+    return `SELECT * FROM \`${table}\`;`;  // → SELECT * FROM `users`;
+  }
+}
+
+// ── AbstractFactory ───────────────────────────────────────────
+interface DatabaseFactory {
+  createConnection(): Connection;
+  createQueryBuilder(): QueryBuilder;
+}
+
+// ── ConcreteFactories ─────────────────────────────────────────
+class PostgresFactory implements DatabaseFactory {
+  createConnection(): Connection     { return new PgConnection(); }
+  createQueryBuilder(): QueryBuilder { return new PgQueryBuilder(); }
+}
+
+class SqliteFactory implements DatabaseFactory {
+  createConnection(): Connection     { return new SqliteConnection(); }
+  createQueryBuilder(): QueryBuilder { return new SqliteQueryBuilder(); }
+}
+
+// ── Client ───────────────────────────────────────────────────
+function runQuery(factory: DatabaseFactory, dsn: string): void {
+  const conn = factory.createConnection();
+  const qb   = factory.createQueryBuilder();
+
+  conn.connect(dsn);
+  console.log(qb.select("users"));
+  conn.close();
+}
+
+// In production: PostgresFactory. In tests: SqliteFactory.
+runQuery(new PostgresFactory(), "postgres://localhost/app");
+// → [PG] Connected: postgres://localhost/app
+// → SELECT * FROM "users";
+// → [PG] Connection closed</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── AbstractProducts ─────────────────────────────────────────
+interface Connection
+{
+    public function connect(string $dsn): void;
+    public function close(): void;
+}
+
+interface QueryBuilder
+{
+    public function select(string $table): string;
+}
+
+// ── ConcreteProducts — PostgreSQL ─────────────────────────────
+class PgConnection implements Connection
+{
+    public function connect(string $dsn): void { echo "[PG] Connected: {$dsn}" . PHP_EOL; }
+    public function close(): void              { echo "[PG] Connection closed" . PHP_EOL; }
+}
+
+class PgQueryBuilder implements QueryBuilder
+{
+    public function select(string $table): string
+    {
+        return "SELECT * FROM \"{$table}\";";  // → SELECT * FROM "users";
+    }
+}
+
+// ── ConcreteProducts — SQLite (tests) ─────────────────────────
+class SqliteConnection implements Connection
+{
+    public function connect(string $dsn): void { echo "[SQLite] Connected: {$dsn}" . PHP_EOL; }
+    public function close(): void              { echo "[SQLite] Connection closed" . PHP_EOL; }
+}
+
+class SqliteQueryBuilder implements QueryBuilder
+{
+    public function select(string $table): string
+    {
+        return "SELECT * FROM `{$table}`;";  // → SELECT * FROM `users`;
+    }
+}
+
+// ── AbstractFactory ───────────────────────────────────────────
+interface DatabaseFactory
+{
+    public function createConnection(): Connection;
+    public function createQueryBuilder(): QueryBuilder;
+}
+
+// ── ConcreteFactories ─────────────────────────────────────────
+class PostgresFactory implements DatabaseFactory
+{
+    public function createConnection(): Connection    { return new PgConnection(); }
+    public function createQueryBuilder(): QueryBuilder { return new PgQueryBuilder(); }
+}
+
+class SqliteFactory implements DatabaseFactory
+{
+    public function createConnection(): Connection    { return new SqliteConnection(); }
+    public function createQueryBuilder(): QueryBuilder { return new SqliteQueryBuilder(); }
+}
+
+// ── Client ───────────────────────────────────────────────────
+function runQuery(DatabaseFactory $factory, string $dsn): void
+{
+    $conn = $factory-&gt;createConnection();
+    $qb   = $factory-&gt;createQueryBuilder();
+
+    $conn-&gt;connect($dsn);
+    echo $qb-&gt;select('users') . PHP_EOL;
+    $conn-&gt;close();
+}
+
+// In production: PostgresFactory. In tests: SqliteFactory.
+runQuery(new PostgresFactory(), 'postgres://localhost/app');
+// → [PG] Connected: postgres://localhost/app
+// → SELECT * FROM "users";
+// → [PG] Connection closed</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 2) -->
+
+        </section><!-- /.artigo__secao (examples) -->
+
+        <!-- 6. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>When the system must be independent of how its products are
+              created:</strong> the client shouldn't know whether it's dealing with
+              Windows, macOS, PostgreSQL or SQLite products.
+            </li>
+            <li>
+              <strong>When the products must be used together:</strong> button and
+              checkbox from the same theme, connection and query builder from the
+              same database. The factory guarantees the consistency that a set of
+              isolated Factory Methods wouldn't guarantee.
+            </li>
+            <li>
+              <strong>When you want to expose only interfaces, not implementations:</strong>
+              Abstract Factory is the classic mechanism for libraries that let the
+              consumer swap the concrete implementation (e.g.: database driver).
+            </li>
+            <li>
+              <strong>When new families will be added:</strong> to add a new theme or
+              provider, you just create a new concrete factory — without touching the
+              client code or the existing factories.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>When there's only one family and it will never vary:</strong>
+              creating an AbstractFactory for a single concrete implementation is
+              pure overengineering. Use a simple Factory Method or direct instantiation.
+            </li>
+            <li>
+              <strong>When adding new product types is frequent:</strong> Abstract
+              Factory suffers when extending products (adding a third component type,
+              e.g. <code>Menu</code>): it requires changing the AbstractFactory and all
+              concrete factories — violating Open/Closed for product-type extension.
+            </li>
+            <li>
+              <strong>In projects with DI containers:</strong> modern frameworks
+              (NestJS, Spring, Laravel) manage families of implementations through
+              modules and injection scopes. Manually reimplementing Abstract Factory
+              is usually redundant.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Guarantees compatibility between products of the same family — makes it impossible to mix products from different families.</li>
+            <li>Follows the Open/Closed Principle for new families: adding a new concrete factory doesn't change existing code.</li>
+            <li>Follows the Single Responsibility Principle: each concrete factory takes care of creating an entire family.</li>
+            <li>Fully decouples the client from concrete product classes.</li>
+            <li>Makes it easier to swap the whole family at runtime (e.g. light/dark theme, test vs production environment).</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Adding a new product type (e.g. a third component in the family) requires modifying the AbstractFactory and all concrete factories — the pattern's most fragile point.</li>
+            <li>Introduces a considerable hierarchy of classes and interfaces even for moderate cases.</li>
+            <li>Can be hard to justify the cost when the families are few and stable.</li>
+          </ul>
+        </section>
+
+        <!-- 8. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Using Abstract Factory when there's only one family (overengineering)</h3>
+          <p class="artigo__aviso">
+            <strong>Warning:</strong> If the system has only one set of concrete
+            products and no real variation is planned, creating an AbstractFactory
+            with a single ConcreteFactory adds ceremony without benefit. Start with
+            a Factory Method or direct instantiation. Refactor to Abstract Factory
+            when the second family actually shows up.
+          </p>
+
+          <h3>2. Confusing it with Factory Method</h3>
+          <p>
+            Factory Method manages the creation of <em>a single product type</em>
+            through Creator inheritance. Abstract Factory manages the creation of
+            <em>a family of types</em> through composition of creation methods.
+            If your "Abstract Factory" has only one <code>create()</code> method,
+            it's probably a Factory Method in disguise.
+          </p>
+
+          <h3>3. Product extension breaks every factory</h3>
+          <p>
+            When a new product type needs to be added to the family (e.g. adding
+            <code>createMenu()</code> to the <code>UIFactory</code> interface), every
+            existing concrete factory needs to be updated — even the ones that won't
+            use the new product. This is the pattern's structural cost. Assess whether
+            your system's main variation is in <em>families</em> (Abstract Factory is
+            a good fit) or in <em>product types</em> (Strategy or Factory Method may
+            be better).
+          </p>
+
+          <h3>4. Choosing the concrete factory in the wrong place</h3>
+          <p>
+            The choice of which concrete factory to use should happen as close as
+            possible to the application's edge (entry point, configuration file, DI
+            container). If the client code decides which factory to instantiate with
+            an <code>if/switch</code> based on configuration, the pattern loses half
+            its value — the client is still coupled to the factories' concrete classes.
+          </p>
+        </section>
+
+        <!-- 9. RELATED PATTERNS -->
+        <section class="artigo__secao">
+          <h2>Related patterns</h2>
+          <p>
+            Abstract Factory connects to several other creational patterns:
+          </p>
+          <!--
+            Link discipline: only 5 of the 51 catalog patterns have an
+            English translation so far (this batch — singleton,
+            factory-method, abstract-factory, builder, prototype). Siblings
+            within this batch link directly via ../slug/. Any pattern still
+            untranslated falls back to the pt-BR article via
+            ../../../biblioteca/slug/ (same fallback used in
+            en/biblioteca/index.html) instead of 404ing on a non-existent
+            /en/biblioteca/slug/ page. Factory Method, Builder, Prototype and
+            Singleton are all in this batch → real links; no fallback needed
+            in this list.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../factory-method/">Factory Method</a></li>
+            <li><a href="../builder/">Builder</a></li>
+            <li><a href="../prototype/">Prototype</a></li>
+            <li><a href="../singleton/">Singleton</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Factory Method</strong> is the building block of Abstract
+            Factory: each creation method of the abstract factory is, conceptually,
+            a Factory Method. <strong>Builder</strong> focuses on the step-by-step
+            assembly process of a single complex object, while Abstract Factory
+            creates entire families of simple objects at once. <strong>Prototype</strong>
+            is an alternative when creating new objects is done by cloning existing
+            instances — it can be used inside a factory to reduce the number of
+            subclasses. <strong>Singleton</strong> is frequently applied to concrete
+            factories: since the factory has no relevant state, generally only one
+            instance is needed.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="9191919191"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

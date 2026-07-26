@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Adapter — Design Patterns | Dev Helper Library</title>
+  <meta name="description" content="Learn the Adapter pattern (GoF) in depth: intent, problem, solution, structure, examples in TypeScript and PHP, when to use it, when to avoid it, and common pitfalls." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/adapter/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Adapter</span>
+        </nav>
+        <span class="artigo__categoria">Structural Pattern (GoF)</span>
+        <h1 class="artigo__titulo">Adapter</h1>
+        <p class="artigo__subtitulo">
+          Converts the interface of a class into the interface the client expects,
+          allowing classes with incompatible interfaces to collaborate without
+          modifying their source code.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Make incompatible interfaces work together</strong>, wrapping
+            an existing class (the <em>adaptee</em>) in a wrapper that exposes the
+            interface expected by the client — without changing either the adaptee
+            or the client.
+          </p>
+          <p>
+            The Adapter belongs to the <strong>structural patterns</strong> category
+            in the GoF catalog (1994) and is one of the most used patterns in system
+            integration: whenever you consume a third-party library, an external SDK,
+            or a legacy API whose interfaces don't fit the contract your domain
+            defines, the Adapter is the right tool.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Imagine your application defines a <code>Logger</code> interface with
+            the method <code>log(level, message)</code>. You decide to adopt a
+            third-party logging library — say, <code>ExternalLogger</code> — that
+            exposes a completely different contract: separate methods
+            <code>writeInfo(msg)</code>, <code>writeWarning(msg)</code> and
+            <code>writeError(msg)</code>.
+          </p>
+          <p>
+            You can't modify <code>ExternalLogger</code> (it's third-party code,
+            updated by another team). You also don't want to modify your whole
+            application to call the new API directly — that creates coupling with
+            the vendor and turns a future library swap into a massive refactor.
+          </p>
+          <p>
+            The naive solution would be to scatter conditionals or direct calls to
+            the library throughout the code. The Adapter solves this cleanly: a
+            single intermediate object translates the calls.
+          </p>
+
+          <h3>Object Adapter vs Class Adapter</h3>
+          <p>
+            The GoF describes two variants:
+          </p>
+          <ul>
+            <li>
+              <strong>Object Adapter (composition):</strong> the adapter keeps a
+              reference to the adaptee and delegates calls to it. It's the idiomatic
+              form in TypeScript and PHP — it doesn't depend on multiple inheritance,
+              works with subclasses of the adaptee, and is more flexible.
+            </li>
+            <li>
+              <strong>Class Adapter (multiple inheritance):</strong> the adapter
+              inherits from both the target interface and the adaptee. In TypeScript
+              and PHP, multiple class inheritance doesn't exist — so this variant
+              doesn't apply directly. In PHP, it can be partially simulated with
+              <em>traits</em>, but the result tends to be more complex without real
+              gain. Always prefer the Object Adapter.
+            </li>
+          </ul>
+          <p>
+            In the examples below, we use exclusively the Object Adapter.
+          </p>
+        </section>
+
+        <!-- 3. SOLUTION -->
+        <section class="artigo__secao">
+          <h2>Solution</h2>
+          <p>The Adapter organizes the code into four participants:</p>
+          <ol>
+            <li>
+              <strong>Target (target interface):</strong> the contract the client
+              expects. E.g.: <code>Logger</code> interface with
+              <code>log(level, message)</code>.
+            </li>
+            <li>
+              <strong>Adaptee (existing/incompatible class):</strong> the class whose
+              interface needs to be adapted. E.g.: <code>ExternalLogger</code> with
+              <code>writeInfo()</code>, <code>writeWarning()</code>,
+              <code>writeError()</code>.
+            </li>
+            <li>
+              <strong>Adapter:</strong> implements the Target interface and keeps a
+              reference to the Adaptee. Translates each Target call into the
+              Adaptee's API. E.g.:
+              <code>ExternalLoggerAdapter implements Logger</code>.
+            </li>
+            <li>
+              <strong>Client:</strong> uses only the Target interface — it never
+              knows the Adaptee directly.
+            </li>
+          </ol>
+          <p>
+            With the Adapter in place, swapping the logging library is a change to
+            a single class — the rest of the system remains untouched.
+          </p>
+        </section>
+
+        <!-- 4. STRUCTURE -->
+        <section class="artigo__secao">
+          <h2>Structure</h2>
+          <div class="code-bloco">
+<pre><code>        «interface» Target
+  ┌─────────────────────────────┐
+  │ + log(level, message): void │
+  └─────────────────────────────┘
+          ▲            ▲
+          │            │ implements
+    Client code     ExternalLoggerAdapter
+      uses Target         (Adapter)
+                    ┌─────────────────────────────┐
+                    │ - adaptee: ExternalLogger   │
+                    │ + log(level, message): void │
+                    └─────────────────────────────┘
+                                   │ delegates to
+                                   ▼
+                           ExternalLogger
+                             (Adaptee)
+                    ┌───────────────────────────┐
+                    │ + writeInfo(msg): void    │
+                    │ + writeWarning(msg): void │
+                    │ + writeError(msg): void   │
+                    └───────────────────────────┘
+
+
+Call flow:
+
+  client.log("error", "Connection failed")
+      │
+      ▼ (via the Logger interface)
+  ExternalLoggerAdapter.log("error", "Connection failed")
+      │
+      │  switch(level) → calls writeError()
+      ▼
+  ExternalLogger.writeError("Connection failed")
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. CODE EXAMPLES -->
+        <section class="artigo__secao">
+          <h2>Code examples</h2>
+
+          <h3>Example 1 — Third-party logger adapter</h3>
+          <p>
+            The client only knows the <code>Logger</code> interface. The Adapter
+            translates the calls to the incompatible API of the external library.
+          </p>
+
+          <!-- TAB GROUP 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 1 — logger adapter">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Target — interface the application code knows ─────────────
+type LogLevel = "info" | "warning" | "error";
+
+interface Logger {
+  log(level: LogLevel, message: string): void;
+}
+
+// ── Adaptee — third-party library with an incompatible API ────
+// (code we CANNOT modify)
+class ExternalLogger {
+  writeInfo(msg: string): void {
+    console.log(`[INFO]    ${msg}`);
+  }
+  writeWarning(msg: string): void {
+    console.warn(`[WARNING] ${msg}`);
+  }
+  writeError(msg: string): void {
+    console.error(`[ERROR]   ${msg}`);
+  }
+}
+
+// ── Adapter (Object Adapter via composition) ───────────────────
+class ExternalLoggerAdapter implements Logger {
+  // Keeps a reference to the adaptee — without inheriting from it.
+  constructor(private readonly adaptee: ExternalLogger) {}
+
+  log(level: LogLevel, message: string): void {
+    switch (level) {
+      case "info":    this.adaptee.writeInfo(message);    break;
+      case "warning": this.adaptee.writeWarning(message); break;
+      case "error":   this.adaptee.writeError(message);   break;
+    }
+  }
+}
+
+// ── Client code — uses only the Logger interface ──────────────
+function processOrder(logger: Logger, orderId: string): void {
+  logger.log("info",    `Starting processing for order ${orderId}`);
+  logger.log("warning", `Low stock for order ${orderId}`);
+  logger.log("error",   `Payment failed for order ${orderId}`);
+}
+
+// Wiring — the client never knows an ExternalLogger exists:
+const logger = new ExternalLoggerAdapter(new ExternalLogger());
+processOrder(logger, "ORD-001");
+// [INFO]    Starting processing for order ORD-001
+// [WARNING] Low stock for order ORD-001
+// [ERROR]   Payment failed for order ORD-001</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Target — interface the application code knows ─────────────
+interface Logger
+{
+    public function log(string $level, string $message): void;
+}
+
+// ── Adaptee — third-party library with an incompatible API ────
+// (code we CANNOT modify)
+class ExternalLogger
+{
+    public function writeInfo(string $msg): void
+    {
+        echo "[INFO]    {$msg}" . PHP_EOL;
+    }
+
+    public function writeWarning(string $msg): void
+    {
+        echo "[WARNING] {$msg}" . PHP_EOL;
+    }
+
+    public function writeError(string $msg): void
+    {
+        echo "[ERROR]   {$msg}" . PHP_EOL;
+    }
+}
+
+// ── Adapter (Object Adapter via composition) ───────────────────
+class ExternalLoggerAdapter implements Logger
+{
+    // Keeps a reference to the adaptee — without inheriting from it.
+    public function __construct(
+        private readonly ExternalLogger $adaptee
+    ) {}
+
+    public function log(string $level, string $message): void
+    {
+        match ($level) {
+            'info'    =&gt; $this-&gt;adaptee-&gt;writeInfo($message),
+            'warning' =&gt; $this-&gt;adaptee-&gt;writeWarning($message),
+            'error'   =&gt; $this-&gt;adaptee-&gt;writeError($message),
+            default   =&gt; $this-&gt;adaptee-&gt;writeInfo($message),
+        };
+    }
+}
+
+// ── Client code — uses only the Logger interface ──────────────
+function processOrder(Logger $logger, string $orderId): void
+{
+    $logger-&gt;log('info',    "Starting processing for order {$orderId}");
+    $logger-&gt;log('warning', "Low stock for order {$orderId}");
+    $logger-&gt;log('error',   "Payment failed for order {$orderId}");
+}
+
+// Wiring — the client never knows an ExternalLogger exists:
+$logger = new ExternalLoggerAdapter(new ExternalLogger());
+processOrder($logger, 'ORD-001');
+// [INFO]    Starting processing for order ORD-001
+// [WARNING] Low stock for order ORD-001
+// [ERROR]   Payment failed for order ORD-001</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 1) -->
+
+          <h3>Example 2 — Payment gateway adapter</h3>
+          <p>
+            A very common case in practice: your application defines its own
+            payment contract, and each provider (Stripe, PagSeguro, Mercado Pago)
+            has its own SDK with a different API. One Adapter per provider keeps
+            the domain isolated.
+          </p>
+
+          <!-- TAB GROUP 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 2 — gateway adapter">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Target — the application domain's payment contract ────────
+interface PaymentGateway {
+  charge(amountCents: number, description: string): Promise&lt;string&gt;;
+}
+
+// ── Adaptee A — Stripe SDK (incompatible interface) ───────────
+class StripeSdk {
+  async createCharge(amount: number, currency: string, desc: string): Promise&lt;{ id: string }&gt; {
+    // Simulation of the real call to Stripe
+    return { id: `stripe_ch_${Date.now()}` };
+  }
+}
+
+// ── Adaptee B — PagSeguro SDK (different interface) ───────────
+class PagSeguroSdk {
+  async processCharge(params: {
+    amount: number;
+    currency: string;
+    reference: string;
+  }): Promise&lt;{ transactionId: string }&gt; {
+    return { transactionId: `pag_${Date.now()}` };
+  }
+}
+
+// ── Adapter A ─────────────────────────────────────────────────
+class StripeAdapter implements PaymentGateway {
+  constructor(private readonly sdk: StripeSdk) {}
+
+  async charge(amountCents: number, description: string): Promise&lt;string&gt; {
+    const result = await this.sdk.createCharge(
+      amountCents,
+      "USD",
+      description
+    );
+    return result.id;
+  }
+}
+
+// ── Adapter B ─────────────────────────────────────────────────
+class PagSeguroAdapter implements PaymentGateway {
+  constructor(private readonly sdk: PagSeguroSdk) {}
+
+  async charge(amountCents: number, description: string): Promise&lt;string&gt; {
+    const result = await this.sdk.processCharge({
+      amount: amountCents / 100, // PagSeguro uses whole units, not cents
+      currency: "USD",
+      reference: description,
+    });
+    return result.transactionId;
+  }
+}
+
+// ── Client code — decoupled from the provider ──────────────────
+async function processPayment(
+  gateway: PaymentGateway,
+  amountCents: number
+): Promise&lt;void&gt; {
+  const transactionId = await gateway.charge(amountCents, "Monthly subscription");
+  console.log(`Payment approved. Transaction: ${transactionId}`);
+}
+
+// Swapping providers = changing only the wiring line:
+const gateway = new StripeAdapter(new StripeSdk());
+await processPayment(gateway, 4990); // $49.90</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Target — the application domain's payment contract ────────
+interface PaymentGateway
+{
+    public function charge(int $amountCents, string $description): string;
+}
+
+// ── Adaptee A — Stripe SDK (incompatible interface) ───────────
+class StripeSdk
+{
+    public function createCharge(
+        int $amount,
+        string $currency,
+        string $desc
+    ): array {
+        // Simulation of the real call to Stripe
+        return ['id' =&gt; 'stripe_ch_' . time()];
+    }
+}
+
+// ── Adaptee B — PagSeguro SDK (different interface) ───────────
+class PagSeguroSdk
+{
+    public function processCharge(array $params): array
+    {
+        return ['transactionId' =&gt; 'pag_' . time()];
+    }
+}
+
+// ── Adapter A ─────────────────────────────────────────────────
+class StripeAdapter implements PaymentGateway
+{
+    public function __construct(private readonly StripeSdk $sdk) {}
+
+    public function charge(int $amountCents, string $description): string
+    {
+        $result = $this-&gt;sdk-&gt;createCharge($amountCents, 'USD', $description);
+        return $result['id'];
+    }
+}
+
+// ── Adapter B ─────────────────────────────────────────────────
+class PagSeguroAdapter implements PaymentGateway
+{
+    public function __construct(private readonly PagSeguroSdk $sdk) {}
+
+    public function charge(int $amountCents, string $description): string
+    {
+        // PagSeguro uses whole units, not cents
+        $result = $this-&gt;sdk-&gt;processCharge([
+            'amount'    =&gt; $amountCents / 100,
+            'currency'  =&gt; 'USD',
+            'reference' =&gt; $description,
+        ]);
+        return $result['transactionId'];
+    }
+}
+
+// ── Client code — decoupled from the provider ──────────────────
+function processPayment(PaymentGateway $gateway, int $amountCents): void
+{
+    $transactionId = $gateway-&gt;charge($amountCents, 'Monthly subscription');
+    echo "Payment approved. Transaction: {$transactionId}" . PHP_EOL;
+}
+
+// Swapping providers = changing only the wiring line:
+$gateway = new StripeAdapter(new StripeSdk());
+processPayment($gateway, 4990); // $49.90</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 2) -->
+
+        </section><!-- /.artigo__secao (examples) -->
+
+        <!-- 6. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>Integrating a third-party library or SDK</strong> whose
+              interface doesn't match your domain's contract — and you can't modify
+              the library.
+            </li>
+            <li>
+              <strong>Isolating the domain from external providers:</strong> payment
+              gateways, e-mail services, SMS providers, geolocation APIs. The
+              Adapter creates an anti-corruption barrier: the domain evolves without
+              coupling to the provider.
+            </li>
+            <li>
+              <strong>Reusing legacy classes</strong> with interfaces incompatible
+              with new code — without rewriting them.
+            </li>
+            <li>
+              <strong>Supporting multiple implementations of a service</strong>
+              transparently to the client (see the Stripe and PagSeguro example).
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>When you control both interfaces:</strong> if you can modify
+              the adaptee so it directly implements the target interface, there's
+              no need for an Adapter — modify the source.
+            </li>
+            <li>
+              <strong>When the interface difference is trivial:</strong> renaming a
+              parameter doesn't justify creating a whole indirection layer.
+            </li>
+            <li>
+              <strong>As a substitute for refactoring:</strong> Adapters over bad
+              internal code are a stopgap. In poorly structured code you own, the
+              solution is to refactor, not to adapt.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Single Responsibility Principle: interface conversion lives in a dedicated class.</li>
+            <li>Open/Closed Principle: new providers require only a new Adapter, without touching existing code.</li>
+            <li>Isolates business code from third-party SDKs and APIs — makes testing easier (just inject a fake that implements the target interface).</li>
+            <li>Allows swapping the underlying implementation without changing the client.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Adds an indirection layer — increases the number of classes and can make the flow less obvious on first read.</li>
+            <li>If the difference between the interfaces is very large (completely different paradigms), the Adapter can become complex and hard to maintain.</li>
+            <li>Adapters over Adapters (a long chain) are a sign that the design needs to be revisited.</li>
+          </ul>
+        </section>
+
+        <!-- 8. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Confusing Adapter with Facade</h3>
+          <p>
+            Adapter and Facade look superficially similar — both wrap existing
+            code. The key difference: the <strong>Adapter</strong> converts an
+            incompatible interface into another expected by the client (focus on
+            interface compatibility). The <strong>Facade</strong> simplifies and
+            unifies a complex subsystem into a high-level interface (focus on
+            simplifying usage). An Adapter can adapt a single class; a Facade
+            usually orchestrates multiple classes.
+          </p>
+
+          <h3>2. Leaking the adaptee's interface to the client</h3>
+          <p class="artigo__aviso">
+            <strong>Warning:</strong> the goal of the Adapter is that the client
+            never references the adaptee directly. If the client code imports or
+            knows <code>ExternalLogger</code>, the isolation has been compromised.
+            The Adapter should be the only boundary — inject it via interface into
+            the client and keep the adaptee encapsulated.
+          </p>
+
+          <h3>3. Adapter with business logic</h3>
+          <p>
+            The Adapter should only translate calls — it shouldn't contain
+            business logic. If you find yourself adding validation rules or
+            complex data transformations inside the Adapter, extract those
+            responsibilities into a separate service. An Adapter that does too
+            much violates the Single Responsibility Principle and becomes hard to
+            test.
+          </p>
+
+          <h3>4. Not creating tests with the real adaptee</h3>
+          <p>
+            Unit tests for the Adapter should use a mock of the adaptee (to
+            isolate the translation logic). Integration tests with the real
+            adaptee (e.g.: an actual call to Stripe in sandbox mode) are
+            necessary, but separate. Don't mix the two testing levels in the same
+            test suite.
+          </p>
+        </section>
+
+        <!-- 9. RELATED PATTERNS -->
+        <section class="artigo__secao">
+          <h2>Related patterns</h2>
+          <p>
+            The Adapter is frequently compared to and combined with other
+            structural patterns:
+          </p>
+          <!--
+            Link discipline: 12 of the 51 catalog patterns have an English
+            translation so far (5 from Batch 1 — singleton, factory-method,
+            abstract-factory, builder, prototype — plus this batch's 7 —
+            adapter, decorator, facade, proxy, composite, bridge, flyweight).
+            All four related patterns below (Decorator, Facade, Proxy, Bridge)
+            are in this same batch → real ../slug/ links.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../decorator/">Decorator</a></li>
+            <li><a href="../facade/">Facade</a></li>
+            <li><a href="../proxy/">Proxy</a></li>
+            <li><a href="../bridge/">Bridge</a></li>
+          </ul>
+          <p class="mt-1">
+            The <strong>Decorator</strong> keeps the same interface as the object
+            it decorates — its goal is to add responsibilities, not change the
+            contract. The Adapter, on the contrary, has exactly the goal of
+            <em>changing</em> the interface. The <strong>Facade</strong>
+            simplifies a subsystem; it doesn't adapt an incompatible interface —
+            but both create a single entry point for external code. The
+            <strong>Proxy</strong> also wraps the original object, but keeps the
+            same interface and adds access control, caching or lazy
+            initialization — it doesn't change the contract. The
+            <strong>Bridge</strong> separates an abstraction from its
+            implementation from the design stage; the Adapter reconciles
+            incompatible interfaces that already exist independently.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="8181818181"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

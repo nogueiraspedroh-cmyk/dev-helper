@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Builder — Design Patterns | Dev Helper Library</title>
+  <meta name="description" content="Learn the Builder pattern (GoF) in depth: intent, problem, solution, structure, examples in TypeScript and PHP, when to use it, when to avoid it, and common pitfalls." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/builder/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Builder</span>
+        </nav>
+        <span class="artigo__categoria">Creational Pattern (GoF)</span>
+        <h1 class="artigo__titulo">Builder</h1>
+        <p class="artigo__subtitulo">
+          Separates the <strong>construction of a complex object</strong> from its
+          representation, allowing the same construction process to create different
+          representations and guaranteeing that the product is only delivered in a
+          valid state.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            Separate the <strong>assembly process</strong> of a complex object from
+            its final representation, allowing the same construction process to
+            produce different representations. Builder encapsulates each step in
+            individual methods and centralizes all validation in the
+            <code>build()</code> method, which only delivers the product once the
+            configuration is complete and consistent.
+          </p>
+          <p>
+            Cataloged by Gamma, Helm, Johnson and Vlissides in the book
+            <em>Design Patterns: Elements of Reusable Object-Oriented Software</em> (1994),
+            Builder belongs to the <strong>creational patterns</strong> category.
+            It's especially valuable when the final object has many optional
+            parameters, when construction order matters, or when validation needs
+            to be centralized before the product is delivered.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Objects with many parameters — some required, some optional, with
+            interdependencies — generate two classic problems when built through a
+            constructor or public setters:
+          </p>
+          <ul>
+            <li>
+              <strong>Telescoping constructor:</strong> to cover every combination
+              of optional parameters, you create multiple overloads
+              (<code>new Order(items)</code>, <code>new Order(items, coupon)</code>,
+              <code>new Order(items, coupon, shipping)</code>…). The code that
+              instantiates the object becomes unreadable and error-prone regarding
+              parameter order.
+            </li>
+            <li>
+              <strong>Object in an inconsistent state:</strong> with public setters,
+              the object can be used before it's fully configured. Premature
+              validation (in the individual setter) can't see the full state; late
+              validation (in the usage method) is too far from the creation point.
+            </li>
+          </ul>
+          <p>
+            Builder solves both: each parameter becomes a step method with a
+            descriptive name, and full validation happens in <code>build()</code>.
+          </p>
+
+          <h3>Builder vs Abstract Factory</h3>
+          <p>
+            The most important distinction — and the one that confuses the most:
+          </p>
+          <ul>
+            <li>
+              <strong>Abstract Factory</strong> creates families of <em>related</em>
+              objects instantly. The focus is on <em>family consistency</em> of
+              products.
+            </li>
+            <li>
+              <strong>Builder</strong> constructs a <em>single complex object</em>
+              step by step. The focus is on the <em>assembly process</em> and on
+              <em>centralized validation</em> before delivering the product.
+            </li>
+          </ul>
+          <p>
+            In short: Abstract Factory is about <em>what</em> to create (which
+            family); Builder is about <em>how</em> to build (which process, with
+            which constraints).
+          </p>
+        </section>
+
+        <!-- 3. SOLUTION -->
+        <section class="artigo__secao">
+          <h2>Solution</h2>
+          <p>Builder organizes the code into four participants:</p>
+          <ol>
+            <li>
+              <strong>Builder (interface or base class):</strong> declares the
+              configuration methods for each construction step. E.g.:
+              <code>setUrl()</code>, <code>setMethod()</code>, <code>addHeader()</code>,
+              <code>build()</code>.
+            </li>
+            <li>
+              <strong>ConcreteBuilder:</strong> implements the steps, accumulates
+              the intermediate state and provides the <code>build()</code> method
+              that validates and returns the product. In TypeScript, each step
+              returns <code>this</code> for fluent chaining.
+            </li>
+            <li>
+              <strong>Director (optional):</strong> encapsulates common construction
+              sequences, calling the builder's steps in a predefined order. Useful
+              when the same canonical configurations appear in multiple places.
+            </li>
+            <li>
+              <strong>Product:</strong> the resulting complex object. Frequently
+              immutable — after <code>build()</code>, no configuration method can
+              alter it anymore.
+            </li>
+          </ol>
+          <p>
+            The secret of the pattern lies in <code>build()</code>: that's where
+            centralized validation happens. Before <code>build()</code>, the builder
+            is mutable and tolerant; afterwards, the product is immutable and
+            guaranteed to be valid.
+          </p>
+        </section>
+
+        <!-- 4. STRUCTURE -->
+        <section class="artigo__secao">
+          <h2>Structure</h2>
+          <p>
+            Simplified UML diagram with an HTTP request builder example:
+          </p>
+          <div class="code-bloco">
+<pre><code>          HttpRequest (Product — immutable)
+┌──────────────────────────────────────────────────────┐
+│ + readonly url: string                               │
+│ + readonly method: "GET"|"POST"|"PUT"|"PATCH"|"DEL." │
+│ + readonly headers: Record&lt;string, string&gt;           │
+│ + readonly body?: string                             │
+└──────────────────────────────────────────────────────┘
+                         ▲
+                         │ creates
+ HttpRequestBuilder (ConcreteBuilder)
+┌────────────────────────────────────┐
+│ - _url: string                     │
+│ - _method: Method                  │
+│ - _headers: Record&lt;string, string&gt; │
+│ - _body?: string                   │
+├────────────────────────────────────┤
+│ + setUrl(url): this                │  ← fluent (returns this)
+│ + setMethod(m): this               │
+│ + addHeader(k, v): this            │
+│ + setBody(b): this                 │
+│ + build(): HttpRequest             │  ← validates and returns
+└────────────────────────────────────┘
+
+Construction flow:
+
+  const req = new HttpRequestBuilder()
+    .setUrl("https://api.example.com/users")
+    .setMethod("POST")
+    .addHeader("Content-Type", "application/json")
+    .setBody('{"name":"Ana"}')
+    .build();               // ← centralized validation happens here
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. CODE EXAMPLES -->
+        <section class="artigo__secao">
+          <h2>Code examples</h2>
+
+          <h3>Example 1 — HTTP request builder with validation in build()</h3>
+          <p>
+            The builder accumulates the configuration step by step. The
+            <code>build()</code> method validates the complete state and creates
+            the immutable product — preventing invalid requests from existing in
+            the system.
+          </p>
+
+          <!-- TAB GROUP 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 1 — HTTP request builder">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+
+// ── Product (immutable) ────────────────────────────────────────
+class HttpRequest {
+  constructor(
+    public readonly url: string,
+    public readonly method: Method,
+    public readonly headers: Readonly&lt;Record&lt;string, string&gt;&gt;,
+    public readonly body?: string,
+  ) {}
+}
+
+// ── Builder ───────────────────────────────────────────────────
+class HttpRequestBuilder {
+  private _url: string = "";
+  private _method: Method = "GET";
+  private _headers: Record&lt;string, string&gt; = {};
+  private _body?: string;
+
+  setUrl(url: string): this {
+    this._url = url;
+    return this;
+  }
+
+  setMethod(method: Method): this {
+    this._method = method;
+    return this;
+  }
+
+  addHeader(key: string, value: string): this {
+    this._headers[key] = value;
+    return this;
+  }
+
+  setBody(body: string): this {
+    this._body = body;
+    return this;
+  }
+
+  // Centralized validation: happens once, before creating the product.
+  build(): HttpRequest {
+    if (!this._url) {
+      throw new Error("HttpRequest: url is required.");
+    }
+    if (["POST", "PUT", "PATCH"].includes(this._method) &amp;&amp; !this._body) {
+      throw new Error(`HttpRequest: body is required for ${this._method}.`);
+    }
+    return new HttpRequest(
+      this._url,
+      this._method,
+      { ...this._headers },
+      this._body,
+    );
+  }
+}
+
+// ── Usage ────────────────────────────────────────────────────
+const req = new HttpRequestBuilder()
+  .setUrl("https://api.example.com/users")
+  .setMethod("POST")
+  .addHeader("Content-Type", "application/json")
+  .addHeader("Authorization", "Bearer token123")
+  .setBody('{"name":"Ana","email":"ana@example.com"}')
+  .build();
+
+console.log(req.method); // "POST"
+console.log(req.url);    // "https://api.example.com/users"
+
+// Attempting an invalid build:
+try {
+  new HttpRequestBuilder()
+    .setUrl("https://api.example.com/users")
+    .setMethod("POST")
+    .build(); // Missing body!
+} catch (e) {
+  console.error((e as Error).message);
+  // → HttpRequest: body is required for POST.
+}</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Product (immutable via readonly) ──────────────────────────
+final class HttpRequest
+{
+    /** @param array&lt;string, string&gt; $headers */
+    public function __construct(
+        public readonly string  $url,
+        public readonly string  $method,
+        public readonly array   $headers,
+        public readonly ?string $body = null,
+    ) {}
+}
+
+// ── Builder ───────────────────────────────────────────────────
+class HttpRequestBuilder
+{
+    private string  $url    = '';
+    private string  $method = 'GET';
+    /** @var array&lt;string, string&gt; */
+    private array   $headers = [];
+    private ?string $body    = null;
+
+    public function setUrl(string $url): static
+    {
+        $this-&gt;url = $url;
+        return $this;
+    }
+
+    public function setMethod(string $method): static
+    {
+        $this-&gt;method = $method;
+        return $this;
+    }
+
+    public function addHeader(string $key, string $value): static
+    {
+        $this-&gt;headers[$key] = $value;
+        return $this;
+    }
+
+    public function setBody(string $body): static
+    {
+        $this-&gt;body = $body;
+        return $this;
+    }
+
+    // Centralized validation: happens once, before creating the product.
+    public function build(): HttpRequest
+    {
+        if ($this-&gt;url === '') {
+            throw new \InvalidArgumentException('HttpRequest: url is required.');
+        }
+        if (in_array($this-&gt;method, ['POST', 'PUT', 'PATCH'], true) &amp;&amp; $this-&gt;body === null) {
+            throw new \InvalidArgumentException(
+                "HttpRequest: body is required for {$this-&gt;method}."
+            );
+        }
+        return new HttpRequest($this-&gt;url, $this-&gt;method, $this-&gt;headers, $this-&gt;body);
+    }
+}
+
+// ── Usage ────────────────────────────────────────────────────
+$req = (new HttpRequestBuilder())
+    -&gt;setUrl('https://api.example.com/users')
+    -&gt;setMethod('POST')
+    -&gt;addHeader('Content-Type', 'application/json')
+    -&gt;addHeader('Authorization', 'Bearer token123')
+    -&gt;setBody('{"name":"Ana","email":"ana@example.com"}')
+    -&gt;build();
+
+echo $req-&gt;method . PHP_EOL; // POST
+echo $req-&gt;url    . PHP_EOL; // https://api.example.com/users
+
+// Attempting an invalid build:
+try {
+    (new HttpRequestBuilder())
+        -&gt;setUrl('https://api.example.com/users')
+        -&gt;setMethod('POST')
+        -&gt;build(); // Missing body!
+} catch (\InvalidArgumentException $e) {
+    echo $e-&gt;getMessage() . PHP_EOL;
+    // → HttpRequest: body is required for POST.
+}</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 1) -->
+
+          <h3>Example 2 — Director: reusable construction sequences</h3>
+          <p>
+            The Director encapsulates canonical construction sequences, freeing the
+            client code from repeating the same steps in multiple places. The
+            Director doesn't know which concrete builder it's using — it works
+            through the interface, not the implementation.
+          </p>
+
+          <!-- TAB GROUP 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 2 — Director">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// Director: knows the canonical construction sequences.
+class ApiClientDirector {
+  constructor(private readonly builder: HttpRequestBuilder) {}
+
+  // Builds a standard authenticated GET request.
+  buildAuthenticatedGet(url: string, token: string): HttpRequest {
+    return this.builder
+      .setUrl(url)
+      .setMethod("GET")
+      .addHeader("Authorization", `Bearer ${token}`)
+      .addHeader("Accept", "application/json")
+      .build();
+  }
+
+  // Builds a standard authenticated POST request with JSON.
+  buildJsonPost(url: string, token: string, payload: unknown): HttpRequest {
+    return this.builder
+      .setUrl(url)
+      .setMethod("POST")
+      .addHeader("Authorization", `Bearer ${token}`)
+      .addHeader("Content-Type", "application/json")
+      .addHeader("Accept", "application/json")
+      .setBody(JSON.stringify(payload))
+      .build();
+  }
+}
+
+// ── Usage ────────────────────────────────────────────────────
+const director = new ApiClientDirector(new HttpRequestBuilder());
+
+const getReq = director.buildAuthenticatedGet(
+  "https://api.example.com/profile",
+  "abc123",
+);
+console.log(`${getReq.method} ${getReq.url}`);
+// → GET https://api.example.com/profile
+
+const postReq = director.buildJsonPost(
+  "https://api.example.com/orders",
+  "abc123",
+  { product: "Notebook", quantity: 2 },
+);
+console.log(`${postReq.method} ${postReq.url}`);
+// → POST https://api.example.com/orders</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// Director: knows the canonical construction sequences.
+class ApiClientDirector
+{
+    public function __construct(
+        private readonly HttpRequestBuilder $builder,
+    ) {}
+
+    // Builds a standard authenticated GET request.
+    public function buildAuthenticatedGet(string $url, string $token): HttpRequest
+    {
+        return $this-&gt;builder
+            -&gt;setUrl($url)
+            -&gt;setMethod('GET')
+            -&gt;addHeader('Authorization', "Bearer {$token}")
+            -&gt;addHeader('Accept', 'application/json')
+            -&gt;build();
+    }
+
+    // Builds a standard authenticated POST request with JSON.
+    public function buildJsonPost(string $url, string $token, array $payload): HttpRequest
+    {
+        return $this-&gt;builder
+            -&gt;setUrl($url)
+            -&gt;setMethod('POST')
+            -&gt;addHeader('Authorization', "Bearer {$token}")
+            -&gt;addHeader('Content-Type', 'application/json')
+            -&gt;addHeader('Accept', 'application/json')
+            -&gt;setBody(json_encode($payload))
+            -&gt;build();
+    }
+}
+
+// ── Usage ────────────────────────────────────────────────────
+$director = new ApiClientDirector(new HttpRequestBuilder());
+
+$getReq = $director-&gt;buildAuthenticatedGet(
+    'https://api.example.com/profile',
+    'abc123',
+);
+echo "{$getReq-&gt;method} {$getReq-&gt;url}" . PHP_EOL;
+// → GET https://api.example.com/profile
+
+$postReq = $director-&gt;buildJsonPost(
+    'https://api.example.com/orders',
+    'abc123',
+    ['product' =&gt; 'Notebook', 'quantity' =&gt; 2],
+);
+echo "{$postReq-&gt;method} {$postReq-&gt;url}" . PHP_EOL;
+// → POST https://api.example.com/orders</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 2) -->
+
+        </section><!-- /.artigo__secao (examples) -->
+
+        <!-- 6. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>Objects with many optional parameters:</strong> when a
+              constructor starts having 4 or more parameters — especially with
+              several optional ones — Builder makes the client code readable and
+              resistant to ordering mistakes.
+            </li>
+            <li>
+              <strong>When centralized validation matters:</strong> <code>build()</code>
+              is the single point where all rules are checked together, guaranteeing
+              that the product only exists in a valid state.
+            </li>
+            <li>
+              <strong>When the product must be immutable:</strong> Builder collects
+              the mutable configuration and delivers an immutable product — a
+              classic pattern for value objects and DTOs.
+            </li>
+            <li>
+              <strong>When construction order matters:</strong> the Director
+              encapsulates the order, guaranteeing that required steps are never
+              forgotten.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>Simple objects with few fixed parameters:</strong> 2–3 required
+              parameters without optional ones don't justify an intermediate builder
+              class.
+            </li>
+            <li>
+              <strong>When there's no real validation in build():</strong> if
+              <code>build()</code> just instantiates without validating anything,
+              Builder is only syntactic sugar over chained setters — assess whether
+              the readability gain justifies the extra class.
+            </li>
+            <li>
+              <strong>When the product's immutability doesn't matter:</strong> if the
+              object needs to be mutable after creation anyway, the pattern loses
+              part of its main appeal.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Eliminates the telescoping constructor: each optional parameter gets its own descriptively named method.</li>
+            <li>Centralized validation in <code>build()</code>: the product only exists if it's valid — impossible to have an inconsistent object state.</li>
+            <li>Supports immutable products: the builder is mutable during configuration; the delivered product is immutable.</li>
+            <li>Readable at the call site: <code>.setUrl(...).setMethod("POST").addHeader(...).build()</code> documents intent better than a positional list of parameters.</li>
+            <li>The Director allows reusing common construction sequences without duplication.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>More code: every product requires an equivalent builder class — overhead for simple objects.</li>
+            <li>The client can call <code>build()</code> forgetting required steps — validation catches it at runtime, but not at compile time.</li>
+            <li>Fluent chaining with <code>this</code> in TypeScript can cause surprises with subclasses; the return type needs care.</li>
+          </ul>
+        </section>
+
+        <!-- 8. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Builder without validation in build() — just fluent setters</h3>
+          <p class="artigo__aviso">
+            <strong>Warning:</strong> The most common mistake is creating chained
+            methods that just copy values into fields, and a <code>build()</code>
+            that instantiates without validating anything. That's a fluent API over
+            setters — not the Builder pattern. The essence of the pattern is
+            <strong>centralized validation and a guaranteed-valid product</strong>.
+            Without that, you have extra complexity without the main benefit.
+          </p>
+
+          <h3>2. Reusing the builder after build()</h3>
+          <p>
+            Calling configuration methods after <code>build()</code> and calling
+            <code>build()</code> again can produce products with an unexpected
+            state, especially when the builder accumulates items (like headers).
+            Two common strategies: (a) throw an exception if <code>build()</code>
+            is called twice, or (b) reset the internal state after each
+            <code>build()</code>, making the builder explicitly reusable.
+          </p>
+
+          <h3>3. Confusing Builder with Abstract Factory</h3>
+          <p>
+            Abstract Factory delivers ready objects from a family in a single call.
+            Builder assembles a single complex object step by step with validation.
+            If you need to guarantee that button and checkbox are from the same
+            theme, use Abstract Factory. If you need to configure an HTTP request
+            with many optional headers and validate everything before sending it,
+            use Builder.
+          </p>
+
+          <h3>4. Unnecessary Director</h3>
+          <p>
+            The Director is optional. If there are no construction sequences reused
+            in multiple places, the client can call the builder's steps directly
+            without the extra layer. Introduce the Director only when the same
+            sequence appears in three or more places in the code — DRY applied to
+            construction.
+          </p>
+        </section>
+
+        <!-- 9. RELATED PATTERNS -->
+        <section class="artigo__secao">
+          <h2>Related patterns</h2>
+          <p>
+            Builder interacts with other creational and structural patterns:
+          </p>
+          <!--
+            Link discipline: only 5 of the 51 catalog patterns have an
+            English translation so far (this batch — singleton,
+            factory-method, abstract-factory, builder, prototype). Siblings
+            within this batch link directly via ../slug/. Any pattern still
+            untranslated falls back to the pt-BR article via
+            ../../../biblioteca/slug/ (same fallback used in
+            en/biblioteca/index.html) instead of 404ing on a non-existent
+            /en/biblioteca/slug/ page. When a pattern is later published in
+            English, replace its fallback href with ../slug/.
+            Abstract Factory and Prototype are in this batch → real links.
+            Composite is not translated yet → pt-BR fallback.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../abstract-factory/">Abstract Factory</a></li>
+            <li><a href="../prototype/">Prototype</a></li>
+            <li><a href="../../../biblioteca/composite/">Composite</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Abstract Factory</strong> is frequently compared to Builder:
+            both are creational patterns, but Abstract Factory creates families of
+            simple objects at once, while Builder assembles a single complex object
+            step by step with centralized validation. <strong>Prototype</strong> can
+            be used inside a builder when creation starts from a cloned base
+            configuration — the builder clones the prototype and applies
+            customizations on top. <strong>Composite</strong> is frequently the
+            product being built by Builder: tree structures (documents, pipelines,
+            UI trees) are natural candidates for step-by-step construction.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="9292929292"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

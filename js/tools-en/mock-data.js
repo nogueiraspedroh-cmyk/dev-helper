@@ -14,13 +14,13 @@
   // ================================================================
 
   var FIRST_NAMES = [
-    "Ana", "Bruno", "Carla", "Daniel", "Elisa", "Felipe", "Gabriela", "Hugo",
-    "Isabela", "João", "Karina", "Lucas", "Marina", "Nathan", "Olívia", "Paulo",
-    "Queila", "Rafael", "Sofia", "Thiago", "Úrsula", "Vitor", "Yara", "Zeca"
+    "Alice", "Benjamin", "Chloe", "Daniel", "Emily", "Felix", "Grace", "Henry",
+    "Isabella", "James", "Katherine", "Lucas", "Mia", "Nathan", "Olivia", "Peter",
+    "Quinn", "Ryan", "Sophia", "Thomas", "Uma", "Victor", "Yasmin", "Zoe"
   ];
   var LAST_NAMES = [
-    "Silva", "Souza", "Costa", "Santos", "Oliveira", "Pereira", "Lima", "Carvalho",
-    "Almeida", "Ferreira", "Rodrigues", "Gomes", "Martins", "Araújo", "Barbosa", "Ribeiro"
+    "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis",
+    "Rodriguez", "Martinez", "Wilson", "Anderson", "Taylor", "Thomas", "Moore", "Jackson"
   ];
   var LOREM_WORDS = [
     "lorem", "ipsum", "dolor", "sit", "amet", "consectetur", "adipiscing", "elit",

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Case Converter (camelCase, snake_case…) — Dev Helper</title>
+  <meta name="description" content="Convert text between camelCase, PascalCase, snake_case, kebab-case, CONSTANT_CASE and Title Case at once, right in your browser. Copy each format with a click." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../tools/conversor-case/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!--
+    AdSense — biblioteca carregada UMA vez por página.
+    Substitua ca-pub-5784678562772792 pelo seu pub-ID real antes do deploy.
+  -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../../biblioteca/">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="tool">
+      <header class="tool__header">
+        <h1>Case Converter</h1>
+        <p>Type a text and see it converted into <strong>camelCase</strong>, <strong>PascalCase</strong>, <strong>snake_case</strong>, <strong>kebab-case</strong>, <strong>CONSTANT_CASE</strong> and <strong>Title Case</strong> at the same time.</p>
+      </header>
+
+      <div class="tool__controls">
+        <!-- Textarea de entrada -->
+        <textarea
+          id="case-input"
+          class="tool__input"
+          placeholder="Type the text to convert, e.g.: user name"
+          spellcheck="false"
+          autocorrect="off"
+          autocapitalize="off"
+        ></textarea>
+      </div>
+
+      <!-- Saída: todos os formatos de uma vez -->
+      <div class="tool__output">
+        <div class="case-grid">
+          <div class="case-linha">
+            <span class="case-linha__label">camelCase</span>
+            <input id="case-out-camel" class="tool__result-input case-linha__input" type="text" readonly spellcheck="false" aria-label="camelCase" />
+            <button id="btn-case-copy-camel" class="button--secondary case-linha__copy" type="button">Copy</button>
+          </div>
+          <div class="case-linha">
+            <span class="case-linha__label">PascalCase</span>
+            <input id="case-out-pascal" class="tool__result-input case-linha__input" type="text" readonly spellcheck="false" aria-label="PascalCase" />
+            <button id="btn-case-copy-pascal" class="button--secondary case-linha__copy" type="button">Copy</button>
+          </div>
+          <div class="case-linha">
+            <span class="case-linha__label">snake_case</span>
+            <input id="case-out-snake" class="tool__result-input case-linha__input" type="text" readonly spellcheck="false" aria-label="snake_case" />
+            <button id="btn-case-copy-snake" class="button--secondary case-linha__copy" type="button">Copy</button>
+          </div>
+          <div class="case-linha">
+            <span class="case-linha__label">kebab-case</span>
+            <input id="case-out-kebab" class="tool__result-input case-linha__input" type="text" readonly spellcheck="false" aria-label="kebab-case" />
+            <button id="btn-case-copy-kebab" class="button--secondary case-linha__copy" type="button">Copy</button>
+          </div>
+          <div class="case-linha">
+            <span class="case-linha__label">CONSTANT_CASE</span>
+            <input id="case-out-constant" class="tool__result-input case-linha__input" type="text" readonly spellcheck="false" aria-label="CONSTANT_CASE" />
+            <button id="btn-case-copy-constant" class="button--secondary case-linha__copy" type="button">Copy</button>
+          </div>
+          <div class="case-linha">
+            <span class="case-linha__label">Title Case</span>
+            <input id="case-out-title" class="tool__result-input case-linha__input" type="text" readonly spellcheck="false" aria-label="Title Case" />
+            <button id="btn-case-copy-title" class="button--secondary case-linha__copy" type="button">Copy</button>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- Bloco de anúncio — abaixo do resultado da ferramenta -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="1616161616"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+    <!-- Conteúdo real — exigido pelo AdSense -->
+    <section>
+      <h2>What is text "case" in programming?</h2>
+      <p>
+        In programming, <strong>case</strong> (or <em>casing</em>) is the convention for how the
+        words in an identifier — a variable, function, class, file or constant name — are joined
+        and capitalized. Every language and every context has its own conventions, and converting
+        between them by hand is tedious and error-prone. This tool converts to
+        all formats at once, live, as you type.
+      </p>
+
+      <h2>Supported formats</h2>
+      <ul>
+        <li><strong>camelCase</strong> — first word lowercase, remaining words capitalized, no separator (e.g.: <code>userName</code>). Common in JavaScript, Java and C# variables and functions.</li>
+        <li><strong>PascalCase</strong> — every word capitalized, no separator (e.g.: <code>UserName</code>). Used for class and component names.</li>
+        <li><strong>snake_case</strong> — lowercase words joined by an underscore (e.g.: <code>user_name</code>). Common in Python, Ruby and database column names.</li>
+        <li><strong>kebab-case</strong> — lowercase words joined by a hyphen (e.g.: <code>user-name</code>). Used in URLs, file names and CSS classes.</li>
+        <li><strong>CONSTANT_CASE</strong> — uppercase words joined by an underscore (e.g.: <code>USER_NAME</code>). Standard for constants and environment variables.</li>
+        <li><strong>Title Case</strong> — capitalized words separated by a space (e.g.: <code>User Name</code>). Useful for titles and readable labels.</li>
+      </ul>
+
+      <h2>How the conversion works</h2>
+      <p>
+        The tool first <strong>splits the text into words</strong>, recognizing both common
+        separators (space, <code>_</code>, <code>-</code>, <code>.</code>, among others)
+        and the upper/lowercase boundaries of a text that is already in camelCase or
+        PascalCase. It then rebuilds those words in the format of each output. So you can
+        paste <code>myTestVariable</code> and get <code>my_test_variable</code> right away.
+      </p>
+
+      <h2>Frequently Asked Questions (FAQ)</h2>
+
+      <h3>Why show all formats at once?</h3>
+      <p>
+        Because in most cases you don't know beforehand which format you'll need — or you need
+        more than one. Seeing all of them at once, updated live, is faster than picking one
+        format at a time. Each row has its own copy button.
+      </p>
+
+      <h3>How are accents and special characters handled?</h3>
+      <p>
+        Non-alphanumeric characters are treated as word separators. Accented letters
+        are preserved within words, with only the case (upper/lower) adjusted
+        according to the target format.
+      </p>
+
+      <h3>Are numbers preserved?</h3>
+      <p>
+        Yes. Digits remain part of the words. For example, <code>user 2 test</code>
+        becomes <code>user2Test</code> in camelCase, keeping the number in place.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/tools-en/conversor-case.js"></script>
+</body>
+</html>
