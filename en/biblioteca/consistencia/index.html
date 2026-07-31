@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Eventual vs Strong Consistency — Dev Helper Library</title>
+  <meta name="description" content="Consistency in distributed systems: eventual vs strong, intermediate models (Read-Your-Writes, Monotonic Reads, Causal), CAP Theorem, PACELC, and replica read pitfalls." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/consistencia/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: carregado uma vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Eventual vs Strong Consistency</span>
+        </nav>
+        <span class="artigo__categoria">System Design</span>
+        <h1 class="artigo__titulo">Eventual vs Strong Consistency</h1>
+        <p class="artigo__subtitulo">
+          In distributed systems, replicated data can temporarily fall out
+          of sync between nodes. Consistency defines how "current" the
+          read a client receives is after a write — and the choice between
+          models has direct consequences for availability, latency, and
+          code complexity.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Consistency defines the guarantee about the value a
+            client reads after a write has been confirmed on some node of
+            the distributed system.</strong> In a database with replicas,
+            the write happens on the primary but reads can be served from
+            any replica — and asynchronous replicas can be behind. The
+            question is: how much "behind" is acceptable for your use
+            case?
+          </p>
+          <p>
+            This isn't a technical problem with a single right answer: it's
+            a business trade-off. A bank balance system and a Twitter
+            timeline feed have completely different answers to "how stale
+            can a read be?"
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            When a system distributes data across multiple nodes to gain
+            availability and performance, every write needs to be
+            propagated to the replicas. That propagation has a cost: it
+            takes time, it can fail, and it creates a window during which
+            different replicas have different versions of the data.
+          </p>
+          <ul>
+            <li>
+              <strong>If you wait for every replica to confirm before
+              responding to the client</strong> (strong consistency): the
+              write is slower, since it depends on the slowest replica in
+              the set. If any replica is unreachable, you may need to
+              refuse the write or the read.
+            </li>
+            <li>
+              <strong>If you confirm to the client as soon as the primary
+              accepts</strong> (eventual consistency): the write is fast,
+              but immediate reads from replicas may return the old value
+              for a few milliseconds — or seconds under high load.
+            </li>
+            <li>
+              <strong>The problem is that both behaviors look correct in
+              the development environment</strong> (local database, zero
+              latency between nodes) and only become visible in production,
+              under load, with real replicas.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. HOW IT WORKS -->
+        <section class="artigo__secao">
+          <h2>How it works</h2>
+
+          <h3>Strong Consistency</h3>
+          <p>
+            After a write is confirmed, any subsequent read on any node of
+            the system returns the updated value. To achieve this, the
+            system needs some coordination mechanism: either the write is
+            synchronous to every replica (all confirm before the client
+            gets ok), or it uses a consensus protocol like
+            <strong>Raft</strong> (used in etcd, CockroachDB, TiDB) or
+            <strong>Paxos</strong> (used in Google Spanner, Zookeeper).
+          </p>
+          <p>
+            The cost is write latency: you pay the RTT to the slowest or
+            geographically farthest replicas on every write. In
+            multi-region systems with replicas in Europe and Asia, this can
+            mean 150–300 ms of guaranteed write latency.
+          </p>
+
+          <h3>Eventual Consistency</h3>
+          <p>
+            After a write on the primary node, replicas will receive the
+            update eventually — with no guarantee of when. Under normal
+            network conditions, the lag is usually a few milliseconds to a
+            few seconds. Under high load or network issues, it can be more.
+          </p>
+          <p>
+            The system confirms the write to the client as soon as the
+            primary accepts it, without waiting for the replicas. Reads
+            from replicas can return the old value until propagation
+            completes. This allows higher availability and lower write
+            latency, at the cost of potentially stale reads.
+          </p>
+
+          <h3>Intermediate models</h3>
+          <p>
+            Between the two extremes there are more specific guarantees
+            that allow for more precise trade-offs:
+          </p>
+          <ul>
+            <li>
+              <strong>Read-Your-Writes (read-after-write):</strong> you
+              always read what you just wrote, even if other clients still
+              see the old value. Implemented via sticky reads (the client
+              always reads from the primary after writing) or causality
+              tokens (the client carries the minimum version the server
+              must have to serve the read).
+            </li>
+            <li>
+              <strong>Monotonic Reads:</strong> once the client has read a
+              value, it will never read an older value. Important in
+              systems where the user makes multiple reads — seeing data
+              "go back in time" is confusing and creates bugs that are hard
+              to reproduce.
+            </li>
+            <li>
+              <strong>Causal Consistency:</strong> operations that have a
+              causal relationship (B depends on A) are seen in the correct
+              order by every node. "You liked a post I haven't seen yet" is
+              a causal consistency violation. Stronger than eventual,
+              weaker than strong.
+            </li>
+          </ul>
+
+          <!-- SVG: Timeline comparing eventual vs strong -->
+          <figure class="artigo__figura">
+            <svg viewBox="0 0 760 310" width="100%" role="img" aria-label="Timeline diagram comparing Eventual Consistency (left) and Strong Consistency (right). Eventual: write on Node A, asynchronous propagation with dashed arrow, Node B returns the old value during the lag and the new value after synchronization. Strong: write blocks on Node A while it syncs Node B, ack returns, write confirms, any read returns the guaranteed new value.">
+              <defs>
+                <marker id="con-arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                  <polygon points="0 0, 8 3, 0 6" fill="#59616e" />
+                </marker>
+                <marker id="con-arr-ok" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                  <polygon points="0 0, 8 3, 0 6" fill="#10b981" />
+                </marker>
+                <marker id="con-arr-err" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                  <polygon points="0 0, 8 3, 0 6" fill="#ef4444" />
+                </marker>
+                <marker id="con-arr-pri" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                  <polygon points="0 0, 8 3, 0 6" fill="#4f46e5" />
+                </marker>
+              </defs>
+
+              <!-- ══ LEFT HALF: EVENTUAL CONSISTENCY ════════════════════ -->
+              <rect x="8" y="8" width="364" height="28" rx="5" fill="#4f46e5" />
+              <text x="190" y="24" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#ffffff">Eventual Consistency</text>
+              <text x="190" y="34" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#c7d2fe"> </text>
+
+              <!-- Node boxes -->
+              <rect x="22" y="44" width="80" height="26" rx="4" fill="#f0f2f5" stroke="#4f46e5" stroke-width="1.5" />
+              <text x="62" y="57" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="700" fill="#4f46e5">Node A</text>
+              <text x="62" y="67" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">(primary)</text>
+
+              <rect x="272" y="44" width="80" height="26" rx="4" fill="#f0f2f5" stroke="#4f46e5" stroke-width="1.5" />
+              <text x="312" y="57" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="700" fill="#4f46e5">Node B</text>
+              <text x="312" y="67" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">(replica)</text>
+
+              <!-- Lifelines -->
+              <line x1="62" y1="70" x2="62" y2="288" stroke="#4f46e5" stroke-width="1" stroke-dasharray="4,3" />
+              <line x1="312" y1="70" x2="312" y2="288" stroke="#4f46e5" stroke-width="1" stroke-dasharray="4,3" />
+
+              <!-- t=0: Write v=2 on Node A -->
+              <rect x="36" y="84" width="52" height="22" rx="3" fill="#4f46e5" />
+              <text x="62" y="95" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" font-weight="700" fill="#ffffff">WRITE v=2</text>
+              <text x="62" y="104" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#c7d2fe">t=0ms</text>
+
+              <!-- Client reads from B immediately → stale -->
+              <rect x="286" y="108" width="52" height="22" rx="3" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5" />
+              <text x="312" y="119" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" font-weight="700" fill="#ef4444">READ v=1</text>
+              <text x="312" y="128" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#ef4444">stale! t=10ms</text>
+
+              <!-- Async propagation arrow (diagonal dashed — arrives later) -->
+              <line x1="68" y1="100" x2="280" y2="152" stroke="#59616e" stroke-width="1.5" stroke-dasharray="6,4" marker-end="url(#con-arr)" />
+              <text x="170" y="122" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e" transform="rotate(12,170,122)">async propagation ~50ms</text>
+
+              <!-- Propagation arrives at B -->
+              <rect x="296" y="152" width="32" height="16" rx="3" fill="#10b981" />
+              <text x="312" y="163" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" font-weight="600" fill="#ffffff">sync</text>
+
+              <!-- Read from B after sync → fresh -->
+              <rect x="286" y="180" width="52" height="22" rx="3" fill="#d1fae5" stroke="#10b981" stroke-width="1.5" />
+              <text x="312" y="191" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" font-weight="700" fill="#059669">READ v=2</text>
+              <text x="312" y="200" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#059669">fresh! t=60ms</text>
+
+              <!-- Time axis label -->
+              <line x1="15" y1="82" x2="15" y2="210" stroke="#e3e6ea" stroke-width="1" />
+              <line x1="12" y1="82" x2="18" y2="82" stroke="#e3e6ea" stroke-width="1" />
+              <line x1="12" y1="210" x2="18" y2="210" stroke="#e3e6ea" stroke-width="1" />
+              <text x="8" y="148" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e" transform="rotate(-90,8,148)">time</text>
+
+              <!-- Summary box -->
+              <rect x="22" y="220" width="352" height="60" rx="4" fill="#eef2ff" stroke="#4f46e5" stroke-width="1" />
+              <text x="198" y="237" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="700" fill="#4f46e5">High availability · Low write latency</text>
+              <text x="198" y="252" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">Immediate read may return a stale value</text>
+              <text x="198" y="266" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">Use when: timeline, feeds, likes, catalog, feature flags</text>
+              <text x="198" y="280" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#4f46e5">CAP: keeps A (availability) during a partition</text>
+
+              <!-- Vertical divider -->
+              <line x1="380" y1="8" x2="380" y2="298" stroke="#e3e6ea" stroke-width="1.5" stroke-dasharray="5,4" />
+
+              <!-- ══ RIGHT HALF: STRONG CONSISTENCY ══════════════════════════ -->
+              <rect x="392" y="8" width="360" height="28" rx="5" fill="#1f2530" />
+              <text x="572" y="24" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#e6e9f0">Strong Consistency</text>
+              <text x="572" y="34" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#a0aab8"> </text>
+
+              <!-- Node boxes -->
+              <rect x="406" y="44" width="80" height="26" rx="4" fill="#f0f2f5" stroke="#1f2530" stroke-width="1.5" />
+              <text x="446" y="57" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="700" fill="#1f2530">Node A</text>
+              <text x="446" y="67" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">(primary)</text>
+
+              <rect x="658" y="44" width="80" height="26" rx="4" fill="#f0f2f5" stroke="#1f2530" stroke-width="1.5" />
+              <text x="698" y="57" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="700" fill="#1f2530">Node B</text>
+              <text x="698" y="67" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">(replica)</text>
+
+              <!-- Lifelines -->
+              <line x1="446" y1="70" x2="446" y2="288" stroke="#1f2530" stroke-width="1" stroke-dasharray="4,3" />
+              <line x1="698" y1="70" x2="698" y2="288" stroke="#1f2530" stroke-width="1" stroke-dasharray="4,3" />
+
+              <!-- t=0: Write request on Node A — BLOCKED waiting for replicas -->
+              <rect x="420" y="84" width="52" height="22" rx="3" fill="#1f2530" />
+              <text x="446" y="95" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" font-weight="700" fill="#e6e9f0">WRITE v=2</text>
+              <text x="446" y="104" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#a0aab8">t=0ms</text>
+
+              <!-- Waiting block on Node A lifeline (blocked during sync) -->
+              <rect x="440" y="106" width="12" height="50" rx="2" fill="#e5e7eb" stroke="#1f2530" stroke-width="1" />
+              <text x="406" y="131" text-anchor="end" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">waits for</text>
+              <text x="406" y="141" text-anchor="end" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">replicas</text>
+
+              <!-- Sync write sent to B (solid arrow) -->
+              <line x1="452" y1="112" x2="690" y2="112" stroke="#1f2530" stroke-width="1.5" marker-end="url(#con-arr)" />
+              <text x="574" y="108" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#1f2530">synchronous write</text>
+
+              <!-- Node B commits -->
+              <rect x="682" y="118" width="32" height="18" rx="3" fill="#4f46e5" />
+              <text x="698" y="131" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" font-weight="600" fill="#ffffff">commit</text>
+
+              <!-- Node B acks back to A -->
+              <line x1="682" y1="145" x2="454" y2="145" stroke="#10b981" stroke-width="1.5" marker-end="url(#con-arr-ok)" />
+              <text x="574" y="141" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#10b981">ack confirmed</text>
+
+              <!-- Write confirmed on A (end of wait block) -->
+              <rect x="420" y="156" width="52" height="22" rx="3" fill="#d1fae5" stroke="#10b981" stroke-width="1.5" />
+              <text x="446" y="167" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" font-weight="700" fill="#059669">WRITE OK</text>
+              <text x="446" y="176" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#059669">t=75ms</text>
+
+              <!-- Reads after confirmation — both nodes guaranteed -->
+              <rect x="672" y="182" width="52" height="22" rx="3" fill="#d1fae5" stroke="#10b981" stroke-width="1.5" />
+              <text x="698" y="193" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" font-weight="700" fill="#059669">READ v=2</text>
+              <text x="698" y="202" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#059669">guaranteed ✓</text>
+
+              <rect x="420" y="208" width="52" height="22" rx="3" fill="#d1fae5" stroke="#10b981" stroke-width="1.5" />
+              <text x="446" y="219" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" font-weight="700" fill="#059669">READ v=2</text>
+              <text x="446" y="228" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#059669">guaranteed ✓</text>
+
+              <!-- Summary box right -->
+              <rect x="406" y="242" width="340" height="48" rx="4" fill="#f0f2f5" stroke="#1f2530" stroke-width="1" />
+              <text x="576" y="258" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="700" fill="#1f2530">Any read returns the updated value</text>
+              <text x="576" y="272" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">Write latency = replica RTT (+50–300 ms multi-region)</text>
+              <text x="576" y="286" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">Use when: balance, inventory, voting, critical stock</text>
+            </svg>
+            <figcaption>Eventual Consistency (left): write confirms fast, replica may return the old value for a few milliseconds. Strong Consistency (right): write only confirms after every replica syncs — higher latency, but any read on any node returns the updated value.</figcaption>
+          </figure>
+
+          <h3>CAP Theorem</h3>
+          <p>
+            The CAP Theorem (Brewer, 2000) states that during a
+            <strong>network Partition</strong> (P — nodes can't communicate
+            with each other), a distributed system needs to choose between:
+          </p>
+          <ul>
+            <li>
+              <strong>Consistency (C):</strong> every read returns the most
+              recently written value, or an error. The system refuses to
+              serve reads from nodes that might be outdated during the
+              partition.
+            </li>
+            <li>
+              <strong>Availability (A):</strong> every request gets a
+              response (possibly with stale data). The system keeps
+              operating even if the nodes are on different sides of the
+              partition.
+            </li>
+          </ul>
+          <p>
+            Strong consistency → the system chooses C, sacrificing A during
+            a partition. Eventual consistency → the system chooses A,
+            keeping availability but possibly returning stale data.
+          </p>
+
+          <h3>PACELC — the more complete theorem</h3>
+          <p>
+            CAP only talks about partitions. <strong>PACELC</strong>
+            (Daniel Abadi, 2012) adds: even without a partition, there's a
+            trade-off between <strong>Latency (L)</strong> and
+            <strong>Consistency (C)</strong>.
+          </p>
+          <div class="code-bloco">
+<pre><code>PACELC: if Partition → choose between A and C
+        else (E) → trade-off between L and C
+
+Examples:
+  DynamoDB:   PA/EL  — prioritizes availability and low latency
+  Cassandra:  PA/EL  — same; consistency configurable per operation
+  PostgreSQL: PC/EC  — prioritizes consistency; more latency on writes
+  Spanner:    PC/EC  — strong global consistency; relatively high latency
+  MongoDB:    PA/EC  — available during partition; configurable (w:majority)
+</code></pre>
+          </div>
+          <p>
+            Many NoSQL databases let you configure the level per operation
+            (DynamoDB <code>ConsistentRead</code>, Cassandra
+            <code>ConsistencyLevel</code>), allowing different trade-offs
+            for different reads within the same application.
+          </p>
+        </section>
+
+        <!-- 4. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use each model</h2>
+          <ul>
+            <li>
+              <strong>Strong consistency:</strong> bank balances,
+              e-commerce inventory with critical stock, voting systems,
+              seat reservations, any operation where reading stale data has
+              a real business consequence (selling the same seat twice,
+              authorizing a withdrawal of money that doesn't exist).
+            </li>
+            <li>
+              <strong>Eventual consistency:</strong> social media
+              timelines, view and like counters (a few seconds of lag is
+              acceptable), product catalogs (seeing yesterday's price for a
+              few ms is harmless), feature flags, recommendations, search —
+              any data where staleness has negligible impact.
+            </li>
+            <li>
+              <strong>Read-Your-Writes:</strong> user profile — you just
+              updated your avatar and want to see the change. For other
+              users, eventual is fine, but for you specifically the
+              guarantee matters.
+            </li>
+            <li>
+              <strong>Causal Consistency:</strong> comment threads (the
+              reply to a comment must appear after the original comment),
+              social activity feeds where causal order matters for context.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 5. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Strong Consistency — Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Simple semantics: you never have to wonder "is this data up to date?"</li>
+            <li>Essential for financial operations and critical inventory.</li>
+            <li>Makes reasoning about the code easier: no need for "eventual retry" or "stale-read compensation" logic.</li>
+          </ul>
+          <h3>Strong Consistency — Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Higher write latency: the system waits for confirmation from every (or a majority of) replicas.</li>
+            <li>Lower availability during partitions: if replicas become unreachable, the system may refuse operations.</li>
+            <li>Doesn't scale well geographically: synchronous replication across regions adds 100–300 ms of write latency.</li>
+          </ul>
+          <h3>Eventual Consistency — Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>High availability: the system keeps operating even with temporarily unreachable replicas.</li>
+            <li>Low write latency: confirms without waiting for replicas.</li>
+            <li>Scales well geographically: asynchronous replicas in any region with no impact on write latency.</li>
+          </ul>
+          <h3>Eventual Consistency — Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Complexity in application code: you need to handle the possibility of stale reads.</li>
+            <li>Unpredictable reads: under high load the lag can be seconds — the design must tolerate this explicitly.</li>
+            <li>Conflicts in concurrent writes: two nodes that accepted conflicting writes need a resolution strategy (LWW — Last Write Wins, CRDT, or manual resolution).</li>
+          </ul>
+        </section>
+
+        <!-- 6. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Assuming strong consistency on a database with asynchronous replicas</h3>
+          <p>
+            The most common mistake: the code writes to the database and
+            immediately does a read — but the read goes to a read replica
+            that hasn't processed the write yet. The user sees the old
+            data. This looks like an intermittent bug because the lag
+            varies, and in development (local database with no replicas)
+            the bug never shows up.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Practice:</strong> in operations where Read-Your-Writes
+            is needed, read from the primary (not the replica) immediately
+            after writing. Modern ORMs have configuration for this (e.g.,
+            <code>after_write_primary_reads</code> in Prisma,
+            <code>read_preference=primary</code> in MongoDB, or simply
+            using the same connection as the write).
+          </p>
+
+          <h3>2. Treating "eventual" as "immediate in practice"</h3>
+          <p>
+            In development with a local database, propagation is
+            instantaneous. In production, with real replicas and real
+            load, the lag can be seconds. Architectures that assume
+            "eventual takes less than 100 ms" work fine most of the time
+            and fail silently when load increases or the network degrades.
+            The design must tolerate lag of seconds, not milliseconds.
+          </p>
+
+          <h3>3. Not documenting the API's consistency model</h3>
+          <p>
+            If your read endpoint uses eventual consistency, document that
+            explicitly. The caller needs to know it may receive data that's
+            up to X seconds old, so it can decide whether that's acceptable
+            for its use case. Undocumented consistency creates surprises in
+            production and bugs that are hard to diagnose in integrations.
+          </p>
+
+          <h3>4. Confusing consistency with durability</h3>
+          <p>
+            Consistency defines how current the read you receive is.
+            Durability defines whether a write survives failures (server
+            crash, disk failure). They're orthogonal dimensions: a system
+            can have eventual consistency and high durability (DynamoDB
+            with replication across 3 zones) or strong consistency with
+            configurable durability (MongoDB with <code>w:1</code> vs
+            <code>w:majority</code>). Confusing the two leads to mistaken
+            architecture decisions.
+          </p>
+        </section>
+
+        <!-- 7. RELATED -->
+        <section class="artigo__secao">
+          <h2>Related architectures and patterns</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../replicacao-de-banco/">Database Replication</a></li>
+            <li><a href="../sql-vs-nosql/">SQL vs NoSQL</a></li>
+            <li><a href="../cqrs/">CQRS</a></li>
+            <li><a href="../filas-de-mensagem/">Message Queues</a></li>
+            <li><a href="../sharding/">Sharding</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Database Replication</strong> is the physical mechanism
+            that implements the consistency models: synchronous replication
+            enables strong consistency; asynchronous replication results in
+            eventual consistency. Understanding consistency is essential to
+            configuring replication correctly.
+          </p>
+          <p>
+            <strong>CQRS</strong> explicitly separates the write model
+            (strong consistency in the Command Store) from the read model
+            (eventual consistency in the projections/read models). This
+            makes the consistency trade-off explicit in the architecture
+            instead of implicit in the database configuration.
+          </p>
+          <p>
+            <strong>SQL vs NoSQL</strong> is strongly related to
+            consistency: traditional SQL databases offer strong consistency
+            by default (ACID); NoSQL databases historically prioritized
+            availability and eventual consistency (BASE), although many
+            modern ones (CockroachDB, Spanner, DynamoDB with transactions)
+            offer configurable strong consistency.
+          </p>
+          <p>
+            <strong>Sharding</strong> adds another dimension: consistency
+            across different shards is especially hard — a transaction that
+            crosses two shards doesn't have a single source of truth,
+            requiring distributed commit protocols to guarantee strong
+            consistency.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="7373737373"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

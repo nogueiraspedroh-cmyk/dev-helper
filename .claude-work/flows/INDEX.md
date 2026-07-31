@@ -4,6 +4,7 @@ Registro de execuções do orquestrador neste repositório. Cada linha aponta pa
 
 | Data | Tarefa | Tags | Status | Arquivo |
 |------|--------|------|--------|---------|
+| 2026-07-29 | Tradução para inglês — Fase C (Biblioteca, 55 artigos) + gate final do ultragoal (15/15 stories) | static-site, i18n, en, feat, seo, lote, biblioteca, svg | ✅ | [2026-07-29-traducao-ingles-fase-c-biblioteca-e-fechamento.md](2026-07-29-traducao-ingles-fase-c-biblioteca-e-fechamento.md) |
 | 2026-07-25 | Tradução para inglês — Fase B (36 ferramentas restantes, 37/37 completo) | static-site, i18n, en, feat, seo, lote | ✅ | [2026-07-25-traducao-ingles-fase-b-37-ferramentas.md](2026-07-25-traducao-ingles-fase-b-37-ferramentas.md) |
 | 2026-07-25 | Tradução para inglês — Fase A (infra i18n + piloto com ferramenta JSON) | static-site, i18n, en, infra, feat, seo | ✅ | [2026-07-25-traducao-ingles-fase-a-infra-piloto.md](2026-07-25-traducao-ingles-fase-a-infra-piloto.md) |
 | 2026-07-21 | 2 ferramentas (Formatador/Ajustador de XML, Calculadora de Horas Trabalhadas) — parser XML próprio + turno noturno | static-site, texto-dados, web-rede-automacao, feat, lote-2 | ✅ | [2026-07-21-xml-e-horas-trabalhadas.md](2026-07-21-xml-e-horas-trabalhadas.md) |

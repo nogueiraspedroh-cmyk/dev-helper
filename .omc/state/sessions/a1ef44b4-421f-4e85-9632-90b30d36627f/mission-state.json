@@ -1,0 +1,79 @@
+{
+  "updatedAt": "2026-07-31T11:50:14.828Z",
+  "missions": [
+    {
+      "id": "session:a1ef44b4-421f-4e85-9632-90b30d36627f:none",
+      "source": "session",
+      "name": "none",
+      "objective": "Session mission",
+      "createdAt": "2026-07-31T11:49:21.568Z",
+      "updatedAt": "2026-07-31T11:50:14.828Z",
+      "status": "running",
+      "workerCount": 2,
+      "taskCounts": {
+        "total": 2,
+        "pending": 0,
+        "blocked": 0,
+        "inProgress": 1,
+        "completed": 1,
+        "failed": 0
+      },
+      "agents": [
+        {
+          "name": "documentador-fluxos:a3a1e75",
+          "role": "documentador-fluxos",
+          "ownership": "a3a1e7551c27af678",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-07-31T11:50:14.828Z"
+        },
+        {
+          "name": "general-purpose:a081c11",
+          "role": "general-purpose",
+          "ownership": "a081c114d7b4a66f9",
+          "status": "running",
+          "currentStep": null,
+          "latestUpdate": null,
+          "completedSummary": null,
+          "updatedAt": "2026-07-31T11:50:11.243Z"
+        }
+      ],
+      "timeline": [
+        {
+          "id": "session-stop:a2304d17f43b05f8e:2026-07-31T11:49:26.314Z",
+          "at": "2026-07-31T11:49:26.314Z",
+          "kind": "completion",
+          "agent": "documentador-fluxos:a3a1e75",
+          "detail": "completed",
+          "sourceKey": "session-stop:a2304d17f43b05f8e"
+        },
+        {
+          "id": "session-stop:a3a1e7551c27af678:2026-07-31T11:49:42.965Z",
+          "at": "2026-07-31T11:49:42.965Z",
+          "kind": "completion",
+          "agent": "documentador-fluxos:a3a1e75",
+          "detail": "completed",
+          "sourceKey": "session-stop:a3a1e7551c27af678"
+        },
+        {
+          "id": "session-start:a081c114d7b4a66f9:2026-07-31T11:50:11.243Z",
+          "at": "2026-07-31T11:50:11.243Z",
+          "kind": "update",
+          "agent": "general-purpose:a081c11",
+          "detail": "started general-purpose:a081c11",
+          "sourceKey": "session-start:a081c114d7b4a66f9"
+        },
+        {
+          "id": "session-stop:a652ed038087114e2:2026-07-31T11:50:14.828Z",
+          "at": "2026-07-31T11:50:14.828Z",
+          "kind": "completion",
+          "agent": "documentador-fluxos:a3a1e75",
+          "detail": "completed",
+          "sourceKey": "session-stop:a652ed038087114e2"
+        }
+      ]
+    }
+  ]
+}

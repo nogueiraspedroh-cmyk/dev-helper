@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Outbox Pattern — Dev Helper Library</title>
+  <meta name="description" content="Outbox Pattern: guarantee atomicity between a database write and event publishing without a distributed transaction. Understand the outbox table, Message Relay, CDC with Debezium, and at-least-once semantics." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/outbox/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Outbox Pattern</span>
+        </nav>
+        <span class="artigo__categoria">System Design</span>
+        <h1 class="artigo__titulo">Outbox Pattern</h1>
+        <p class="artigo__subtitulo">
+          Guarantee that a database operation and an event publication are
+          atomic — without needing a distributed transaction between the
+          database and the message broker.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>The Outbox Pattern guarantees that data persisted in the
+            database and events published to the message broker never fall
+            out of sync, using the database transaction itself as the
+            atomicity mechanism.</strong> The event doesn't go directly to
+            the broker — it first goes to a database table within the same
+            transaction that modifies the business data.
+          </p>
+          <p>
+            The word "outbox" comes from the email outbox analogy: messages
+            you compose stay in the outbox before being sent. If the server
+            crashes while you're composing, the message is saved and will
+            be sent when the server comes back. The same principle applies
+            here — the event stays "in the outbox" (a database table) until
+            a separate process delivers it to the broker.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            In event-driven systems, the business operation typically needs
+            to do two things: persist the new state in the database
+            <em>and</em> publish an event to notify other services. The
+            problem is that the database and the message broker are
+            independent resources — there's no way to include both in a
+            single ACID transaction.
+          </p>
+          <div class="code-bloco">
+<pre><code>  // Naive code — two independent operations without atomicity
+  await db.save(order);               // ← database commits here
+  await broker.publish('OrderCreated', order);  // ← what if this fails?
+
+  // Scenario 1: database commits, broker fails
+  //   → order exists, event lost, other services never find out
+  //   → silent inconsistency
+
+  // Scenario 2: broker receives, database fails
+  //   → event published, order doesn't exist
+  //   → consumers process a phantom order
+</code></pre>
+          </div>
+          <p>
+            Any failure between the two operations — process crash, network
+            timeout, broker error — leaves the system in an inconsistent
+            state. And the problem is silent: there's no visible explicit
+            error; the systems simply fall out of sync.
+          </p>
+        </section>
+
+        <!-- 3. HOW IT WORKS -->
+        <section class="artigo__secao">
+          <h2>How it works</h2>
+
+          <h3>The Outbox table</h3>
+          <p>
+            The solution is to move the event publication inside the
+            database transaction. Instead of publishing directly to the
+            broker, the application inserts the event as a row in a table
+            called <code>outbox</code> (or equivalent), within the same
+            transaction that saves the business data.
+          </p>
+          <div class="code-bloco">
+<pre><code>  -- outbox table schema
+  CREATE TABLE outbox (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_type  TEXT NOT NULL,             -- e.g.: 'OrderCreated'
+    payload     JSONB NOT NULL,            -- serialized event data
+    created_at  TIMESTAMPTZ DEFAULT NOW(),
+    processed_at TIMESTAMPTZ              -- NULL = awaiting relay
+  );
+
+  -- Within the same transaction (local ACID):
+  BEGIN;
+    INSERT INTO orders (id, customer_id, total) VALUES (...);
+    INSERT INTO outbox (event_type, payload)
+      VALUES ('OrderCreated', '{"order_id": "...", "total": 99.90}');
+  COMMIT;
+  -- If the COMMIT fails, neither insertion happens.
+  -- If the COMMIT succeeds, both insertions are guaranteed.
+</code></pre>
+          </div>
+
+          <figure class="artigo__figura">
+            <svg viewBox="0 0 760 210" width="100%" role="img" aria-label="Outbox Pattern diagram: Application writes to a DB Transaction containing the orders table and the outbox table; Message Relay reads the outbox and publishes to the Broker; Consumers receive the events">
+              <defs>
+                <marker id="ob-arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                  <polygon points="0 0, 10 3.5, 0 7" fill="#59616e" />
+                </marker>
+                <marker id="ob-arrow-primary" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                  <polygon points="0 0, 10 3.5, 0 7" fill="#4f46e5" />
+                </marker>
+                <marker id="ob-arrow-signal" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                  <polygon points="0 0, 10 3.5, 0 7" fill="#10b981" />
+                </marker>
+              </defs>
+
+              <!-- APPLICATION box -->
+              <rect x="10" y="75" width="100" height="50" rx="6" fill="#f0f2f5" stroke="#4f46e5" stroke-width="2" />
+              <text x="60" y="96" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#1f2530">Application</text>
+              <text x="60" y="112" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">(service)</text>
+
+              <!-- DB TRANSACTION bounding box -->
+              <rect x="140" y="20" width="230" height="165" rx="8" fill="#ffffff" stroke="#4f46e5" stroke-width="1.5" stroke-dasharray="6,3" />
+              <text x="255" y="38" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="600" fill="#4f46e5">Local Transaction (ACID)</text>
+
+              <!-- orders table -->
+              <rect x="155" y="48" width="90" height="60" rx="4" fill="#0e1320" stroke="#e3e6ea" stroke-width="1" />
+              <text x="200" y="68" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="10" font-weight="600" fill="#e6e9f0">orders</text>
+              <text x="200" y="84" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="9" fill="#10b981">id, customer_id</text>
+              <text x="200" y="98" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="9" fill="#10b981">total, status</text>
+
+              <!-- outbox table -->
+              <rect x="260" y="48" width="95" height="60" rx="4" fill="#0e1320" stroke="#4f46e5" stroke-width="1.5" />
+              <text x="307" y="68" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="10" font-weight="600" fill="#e6e9f0">outbox</text>
+              <text x="307" y="84" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="9" fill="#10b981">event_type</text>
+              <text x="307" y="98" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="9" fill="#10b981">payload, ...</text>
+
+              <!-- COMMIT label inside tx box -->
+              <text x="255" y="140" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="600" fill="#4f46e5">COMMIT</text>
+              <text x="255" y="155" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">both or neither</text>
+              <text x="255" y="170" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">are persisted</text>
+
+              <!-- Arrow: App → DB Transaction -->
+              <line x1="110" y1="100" x2="138" y2="100" stroke="#4f46e5" stroke-width="1.5" marker-end="url(#ob-arrow-primary)" />
+
+              <!-- MESSAGE RELAY box -->
+              <rect x="400" y="75" width="120" height="50" rx="6" fill="#f0f2f5" stroke="#59616e" stroke-width="1.5" />
+              <text x="460" y="96" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#1f2530">Message Relay</text>
+              <text x="460" y="112" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">polling or CDC</text>
+
+              <!-- Arrow: outbox → Message Relay -->
+              <line x1="370" y1="100" x2="398" y2="100" stroke="#59616e" stroke-width="1.5" marker-end="url(#ob-arrow)" />
+              <text x="384" y="93" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">reads</text>
+
+              <!-- BROKER box -->
+              <rect x="550" y="55" width="100" height="40" rx="6" fill="#f0f2f5" stroke="#e3e6ea" stroke-width="1.5" />
+              <text x="600" y="72" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#1f2530">Broker</text>
+              <text x="600" y="86" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">Kafka / RabbitMQ</text>
+
+              <!-- Arrow: Relay → Broker -->
+              <line x1="520" y1="90" x2="548" y2="82" stroke="#10b981" stroke-width="1.5" marker-end="url(#ob-arrow-signal)" />
+              <text x="534" y="80" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#10b981">publishes</text>
+
+              <!-- CONSUMERS -->
+              <rect x="550" y="120" width="100" height="40" rx="6" fill="#f0f2f5" stroke="#e3e6ea" stroke-width="1.5" />
+              <text x="600" y="137" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#1f2530">Consumers</text>
+              <text x="600" y="151" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">other services</text>
+
+              <!-- Arrow: Broker → Consumers -->
+              <line x1="600" y1="95" x2="600" y2="118" stroke="#59616e" stroke-width="1.5" marker-end="url(#ob-arrow)" />
+
+              <!-- Mark as processed label -->
+              <text x="460" y="145" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">marks processed_at</text>
+              <text x="460" y="158" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">after confirming delivery</text>
+
+              <!-- Arrow relay → outbox (mark processed) -->
+              <path d="M 430 125 Q 395 160 370 125" stroke="#e3e6ea" stroke-width="1" fill="none" stroke-dasharray="4,3" marker-end="url(#ob-arrow)" />
+            </svg>
+            <figcaption>Outbox Pattern: within a single local ACID transaction, the application writes to the business data and to the <code>outbox</code> table. The Message Relay reads the outbox and publishes to the broker asynchronously.</figcaption>
+          </figure>
+
+          <h3>Message Relay: Polling vs CDC</h3>
+          <p>
+            The Message Relay is the process responsible for reading the
+            outbox and publishing to the broker. There are two approaches:
+          </p>
+          <ul>
+            <li>
+              <strong>Polling:</strong> a process runs periodically (e.g.,
+              every 500ms), fetches rows from the outbox where
+              <code>processed_at IS NULL</code>, publishes each event to the
+              broker, and updates <code>processed_at</code>. Simple to
+              implement, but introduces latency proportional to the polling
+              interval and generates constant load on the database.
+            </li>
+            <li>
+              <strong>CDC (Change Data Capture):</strong> captures inserts
+              into the outbox table directly from the database's transaction
+              log (e.g., Debezium reading PostgreSQL's WAL). Lower latency,
+              no constant polling, and no additional query load. More
+              complex to configure and operate.
+            </li>
+          </ul>
+
+          <h3>At-least-once semantics</h3>
+          <p>
+            The Outbox Pattern guarantees events are never lost (no event is
+            silently discarded), but doesn't guarantee exactly-once
+            delivery. If the relay publishes the event and fails before
+            marking it processed, it will republish on the next run.
+            Consumers <strong>must be idempotent</strong> — processing the
+            same event twice must not have a different effect than
+            processing it once.
+          </p>
+          <div class="code-bloco">
+<pre><code>  -- Relay may publish duplicates. Consumers need idempotency:
+  INSERT INTO order_stock (order_id, quantity)
+  VALUES ($1, $2)
+  ON CONFLICT (order_id) DO NOTHING;  -- idempotent: ignores duplicate
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 4. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>Whenever you need atomicity between the database and
+              the broker:</strong> if the business can't tolerate lost
+              events (an order created without notifying the inventory
+              service, for example), Outbox is the correct pattern.
+            </li>
+            <li>
+              <strong>Event-driven systems with eventual consistency:</strong>
+              when event consumers can process asynchronously and the
+              relay's delivery latency (milliseconds to seconds) is
+              acceptable.
+            </li>
+            <li>
+              <strong>As the foundation for a Saga Pattern:</strong> each
+              saga step can use the outbox to guarantee that the event
+              triggering the next step is never lost — even if the process
+              crashes right after the commit.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>Sub-millisecond latency required:</strong> the relay
+              introduces additional latency (polling) or operational
+              complexity (CDC). For real-time notifications with no
+              tolerance for that delay, explore other approaches.
+            </li>
+            <li>
+              <strong>No outbox cleanup job:</strong> without a periodic
+              process that removes processed events, the table grows
+              indefinitely. This operational cost needs to be accepted
+              before adopting the pattern.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 5. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Atomicity between business data and event using only a local database transaction — no distributed transaction.</li>
+            <li>Events are never lost: even if the broker is unavailable at write time, the event stays in the outbox and will be published when the broker comes back.</li>
+            <li>Simple to implement with polling; adopting CDC can come later as an optimization.</li>
+            <li>Compatible with any relational database that supports ACID transactions.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>At-least-once semantics: consumers need to be idempotent, which adds complexity.</li>
+            <li>Additional latency: the relay introduces a delay between the commit and the event's delivery to the broker.</li>
+            <li>Outbox table operation: periodic cleanup, monitoring relay lag, and CDC configuration are additional responsibilities.</li>
+            <li>CDC requires attention to the database's WAL configuration (minimum retention compatible with the relay's speed).</li>
+          </ul>
+        </section>
+
+        <!-- 6. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Forgetting to clean up the outbox</h3>
+          <p>
+            Without a cleanup job (DELETE FROM outbox WHERE processed_at &lt; NOW() - INTERVAL '7 days'),
+            the table grows indefinitely. Polling queries get progressively
+            slower and storage grows uncontrolled. Define the retention
+            policy before going to production and monitor the table's size.
+          </p>
+
+          <h3>2. Relay without idempotency and unprepared consumers</h3>
+          <p>
+            The relay can publish the same event more than once in case of
+            failure. If consumers aren't idempotent, operations like
+            "reserve stock" or "send confirmation email" will be executed
+            in duplicate. Document this semantics explicitly and ensure
+            every outbox consumer implements idempotency.
+          </p>
+
+          <h3>3. CDC losing events due to WAL rotation</h3>
+          <p>
+            Debezium (and other CDC connectors) reads PostgreSQL's
+            Write-Ahead Log. If the WAL is rotated before the CDC processes
+            the outbox inserts — which can happen during periods of high
+            write volume or if the CDC goes offline for a long time — the
+            events are permanently lost. Configure
+            <code>wal_keep_size</code> appropriately and monitor CDC lag.
+          </p>
+
+          <h3>4. High-frequency outbox messages without optimization</h3>
+          <p>
+            Polling every second on a table with millions of processed rows
+            generates unnecessary load. Index the <code>processed_at</code>
+            column (or use an indexed <code>status</code> column), limit the
+            relay's batch size per run, and consider migrating to CDC as
+            volume grows.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Rule of thumb:</strong> the outbox table should always
+            have fewer than 1,000 unprocessed rows under normal operation.
+            If the number grows, something is wrong with the relay —
+            investigate before the lag causes noticeable inconsistencies.
+          </p>
+        </section>
+
+        <!-- 7. RELATED -->
+        <section class="artigo__secao">
+          <h2>Related architectures and patterns</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../saga/">Saga Pattern</a></li>
+            <li><a href="../filas-de-mensagem/">Message Queues</a></li>
+            <li><a href="../idempotencia/">Idempotency</a></li>
+            <li><a href="../event-driven/">Event-Driven Architecture</a></li>
+            <li><a href="../cqrs/">CQRS</a></li>
+          </ul>
+          <p class="mt-1">
+            The Outbox Pattern is almost always used together with
+            <strong>Sagas</strong>: each saga participant saves its result
+            and inserts the event that triggers the next step into the
+            outbox, within the same local transaction. This guarantees the
+            saga's flow doesn't break due to a network failure between the
+            commit and the publication.
+          </p>
+          <p>
+            In <strong>Event-Driven Architecture</strong>, the Outbox is the
+            canonical solution to the dual-write problem: the application
+            can't guarantee atomicity by writing to the database and
+            publishing to the broker in separate operations.
+          </p>
+          <p>
+            <strong>CQRS with Event Sourcing</strong> frequently uses the
+            Outbox or the event store itself as the publishing mechanism:
+            the event is the source of truth for the state and also the
+            trigger for updating the Read Model — but it's still necessary
+            to guarantee the event reaches the broker reliably.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="6969696969"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

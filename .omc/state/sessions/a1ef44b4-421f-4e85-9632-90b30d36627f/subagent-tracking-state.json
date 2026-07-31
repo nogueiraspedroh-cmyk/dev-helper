@@ -1,0 +1,26 @@
+{
+  "agents": [
+    {
+      "agent_id": "a3a1e7551c27af678",
+      "agent_type": "documentador-fluxos",
+      "started_at": "2026-07-31T11:49:21.568Z",
+      "parent_mode": "none",
+      "status": "completed",
+      "completed_at": "2026-07-31T11:49:42.965Z",
+      "duration_ms": 21397
+    },
+    {
+      "agent_id": "a081c114d7b4a66f9",
+      "agent_type": "general-purpose",
+      "started_at": "2026-07-31T11:50:11.243Z",
+      "parent_mode": "none",
+      "status": "completed",
+      "completed_at": "2026-07-31T11:50:14.828Z",
+      "duration_ms": 3585
+    }
+  ],
+  "total_spawned": 2,
+  "total_completed": 3,
+  "total_failed": 0,
+  "last_updated": "2026-07-31T11:50:14.980Z"
+}

@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Horizontal vs Vertical Scalability — Dev Helper Library</title>
+  <meta name="description" content="Understand the two fundamental scalability strategies: scale up (vertical) and scale out (horizontal). Learn when to use each, the stateless precondition for scale out, elasticity, and the most common pitfalls." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/escalabilidade-horizontal-vertical/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Horizontal vs Vertical Scalability</span>
+        </nav>
+        <span class="artigo__categoria">System Design</span>
+        <h1 class="artigo__titulo">Horizontal vs Vertical Scalability</h1>
+        <p class="artigo__subtitulo">
+          Two fundamental strategies for handling load growth: <em>scale up</em>
+          (more power on the same machine) and <em>scale out</em> (more machines
+          doing the same work). Understanding the limits and trade-offs of each
+          approach is one of the most impactful infrastructure decisions in any
+          system.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Scalability is a system's ability to handle load growth
+            without performance degradation.</strong> When a system approaches
+            its capacity limit — whether in requests per second, volume of data
+            processed, or concurrent connections — there are two strategies to
+            expand that capacity: grow <em>vertically</em> (a more powerful
+            machine) or grow <em>horizontally</em> (more machines).
+          </p>
+          <p>
+            <strong>Scale up (vertical)</strong> means adding resources to the
+            same instance: more CPU, more RAM, faster disks, faster network. The
+            application doesn't change; the infrastructure that supports it
+            grows. <strong>Scale out (horizontal)</strong> means adding new
+            instances of the same application and distributing load between them
+            through a load balancer. The infrastructure doesn't need to grow
+            monolithically, but the application needs to be able to run in
+            multiple copies simultaneously without inconsistencies.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Every system has a capacity ceiling. As load grows — more users, more
+            data, more calls per second — concrete symptoms appear: rising
+            latency, timeouts, memory errors, saturated CPU. The question isn't
+            <em>whether</em> this ceiling will be reached, but <em>when</em> and
+            <em>how</em> the system will respond to it.
+          </p>
+          <ul>
+            <li>
+              <strong>Physical limit of scale up:</strong> there's a maximum
+              hardware available on the market. Even with unlimited budget,
+              there's a point where a single machine can't process more load —
+              whether due to CPU limit, I/O limit, or lock contention on shared
+              resources.
+            </li>
+            <li>
+              <strong>Non-linear cost:</strong> doubling a machine's resources
+              doesn't cost double. The price grows exponentially as you approach
+              the top of the hardware line. A 256-core server costs much more
+              than eight 32-core servers with equivalent aggregate capacity.
+            </li>
+            <li>
+              <strong>Single point of failure:</strong> with a single instance,
+              any hardware failure or planned maintenance takes the system down.
+              There's no natural redundancy.
+            </li>
+            <li>
+              <strong>Local state as an obstacle to scale out:</strong>
+              applications that keep state in memory (HTTP session, local cache,
+              temporary files) work fine with one instance, but produce
+              incorrect behavior when multiple instances need to serve the same
+              user.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. HOW IT WORKS -->
+        <section class="artigo__secao">
+          <h2>How it works</h2>
+          <div class="code-bloco">
+<pre><code>  SCALE UP (Vertical)                   SCALE OUT (Horizontal)
+
+  ┌────────────────────────┐                  ┌───────────────────┐
+  │     Single server      │                  │   Load Balancer   │
+  │                        │                  └─────────┬─────────┘
+  │ CPU: 4 → 16 → 64 cores │                            │ distributes requests
+  │ RAM:  8 → 32 → 256 GB  │                 ┌──────────┼──────────┐
+  │ Disk: HDD → SSD → NVMe │                 ▼          ▼          ▼
+  │                        │             ┌───────┐  ┌───────┐  ┌───────┐
+  │  ── same instance ──   │             │ App 1 │  │ App 2 │  │ App 3 │
+  └────────────────────────┘             └───────┘  └───────┘  └───────┘
+                                        (same image, identical instances)
+
+  Limit: max available hardware       Limit: cost and complexity
+  Failure point: single               Failure point: distributed (resilient)
+  Code change: none                   Code change: requires stateless
+  Elasticity: no                      Elasticity: native auto-scaling
+</code></pre>
+          </div>
+
+          <h3>Stateless vs Stateful: the precondition for scale out</h3>
+          <p>
+            Scale out requires the application to be <strong>stateless</strong>:
+            each request must be processable by any instance without depending
+            on data stored locally on a previous instance. An application that
+            stores user session in memory, writes files locally, or keeps
+            stateful connections cannot be scaled horizontally without breaking
+            behavior.
+          </p>
+          <p>
+            The solution is to externalize state to shared services accessible
+            by all instances:
+          </p>
+          <ul>
+            <li><strong>HTTP session:</strong> Redis, Memcached, or a shared database instead of local memory.</li>
+            <li><strong>Temporary files:</strong> object storage (S3, GCS) or a shared network volume (EFS, NFS) instead of the local filesystem.</li>
+            <li><strong>Cache:</strong> centralized Redis or Memcached — a local cache per instance is inefficient and produces inconsistencies between instances.</li>
+            <li><strong>Stateful connections (WebSockets, SSE):</strong> require the load balancer to use sticky sessions or the connection state to be managed by a centralized broker, such as Redis Pub/Sub.</li>
+          </ul>
+
+          <h3>Elasticity: scale out's exclusive benefit</h3>
+          <p>
+            Scale out enables <strong>auto-scaling</strong>: adding instances
+            when load rises and removing them when load drops, paying only for
+            the capacity in use. This is especially valuable for elastic
+            workloads — systems with predictable spikes (end-of-day traffic,
+            marketing campaigns, monthly closing) or unpredictable ones (viral
+            content, a competitor's outage). With scale up, the large machine
+            remains on and billed even during low-load periods, or needs to be
+            resized manually — an operation that usually requires a maintenance
+            window.
+          </p>
+        </section>
+
+        <!-- 4. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>Scale up — relational database:</strong> databases like
+              PostgreSQL and MySQL are hard to distribute horizontally in a
+              transparent way. Scale up is the most direct route to increase
+              capacity — more RAM for buffers, more cores for parallel queries,
+              faster SSDs for I/O.
+            </li>
+            <li>
+              <strong>Scale up — legacy tools and stateful applications:</strong>
+              when the code can't be modified to support multiple instances,
+              scale up increases capacity without an architecture change.
+            </li>
+            <li>
+              <strong>Scale up — temporary, predictable spike:</strong> if the
+              system needs more capacity for a short, defined period,
+              temporarily provisioning a larger machine can be simpler than
+              configuring and operating a cluster.
+            </li>
+            <li>
+              <strong>Scale out — stateless web services:</strong> REST APIs and
+              HTTP applications without local state are natural candidates. Any
+              instance can answer any request, making load balancing trivial.
+            </li>
+            <li>
+              <strong>Scale out — high availability:</strong> multiple instances
+              eliminate the single point of failure. If one instance goes down,
+              the others absorb the load without visible interruption to the
+              user.
+            </li>
+            <li>
+              <strong>Scale out — unpredictable or elastic traffic:</strong>
+              auto-scaling reacts to load variations within minutes, without
+              manual intervention and with cost proportional to actual usage.
+            </li>
+            <li>
+              <strong>Scale out — multiple geographic regions:</strong>
+              instances in distinct regions reduce latency for global users and
+              provide geographic redundancy.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>Avoid scale up alone in critical systems:</strong> a
+              single instance, no matter how large, is a single point of
+              failure. For systems that can't have downtime, isolated scale up
+              isn't enough — at least one standby instance is needed.
+            </li>
+            <li>
+              <strong>Avoid scale out without making the application stateless
+              first:</strong> adding instances of a stateful application solves
+              nothing and introduces hard-to-reproduce bugs, where behavior
+              varies depending on which instance handles the request.
+            </li>
+            <li>
+              <strong>Avoid scaling before measuring:</strong> scaling is
+              expensive, operationally and financially. Identify the real
+              bottleneck — CPU, memory, I/O, inefficient queries — before
+              provisioning more resources. Often the solution is code
+              optimization or adding a cache, not more hardware.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 5. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+
+          <h3>Scale up — Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>No change to the application's code or architecture.</li>
+            <li>Operationally simple: one instance, no synchronization between nodes.</li>
+            <li>Zero internal latency: no serialization of calls between instances.</li>
+            <li>Simple ACID transactions: no need for distributed coordination.</li>
+          </ul>
+
+          <h3>Scale up — Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Absolute physical limit: the most powerful hardware available has a ceiling.</li>
+            <li>Cost grows non-linearly near the top of the line.</li>
+            <li>Single point of failure: any hardware failure or maintenance brings the system down.</li>
+            <li>No elasticity: the machine stays on and billed even during low-load periods.</li>
+          </ul>
+
+          <h3>Scale out — Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>No theoretical capacity limit: add instances as demand requires.</li>
+            <li>Natural high availability: multiple instances eliminate the single point of failure.</li>
+            <li>Elasticity: auto-scaling adds and removes instances on demand, with cost proportional to usage.</li>
+            <li>Smaller, homogeneous instances are cheaper and easier to replace than top-of-line machines.</li>
+          </ul>
+
+          <h3>Scale out — Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Requires the application to be stateless — a code and architecture change.</li>
+            <li>Higher operational complexity: load balancer, health checks, connection draining, cluster configuration.</li>
+            <li>Distributed problems: cache consistency, shared sessions, coordination between instances.</li>
+            <li>The database becomes a bottleneck if it isn't scaled along with the application layer.</li>
+          </ul>
+        </section>
+
+        <!-- 6. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Storing state in local memory and trying to scale out later</h3>
+          <p>
+            The most frequent pitfall: an application stores user session in
+            local memory — a HashMap, a module-level variable, a stateful
+            singleton object — and, when the time comes to scale, behavior
+            breaks silently. Users whose requests reach different instances
+            lose session, see another session's data, or receive inconsistent
+            responses. Fixing this retroactively requires refactoring state
+            logic scattered throughout the entire application.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Rule of thumb:</strong> design the application as stateless
+            from the start. Store state in Redis or a database even while
+            there's still a single instance. The cost of doing it right from the
+            beginning is much lower than refactoring later under pressure.
+          </p>
+
+          <h3>2. Scaling vertically to the limit without noticing the code is blocking</h3>
+          <p>
+            More CPU and RAM don't help a single-threaded application that waits
+            for I/O synchronously and in a blocking way. The server has 32 idle
+            cores while the main thread waits for a database query to finish or
+            an external call to respond. Before scaling anything, identify
+            whether the bottleneck is <em>resource</em> (CPU, RAM, disk) or
+            <em>architecture</em> (synchronous code, N+1 queries, absence of
+            caching). Scaling doesn't replace optimization.
+          </p>
+
+          <h3>3. Scaling the application without scaling the database</h3>
+          <p>
+            It's common to add application instances and discover that the
+            database becomes the new bottleneck. Ten application instances
+            making concurrent queries against a database that previously served
+            one instance can saturate the connection pool, the database's CPU,
+            or the disk. Scaling out the application layer without a strategy
+            for the database — read replicas, an external connection pool like
+            PgBouncer, result caching, or sharding — simply trades one
+            bottleneck for another.
+          </p>
+
+          <h3>4. Treating auto-scaling as a substitute for code optimization</h3>
+          <p>
+            Auto-scaling is a tool to absorb load variations, not to compensate
+            for inefficient code. An N+1 query that makes 500 database calls per
+            request will cost 500 times more with ten instances than with one.
+            Infrastructure cost grows proportionally to code waste. Monitor
+            latency and cost per request — not just uptime and availability.
+          </p>
+        </section>
+
+        <!-- 7. RELATED -->
+        <section class="artigo__secao">
+          <h2>Related architectures and patterns</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../load-balancing/">Load Balancing</a></li>
+            <li><a href="../monolito-vs-microsservicos/">Monolith vs Microservices</a></li>
+            <li><a href="../caching/">Caching</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Load Balancing</strong> is the mechanism that makes scale
+            out possible in practice: the load balancer distributes requests
+            among instances, detects failures via health checks, and drains
+            connections from instances being removed. Without a load balancer,
+            scaling horizontally is just having multiple instances that aren't
+            accessible in a unified way.
+          </p>
+          <p>
+            The decision between <strong>Monolith and Microservices</strong> is
+            directly tied to scalability strategy. Microservices allow parts of
+            the system to scale independently — the payment service can have
+            more instances than the reporting service — while a monolith
+            requires scaling everything together, even if the bottleneck is
+            just one specific module.
+          </p>
+          <p>
+            <strong>Caching</strong> is often the first step before scaling:
+            reducing load on the database and application server with caching
+            layers can delay or eliminate the need for scale out, at the cost
+            of dealing with cache invalidation and eventual consistency.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="5353535353"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

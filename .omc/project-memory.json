@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1785020668355,
+  "lastScanned": 1785498390471,
   "projectRoot": "/home/casa/projetos/dev-helper",
   "techStack": {
     "languages": [],
@@ -36,7 +36,7 @@
       "path": "biblioteca",
       "purpose": null,
       "fileCount": 1,
-      "lastAccessed": 1785020668341,
+      "lastAccessed": 1785498390454,
       "keyFiles": [
         "index.html"
       ]
@@ -45,7 +45,7 @@
       "path": "css",
       "purpose": null,
       "fileCount": 1,
-      "lastAccessed": 1785020668347,
+      "lastAccessed": 1785498390460,
       "keyFiles": [
         "styles.css"
       ]
@@ -54,7 +54,7 @@
       "path": "docs",
       "purpose": "Documentation",
       "fileCount": 3,
-      "lastAccessed": 1785020668348,
+      "lastAccessed": 1785498390461,
       "keyFiles": [
         "MELHORIA-CONTINUA-AGENTES.md",
         "PLANEJAMENTO.md",
@@ -65,7 +65,7 @@
       "path": "en",
       "purpose": null,
       "fileCount": 1,
-      "lastAccessed": 1785020668349,
+      "lastAccessed": 1785498390462,
       "keyFiles": [
         "index.html"
       ]
@@ -74,7 +74,7 @@
       "path": "js",
       "purpose": null,
       "fileCount": 2,
-      "lastAccessed": 1785020668349,
+      "lastAccessed": 1785498390462,
       "keyFiles": [
         "biblioteca.js",
         "main.js"
@@ -84,7 +84,7 @@
       "path": "pages",
       "purpose": "Page components",
       "fileCount": 2,
-      "lastAccessed": 1785020668350,
+      "lastAccessed": 1785498390463,
       "keyFiles": [
         "contato.html",
         "sobre.html"
@@ -94,14 +94,14 @@
       "path": "tools",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1785020668350,
+      "lastAccessed": 1785498390463,
       "keyFiles": []
     },
     "en/pages": {
       "path": "en/pages",
       "purpose": "Page components",
       "fileCount": 2,
-      "lastAccessed": 1785020668353,
+      "lastAccessed": 1785498390465,
       "keyFiles": [
         "about.html",
         "contact.html"
@@ -111,7 +111,7 @@
       "path": "js/lib",
       "purpose": "Library code",
       "fileCount": 1,
-      "lastAccessed": 1785020668354,
+      "lastAccessed": 1785498390466,
       "keyFiles": [
         "qrcode-core.js"
       ]
@@ -120,26 +120,38 @@
   "hotPaths": [
     {
       "path": "js/main.js",
-      "accessCount": 42,
-      "lastAccessed": 1785042914855,
+      "accessCount": 99,
+      "lastAccessed": 1785498633319,
       "type": "file"
     },
     {
       "path": "en/index.html",
-      "accessCount": 21,
-      "lastAccessed": 1785023348627,
+      "accessCount": 23,
+      "lastAccessed": 1785372275327,
       "type": "file"
     },
     {
       "path": "en/tools/json/index.html",
-      "accessCount": 6,
-      "lastAccessed": 1785039665488,
+      "accessCount": 7,
+      "lastAccessed": 1785498707464,
+      "type": "file"
+    },
+    {
+      "path": "docs/PLANEJAMENTO.md",
+      "accessCount": 5,
+      "lastAccessed": 1785498627518,
       "type": "file"
     },
     {
       "path": "js/tools-en/cron.js",
       "accessCount": 4,
       "lastAccessed": 1785022301068,
+      "type": "file"
+    },
+    {
+      "path": "tools/json/index.html",
+      "accessCount": 4,
+      "lastAccessed": 1785498632562,
       "type": "file"
     },
     {
@@ -155,21 +167,9 @@
       "type": "file"
     },
     {
-      "path": "docs/PLANEJAMENTO.md",
-      "accessCount": 3,
-      "lastAccessed": 1785022780303,
-      "type": "file"
-    },
-    {
       "path": "en/tools/cidr/index.html",
       "accessCount": 3,
       "lastAccessed": 1785022788820,
-      "type": "file"
-    },
-    {
-      "path": "tools/json/index.html",
-      "accessCount": 3,
-      "lastAccessed": 1785022973413,
       "type": "file"
     },
     {

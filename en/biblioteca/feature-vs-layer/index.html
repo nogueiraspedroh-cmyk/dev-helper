@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Feature-based vs Layer-based Organization — Code Organization | Dev Helper Library</title>
+  <meta name="description" content="Understand the difference between organizing code by technical layer (controllers/, services/, repositories/) and by feature/module (users/, orders/). When to use each approach, pitfalls, and the middle-ground position." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/feature-vs-layer/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Feature vs Layer</span>
+        </nav>
+        <span class="artigo__categoria">Organization</span>
+        <h1 class="artigo__titulo">Feature-based vs Layer-based Organization</h1>
+        <p class="artigo__subtitulo">
+          How to group a project's files: by <em>technical type</em> — all
+          controllers together, all services together — or by
+          <em>functionality</em> — everything related to users in one
+          folder, everything related to orders in another. The choice shapes
+          how the code grows, how teams organize themselves, and how often
+          you edit five directories to implement a single feature.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Define the primary criterion for grouping files</strong>
+            in a project: the technical layer a file belongs to (technical
+            layer) or the business domain it belongs to (feature). The
+            choice determines where a developer looks and where they create
+            new code — and, therefore, which type of cohesion the project
+            maximizes.
+          </p>
+          <p>
+            Neither approach is universally correct. The tension between them
+            is real, and the middle-ground position — feature with internal
+            layers — is the most widely adopted approach in medium and large
+            projects.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Without a clear grouping criterion, projects grow chaotically:
+            related files end up far apart, the developer has to navigate
+            multiple directories to understand a single feature, and the
+            system's actual architecture becomes invisible in the folder
+            structure.
+          </p>
+          <p>
+            The two approaches solve this problem in different ways — and
+            each creates its own friction points as the project grows.
+          </p>
+        </section>
+
+        <!-- 3. STRUCTURE -->
+        <section class="artigo__secao">
+          <h2>Structure</h2>
+
+          <p>
+            The diagram below shows the same features — users, orders and
+            payments — organized in both ways:
+          </p>
+
+          <div class="code-bloco">
+<pre><code>  ── BY TECHNICAL LAYER ──────────────┬── BY FEATURE ────────────────────────
+                                      │
+  src/                                │  src/
+  ├── controllers/                    │  ├── users/
+  │     ├── UserController.ts         │  │     ├── UserController.ts
+  │     ├── OrderController.ts        │  │     ├── UserService.ts
+  │     └── PaymentController.ts      │  │     ├── UserRepository.ts
+  │                                   │  │     └── User.entity.ts
+  ├── services/                       │  │
+  │     ├── UserService.ts            │  ├── orders/
+  │     ├── OrderService.ts           │  │     ├── OrderController.ts
+  │     └── PaymentService.ts         │  │     ├── OrderService.ts
+  │                                   │  │     ├── OrderRepository.ts
+  ├── repositories/                   │  │     └── Order.entity.ts
+  │     ├── UserRepository.ts         │  │
+  │     ├── OrderRepository.ts        │  └── payments/
+  │     └── PaymentRepository.ts      │        ├── PaymentController.ts
+  │                                   │        ├── PaymentService.ts
+  └── entities/                       │        ├── PaymentRepository.ts
+        ├── User.entity.ts            │        └── Payment.entity.ts
+        ├── Order.entity.ts           │
+        └── Payment.entity.ts         │
+</code></pre>
+          </div>
+
+          <p>
+            To add the complete payment feature: with layer-based
+            organization, you open four different directories. With
+            feature-based organization, you work inside <code>payments/</code>.
+          </p>
+        </section>
+
+        <!-- 4. HOW EACH APPROACH WORKS -->
+        <section class="artigo__secao">
+          <h2>How each approach works</h2>
+
+          <h3>Organization by technical layer</h3>
+          <p>
+            The grouping criterion is the file's technical role. All
+            controllers sit together regardless of the domain they serve;
+            all services sit together; all repositories sit together.
+          </p>
+          <p>
+            This maximizes <em>technical cohesion</em>: it's easy to see
+            "all the HTTP entry points" or "all the database queries." It's
+            also the model that frameworks like Ruby on Rails and Laravel
+            popularized — and where most developers first learn about
+            architecture.
+          </p>
+
+          <h3>Organization by feature</h3>
+          <p>
+            The grouping criterion is the business domain. All files that
+            serve the "orders" feature sit in <code>orders/</code>,
+            regardless of their technical role. This maximizes
+            <em>functional cohesion</em>: understanding, modifying or
+            deleting a feature is a localized operation within a single
+            directory.
+          </p>
+          <p>
+            It's the natural model as the system grows and different teams
+            become responsible for different parts of the domain. The
+            payments team works in <code>payments/</code>; the orders team
+            works in <code>orders/</code>. The folder structure mirrors the
+            team structure.
+          </p>
+
+          <h3>Middle-ground position: feature with internal layers</h3>
+          <p>
+            The most widely adopted approach in medium and large projects
+            combines both: the top level organizes by feature, and within
+            each feature the technical layers appear as subdirectories:
+          </p>
+          <div class="code-bloco">
+<pre><code>  src/
+  ├── users/
+  │     ├── http/               ← entry layer (controllers, DTOs)
+  │     │     ├── UserController.ts
+  │     │     └── CreateUserDto.ts
+  │     ├── application/        ← use cases / application services
+  │     │     └── UserService.ts
+  │     ├── domain/             ← entities and business rules
+  │     │     └── User.ts
+  │     └── infra/              ← repository, ORM, external adapters
+  │           └── UserRepository.ts
+  │
+  └── orders/
+        ├── http/
+        ├── application/
+        ├── domain/
+        └── infra/
+</code></pre>
+          </div>
+          <p>
+            The result is that the feature is the unit of discovery (where
+            to look) and the layer is the unit of responsibility (what each
+            file is allowed to do).
+          </p>
+        </section>
+
+        <!-- 5. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use each approach</h2>
+
+          <h3>Prefer layer-based organization when:</h3>
+          <ul>
+            <li>
+              <strong>The project is a small or simple CRUD:</strong> few
+              features, few files per layer — a flat layer-based structure
+              is faster to navigate than feature subdirectories.
+            </li>
+            <li>
+              <strong>The team is small and works on everything:</strong>
+              without a division of teams responsible for specific features,
+              layer-based separation better reflects the way the team works.
+            </li>
+            <li>
+              <strong>The framework already imposes this structure:</strong>
+              frameworks like Rails (app/models, app/controllers, app/views)
+              and Laravel (Controllers, Models, Requests) naturally lead to
+              layer-based organization. Fighting the framework's convention
+              usually creates more friction than value.
+            </li>
+          </ul>
+
+          <h3>Prefer feature-based organization when:</h3>
+          <ul>
+            <li>
+              <strong>Features grow in number and complexity:</strong> when
+              there are 10+ features with 5+ files each, layer-based
+              structure produces folders with dozens of unrelated files.
+            </li>
+            <li>
+              <strong>Different teams are responsible for different
+              parts:</strong> feature-based structure aligns the code with
+              the ownership structure — reduces merge conflicts and makes
+              focused code review easier.
+            </li>
+            <li>
+              <strong>The architecture separates domain from
+              infrastructure:</strong> when the project uses
+              <a href="../arquitetura-em-camadas/">Layered Architecture</a>,
+              Clean Architecture or Hexagonal, feature with internal layers
+              is the natural structure — each feature is almost an
+              independent module.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 6. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+
+          <h3>By layer — Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Familiar to anyone coming from frameworks like Rails, Laravel or Spring MVC.</li>
+            <li>Easy to see all HTTP entry points at once, or all repositories.</li>
+            <li>Flat, simple structure for small projects.</li>
+          </ul>
+
+          <h3>By layer — Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>As the project grows, each folder ends up with dozens of unrelated files.</li>
+            <li>Implementing a feature requires opening multiple directories at once.</li>
+            <li>The structure doesn't reveal what the system does — it only reveals how it's implemented.</li>
+            <li>Makes it hard to delete or isolate a feature — the files are scattered across layers.</li>
+          </ul>
+
+          <h3>By feature — Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Implementing a feature is a localized operation within a single directory.</li>
+            <li>The folder structure communicates what the system does, not just how.</li>
+            <li>Makes it easier to delete or move a feature to another service.</li>
+            <li>Aligns naturally with team structure and ownership.</li>
+          </ul>
+
+          <h3>By feature — Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Without discipline, features start freely importing from each other — creating circular dependencies.</li>
+            <li>Sharing code across features (utilities, common types) requires a <code>shared/</code> or <code>common/</code> folder with clear admission criteria.</li>
+            <li>Seeing "all the controllers" or "all the services" requires navigating multiple folders.</li>
+          </ul>
+        </section>
+
+        <!-- 7. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Pure feature-based organization turning into a silo</h3>
+          <p>
+            Without explicit boundaries, features in a feature-based
+            organization start importing from each other directly — the
+            <code>OrderService</code> imports the <code>UserRepository</code>,
+            which in turn needs the <code>PaymentService</code>. The result
+            is a tangle of cross-cutting dependencies that prevents any
+            feature from being isolated or tested individually.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Rule of thumb:</strong> features only communicate through
+            explicit public interfaces (DTOs, events, service contracts),
+            never through direct imports of another feature's internal
+            files. Lint tools like <code>eslint-plugin-boundaries</code> or
+            Nx's module restrictions can enforce this automatically.
+          </p>
+
+          <h3>2. Pure layer-based organization forcing 5 directories for 1 feature</h3>
+          <p>
+            "Technical layer" starts out simple, but with 20+ features each
+            folder ends up with 60+ files. Adding "supplier registration"
+            means creating a file in <code>controllers/</code>, one in
+            <code>services/</code>, one in <code>repositories/</code> and one
+            in <code>entities/</code> — four commits across four different
+            directories for a single cohesive feature.
+          </p>
+          <p>
+            The sign that layer-based structure no longer scales: pull
+            requests that touch more than three directories for a single
+            business feature.
+          </p>
+
+          <h3>3. The "shared/" folder without a criterion</h3>
+          <p>
+            When adopting feature-based organization, genuinely shared code
+            inevitably needs a home. The <code>shared/</code> (or
+            <code>common/</code>) folder solves that — but without a clear
+            admission criterion, it becomes a second generic
+            <code>utils/</code> where everything without an obvious owner
+            ends up.
+          </p>
+          <p>
+            Useful criterion: something goes into <code>shared/</code> only
+            when it's used by two or more features and doesn't semantically
+            belong to any of them. If it semantically belongs to one feature
+            but is used by another, the boundary design might be wrong —
+            perhaps the dependency should be inverted instead.
+          </p>
+
+          <h3>4. Structure that doesn't reflect the architecture</h3>
+          <p>
+            A layer-based structure with <code>controllers/</code>,
+            <code>services/</code> and <code>repositories/</code> folders
+            can give a false sense of well-defined architecture. If
+            <code>UserController</code> accesses <code>OrderRepository</code>
+            directly, the folder structure is cosmetic — there's no real
+            <a href="../arquitetura-em-camadas/">Layered Architecture</a>,
+            just directory names that mimic layers.
+          </p>
+        </section>
+
+        <!-- 8. RELATED PATTERNS AND ARCHITECTURES -->
+        <section class="artigo__secao">
+          <h2>Related topics</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../arquitetura-em-camadas/">Layered Architecture</a></li>
+            <li><a href="../monolito-vs-monorepo/">Monorepo vs Multi-repo</a></li>
+            <li><a href="../estrutura-de-pastas/">Folder Structure Best Practices</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Layered Architecture</strong> defines the
+            <em>dependency rules</em> between parts of the system;
+            feature-based vs layer-based organization defines <em>where the
+            files live</em>. The two decisions influence each other but are
+            independent: you can have a Layered Architecture with
+            feature-based organization (each feature has its own internal
+            layers) or with technical-layer organization (flat, global
+            layers).
+          </p>
+          <p>
+            The <strong>monorepo vs multi-repo</strong> decision is another
+            independent axis: it defines where the code lives in terms of
+            Git repositories, while feature vs layer defines how it's
+            organized within each project.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="4545454545"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

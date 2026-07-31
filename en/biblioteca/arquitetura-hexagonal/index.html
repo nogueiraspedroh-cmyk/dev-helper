@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hexagonal Architecture (Ports &amp; Adapters) — Architectures | Dev Helper Library</title>
+  <meta name="description" content="Understand Hexagonal Architecture (Ports &amp; Adapters): isolated domain core, ports, primary and secondary adapters, dependency inversion and when to use it." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/arquitetura-hexagonal/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Hexagonal Architecture</span>
+        </nav>
+        <span class="artigo__categoria">Architecture</span>
+        <h1 class="artigo__titulo">Hexagonal Architecture</h1>
+        <p class="artigo__subtitulo">
+          Isolates the domain core from all external infrastructure through
+          <em>ports</em> (interfaces defined by the domain) and <em>adapters</em>
+          (implementations at the edges) — ensuring infrastructure depends on
+          the domain, never the other way around.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Let the domain core be developed, tested and run completely
+            independently of any external technology</strong> — database, HTTP
+            framework, message queue, UI. The domain defines the interfaces
+            (<em>ports</em>) it needs; the outside world provides the
+            implementations (<em>adapters</em>).
+          </p>
+          <p>
+            Hexagonal Architecture was described by Alistair Cockburn in 2005
+            under the formal name <em>Ports and Adapters</em>. The hexagon has
+            no special geometric meaning — it's just a way of representing that
+            the domain has multiple connection points with the outside world
+            (HTTP, database, UI, tests, queues) without any of them being
+            privileged or baked into the core.
+          </p>
+          <p>
+            The central principle is <strong>Dependency Inversion</strong>:
+            high-level modules (domain) don't depend on low-level modules
+            (infrastructure). Both depend on abstractions — the ports.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            In traditional architectures, the domain frequently imports
+            infrastructure directly: entities that extend ORM classes, domain
+            services that call database libraries, business rules that depend
+            on types from an HTTP framework. The result:
+          </p>
+          <ul>
+            <li>
+              <strong>Compromised testability:</strong> testing a business rule
+              requires spinning up a database, an HTTP server, third-party mocks.
+            </li>
+            <li>
+              <strong>Coupling to the framework:</strong> migrating from one ORM
+              to another, or from REST to GraphQL, requires touching domain code.
+            </li>
+            <li>
+              <strong>Difficulty reasoning about the business:</strong> domain
+              rules end up hidden among infrastructure code, making them harder
+              to read and evolve.
+            </li>
+          </ul>
+          <p>
+            Hexagonal Architecture solves this directly: the domain defines what
+            it needs (interfaces/ports) without knowing who will implement them.
+            Adapters implement those interfaces and stay completely outside the
+            domain.
+          </p>
+        </section>
+
+        <!-- 3. STRUCTURE -->
+        <section class="artigo__secao">
+          <h2>Structure</h2>
+          <div class="code-bloco">
+<pre><code>                  ┌─────────────────────────────────────────────────┐
+                  │                PRIMARY ADAPTERS                 │
+                  │        (drive the domain — driving side)        │
+                  │                                                 │
+                  │  HTTP Controller   CLI   Unit test              │
+                  └────────────────┬────────────────────────────────┘
+                                   │ uses inbound port (interface)
+                                   ▼
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │                               DOMAIN CORE                               │
+  │                                                                         │
+  │  ┌─────────────────────────────────────────────────────────────────┐    │
+  │  │  Inbound ports (use-case/application interfaces)                │    │
+  │  │  E.g.: CreateOrderUseCase, FindProductUseCase                   │    │
+  │  └─────────────────────────────────────────────────────────────────┘    │
+  │                                                                         │
+  │            Entities · Value Objects · Domain Services                   │
+  │            Business rules · Domain events                               │
+  │                                                                         │
+  │  ┌─────────────────────────────────────────────────────────────────┐    │
+  │  │  Outbound ports (infrastructure interfaces)                     │    │
+  │  │  E.g.: OrderRepository, EmailService, PaymentGateway            │    │
+  │  └─────────────────────────────────────────────────────────────────┘    │
+  └──────────────────────────────────┬──────────────────────────────────────┘
+                                     │ implemented by
+                                     ▼
+                  ┌─────────────────────────────────────────────────┐
+                  │               SECONDARY ADAPTERS                │
+                  │      (driven by the domain — driven side)       │
+                  │                                                 │
+                  │  PostgresRepository   StripeAdapter   SESAdapter│
+                  └─────────────────────────────────────────────────┘
+
+  Dependency rule: arrows point TOWARD the domain, never outward.
+  The domain imports nothing from the adapters.
+</code></pre>
+          </div>
+
+          <h3>Primary vs secondary adapters</h3>
+          <p>
+            <strong>Primary adapters</strong> (or <em>driving adapters</em>) are
+            the ones that start the interaction with the domain: they receive
+            external input (HTTP request, CLI command, queue message, test call)
+            and translate it into calls to the domain's inbound ports. The HTTP
+            Controller is the classic example.
+          </p>
+          <p>
+            <strong>Secondary adapters</strong> (or <em>driven adapters</em>) are
+            the ones the domain drives: they implement the outbound ports
+            defined by the domain and bridge to external systems — database,
+            email services, payment gateways, queueing systems. The domain
+            doesn't know what kind of database is being used; it just calls the
+            repository interface.
+          </p>
+        </section>
+
+        <!-- 4. PORTS AND ADAPTERS — CODE EXAMPLE -->
+        <section class="artigo__secao">
+          <h2>Ports and adapters — code example</h2>
+          <p>
+            The snippet below shows an outbound port (a repository interface
+            defined by the domain) and a secondary adapter (a concrete
+            implementation with database access). The port lives inside the
+            domain; the adapter lives in the infrastructure.
+          </p>
+
+          <!-- Código com code-tabs TS/PHP para UM trecho curto -->
+          <div class="code-tabs" role="tablist" aria-label="Port and adapter — repository">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── OUTBOUND port — defined inside the domain ────────────────
+// The domain declares what it needs; it doesn't know who implements it.
+interface OrderRepository {
+  save(order: Order): Promise&lt;void&gt;;
+  findById(id: string): Promise&lt;Order | null&gt;;
+}
+
+// ── SECONDARY adapter — outside the domain (infrastructure) ──
+// Implements the port using the real persistence mechanism.
+class PostgresOrderRepository implements OrderRepository {
+  constructor(private readonly db: DatabaseConnection) {}
+
+  async save(order: Order): Promise&lt;void&gt; {
+    await this.db.query(
+      'INSERT INTO orders (id, total, status) VALUES ($1, $2, $3)',
+      [order.id, order.total, order.status]
+    );
+  }
+
+  async findById(id: string): Promise&lt;Order | null&gt; {
+    const row = await this.db.queryOne(
+      'SELECT * FROM orders WHERE id = $1', [id]
+    );
+    return row ? Order.reconstitute(row) : null;
+  }
+}
+
+// ── PRIMARY adapter — HTTP Controller ─────────────────────────
+// Translates the HTTP request into a call to the domain use case.
+class OrderController {
+  constructor(private readonly createOrder: CreateOrderUseCase) {}
+
+  async post(req: Request): Promise&lt;Response&gt; {
+    const result = await this.createOrder.execute({
+      customerId: req.body.customerId,
+      items: req.body.items,
+    });
+    return Response.json({ orderId: result.id }, { status: 201 });
+  }
+}</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── OUTBOUND port — defined inside the domain ────────────────
+// The domain declares what it needs; it doesn't know who implements it.
+interface OrderRepository
+{
+    public function save(Order $order): void;
+    public function findById(string $id): ?Order;
+}
+
+// ── SECONDARY adapter — outside the domain (infrastructure) ──
+// Implements the port using the real persistence mechanism.
+class DoctrineOrderRepository implements OrderRepository
+{
+    public function __construct(
+        private readonly EntityManagerInterface $em
+    ) {}
+
+    public function save(Order $order): void
+    {
+        $this-&gt;em-&gt;persist($order);
+        $this-&gt;em-&gt;flush();
+    }
+
+    public function findById(string $id): ?Order
+    {
+        return $this-&gt;em-&gt;find(Order::class, $id);
+    }
+}
+
+// ── PRIMARY adapter — HTTP Controller ─────────────────────────
+// Translates the HTTP request into a call to the domain use case.
+class OrderController
+{
+    public function __construct(
+        private readonly CreateOrderUseCase $createOrder
+    ) {}
+
+    public function post(Request $request): JsonResponse
+    {
+        $result = ($this-&gt;createOrder)(
+            new CreateOrderCommand(
+                customerId: $request-&gt;input('customerId'),
+                items: $request-&gt;input('items'),
+            )
+        );
+        return new JsonResponse(['orderId' =&gt; $result-&gt;id], 201);
+    }
+}</code></pre>
+            </div>
+          </div><!-- /.code-tabs -->
+
+          <p>
+            The key point: <code>OrderRepository</code> is an interface that
+            lives inside the domain package. <code>PostgresOrderRepository</code>
+            (or <code>DoctrineOrderRepository</code>) lives in the infrastructure
+            and imports the domain — never the other way around. Swapping the
+            database means swapping the adapter; the domain doesn't change.
+          </p>
+        </section>
+
+        <!-- 5. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>Domains with complex business logic:</strong> when
+              business rules need to be developed, tested and evolved
+              independently of the technology. Hexagonal Architecture lets you
+              test the whole domain with simple mocks of the ports — no real
+              database, no HTTP server.
+            </li>
+            <li>
+              <strong>Multiple primary adapters:</strong> when the same domain
+              needs to be driven by HTTP, CLI, queue consumers and tests — each
+              with its own adapter, without changing the domain.
+            </li>
+            <li>
+              <strong>High likelihood of swapping infrastructure:</strong>
+              projects that anticipate migrating databases, payment gateways or
+              email services benefit greatly from the separation via ports and
+              adapters.
+            </li>
+            <li>
+              <strong>Projects with a long lifecycle and a growing team:</strong>
+              making boundaries explicit reduces accidental coupling and eases
+              onboarding — the contracts (ports) are living documentation of the
+              integrations.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>Simple CRUDs without a real domain:</strong> creating
+              ports and adapters for an application that only persists and
+              reads data without business rules is over-engineering. The cost
+              of the structure doesn't pay off.
+            </li>
+            <li>
+              <strong>Small, short-lived projects:</strong> the separation
+              between ports and adapters has an initial organizational cost.
+              For short-lived projects or one-person teams, it can be more
+              productive to start simple and refactor as complexity grows.
+            </li>
+            <li>
+              <strong>When the team doesn't understand the pattern:</strong>
+              applying Hexagonal without the team understanding the difference
+              between a port and an adapter, or between the domain depending on
+              infrastructure vs. the other way around, tends to result in a
+              poorly named Layered Architecture with "Port" and "Adapter"
+              classes that don't invert anything.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 6. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Domain fully testable with simple mocks of the ports — no database, no HTTP, no external dependencies.</li>
+            <li>Swapping adapters without impacting the domain — swapping the database means swapping only the secondary adapter.</li>
+            <li>Multiple entry points (HTTP, CLI, queue, tests) without modifying the core.</li>
+            <li>Explicit contracts between domain and infrastructure — ports document the integrations.</li>
+            <li>Makes evolving the domain independently of the outside world easier.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Over-engineering for simple applications — the ports-and-adapters structure has configuration and maintenance costs.</li>
+            <li>Proliferation of interfaces: in large systems there can be dozens of ports; without discipline, the count grows unmanageably.</li>
+            <li>Learning curve: the distinction between primary and secondary adapters, and dependency inversion, are non-obvious concepts for developers without prior exposure.</li>
+            <li>Dependency injection becomes mandatory — DI frameworks (NestJS, Spring, Laravel) help, but add configuration complexity.</li>
+          </ul>
+        </section>
+
+        <!-- 7. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Putting the interface (port) outside the domain</h3>
+          <p>
+            The port must be defined by the domain, not by the infrastructure.
+            If the <code>OrderRepository</code> interface lives in the
+            infrastructure package and the domain imports the infrastructure to
+            use it, the inversion was done backwards — the domain went back to
+            depending on the infrastructure. The port lives in the domain; the
+            adapter lives outside and points inward.
+          </p>
+
+          <h3>2. Over-engineering — ports for everything</h3>
+          <p>
+            It's not necessary to create a port for every interaction. A
+            diagnostic logger, a UUID generator, a system clock — sometimes it's
+            acceptable to inject them directly without an elaborate interface.
+            A port has value when the concrete implementation needs to be
+            swappable (database, gateway, email) or when test isolation is
+            critical. For stable utilities with no impact on business behavior,
+            the abstraction can be unnecessary.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Rule of thumb:</strong> create a port when you need more
+            than one implementation (production vs. test, or provider A vs.
+            provider B), or when the concrete dependency would make unit
+            testing the domain impossible. If the answer is "I'll never need to
+            swap this," don't create the port.
+          </p>
+
+          <h3>3. Confusing Hexagonal with "just more layers"</h3>
+          <p>
+            The difference between Layered Architecture and Hexagonal isn't
+            cosmetic. In classic Layered Architecture, the Infrastructure sits
+            "below" the Domain and the Domain can reference infrastructure types
+            indirectly. In Hexagonal, the direction is explicitly inverted: the
+            infrastructure implements domain interfaces and therefore points to
+            the domain. If the adapters in your project don't implement
+            interfaces defined inside the domain package, you have Layered
+            Architecture with different names.
+          </p>
+
+          <h3>4. Not testing the domain in isolation</h3>
+          <p>
+            The main benefit of Hexagonal Architecture is testing the domain
+            without real infrastructure. If domain tests still need a real
+            database, an HTTP server or framework mocks, the boundary between
+            domain and infrastructure was violated somewhere. Domain tests
+            should use only mocks or stubs of the ports — simple in-memory
+            implementations that satisfy the interface.
+          </p>
+        </section>
+
+        <!-- 8. RELATED ARCHITECTURES AND PATTERNS -->
+        <section class="artigo__secao">
+          <h2>Related architectures and patterns</h2>
+          <!--
+            Link discipline: only link already-published articles.
+            MVC, Layered Architecture, Adapter and Strategy exist → real links.
+            Clean Architecture and Onion exist within this batch too.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../mvc/">MVC</a></li>
+            <li><a href="../arquitetura-em-camadas/">Layered Architecture</a></li>
+            <li><a href="../adapter/">Adapter (GoF)</a></li>
+            <li><a href="../strategy/">Strategy (GoF)</a></li>
+            <li><a href="../clean-architecture/">Clean Architecture</a></li>
+            <li><a href="../onion-architecture/">Onion Architecture</a></li>
+          </ul>
+          <p class="mt-1">
+            In <strong>MVC</strong>, the Controller that receives HTTP requests
+            acts exactly like a primary adapter (driving adapter): it translates
+            external input into calls to the domain without the domain needing
+            to know about the HTTP layer. Hexagonal Architecture formalizes and
+            generalizes that role — any entry point (CLI, queue, test) is a
+            primary adapter, not just the Controller.
+          </p>
+          <p>
+            <strong>Layered Architecture</strong> shares the goal of isolating
+            the domain, but with a fundamental difference in direction: in
+            layers, infrastructure sits "below" and can be referenced by upper
+            layers via interfaces. In Hexagonal, infrastructure sits "outside"
+            and implements interfaces the domain defines — the dependency is
+            explicitly inverted. In practice, the two approaches converge when
+            Layered Architecture uses repositories with dependency inversion.
+          </p>
+          <p>
+            The <strong>Adapter</strong> (GoF) pattern is the implementation
+            mechanism of each hexagonal adapter: a secondary adapter is an
+            Adapter that implements the port (the domain's target interface) and
+            wraps the external technology (the adaptee). The difference is scale
+            and context: the GoF Adapter is a class-level pattern; the hexagonal
+            adapter is an architectural concept that frequently uses the Adapter
+            pattern internally.
+          </p>
+          <p>
+            <strong>Strategy</strong> (GoF) is structurally equivalent to the
+            port/adapter relationship: one interface and multiple interchangeable
+            implementations. Hexagonal Architecture applies that same mechanism
+            at an architectural scale — each port is an infrastructure Strategy,
+            and the domain injects the correct implementation via dependency
+            injection.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="9090909090"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

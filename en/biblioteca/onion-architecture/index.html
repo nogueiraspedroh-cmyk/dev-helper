@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Onion Architecture — Architectures | Dev Helper Library</title>
+  <meta name="description" content="Understand Onion Architecture: rich domain model at the core, dependencies pointing inward, application services, and infrastructure at the outer shell." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/onion-architecture/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Onion Architecture</span>
+        </nav>
+        <span class="artigo__categoria">Architecture</span>
+        <h1 class="artigo__titulo">Onion Architecture</h1>
+        <p class="artigo__subtitulo">
+          Places the <em>rich domain model</em> at the absolute core of the
+          system, with dependencies pointing exclusively inward — the
+          infrastructure sits in the outermost shell and is never known by the
+          inner layers.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Position the domain model — entities with real behavior and
+            domain services — at the absolute center of the system</strong>, so
+            that no inner layer needs to know a database, a web framework, or
+            any external technology exists. Infrastructure is treated as a
+            replaceable detail in the outermost shell.
+          </p>
+          <p>
+            Onion Architecture was described by Jeffrey Palermo in 2008 and
+            represents a direct evolution of
+            <a href="../arquitetura-em-camadas/">Layered Architecture</a> with
+            an explicit inversion of dependencies. While classic Layered
+            Architecture places infrastructure "below" the domain as its
+            natural dependency, Onion inverts that relationship: infrastructure
+            sits "outside" and implements interfaces defined by the domain.
+          </p>
+          <p>
+            Onion Architecture's central emphasis is the <strong>rich domain
+            model</strong>: entities that encapsulate behavior and invariants,
+            domain services that express operations that don't belong to any
+            single entity, and repository interfaces defined inside the domain
+            — not in the infrastructure. An anemic domain (entities as mere
+            data containers) cancels out the architecture's main benefit.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Onion Architecture solves the same problems as classic
+            <a href="../arquitetura-em-camadas/">Layered Architecture</a>, with
+            special emphasis on two of them:
+          </p>
+          <ul>
+            <li>
+              <strong>Domain depending on infrastructure:</strong> in systems
+              with Layered Architecture and no dependency inversion, entities
+              import ORM classes, domain services inject database connections,
+              and switching persistence technology requires modifying the
+              domain. Onion inverts that relationship: the domain defines the
+              interface; the infrastructure implements it.
+            </li>
+            <li>
+              <strong>Anemic domain:</strong> when business rules migrate to
+              application services because entities are treated as passive
+              data structures, the domain loses expressiveness. Onion
+              Architecture explicitly encourages entities to have behavior —
+              methods that apply rules, raise events, validate invariants.
+            </li>
+            <li>
+              <strong>Difficulty testing the domain in isolation:</strong> when
+              the domain depends on concrete infrastructure, testing a business
+              rule requires spinning up the whole stack. With the domain at the
+              center and interfaces defined by it, any layer can be replaced by
+              a simple test double.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. STRUCTURE -->
+        <section class="artigo__secao">
+          <h2>Structure</h2>
+          <p>
+            The structure is visualized as concentric layers of an onion. The
+            center holds the most stable policies; the outer shell holds the
+            most volatile details.
+          </p>
+          <div class="code-bloco">
+<pre><code>  ╔═══════════════════════════════════════════════════════════════════╗
+  ║  INFRASTRUCTURE (outermost shell)                                 ║
+  ║  Databases, frameworks, UI, external services, queues             ║
+  ║  Implements interfaces defined by the inner layers                ║
+  ║  ┌─────────────────────────────────────────────────────────────┐  ║
+  ║  │  APPLICATION SERVICES                                       │  ║
+  ║  │  Use cases, orchestration, authorization, transactions      │  ║
+  ║  │  Knows the domain; doesn't know the concrete infrastructure │  ║
+  ║  │  ┌───────────────────────────────────────────────────────┐  │  ║
+  ║  │  │  DOMAIN SERVICES                                      │  │  ║
+  ║  │  │  Domain operations that involve multiple              │  │  ║
+  ║  │  │  entities; repository interfaces                      │  │  ║
+  ║  │  │  ┌─────────────────────────────────────────────────┐  │  │  ║
+  ║  │  │  │  DOMAIN MODEL (core)                            │  │  │  ║
+  ║  │  │  │  Entities with behavior, Value Objects          │  │  │  ║
+  ║  │  │  │  Invariants, domain events                      │  │  │  ║
+  ║  │  │  │  No external dependency whatsoever              │  │  │  ║
+  ║  │  │  └─────────────────────────────────────────────────┘  │  │  ║
+  ║  │  └───────────────────────────────────────────────────────┘  │  ║
+  ║  └─────────────────────────────────────────────────────────────┘  ║
+  ╚═══════════════════════════════════════════════════════════════════╝
+
+  Dependency rule: all arrows point toward the center.
+  The infrastructure implements the domain's interfaces — never the other way around.
+  The domain has no imports from any outer layer.
+</code></pre>
+          </div>
+
+          <h3>The Onion's layers</h3>
+          <ul>
+            <li>
+              <strong>Domain Model (core):</strong> entities with real
+              behavior, immutable Value Objects, domain invariants and domain
+              events. It has no dependency on anything external. It's the most
+              stable code in the system.
+            </li>
+            <li>
+              <strong>Domain Services:</strong> domain operations involving
+              multiple entities or that don't naturally belong to any one of
+              them. This is also where the repository interfaces live —
+              defined by the domain, implemented by the infrastructure.
+            </li>
+            <li>
+              <strong>Application Services:</strong> the application's use
+              cases. They orchestrate entities and domain services, apply
+              per-use-case authorization, manage transactions and convert
+              input/output DTOs. They know the domain, but not the concrete
+              infrastructure.
+            </li>
+            <li>
+              <strong>Infrastructure (shell):</strong> concrete repository
+              implementations, HTTP controllers, external-service adapters,
+              queues. The most volatile layer — replaceable with no impact on
+              the domain.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 4. HOW IT WORKS -->
+        <section class="artigo__secao">
+          <h2>How it works — a domain with no infrastructure imports</h2>
+          <p>
+            The snippet below illustrates the central principle: the domain
+            defines its own repository interfaces and imports nothing from the
+            infrastructure. The outer shell implements those interfaces and
+            points inward.
+          </p>
+          <div class="code-bloco">
+<pre><code>// ── DOMAIN MODEL (core — zero external imports) ───────────────
+class Account {
+  private balance: number;
+
+  constructor(
+    readonly id: string,
+    initialBalance: number,
+  ) {
+    if (initialBalance &lt; 0) throw new Error('Initial balance cannot be negative');
+    this.balance = initialBalance;
+  }
+
+  debit(amount: number): void {
+    if (amount &lt;= 0) throw new Error('Debit amount must be positive');
+    if (amount &gt; this.balance) throw new Error('Insufficient balance');
+    this.balance -= amount;
+  }
+
+  credit(amount: number): void {
+    if (amount &lt;= 0) throw new Error('Credit amount must be positive');
+    this.balance += amount;
+  }
+
+  get currentBalance(): number { return this.balance; }
+}
+
+// ── DOMAIN SERVICE — defines the repository interface ────────
+// The interface lives INSIDE the domain; the infra implements it.
+interface AccountRepository {
+  findById(id: string): Promise&lt;Account | null&gt;;
+  save(account: Account): Promise&lt;void&gt;;
+}
+
+class TransferService {
+  constructor(private readonly accounts: AccountRepository) {}
+
+  async transfer(fromId: string, toId: string, amount: number): Promise&lt;void&gt; {
+    const from = await this.accounts.findById(fromId);
+    const to = await this.accounts.findById(toId);
+    if (!from || !to) throw new Error('Account not found');
+    from.debit(amount);
+    to.credit(amount);
+    await this.accounts.save(from);
+    await this.accounts.save(to);
+  }
+}
+
+// ── INFRASTRUCTURE (shell) — implements the domain's interface ──
+// Depends on the domain; the domain never depends on it.
+class PostgresAccountRepository implements AccountRepository {
+  async findById(id: string): Promise&lt;Account | null&gt; {
+    // reads from the database; maps to the domain entity
+    return null; // placeholder
+  }
+  async save(account: Account): Promise&lt;void&gt; {
+    // persists to the database
+  }
+}</code></pre>
+          </div>
+          <p>
+            What makes this code Onion: <code>Account</code> and
+            <code>TransferService</code> import nothing from outside the
+            domain. <code>AccountRepository</code> is an interface declared
+            inside the domain. <code>PostgresAccountRepository</code> lives in
+            the infrastructure and imports the domain — never the other way
+            around. Swapping the database means creating a new
+            <code>AccountRepository</code> implementation; the domain doesn't
+            change.
+          </p>
+        </section>
+
+        <!-- 5. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>Rich domains with complex behavior:</strong> Onion shines
+              when there are substantial business rules to model — invariant
+              validations, domain calculations, entity lifecycle states. The
+              richer the domain, the more the investment in the inner layers
+              pays off.
+            </li>
+            <li>
+              <strong>When domain testability is critical:</strong> with the
+              domain at the core and repository interfaces defined by it, you
+              can test all the business logic with simple in-memory
+              implementations, no real database, no framework, running
+              instantly.
+            </li>
+            <li>
+              <strong>Projects with a high likelihood of swapping
+              infrastructure:</strong> when there are plans to migrate the
+              database, the email provider or the payment system, the
+              separation between domain and infrastructure lets that swap
+              happen without impacting business rules.
+            </li>
+            <li>
+              <strong>Long-lived systems with a growing team:</strong> explicit
+              boundaries between layers reduce accidental coupling and ease
+              onboarding — the domain is the team's shared vocabulary, and the
+              architecture ensures it stays clean.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>Anemic domains or pure CRUDs:</strong> when the system is
+              essentially a persistence form without complex business rules,
+              Onion's inner layers stay empty and the result is architectural
+              bureaucracy with no benefit. Onion's main gain is the rich domain
+              model — without it, there's nothing to protect.
+            </li>
+            <li>
+              <strong>Teams unfamiliar with DDD or dependency inversion:</strong>
+              without understanding that the repository interface should live
+              in the domain (not the infrastructure), Onion is usually
+              implemented as a Layered Architecture with dependencies inverted
+              in the wrong direction.
+            </li>
+            <li>
+              <strong>Prototypes and MVPs:</strong> the cost of structuring the
+              inner layers well is real. In discovery phases, start simple and
+              refactor once the domain reveals its real complexity.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 6. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Domain model completely isolated from frameworks, databases and any external technology.</li>
+            <li>Total domain testability without infrastructure: in-memory repositories, mocked services, fast execution.</li>
+            <li>Swapping infrastructure without impacting the domain — swapping the database means swapping only the implementation in the outer shell.</li>
+            <li>Emphasis on the rich domain model encourages entities with real behavior, increasing expressiveness and maintainability.</li>
+            <li>Compatible and convergent with Clean Architecture and Hexagonal Architecture — teams familiar with any of the three transition easily.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Overhead for simple domains: the concentric layers have organization and dependency-injection configuration costs.</li>
+            <li>An anemic domain cancels the main benefit: if the entities have no behavior, the investment in the inner layers doesn't pay off.</li>
+            <li>The distinction between domain service and application service isn't always obvious and can spark debates about where each piece of logic belongs.</li>
+            <li>Mandatory dependency injection to compose the layers — DI frameworks help, but add configuration complexity.</li>
+          </ul>
+        </section>
+
+        <!-- 7. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Anemic domain — the central pitfall</h3>
+          <p>
+            The most common and most destructive mistake in Onion Architecture
+            is building a domain where entities are just data classes with
+            getters and setters, and all the logic lives in application
+            services. A domain like that defeats the architecture's purpose:
+            the inner layers end up empty of value, and the benefit of
+            isolating them is zero.
+          </p>
+          <p>
+            Domain entities should have methods that apply business rules,
+            raise exceptions when invariants are violated, and encapsulate the
+            behavior that would naturally be asked of that object. If the
+            answer to "who validates this?" is always "the application
+            service," the domain is anemic.
+          </p>
+
+          <h3>2. Repository interface outside the domain</h3>
+          <p>
+            The repository interface should be declared inside the domain (or
+            the domain services), not in the infrastructure. If
+            <code>AccountRepository</code> is in the infrastructure package and
+            the domain imports that package to use the interface, the
+            dependency was inverted the wrong way — the domain went back to
+            depending on the infrastructure. The interface lives inside; the
+            concrete implementation lives outside and implements the interface.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Rule of thumb:</strong> if you copy only the domain and
+            domain-services folders to another project, the code should compile
+            without errors. Any import that prevents this reveals a dependency
+            that shouldn't exist.
+          </p>
+
+          <h3>3. Confusing domain service with application service</h3>
+          <p>
+            Domain services encapsulate operations that involve multiple
+            entities and express concepts from the domain's vocabulary (e.g.,
+            <code>TransferService</code>, <code>PricingService</code>).
+            Application services orchestrate those domain services to carry out
+            application-specific use cases, manage transactions and convert
+            DTOs. Putting domain logic in the application service is the same
+            as creating an anemic domain — the logic is reachable, but in the
+            wrong place.
+          </p>
+
+          <h3>4. Infrastructure inside the domain</h3>
+          <p>
+            Entities that inherit from ORM classes (Eloquent Model, JPA Entity
+            with annotations), or domain services that receive database
+            connections through injection, violate Onion's most important
+            boundary. That coupling destroys testability and creates
+            lifecycle dependencies that make it harder to evolve the domain
+            independently of the chosen technology.
+          </p>
+        </section>
+
+        <!-- 8. RELATED ARCHITECTURES AND PATTERNS -->
+        <section class="artigo__secao">
+          <h2>Related architectures and patterns</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../clean-architecture/">Clean Architecture</a></li>
+            <li><a href="../arquitetura-hexagonal/">Hexagonal Architecture (Ports &amp; Adapters)</a></li>
+            <li><a href="../arquitetura-em-camadas/">Layered Architecture</a></li>
+            <li><a href="../mvc/">MVC</a></li>
+            <li><a href="../adapter/">Adapter (GoF)</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Clean Architecture</strong> is the closest evolution of
+            Onion Architecture. Both place the domain at the center, invert the
+            dependencies and treat infrastructure as a replaceable detail.
+            Clean Architecture adds a more formal distinction between entities
+            (enterprise business rules) and use cases (application business
+            rules), and formalizes explicit <em>boundaries</em> between layers.
+            In practice, a well-structured Onion implementation respects the
+            same principles as Clean Architecture.
+          </p>
+          <p>
+            <strong>Hexagonal Architecture</strong> shares the same dependency
+            inversion principle — the domain defines interfaces (ports), the
+            infrastructure implements them (adapters). The difference in
+            vocabulary is bigger than the conceptual difference: Hexagonal
+            talks about primary (driving) and secondary (driven) ports; Onion
+            talks about concentric layers. Both are compatible and often
+            implemented together.
+          </p>
+          <p>
+            <strong>Layered Architecture</strong> is Onion's direct precursor.
+            Onion solves classic Layered Architecture's central problem — the
+            domain's natural dependency on infrastructure — by explicitly
+            inverting that relationship. Onion can be seen as a Layered
+            Architecture with dependency inversion applied systematically at
+            the boundary between domain and infrastructure.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="9595959595"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

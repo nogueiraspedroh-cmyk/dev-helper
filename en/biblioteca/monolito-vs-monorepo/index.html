@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monorepo vs Multi-repo — Code Organization | Dev Helper Library</title>
+  <meta name="description" content="Understand the difference between monorepo and multi-repo: when to use each strategy, workspace variants (Turborepo, Nx, pnpm), common pitfalls, and the confusion with monolith." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/monolito-vs-monorepo/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Monorepo vs Multi-repo</span>
+        </nav>
+        <span class="artigo__categoria">Organization</span>
+        <h1 class="artigo__titulo">Monorepo vs Multi-repo</h1>
+        <p class="artigo__subtitulo">
+          A decision about <em>where</em> the code lives: in a single Git
+          repository that houses multiple projects and packages (monorepo),
+          or in separate repositories, each with its own independent
+          lifecycle (multi-repo). These are strategies orthogonal to the
+          software's architecture — and confusing this with monolith is the
+          most common pitfall.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Define the Git repository organization strategy</strong>
+            for an organization's multiple projects, packages or services,
+            balancing visibility and code sharing (monorepo) with isolation
+            and lifecycle autonomy (multi-repo).
+          </p>
+          <p>
+            The choice isn't about system architecture — it's about
+            <em>where the code is versioned</em>. Companies like Google, Meta
+            and Microsoft keep virtually all of their code in a single giant
+            repository. Others prefer one repository per service or product.
+            Both approaches work at scale; the trade-offs are different.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            As a team grows and the number of projects or packages increases,
+            tensions arise that any repository strategy needs to solve:
+          </p>
+          <ul>
+            <li>
+              <strong>Code sharing:</strong> how do you reuse a utility or an
+              internal library without duplicating it or publishing an
+              external package on every change?
+            </li>
+            <li>
+              <strong>Change coordination:</strong> when a change in a shared
+              dependency needs to be reflected across multiple projects at
+              the same time, how do you guarantee consistency?
+            </li>
+            <li>
+              <strong>Team autonomy:</strong> how do you let different teams
+              evolve their projects at different paces without blocking each
+              other?
+            </li>
+            <li>
+              <strong>Visibility:</strong> how do you discover what already
+              exists so you don't reinvent the wheel?
+            </li>
+          </ul>
+          <p>
+            Monorepo and multi-repo are different answers to these tensions,
+            and each resolves them better in different contexts.
+          </p>
+        </section>
+
+        <!-- 3. STRUCTURE -->
+        <section class="artigo__secao">
+          <h2>Structure</h2>
+
+          <h3>Multi-repo</h3>
+          <p>
+            Each project, service or library lives in a separate Git
+            repository. It's the standard model of open-source GitHub: each
+            project has its own release cycle, CI/CD, permissions and
+            history.
+          </p>
+          <div class="code-bloco">
+<pre><code>  GitHub / GitLab / Bitbucket
+  │
+  ├── org/api-gateway          ← independent repository
+  │     ├── src/
+  │     ├── package.json       (version: "2.1.0")
+  │     └── .github/workflows/
+  │
+  ├── org/user-service         ← independent repository
+  │     ├── src/
+  │     ├── package.json       (version: "1.5.3")
+  │     └── .github/workflows/
+  │
+  ├── org/shared-utils         ← library published to npm/registry
+  │     ├── src/
+  │     └── package.json       (version: "0.9.0", name: "@org/shared-utils")
+  │
+  └── org/frontend-app         ← independent repository
+        ├── src/
+        │     └── package.json  (depends on "@org/shared-utils": "^0.9.0")
+        └── .github/workflows/
+</code></pre>
+          </div>
+
+          <h3>Monorepo</h3>
+          <p>
+            All projects and packages coexist in a single Git repository.
+            History is shared; changes that affect multiple packages show up
+            in a single commit or PR.
+          </p>
+          <div class="code-bloco">
+<pre><code>  org/monorepo                 ← single Git repository
+  │
+  ├── apps/
+  │     ├── api-gateway/       ← project: Node/Express app
+  │     │     └── src/
+  │     └── frontend/          ← project: React/Vue app
+  │           └── src/
+  │
+  ├── packages/
+  │     ├── shared-utils/      ← shared internal package
+  │     │     └── src/
+  │     └── ui-components/     ← component library
+  │           └── src/
+  │
+  ├── package.json             ← workspace root (pnpm/yarn/npm workspaces)
+  └── turbo.json               ← build pipeline (Turborepo)
+</code></pre>
+          </div>
+
+          <h3>Monorepo variants</h3>
+          <p>
+            Three main variants differ by their level of tooling:
+          </p>
+          <ul>
+            <li>
+              <strong>Pure monorepo (Google/Meta style):</strong> a single
+              repository for literally all of the company's code. Requires
+              proprietary tooling (Bazel, Pants, Buck) so that CI only
+              rebuilds and retests what changed. This scale requires heavy
+              investment in tooling.
+            </li>
+            <li>
+              <strong>Monorepo with workspaces:</strong> the most common model
+              outside of big tech. Tools like <strong>Turborepo</strong>,
+              <strong>Nx</strong> or <strong>pnpm workspaces</strong> manage
+              the dependencies between internal packages, provide incremental
+              build caching, and let you run tasks only on packages affected
+              by a change.
+            </li>
+            <li>
+              <strong>Multi-repo with published packages:</strong> a
+              multi-repo variant where shared libraries are published to a
+              private registry (private npm, Verdaccio, GitHub Packages) and
+              consumed as versioned dependencies. Keeps repository isolation
+              but adds the cost of publish cycles for propagating changes.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 4. HOW IT WORKS -->
+        <section class="artigo__secao">
+          <h2>How it works</h2>
+
+          <h3>Code sharing in a monorepo</h3>
+          <p>
+            With workspaces, an internal package is referenced directly by
+            its local path — no need to publish to npm on every change:
+          </p>
+          <div class="code-bloco">
+<pre><code>  // apps/api-gateway/package.json
+  {
+    "dependencies": {
+      "@org/shared-utils": "workspace:*"
+    }
+  }
+
+  // The workspace tool (pnpm, Turborepo, Nx) resolves
+  // "@org/shared-utils" to packages/shared-utils/ locally.
+  // No publish step is needed to test the change.
+</code></pre>
+          </div>
+
+          <h3>Incremental caching in a monorepo</h3>
+          <p>
+            Tools like Turborepo keep a dependency graph between packages and
+            a content hash for each one. When only <code>shared-utils</code>
+            changes, only the packages that depend on it are rebuilt and
+            retested. Without this caching layer, a large monorepo's CI
+            retests everything on every push — making it slower than the
+            equivalent multi-repo.
+          </p>
+
+          <h3>Propagating changes in a multi-repo</h3>
+          <p>
+            In a multi-repo, a change in a shared library requires: (1)
+            commit and push in the library, (2) publishing a new version to
+            the registry, (3) updating <code>package.json</code> in each
+            consumer, (4) a PR + CI in each consumer repository. For a
+            breaking change affecting 10 services, that means 10 separate PRs
+            that need to be coordinated manually.
+          </p>
+        </section>
+
+        <!-- 5. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use each strategy</h2>
+
+          <h3>Prefer monorepo when:</h3>
+          <ul>
+            <li>
+              <strong>The code is strongly interdependent:</strong> frequent
+              changes cross multiple projects or packages. A monorepo allows
+              a single PR, unified review, and CI that validates everything
+              at once.
+            </li>
+            <li>
+              <strong>The team is small to medium and works across the same
+              projects:</strong> full code visibility reduces silos and
+              makes cross-cutting refactors easier without repository
+              coordination.
+            </li>
+            <li>
+              <strong>Standardization is a priority:</strong> linter,
+              formatter, TypeScript and CI configuration can be centralized
+              once and applied to every project automatically.
+            </li>
+            <li>
+              <strong>There are many shared internal libraries:</strong> the
+              development cycle of internal libs without needing to publish
+              them dramatically speeds up iteration.
+            </li>
+          </ul>
+
+          <h3>Prefer multi-repo when:</h3>
+          <ul>
+            <li>
+              <strong>Teams have full autonomy and independent release
+              cycles:</strong> teams that rarely or never share code and need
+              different access permissions benefit from multi-repo's
+              isolation.
+            </li>
+            <li>
+              <strong>Projects use very different technologies:</strong> a
+              service in Rust, another in Python and a frontend in
+              TypeScript have very little to gain from a monorepo — the
+              shared tooling doesn't apply.
+            </li>
+            <li>
+              <strong>There are packages meant to be published as
+              open-source:</strong> libraries destined for the community are
+              more naturally managed in their own repositories, with their
+              own issues, releases and maintainers.
+            </li>
+            <li>
+              <strong>The team doesn't want to invest in monorepo
+              tooling:</strong> without incremental caching, a large monorepo
+              will punish CI with slow builds. If there's no willingness to
+              maintain Turborepo, Nx or similar, multi-repo is simpler to
+              operate.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 6. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+
+          <h3>Monorepo — Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Atomic changes: a change that affects multiple packages shows up in a single commit and PR.</li>
+            <li>No need to publish to iterate on internal libraries — the workspace resolves locally.</li>
+            <li>Standardized tooling, linting and CI centralized in one place.</li>
+            <li>Full code visibility — any developer can discover and reuse what already exists.</li>
+            <li>Cross-cutting refactors (renames, interface signature changes) are done in a single PR.</li>
+          </ul>
+
+          <h3>Monorepo — Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Slower CI without incremental caching — without the right tooling, everything is retested on every push.</li>
+            <li>The repository grows indefinitely; git clone and history operations get heavy without tools like git sparse-checkout.</li>
+            <li>Access permissions are per-repository in Git — granular control over who accesses what requires workarounds (CODEOWNERS, branch protection).</li>
+            <li>Accidental coupling is easier: the barrier to importing across projects is zero.</li>
+          </ul>
+
+          <h3>Multi-repo — Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Total isolation: one repository can't accidentally affect another.</li>
+            <li>Native per-repository access permissions.</li>
+            <li>Each repository's CI is simple and fast — it only tests what's in that repo.</li>
+            <li>Fully independent release cycles.</li>
+          </ul>
+
+          <h3>Multi-repo — Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Propagating changes in shared libs requires multiple manually coordinated PRs.</li>
+            <li>Duplicated configuration (linter, CI, tsconfig) in each repository — drift shows up over time.</li>
+            <li>Discoverability is hard: what already exists and can be reused?</li>
+            <li>Versioning hell: internal dependencies with lagging versions coexisting across different services.</li>
+          </ul>
+        </section>
+
+        <!-- 7. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Confusing monorepo with monolith</h3>
+          <p>
+            This is the most frequent — and most costly — confusion.
+            <strong>Monorepo and monolith are orthogonal axes.</strong>
+            Monorepo is a code versioning strategy; monolith is a deployment
+            architecture decision.
+          </p>
+          <p>
+            The four combinations are all completely valid:
+          </p>
+          <ul>
+            <li><strong>Monolith in a monorepo:</strong> a single application deployed as one block, with all its code in a single repository.</li>
+            <li><strong>Microservices in a monorepo:</strong> multiple independently deployable services, all versioned together (Google's model).</li>
+            <li><strong>Monolith in a multi-repo:</strong> a single application deployed as one block, with its code in its own repository.</li>
+            <li><strong>Microservices in a multi-repo:</strong> each service has its own independent repository (the most common model in early microservices adoption).</li>
+          </ul>
+          <p class="artigo__aviso">
+            <strong>Warning:</strong> moving from multi-repo to monorepo
+            doesn't automatically distribute a monolithic system. And
+            adopting microservices doesn't require multi-repo. These are
+            independent decisions.
+          </p>
+
+          <h3>2. Monorepo without incremental caching</h3>
+          <p>
+            Assembling a monorepo by combining projects into a single
+            repository without configuring incremental build and test caching
+            is a recipe for CI that grows linearly with the repository's
+            size. Before migrating to a monorepo, decide which orchestration
+            tool will be used (Turborepo, Nx, Bazel) and set up the
+            incremental pipeline from the start.
+          </p>
+
+          <h3>3. Accidental coupling via internal imports</h3>
+          <p>
+            In a monorepo, the technical barrier to importing from another
+            package is zero — the relative path just has to work. Without
+            boundary enforcement (lint rules like
+            <code>eslint-plugin-boundaries</code> or Nx's project
+            restrictions), teams inadvertently create dependencies between
+            packages that should be independent. The result is a monorepo
+            where nothing can be deployed in isolation — the worst of both
+            worlds.
+          </p>
+
+          <h3>4. Giant history without sparse-checkout</h3>
+          <p>
+            In monorepos with years of history and many binary files,
+            <code>git clone</code> can take minutes. The solution is to use
+            <code>git clone --filter=blob:none --depth=1</code> (shallow +
+            partial clone) or configure sparse-checkout so each developer
+            only gets the directories they need.
+          </p>
+        </section>
+
+        <!-- 8. RELATED PATTERNS AND ARCHITECTURES -->
+        <section class="artigo__secao">
+          <h2>Related topics</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../feature-vs-layer/">Feature-based vs Layer-based Organization</a></li>
+            <li><a href="../monolito-vs-microsservicos/">Monolith vs Microservices</a></li>
+          </ul>
+          <p class="mt-1">
+            The <strong>monorepo vs multi-repo</strong> decision influences
+            how teams organize code internally, but doesn't determine that
+            organization. A monorepo with multiple projects can have each
+            project organized by
+            <a href="../feature-vs-layer/">feature or by technical layer</a>
+            — these are independent decisions that complement each other.
+          </p>
+          <p>
+            The distinction between <strong>monolith and microservices</strong>
+            is orthogonal to the repository strategy: the deployment
+            architecture defines how components run in production, while the
+            repository strategy defines how the code is versioned and
+            developed. Organizations that adopt microservices frequently
+            migrate to a monorepo precisely to regain the visibility and
+            change coordination that per-service multi-repo makes difficult.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="4747474747"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

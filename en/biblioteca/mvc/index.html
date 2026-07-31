@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MVC — Architectures | Dev Helper Library</title>
+  <meta name="description" content="Understand the MVC (Model-View-Controller) architecture: intent, request flow, the difference between classic MVC and web/server-side MVC, when to use it, pitfalls and related patterns." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/mvc/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>MVC</span>
+        </nav>
+        <span class="artigo__categoria">Architecture</span>
+        <h1 class="artigo__titulo">MVC</h1>
+        <p class="artigo__subtitulo">
+          Splits an application into three distinct responsibilities — Model (data
+          and business rules), View (presentation) and Controller (input and flow) —
+          so each layer can evolve independently.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Separate the concerns of data, presentation and flow control</strong>
+            into three distinct components, so that changes to one don't force
+            modifications in the others. The Model doesn't know how the View
+            displays data; the View doesn't know where the data comes from; the
+            Controller coordinates the two without holding business logic.
+          </p>
+          <p>
+            MVC was created by Trygve Reenskaug at Xerox PARC in the late 1970s
+            (in the context of Smalltalk) as a solution for building interactive
+            graphical interfaces. Since then it migrated to desktop applications,
+            then to server-side web (Rails, Django, Laravel, ASP.NET MVC) and,
+            more recently, influenced variants like MVP and MVVM used in mobile
+            and front-end development.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Without a separation of responsibilities, presentation code (HTML,
+            formatting), business rules (validation, calculations) and control
+            logic (routing, authentication) end up mixed together — what's known
+            as <em>spaghetti code</em> or, in the web extreme, the "fat
+            controller" or "view with SQL" problem. The practical consequences are:
+          </p>
+          <ul>
+            <li>Hard to test: you can't test business rules without rendering HTML or making HTTP requests.</li>
+            <li>Zero reuse: the same business logic can't be reused by a JSON API and by a web interface.</li>
+            <li>High fragility: a database change breaks the template; a layout change breaks the query.</li>
+          </ul>
+          <p>
+            MVC attacks exactly this problem by defining clear boundaries: the
+            Model encapsulates state and rules; the View only knows how to render;
+            the Controller only translates user intent into calls to the Model and
+            selection of a View.
+          </p>
+        </section>
+
+        <!-- 3. STRUCTURE -->
+        <section class="artigo__secao">
+          <h2>Structure</h2>
+
+          <h3>Classic MVC (Smalltalk / desktop)</h3>
+          <p>
+            In the original MVC, the View observes the Model directly and updates
+            itself when the Model changes — an application of the
+            <a href="../observer/">Observer</a> pattern. The Controller
+            translates user input (keyboard, mouse) into commands to the Model.
+          </p>
+          <div class="code-bloco">
+<pre><code>  ┌─────────────────────────────────────────────────────┐
+  │                        User                         │
+  │              (interacts with the View)              │
+  └──────────────────────┬──────────────────────────────┘
+                         │ input (click, key)
+                         ▼
+                   ┌───────────┐
+                   │Controller │ ←── interprets the action
+                   └─────┬─────┘
+                         │ updates
+                         ▼
+                   ┌───────────┐
+                   │   Model   │ ←── data + business rules
+                   └─────┬─────┘
+                         │ notifies (Observer)
+                         ▼
+                   ┌───────────┐
+                   │   View    │ ←── reads the Model and re-renders
+                   └───────────┘
+
+  Dependencies:
+    Controller → Model  (updates state)
+    View → Model        (reads state to render)
+    Model → View        (notifies via Observer — without knowing the concrete View)
+</code></pre>
+          </div>
+
+          <h3>Web / server-side MVC</h3>
+          <p>
+            On the web, HTTP is stateless: there's no persistent notification
+            channel from the Model to the View. The Observer relationship
+            disappears. The flow is always request-response and unidirectional:
+            the Controller processes the request, queries or modifies the Model,
+            selects a View and renders it with the data.
+          </p>
+          <div class="code-bloco">
+<pre><code>  HTTP Request
+       │
+       ▼
+  ┌────────────────────────────────────────────────────────┐
+  │                       Controller                       │
+  │  - receives and validates the request                  │
+  │  - calls the necessary Model(s)                        │
+  │  - selects the appropriate View                        │
+  │  - passes data to the View to render                   │
+  └────────┬───────────────────────────┬───────────────────┘
+           │ uses                      │ passes data to
+           ▼                           ▼
+     ┌───────────┐               ┌───────────┐
+     │   Model   │               │   View    │
+     │           │               │           │
+     │- state    │               │- template │
+     │- rules    │               │- HTML     │
+     │- queries  │               │- JSON     │
+     └───────────┘               └─────┬─────┘
+                                       │
+                                       ▼
+                               HTTP Response
+
+  Dependencies in web MVC:
+    Controller → Model  (reads/writes data)
+    Controller → View   (selects and feeds)
+    View → Model        (only data passed by the Controller — no direct reference)
+    Model               (doesn't know Controller or View)
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 4. HOW IT WORKS -->
+        <section class="artigo__secao">
+          <h2>How it works</h2>
+
+          <h3>Model</h3>
+          <p>
+            The Model represents the application's state and holds the business
+            rules. It knows nothing about how data will be displayed or where the
+            request came from. In web applications, the Model usually involves
+            domain entities, data-access repositories and domain services.
+          </p>
+          <p>
+            A well-designed Model is testable independently — without HTTP,
+            without templates, without a web framework. Its public interface
+            exposes behaviors (<code>order.calculateTotal()</code>,
+            <code>user.canPublish()</code>), not just raw data.
+          </p>
+
+          <h3>View</h3>
+          <p>
+            The View turns the data provided by the Controller into a
+            representation the user can consume: HTML, JSON, XML, PDF. It
+            contains no business logic — at most, presentation logic (date
+            formatting, pluralization, display conditionals based on flags passed
+            by the Controller).
+          </p>
+          <p>
+            In modern frameworks, the View is a template (Blade, Twig, ERB,
+            Razor) or a UI component. The principle is the same: the View is
+            passive — it receives data and renders it.
+          </p>
+
+          <h3>Controller</h3>
+          <p>
+            The Controller is the mediator. It receives input (HTTP request, UI
+            event), superficially validates parameters, delegates the real work
+            to the Model and selects which View to use with which data. The
+            Controller should be thin: if there's business logic in the
+            Controller, it's in the wrong place.
+          </p>
+        </section>
+
+        <!-- 5. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>Server-side web applications with template rendering:</strong>
+              it's the dominant pattern in frameworks like Laravel, Rails,
+              Django, ASP.NET MVC and Spring MVC. The Model/View/Controller
+              separation is native to the framework's structure.
+            </li>
+            <li>
+              <strong>When the same Model needs to be exposed by multiple Views:</strong>
+              a JSON API and an HTML interface can share the same Model — only
+              the Controller and the View change.
+            </li>
+            <li>
+              <strong>For teams that split responsibilities:</strong> back-end
+              handles the Model, front-end handles the templates (View), and the
+              Controller defines the contract between the two.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>Applications with complex domain logic:</strong> MVC alone
+              doesn't define where application logic, use cases, or per-use-case
+              authorization rules live. For complex systems, MVC is usually the
+              starting point, but needs to be complemented with
+              <a href="../arquitetura-em-camadas/">Layered Architecture</a> or
+              <a href="../arquitetura-hexagonal/">Hexagonal Architecture</a> so
+              the domain doesn't leak into the Controller.
+            </li>
+            <li>
+              <strong>SPAs (Single Page Applications):</strong> when the
+              front-end is managed by React, Vue or Angular, server-side MVC
+              loses relevance for the presentation layer. The server becomes a
+              REST/GraphQL API — the relevant pattern lives on the client
+              (reactive MVVM, Flux, etc.).
+            </li>
+            <li>
+              <strong>When the "View" is a plain JSON API with no UI state:</strong>
+              the concept of View as a template doesn't apply. A pure API is
+              better modeled with an Application Service layer plus explicit
+              serialization.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 6. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Clear separation of responsibilities: Model, View and Controller evolve independently.</li>
+            <li>Model fully testable without any presentation infrastructure.</li>
+            <li>Enables parallel work: back-end and front-end developers can work in parallel with a defined contract.</li>
+            <li>Native support in virtually every modern web framework — a low learning curve for anyone who already knows the framework.</li>
+            <li>Multiple Views for the same Model without duplicating logic.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Doesn't define where application logic (use cases, orchestration) lives — this gap is often filled poorly, fattening the Controller.</li>
+            <li>In large applications, the MVC separation is insufficient: you need to combine it with Layered or Hexagonal Architecture to isolate the domain from infrastructure.</li>
+            <li>The concept of "View" is ambiguous in pure REST APIs — the pattern applies with adaptations.</li>
+            <li>Can give a false sense of organization: having <code>models/</code>, <code>views/</code> and <code>controllers/</code> folders doesn't guarantee the logic is in the right places.</li>
+          </ul>
+        </section>
+
+        <!-- 7. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Fat Controller</h3>
+          <p>
+            The most common pitfall: all business and orchestration logic ends up
+            in the Controller because it's the "easiest" place to add code. The
+            Controller ends up with hundreds of lines of validation, calculations,
+            database calls, email sending and response formatting. The result is
+            a Controller that's impossible to unit test and impossible to reuse.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Rule of thumb:</strong> if the Controller does more than
+            (1) validate input parameters, (2) call a service/use case and
+            (3) select the response, the excess logic belongs in the Model or in
+            an application service. Controllers should be thin enough to be
+            irrelevant to business-rule tests.
+          </p>
+
+          <h3>2. Business logic in the View</h3>
+          <p>
+            Templates with complex conditionals, total calculations, discount
+            application and permission validation indicate the View has been
+            overloaded. The View should receive data already ready for display —
+            or, at most, presentation flags (<code>canEdit: true</code>)
+            calculated by the Controller or the Model.
+          </p>
+
+          <h3>3. Anemic Model</h3>
+          <p>
+            The opposite of the fat controller: the Model becomes just a data
+            container (getters and setters), with no behavior at all. All logic
+            goes into the Controller or service classes. The result is that the
+            "Model" doesn't model anything — it's just a DTO. Prefer rich models
+            that encapsulate invariants and behaviors relevant to the domain.
+          </p>
+
+          <h3>4. Direct coupling between the View and the database</h3>
+          <p>
+            SQL queries or ORM calls inside templates (the classic N+1 problem in
+            legacy PHP views) are the clearest sign that responsibilities have
+            collapsed. Every query should go through the Model; the View
+            receives only already-resolved collections.
+          </p>
+        </section>
+
+        <!-- 8. RELATED ARCHITECTURES AND PATTERNS -->
+        <section class="artigo__secao">
+          <h2>Related architectures and patterns</h2>
+          <!--
+            Link discipline: only link already-published articles.
+            Observer, Layered Architecture, Hexagonal, MVP and MVVM exist within
+            this batch or a previous one → real links to ../slug/.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../observer/">Observer</a></li>
+            <li><a href="../arquitetura-em-camadas/">Layered Architecture</a></li>
+            <li><a href="../arquitetura-hexagonal/">Hexagonal Architecture (Ports &amp; Adapters)</a></li>
+            <li><a href="../mvp/">MVP (Model-View-Presenter)</a></li>
+            <li><a href="../mvvm/">MVVM (Model-View-ViewModel)</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Observer</strong> is the mechanism that lets the Model notify
+            Views in classic MVC without depending on them concretely — the
+            Model fires events; Views, registered as observers, update
+            themselves. On the server-side web that relationship disappears,
+            since there's no persistent channel.
+          </p>
+          <p>
+            <strong>Layered Architecture</strong> complements MVC by defining how
+            the Model is structured internally: Presentation (Controller + View),
+            Application (use cases), Domain (entities and rules) and
+            Infrastructure (database, external APIs). MVC without clear layers
+            inside the Model tends to result in fat controllers.
+          </p>
+          <p>
+            <strong>Hexagonal Architecture</strong> goes further and inverts the
+            dependencies: the domain defines ports (interfaces), and the
+            adapters (HTTP Controllers, database adapters) implement those
+            ports. The MVC Controller becomes a primary adapter — and the domain
+            stays completely isolated from the web.
+          </p>
+          <p>
+            <strong>MVP</strong> (Model-View-Presenter) and <strong>MVVM</strong>
+            (Model-View-ViewModel) are evolutions of MVC for reactive UI contexts
+            (Android, iOS, front-end with declarative frameworks). The Presenter
+            and the ViewModel take on the role of mediating the View in a more
+            bidirectional way than the classic MVC Controller allows.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="8787878787"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

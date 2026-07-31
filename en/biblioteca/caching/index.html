@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Caching — Dev Helper Library</title>
+  <meta name="description" content="Understand caching: cache hierarchy, write strategies (Cache-Aside, Write-Through, Write-Behind, Read-Through), eviction policies, and the pitfalls of cache stampede, stale data, and key collisions." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/caching/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Caching</span>
+        </nav>
+        <span class="artigo__categoria">System Design</span>
+        <h1 class="artigo__titulo">Caching</h1>
+        <p class="artigo__subtitulo">
+          Storing the result of a costly operation to serve future requests
+          faster. It reduces latency, increases throughput, and decreases load
+          on databases and origin services — at the cost of dealing with
+          invalidation and consistency.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>A cache is a faster storage layer that keeps the results of
+            costly operations to avoid redoing them.</strong> The premise is
+            simple: if a piece of data was computed or fetched once and will be
+            requested again soon, storing it close to the consumer is cheaper
+            than fetching it from the origin again.
+          </p>
+          <p>
+            The benefit is threefold: <strong>lower latency</strong> (the data
+            reaches the client faster), <strong>higher throughput</strong>
+            (more requests served with the same capacity), and
+            <strong>reduced load on the origin</strong> (the database, external
+            API, or compute service receives fewer calls). Caching is one of
+            the most impactful performance techniques available and shows up
+            in practically every layer of a modern system.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            I/O operations — database access, calls to external APIs, disk
+            reads — are orders of magnitude slower than in-memory operations.
+            When these costly operations are repeated for every request, the
+            system pays the full cost even when the result hasn't changed.
+          </p>
+          <ul>
+            <li>
+              <strong>Accumulated latency:</strong> a 50 ms query is
+              imperceptible in isolation, but when a page makes 20 queries to
+              assemble the response, accumulated time exceeds 1 second. If most
+              of those queries return the same data for different users, work
+              is being repeated unnecessarily.
+            </li>
+            <li>
+              <strong>Origin overload during spikes:</strong> an event that
+              multiplies requests by ten multiplies database queries by ten.
+              Without caching, the origin infrastructure needs capacity for the
+              peak load instead of the average load.
+            </li>
+            <li>
+              <strong>Rate limits on external APIs:</strong> third-party
+              services often impose limits on requests per second or per hour.
+              Without caching responses, the limit is reached faster and the
+              system starts receiving errors or blocks.
+            </li>
+            <li>
+              <strong>Repeated computations:</strong> results of aggregations,
+              rankings, reports, and heavy transformations are direct
+              candidates: they cost a lot to compute and rarely change on every
+              request.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. HOW IT WORKS -->
+        <section class="artigo__secao">
+          <h2>How it works</h2>
+
+          <h3>Cache hierarchy</h3>
+          <p>
+            Caching exists at multiple layers, each with distinct latency and
+            capacity. The closer to the processor, the faster — and smaller —
+            the cache.
+          </p>
+          <div class="code-bloco">
+<pre><code>  Faster / Lower capacity
+  ┌──────────────────────────────────────────────────────────────┐
+  │ L1/L2/L3 CPU cache      (~1-10 ns)    managed by the CPU     │
+  │ RAM                     (~100 ns)     managed by the OS      │
+  │ App cache — Redis/Memcached           (~1 ms over LAN)       │
+  │ CDN  (~10-50 ms, geographic edge)     managed by the CDN     │
+  │ Browser cache  (0 ms on HIT)          managed by the browser │
+  └──────────────────────────────────────────────────────────────┘
+  Slower / Higher capacity (origin: database, API)
+</code></pre>
+          </div>
+          <p>
+            In practice, the developer controls the layers from the application
+            down: in-process cache, Redis/Memcached for a distributed cache
+            shared between instances, a CDN for assets and HTTP responses, and
+            HTTP headers for the browser cache.
+          </p>
+
+          <h3>Write and read strategies</h3>
+          <p>
+            The strategy defines the relationship between cache and origin: who
+            populates the cache, when, and with what consistency guarantee.
+          </p>
+          <div class="code-bloco">
+<pre><code>  CACHE-ASIDE (Lazy Loading)              WRITE-THROUGH
+
+  Request                                 Write
+      │                                       │
+      ▼                                       ▼
+  ┌────────┐  HIT                         ┌────────┐
+  │ Cache  │──────────────► Response      │ Cache  │◄── simultaneous write
+  └────┬───┘                              └────┬───┘
+       │ MISS                                  │ simultaneous write
+       ▼                                       ▼
+  ┌────────┐                             ┌────────┐
+  │   DB   │                             │   DB   │
+  └────┬───┘                             └────────┘
+       │ populates cache
+       ▼                                 Cache is always fresh.
+  ┌────────┐──────────────► Response     Every write has double latency.
+  │ Cache  │                             Cache may hold data that's
+  └────────┘                             never read (memory waste).
+
+  App controls the cache explicitly.
+  Cold start: miss on the 1st request.
+  Risk: stale data if TTL is too long.
+
+
+  WRITE-BEHIND (Write-Back)              READ-THROUGH
+
+  Write                                   Request
+      │                                       │
+      ▼                                       ▼
+  ┌────────┐◄── immediate write           ┌────────┐  HIT
+  │ Cache  │                              │ Cache  │──────────► Response
+  └────────┘                              └────┬───┘
+       │ async (batch)                         │ MISS: cache fetches origin
+       ▼                                       ▼
+  ┌────────┐                             ┌────────┐
+  │   DB   │                             │   DB   │
+  └────────┘                             └────┬───┘
+                                              │ populates cache
+  Maximum write performance.                  ▼
+  Risk: data loss if cache crashes      ┌────────┐──────────────► Response
+  before persisting to the DB.          │ Cache  │
+                                        └────────┘
+
+                                        App doesn't distinguish cache from origin.
+</code></pre>
+          </div>
+
+          <h3>Eviction policies</h3>
+          <p>
+            A cache has finite capacity. When it's full, some data needs to be
+            removed to make room for new data. The eviction policy defines
+            which data is removed:
+          </p>
+          <ul>
+            <li>
+              <strong>LRU (Least Recently Used):</strong> removes the data
+              accessed longest ago. It's the default policy in most
+              implementations (Redis, Memcached) because it reflects temporal
+              locality well — recently used data is more likely to be used
+              again.
+            </li>
+            <li>
+              <strong>LFU (Least Frequently Used):</strong> removes the data
+              accessed least often. Better for stable access patterns where
+              some data is accessed consistently much more than others.
+            </li>
+            <li>
+              <strong>TTL (Time To Live):</strong> not a capacity eviction
+              policy — it's a maximum validity. Data expires after a defined
+              time, regardless of usage. TTL is the main mechanism for temporal
+              invalidation and works alongside LRU/LFU, not in their place.
+            </li>
+          </ul>
+
+          <h3>Caching at different application layers</h3>
+          <ul>
+            <li>
+              <strong>Browser cache:</strong> controlled by HTTP headers
+              <code>Cache-Control</code>, <code>ETag</code>, and
+              <code>Last-Modified</code>. Avoids requests to the server for
+              static assets (JS, CSS, images) and responses that haven't
+              changed. A browser HIT costs zero — the request never leaves the
+              user's device.
+            </li>
+            <li>
+              <strong>CDN:</strong> geographically distributed caches close to
+              users. Ideal for static assets, public API responses, and content
+              with a defined TTL. Reduce latency by serving from the edge
+              instead of the origin server and absorb massive traffic spikes.
+            </li>
+            <li>
+              <strong>Application cache — Redis/Memcached:</strong> shared
+              between instances, persists beyond a single request's lifecycle.
+              Used for user sessions, results of costly queries, responses from
+              external APIs, results of heavy computations, and frequently read
+              configuration data.
+            </li>
+            <li>
+              <strong>In-process cache:</strong> in-memory structures within
+              the application's own process (HashMap, Map). Zero network
+              latency, but not shared between instances. Suitable for immutable
+              lookup data loaded at startup (configuration tables, domain
+              enumerations).
+            </li>
+          </ul>
+        </section>
+
+        <!-- 4. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>Data read far more than written:</strong> e-commerce
+              product pages, user profiles, system configuration — any data
+              with a high read-to-write ratio. The cache returns the value many
+              times for each time it's updated.
+            </li>
+            <li>
+              <strong>Costly, repetitive operations:</strong> queries with
+              multiple joins, aggregations over large volumes, calls to
+              external APIs with high latency. If the result serves more than
+              one request, caching it splits the cost of producing it among all
+              consumers.
+            </li>
+            <li>
+              <strong>Static or semi-static content:</strong> frontend assets
+              (JS, CSS, images), catalog responses, listings that change a few
+              times a day. A TTL of hours or days maximizes hit rate without
+              the risk of showing critically outdated data.
+            </li>
+            <li>
+              <strong>Protecting the origin against spikes:</strong> when the
+              origin database or service doesn't have capacity for the peak
+              request volume, the cache absorbs the load and serves the data
+              without increasing the origin's capacity.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>Data that changes on every request:</strong> real-time
+              balances, prices that fluctuate by the second, financial asset
+              positions. Caching introduces a window of inconsistency that can
+              have real consequences.
+            </li>
+            <li>
+              <strong>Data requiring mandatory strong consistency:</strong> in
+              simultaneous banking transactions, the balance after a debit must
+              be reflected immediately for the next operation. Eventual
+              consistency isn't acceptable in critical financial operations.
+            </li>
+            <li>
+              <strong>When invalidation is more complex than the original
+              problem:</strong> if the data relates to dozens of other entities
+              and any change to any of them invalidates the cache, invalidation
+              logic becomes a system in itself. In these cases, optimizing the
+              original query may be more direct.
+            </li>
+            <li>
+              <strong>Data unique per user with a very high user volume:</strong>
+              caching highly personalized data can consume more memory than the
+              benefit it generates, since each user has their own cache entry
+              with a hit rate close to one.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 5. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Drastic latency reduction: data served from memory arrives orders of magnitude faster than from the origin.</li>
+            <li>Higher throughput with the same hardware: the database processes fewer queries, freeing capacity for writes and uncached queries.</li>
+            <li>Origin protection: the cache absorbs read spikes, protecting the database and APIs from overload.</li>
+            <li>Cost reduction on pay-per-request APIs: rate limits and per-call costs are diluted by the cache's hit rate.</li>
+            <li>Partial availability: some systems are configured to serve data from the cache even when the origin is unavailable (stale-while-revalidate).</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Eventual consistency: there's a window between the origin's update and the cache's update where the data served is outdated.</li>
+            <li>Invalidation complexity: deciding when and how to invalidate the cache is one of the hardest problems in software engineering. Invalidating too early cancels the benefit; too late serves stale data.</li>
+            <li>Cold start: on the first request or after a restart, the cache is empty and all requests hit the origin simultaneously.</li>
+            <li>Additional infrastructure: Redis/Memcached have operational and financial cost, and need to be monitored, maintained, and operated.</li>
+            <li>Hard-to-reproduce bugs: behavior that depends on cache state is difficult to test, especially when it varies between hit and miss.</li>
+          </ul>
+        </section>
+
+        <!-- 6. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Cache stampede (thundering herd)</h3>
+          <p>
+            When a popular key's TTL expires, all requests that arrive
+            simultaneously at that moment find a MISS and trigger the costly
+            operation at the same time — exactly the problem the cache was
+            supposed to prevent, now amplified. The database may receive dozens
+            or hundreds of identical queries in a short interval, saturating
+            under the sudden load.
+          </p>
+          <p>
+            Solutions: <strong>TTL jitter</strong> (expire at TTL + a random
+            value, spreading expirations over time to prevent all popular keys
+            from expiring together), <strong>mutex or lock</strong> (the first
+            request to MISS acquires a lock and populates the cache; the others
+            wait or receive stale data temporarily), and
+            <strong>probabilistic early expiration</strong> (proactively
+            revalidate the cache before it expires, with increasing probability
+            as the TTL approaches zero).
+          </p>
+
+          <h3>2. Stale data from forgotten invalidation</h3>
+          <p>
+            The data is updated in the database, but the cache keeps serving
+            the old version. This happens when invalidation is treated as an
+            implementation detail instead of part of the write operation's
+            contract. With Cache-Aside, every write operation needs to
+            explicitly invalidate the affected keys — and that discipline needs
+            to be maintained as new operations are added over time.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Rule of thumb:</strong> use TTL as a safety net (guarantees
+            stale data eventually expires) and explicit invalidation on write
+            as the primary mechanism (guarantees expiration happens at the
+            right moment). Never rely on just one of the two in isolation.
+          </p>
+
+          <h3>3. Cache as source of truth</h3>
+          <p>
+            In a poorly implemented Write-Behind, writes go to the cache but
+            the database isn't reliably updated. If the cache goes down — due
+            to a restart, hardware failure, or aggressive eviction — the data
+            is lost permanently. Cache is an acceleration layer, not a
+            persistence layer. Treat it as disposable: the system should work
+            correctly (just slower) without it.
+          </p>
+
+          <h3>4. Cache keys without a namespace</h3>
+          <p>
+            A Redis instance shared across environments (dev, staging, prod) or
+            across different features can have key collisions. The key
+            <code>user:123</code> in the dev environment points to test data;
+            in prod, to the real user. The key <code>product:list</code> from
+            one feature can overwrite that of a different feature.
+          </p>
+          <p>
+            The solution is to prefix every key with a namespace:
+            <code>prod:catalog:product:list</code>, <code>dev:auth:user:123</code>.
+            Define the naming convention, document it, and apply it
+            consistently across all code that interacts with the cache.
+          </p>
+        </section>
+
+        <!-- 7. RELATED -->
+        <section class="artigo__secao">
+          <h2>Related architectures and patterns</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../escalabilidade-horizontal-vertical/">Horizontal vs Vertical Scalability</a></li>
+            <li><a href="../load-balancing/">Load Balancing</a></li>
+            <li><a href="../cqrs/">CQRS</a></li>
+            <li><a href="../event-driven/">Event-Driven Architecture</a></li>
+            <li><a href="../sql-vs-nosql/">SQL vs NoSQL</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Horizontal scalability</strong> and caching are
+            complementary: the cache reduces load on the origin, delaying or
+            eliminating the need to scale the database vertically. When
+            scaling out the application layer, a distributed cache (centralized
+            Redis) ensures all instances share the same state instead of each
+            keeping its own out-of-sync copy.
+          </p>
+          <p>
+            In <strong>CQRS</strong>, the Read Model often uses caching: read
+            projections are precomputed, query-optimized data that can be
+            stored in Redis. Updating the Read Model via domain events is a
+            structured form of invalidation — the event signals that the
+            projection needs to be recomputed.
+          </p>
+          <p>
+            <strong>Event-Driven Architecture</strong> offers a natural
+            mechanism for cache invalidation: when a domain event is published
+            (<em>ProductUpdated</em>, <em>InventoryChanged</em>), specialized
+            consumers can invalidate or recompute the affected cache entries,
+            decoupling invalidation from the original write operation.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="5757575757"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

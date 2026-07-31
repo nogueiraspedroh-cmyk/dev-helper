@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visitor — Design Patterns | Dev Helper Library</title>
+  <meta name="description" content="Learn the Visitor pattern (GoF) in depth: intent, problem, solution, structure, examples in TypeScript and PHP, when to use it, when to avoid it, and common pitfalls." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/visitor/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Visitor</span>
+        </nav>
+        <span class="artigo__categoria">Behavioral Pattern (GoF)</span>
+        <h1 class="artigo__titulo">Visitor</h1>
+        <p class="artigo__subtitulo">
+          Separates an algorithm from the objects it operates on, allowing new
+          operations to be added to a class hierarchy without modifying it —
+          via double dispatch, each element "accepts" the visitor and invokes
+          the correct method for its own type.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Represent an operation to be performed on the elements of
+            an object hierarchy.</strong> Visitor lets you define a new
+            operation without changing the classes of the elements it operates
+            on. Each concrete class in the hierarchy implements an
+            <code>accept(visitor)</code> method that calls the visitor's method
+            specific to that type — the so-called <em>double dispatch</em>.
+          </p>
+          <p>
+            Cataloged by the GoF (1994) as a behavioral pattern, Visitor is the
+            right pattern when an object hierarchy is stable but you need to
+            add new operations frequently. It's widely used in compilers (an
+            AST with type-checking visitors, code generation, and
+            optimization), static analysis tools, tree serialization, and
+            structured document processing.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Imagine an abstract syntax tree (AST) with three node types:
+            <code>NumberNode</code>, <code>Sum</code>, and <code>Multiplication</code>.
+            You need to add two independent operations: printing the expression
+            as a string and computing its numeric result. The direct approach
+            puts the operations inside the classes:
+          </p>
+          <div class="code-bloco">
+<pre><code>// Naive approach — DON'T do this:
+class Sum {
+  constructor(readonly left: IExpression, readonly right: IExpression) {}
+
+  print(): string {
+    // Printing logic coupled to the AST node.
+    return `(${this.left.print()} + ${this.right.print()})`;
+  }
+
+  evaluate(): number {
+    // Evaluation logic also coupled.
+    return this.left.evaluate() + this.right.evaluate();
+  }
+  // Adding a third operation (e.g.: serialize, optimize, compile)
+  // requires opening and modifying EVERY class in the hierarchy.
+}</code></pre>
+          </div>
+          <p>
+            Every new operation requires opening and modifying every class in
+            the hierarchy — <code>NumberNode</code>, <code>Sum</code>,
+            <code>Multiplication</code> — all at once. This violates the
+            Open/Closed Principle: domain classes should be closed for
+            modification. In real compilers, the AST can have dozens of node
+            types and dozens of passes (optimizations, type checks, bytecode
+            generation) — mixing everything into the node classes makes the
+            code unintelligible.
+          </p>
+          <p>
+            Visitor solves this by extracting each operation into its own
+            class (the ConcreteVisitor). The hierarchy's classes stay stable;
+            new behaviors are added without touching them.
+          </p>
+        </section>
+
+        <!-- 3. SOLUTION -->
+        <section class="artigo__secao">
+          <h2>Solution</h2>
+          <p>Visitor organizes the code into four participants:</p>
+          <ol>
+            <li>
+              <strong>Element (interface):</strong> every class in the
+              hierarchy declares <code>accept(visitor: IVisitor): void</code>.
+              The implementation is always the same:
+              <code>visitor.visitConcreteType(this)</code>. This is the double
+              dispatch — the correct visitor method is chosen at runtime based
+              on the element's concrete type.
+            </li>
+            <li>
+              <strong>ConcreteElement:</strong> the concrete classes of the
+              hierarchy (<code>NumberNode</code>, <code>Sum</code>,
+              <code>Multiplication</code>). Each one implements
+              <code>accept()</code> by calling the corresponding
+              <code>visit</code> method on the visitor. They expose their
+              internal data (via getters or <code>readonly</code> fields) so
+              visitors can access it.
+            </li>
+            <li>
+              <strong>Visitor (interface):</strong> declares a <code>visit</code>
+              method for each ConcreteElement in the hierarchy. E.g.:
+              <code>visitNumber(node: NumberNode): void</code>,
+              <code>visitSum(node: Sum): void</code>. When a new node type is
+              added to the hierarchy, every visitor needs to be updated — the
+              inverse cost compared to the naive approach.
+            </li>
+            <li>
+              <strong>ConcreteVisitor:</strong> implements the specific
+              operation for each element type. Each visitor is a cohesive
+              class with a single responsibility: printing, evaluating,
+              serializing, optimizing. It can accumulate internal state during
+              the visit (e.g.: a stack for evaluation, a list of parts for
+              printing).
+            </li>
+          </ol>
+          <p>
+            The central mechanism is <em>double dispatch</em>: the language
+            resolves the correct method in two steps — first it dispatches to
+            the correct element's <code>accept()</code> (chosen via the
+            hierarchy's polymorphism); inside <code>accept()</code>, the
+            element calls <code>visitor.visitType(this)</code>, resolving the
+            visitor's method by the concrete type of <code>this</code>.
+            Without this second dispatch, the visitor would need
+            instanceof/type-switch to detect the type — breaking polymorphism.
+          </p>
+        </section>
+
+        <!-- 4. STRUCTURE -->
+        <section class="artigo__secao">
+          <h2>Structure</h2>
+          <div class="code-bloco">
+<pre><code>        «interface»
+        IExpression
+  ┌──────────────────────────────────┐
+  │ + accept(v: IVisitor): void      │
+  └──────────────────────────────────┘
+               ▲
+   ┌───────────┼──────────────────┐
+   │           │                  │
+NumberNode    Sum            Multiplication
+(Terminal) (NonTerminal)     (NonTerminal)
+  │             │                  │
+  │accept:      │accept:           │accept:
+  │v.visitNum.. │v.visitSum(this)  │v.visitMult..(this)
+  ▼             ▼                  ▼
+        «interface»
+         IVisitor
+  ┌──────────────────────────────────────────────┐
+  │ + visitNumber(node: NumberNode): void        │
+  │ + visitSum(node: Sum): void                  │
+  │ + visitMultiplication(node: Multiplication): │
+  │   void                                       │
+  └──────────────────────────────────────────────┘
+               ▲
+   ┌───────────┴──────────────────┐
+   │                              │
+PrintVisitor              EvaluateVisitor
+  │ parts: string[]         stack: number[]
+  │ visitNumber → push      visitNumber → push
+  │ visitSum → parentheses  visitSum → pop+pop+sum
+  │ result(): string        result(): number
+  └──────────────────────────────┘
+
+
+Double dispatch — step by step:
+
+  tree.accept(evaluator)
+    │
+    ├─ tree is Multiplication → Multiplication.accept(evaluator)
+    │    └─ evaluator.visitMultiplication(this)
+    │         ├─ this.left.accept(evaluator)      // Sum
+    │         │    └─ evaluator.visitSum(this)
+    │         │         ├─ this.left.accept(evaluator)  // NumberNode(2)
+    │         │         │    └─ evaluator.visitNumber(this) → stack:[2]
+    │         │         └─ this.right.accept(evaluator) // NumberNode(3)
+    │         │              └─ evaluator.visitNumber(this) → stack:[2,3]
+    │         │         → pop 3, pop 2, push 5      stack:[5]
+    │         └─ this.right.accept(evaluator)     // NumberNode(4)
+    │              └─ evaluator.visitNumber(this) → stack:[5,4]
+    │         → pop 4, pop 5, push 20              stack:[20]
+    result(): 20
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. CODE EXAMPLES -->
+        <section class="artigo__secao">
+          <h2>Code examples</h2>
+
+          <h3>Example 1 — Expression AST with PrintVisitor and EvaluateVisitor</h3>
+          <p>
+            A complete implementation with the expression hierarchy
+            (<code>NumberNode</code>, <code>Sum</code>,
+            <code>Multiplication</code>), the <code>IVisitor</code> interface,
+            and two concrete visitors. Note how every class in the hierarchy
+            implements <code>accept()</code> with exactly one line — all the
+            operation's logic lives in the visitor, without touching the AST
+            nodes.
+          </p>
+
+          <!-- TAB GROUP 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 1 — AST with Print and Evaluate visitor">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Visitor interface ─────────────────────────────────────────
+// Declared BEFORE the elements because they reference IVisitor.
+// In TS, forward references work fine via interfaces — no ordering issue.
+interface IVisitor {
+  visitNumber(node: NumberNode): void;
+  visitSum(node: Sum): void;
+  visitMultiplication(node: Multiplication): void;
+}
+
+// ── Element interface ─────────────────────────────────────────
+interface IExpression {
+  accept(visitor: IVisitor): void;
+}
+
+// ── ConcreteElements (AST nodes) ──────────────────────────────
+// Named NumberNode (instead of just "Number") to avoid colliding with the built-in Number.
+class NumberNode implements IExpression {
+  constructor(readonly value: number) {}
+
+  // Double dispatch: calls the visitor's correct method for this type.
+  accept(visitor: IVisitor): void {
+    visitor.visitNumber(this);
+  }
+}
+
+class Sum implements IExpression {
+  constructor(
+    readonly left: IExpression,
+    readonly right: IExpression
+  ) {}
+
+  accept(visitor: IVisitor): void {
+    visitor.visitSum(this);
+  }
+}
+
+class Multiplication implements IExpression {
+  constructor(
+    readonly left: IExpression,
+    readonly right: IExpression
+  ) {}
+
+  accept(visitor: IVisitor): void {
+    visitor.visitMultiplication(this);
+  }
+}
+
+// ── ConcreteVisitor 1: Print ──────────────────────────────────
+// Builds the textual representation of the expression with explicit parentheses.
+class PrintVisitor implements IVisitor {
+  private parts: string[] = [];
+
+  visitNumber(node: NumberNode): void {
+    this.parts.push(String(node.value));
+  }
+
+  visitSum(node: Sum): void {
+    this.parts.push('(');
+    node.left.accept(this);    // visits the left child
+    this.parts.push(' + ');
+    node.right.accept(this);   // visits the right child
+    this.parts.push(')');
+  }
+
+  visitMultiplication(node: Multiplication): void {
+    this.parts.push('(');
+    node.left.accept(this);
+    this.parts.push(' * ');
+    node.right.accept(this);
+    this.parts.push(')');
+  }
+
+  result(): string {
+    return this.parts.join('');
+  }
+}
+
+// ── ConcreteVisitor 2: Evaluate ───────────────────────────────
+// Evaluates the expression using a stack — with no changes to the nodes.
+class EvaluateVisitor implements IVisitor {
+  private stack: number[] = [];
+
+  visitNumber(node: NumberNode): void {
+    this.stack.push(node.value);
+  }
+
+  visitSum(node: Sum): void {
+    node.left.accept(this);
+    node.right.accept(this);
+    const b = this.stack.pop()!;
+    const a = this.stack.pop()!;
+    this.stack.push(a + b);
+  }
+
+  visitMultiplication(node: Multiplication): void {
+    node.left.accept(this);
+    node.right.accept(this);
+    const b = this.stack.pop()!;
+    const a = this.stack.pop()!;
+    this.stack.push(a * b);
+  }
+
+  result(): number {
+    return this.stack[0] ?? 0;
+  }
+}
+
+// ── Usage ────────────────────────────────────────────────────
+// AST representing: (2 + 3) * 4
+const tree: IExpression = new Multiplication(
+  new Sum(new NumberNode(2), new NumberNode(3)),
+  new NumberNode(4)
+);
+
+// Operation 1: print (without touching the AST nodes)
+const printer = new PrintVisitor();
+tree.accept(printer);
+console.log(printer.result());   // ((2 + 3) * 4)
+
+// Operation 2: evaluate (without touching the AST nodes)
+const evaluator = new EvaluateVisitor();
+tree.accept(evaluator);
+console.log(evaluator.result());   // 20
+
+// The AST can be visited multiple times by different visitors.
+// No node class was modified to support these operations.</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Interfaces (forward declarations aren't needed in PHP) ────
+interface IVisitor
+{
+    public function visitNumber(NumberNode $node): void;
+    public function visitSum(Sum $node): void;
+    public function visitMultiplication(Multiplication $node): void;
+}
+
+interface IExpression
+{
+    public function accept(IVisitor $visitor): void;
+}
+
+// ── ConcreteElements ──────────────────────────────────────────
+// Named NumberNode for consistency with the TypeScript example.
+class NumberNode implements IExpression
+{
+    public function __construct(public readonly float $value) {}
+
+    public function accept(IVisitor $visitor): void
+    {
+        $visitor-&gt;visitNumber($this);
+    }
+}
+
+class Sum implements IExpression
+{
+    public function __construct(
+        public readonly IExpression $left,
+        public readonly IExpression $right
+    ) {}
+
+    public function accept(IVisitor $visitor): void
+    {
+        $visitor-&gt;visitSum($this);
+    }
+}
+
+class Multiplication implements IExpression
+{
+    public function __construct(
+        public readonly IExpression $left,
+        public readonly IExpression $right
+    ) {}
+
+    public function accept(IVisitor $visitor): void
+    {
+        $visitor-&gt;visitMultiplication($this);
+    }
+}
+
+// ── ConcreteVisitor 1: Print ──────────────────────────────────
+class PrintVisitor implements IVisitor
+{
+    /** @var string[] */
+    private array $parts = [];
+
+    public function visitNumber(NumberNode $node): void
+    {
+        $this-&gt;parts[] = (string) $node-&gt;value;
+    }
+
+    public function visitSum(Sum $node): void
+    {
+        $this-&gt;parts[] = '(';
+        $node-&gt;left-&gt;accept($this);
+        $this-&gt;parts[] = ' + ';
+        $node-&gt;right-&gt;accept($this);
+        $this-&gt;parts[] = ')';
+    }
+
+    public function visitMultiplication(Multiplication $node): void
+    {
+        $this-&gt;parts[] = '(';
+        $node-&gt;left-&gt;accept($this);
+        $this-&gt;parts[] = ' * ';
+        $node-&gt;right-&gt;accept($this);
+        $this-&gt;parts[] = ')';
+    }
+
+    public function result(): string
+    {
+        return implode('', $this-&gt;parts);
+    }
+}
+
+// ── ConcreteVisitor 2: Evaluate ───────────────────────────────
+class EvaluateVisitor implements IVisitor
+{
+    /** @var float[] */
+    private array $stack = [];
+
+    public function visitNumber(NumberNode $node): void
+    {
+        $this-&gt;stack[] = $node-&gt;value;
+    }
+
+    public function visitSum(Sum $node): void
+    {
+        $node-&gt;left-&gt;accept($this);
+        $node-&gt;right-&gt;accept($this);
+        $b = array_pop($this-&gt;stack);
+        $a = array_pop($this-&gt;stack);
+        $this-&gt;stack[] = $a + $b;
+    }
+
+    public function visitMultiplication(Multiplication $node): void
+    {
+        $node-&gt;left-&gt;accept($this);
+        $node-&gt;right-&gt;accept($this);
+        $b = array_pop($this-&gt;stack);
+        $a = array_pop($this-&gt;stack);
+        $this-&gt;stack[] = $a * $b;
+    }
+
+    public function result(): float
+    {
+        return $this-&gt;stack[0] ?? 0.0;
+    }
+}
+
+// ── Usage ────────────────────────────────────────────────────
+// AST: (2 + 3) * 4
+$tree = new Multiplication(
+    new Sum(new NumberNode(2), new NumberNode(3)),
+    new NumberNode(4)
+);
+
+$printer = new PrintVisitor();
+$tree-&gt;accept($printer);
+echo $printer-&gt;result() . "\n";   // ((2 + 3) * 4)
+
+$evaluator = new EvaluateVisitor();
+$tree-&gt;accept($evaluator);
+echo $evaluator-&gt;result() . "\n";   // 20</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 1) -->
+
+          <h3>Example 2 — Adding new operations without touching the hierarchy</h3>
+          <p>
+            Visitor's main benefit: adding operations is open for extension.
+            Reusing the same AST from Example 1, we implement two additional
+            visitors — <code>CountNodesVisitor</code> (counts how many nodes
+            the AST has) and <code>SerializeJsonVisitor</code> (serializes the
+            tree to JSON) — without changing a single line of
+            <code>NumberNode</code>, <code>Sum</code>, or
+            <code>Multiplication</code>.
+          </p>
+
+          <!-- TAB GROUP 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 2 — new visitors without changing the hierarchy">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// Reuses IVisitor, IExpression, NumberNode, Sum and Multiplication from Example 1.
+
+// ── ConcreteVisitor 3: Count nodes ───────────────────────────
+// Counts the total number of AST nodes — leaves (NumberNode) and internal (Sum, Multiplication).
+class CountNodesVisitor implements IVisitor {
+  private count = 0;
+
+  visitNumber(_node: NumberNode): void {
+    this.count++;
+  }
+
+  visitSum(node: Sum): void {
+    this.count++;
+    node.left.accept(this);
+    node.right.accept(this);
+  }
+
+  visitMultiplication(node: Multiplication): void {
+    this.count++;
+    node.left.accept(this);
+    node.right.accept(this);
+  }
+
+  result(): number {
+    return this.count;
+  }
+}
+
+// ── ConcreteVisitor 4: Serialize to JSON ──────────────────────
+// Serializes the AST to a JSON string without using JSON.stringify at the root.
+// Uses recursion's implicit stack: each visit builds and stores
+// the sub-node's JSON fragment before composing the parent node.
+class SerializeJsonVisitor implements IVisitor {
+  private json = '';
+
+  visitNumber(node: NumberNode): void {
+    this.json = `{"type":"Number","value":${node.value}}`;
+  }
+
+  visitSum(node: Sum): void {
+    node.left.accept(this);
+    const left = this.json;
+    node.right.accept(this);
+    const right = this.json;
+    this.json = `{"type":"Sum","left":${left},"right":${right}}`;
+  }
+
+  visitMultiplication(node: Multiplication): void {
+    node.left.accept(this);
+    const left = this.json;
+    node.right.accept(this);
+    const right = this.json;
+    this.json = `{"type":"Mult","left":${left},"right":${right}}`;
+  }
+
+  result(): string {
+    return this.json;
+  }
+}
+
+// ── Usage ────────────────────────────────────────────────────
+// Same AST: (2 + 3) * 4
+const tree: IExpression = new Multiplication(
+  new Sum(new NumberNode(2), new NumberNode(3)),
+  new NumberNode(4)
+);
+
+// Visitor 3: count
+const counter = new CountNodesVisitor();
+tree.accept(counter);
+console.log(counter.result());
+// 5  (Multiplication + Sum + NumberNode(2) + NumberNode(3) + NumberNode(4))
+
+// Visitor 4: serialize
+const serializer = new SerializeJsonVisitor();
+tree.accept(serializer);
+console.log(serializer.result());
+// {"type":"Mult",
+//   "left":{"type":"Sum",
+//     "left":{"type":"Number","value":2},
+//     "right":{"type":"Number","value":3}},
+//   "right":{"type":"Number","value":4}}
+
+// Zero lines changed in NumberNode, Sum and Multiplication.</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// Reuses IVisitor, IExpression, NumberNode, Sum and Multiplication from Example 1.
+
+// ── ConcreteVisitor 3: Count nodes ───────────────────────────
+class CountNodesVisitor implements IVisitor
+{
+    private int $count = 0;
+
+    public function visitNumber(NumberNode $node): void
+    {
+        $this-&gt;count++;
+    }
+
+    public function visitSum(Sum $node): void
+    {
+        $this-&gt;count++;
+        $node-&gt;left-&gt;accept($this);
+        $node-&gt;right-&gt;accept($this);
+    }
+
+    public function visitMultiplication(Multiplication $node): void
+    {
+        $this-&gt;count++;
+        $node-&gt;left-&gt;accept($this);
+        $node-&gt;right-&gt;accept($this);
+    }
+
+    public function result(): int
+    {
+        return $this-&gt;count;
+    }
+}
+
+// ── ConcreteVisitor 4: Serialize to JSON ──────────────────────
+class SerializeJsonVisitor implements IVisitor
+{
+    private string $json = '';
+
+    public function visitNumber(NumberNode $node): void
+    {
+        $this-&gt;json = sprintf('{"type":"Number","value":%s}', $node-&gt;value);
+    }
+
+    public function visitSum(Sum $node): void
+    {
+        $node-&gt;left-&gt;accept($this);
+        $left = $this-&gt;json;
+        $node-&gt;right-&gt;accept($this);
+        $right = $this-&gt;json;
+        $this-&gt;json = sprintf('{"type":"Sum","left":%s,"right":%s}', $left, $right);
+    }
+
+    public function visitMultiplication(Multiplication $node): void
+    {
+        $node-&gt;left-&gt;accept($this);
+        $left = $this-&gt;json;
+        $node-&gt;right-&gt;accept($this);
+        $right = $this-&gt;json;
+        $this-&gt;json = sprintf('{"type":"Mult","left":%s,"right":%s}', $left, $right);
+    }
+
+    public function result(): string
+    {
+        return $this-&gt;json;
+    }
+}
+
+// ── Usage ────────────────────────────────────────────────────
+$tree = new Multiplication(
+    new Sum(new NumberNode(2), new NumberNode(3)),
+    new NumberNode(4)
+);
+
+// Visitor 3: count
+$counter = new CountNodesVisitor();
+$tree-&gt;accept($counter);
+echo $counter-&gt;result() . "\n";
+// 5  (Multiplication + Sum + NumberNode(2) + NumberNode(3) + NumberNode(4))
+
+// Visitor 4: serialize
+$serializer = new SerializeJsonVisitor();
+$tree-&gt;accept($serializer);
+echo $serializer-&gt;result() . "\n";
+// {"type":"Mult",
+//   "left":{"type":"Sum",
+//     "left":{"type":"Number","value":2},
+//     "right":{"type":"Number","value":3}},
+//   "right":{"type":"Number","value":4}}</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 2) -->
+
+        </section><!-- /.artigo__secao (examples) -->
+
+        <!-- 6. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>When you need to add frequent operations to a stable
+              hierarchy:</strong> if the hierarchy (the node types) rarely
+              changes but new operations (visitors) are added often, Visitor
+              keeps the operations' code cohesive and the domain classes
+              untouched.
+            </li>
+            <li>
+              <strong>In compilers and analysis tools:</strong> the AST has
+              stable node types (expressions, statements, literals), but the
+              passes (type-checking, inlining, code generation, flow analysis)
+              are added incrementally. Each pass is a Visitor.
+            </li>
+            <li>
+              <strong>For operations that access data from multiple unrelated
+              types:</strong> a serialization or auditing visitor can access
+              internal fields of completely different types and produce a
+              unified result — without those types needing to share behavior.
+            </li>
+            <li>
+              <strong>To separate concerns in complex hierarchies:</strong>
+              when mixing multiple operations into the classes makes the code
+              hard to understand, Visitor concentrates each operation into a
+              single cohesive class.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>When the hierarchy changes frequently:</strong> adding a
+              new element type (e.g.: a new AST node) requires updating the
+              <code>IVisitor</code> interface and <em>every</em> existing
+              visitor. If the hierarchy is volatile, Visitor generates more
+              work than it saves — the Open/Closed axis is inverted for
+              elements.
+            </li>
+            <li>
+              <strong>When the classes need to protect their internals:</strong>
+              Visitor needs to access the elements' internal data
+              (<code>readonly</code> fields or getters). If encapsulation is
+              critical and the data shouldn't be exposed, the pattern is
+              unsuitable — it essentially forces every element to be a DTO
+              for the visitors.
+            </li>
+            <li>
+              <strong>For small hierarchies and few operations:</strong> with
+              two element types and one operation, creating a visitor
+              interface, two <code>accept()</code> methods, and a concrete
+              class is overengineering. A direct method on the class solves it
+              with less code.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Open for new operations: adding a visitor doesn't touch the hierarchy's classes.</li>
+            <li>Concentrates each operation's logic in a single cohesive class — easy to locate, test, and maintain.</li>
+            <li>Allows accumulating state during the visit (counting, a stack, an output buffer) without polluting the elements.</li>
+            <li>Can traverse composite hierarchies (Composite) in an ordered, recursive way, applying complex transformations.</li>
+            <li>Multiple visitation: the same structure can be visited by different visitors independently.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Closed for new elements: adding a type to the hierarchy requires updating every visitor — the inverse cost compared to the naive approach.</li>
+            <li>Partially breaks encapsulation: elements need to expose their internal data so visitors can access it.</li>
+            <li>Double dispatch is non-intuitive to those unfamiliar with the pattern — the execution flow is less obvious than a direct call.</li>
+            <li>Increases the number of classes: each operation becomes a class; large hierarchies with many operations generate many visitors.</li>
+          </ul>
+        </section>
+
+        <!-- 8. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Obscured double dispatch — using instanceof instead of accept()</h3>
+          <p>
+            The most common temptation when learning Visitor: implementing the
+            visitor with an <code>if/instanceof</code> block instead of using
+            <code>accept()</code>. This defeats the pattern's purpose and
+            creates explicit coupling to the type:
+          </p>
+          <div class="code-bloco">
+<pre><code>// WRONG — visitor with instanceof (not a real Visitor):
+class WrongEvaluator {
+  evaluate(node: IExpression): number {
+    if (node instanceof NumberNode)        return node.value;
+    if (node instanceof Sum)            return this.evaluate(node.left) + this.evaluate(node.right);
+    if (node instanceof Multiplication) return this.evaluate(node.left) * this.evaluate(node.right);
+    throw new Error('Unknown type');
+    // Problem: adding a new node type doesn't cause a compile error —
+    // the code simply throws at runtime, with no static warning.
+  }
+}
+
+// CORRECT — the compiler guarantees every type is covered:
+// If Division is added to IVisitor, every ConcreteVisitor that
+// doesn't implement visitDivision() will fail to compile.</code></pre>
+          </div>
+          <p>
+            With real double dispatch, the compiler forces every visitor to
+            implement the method for each new type — the <code>IVisitor</code>
+            interface's contract acts as a static coverage checklist.
+          </p>
+
+          <h3>2. Unstable hierarchy — Open/Closed inverted for elements</h3>
+          <p>
+            Visitor flips the Open/Closed axis: it's open for new operations
+            (visitors) but closed for new types in the hierarchy. When a
+            project is still in the modeling phase and the element hierarchy
+            is still changing, every new type requires updating <em>every</em>
+            existing visitor — the opposite of what the pattern promises.
+            Apply Visitor only when the element hierarchy is reasonably
+            stable.
+          </p>
+
+          <h3>3. A visitor with mutable state shared across visits</h3>
+          <p>
+            When a visitor accumulates internal state (stack, parts, count),
+            it can only be used once per visit. Reusing the same instance on
+            two different trees produces incorrect results because the first
+            visit's state contaminates the second.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Rule of thumb:</strong> create a new visitor instance for
+            each visit. If a visitor needs to be reusable, implement a
+            <code>reset()</code> method that zeroes the internal state — and
+            document that requirement explicitly.
+          </p>
+
+          <h3>4. Visitor vs Strategy — the intent distinction</h3>
+          <p>
+            The most frequent confusion between these two patterns.
+            <strong>Strategy</strong> encapsulates an interchangeable
+            algorithm per object: the context has <em>one</em> active strategy
+            that can be swapped, but each object has its own. <strong>Visitor</strong>
+            encapsulates an operation that <em>traverses an entire
+            hierarchy</em>: a single visitor walks every element, calling the
+            correct method on each type — the algorithm is distributed across
+            the <code>visit*</code> methods, not across isolated objects. Use
+            Strategy when a single object needs interchangeable behavior; use
+            Visitor when an operation needs to traverse and process multiple
+            types in a hierarchy.
+          </p>
+        </section>
+
+        <!-- 9. RELATED PATTERNS -->
+        <section class="artigo__secao">
+          <h2>Related patterns</h2>
+          <p>
+            Visitor works alongside patterns that organize hierarchies and
+            traversals:
+          </p>
+          <!--
+            Link discipline: only link already-published articles.
+            Composite exists → real link.
+            Iterator exists → real link.
+            Command exists → real link.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../composite/">Composite</a></li>
+            <li><a href="../iterator/">Iterator</a></li>
+            <li><a href="../command/">Command</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Composite</strong> is Visitor's natural partner: Composite
+            organizes objects into tree structures; Visitor traverses that
+            tree applying an operation to each node. The <code>accept()</code>
+            method on a composite node typically delegates to the children,
+            which in turn delegate to their own children — Composite's
+            recursion and Visitor's double dispatch combine naturally.
+            <strong>Iterator</strong> is a simpler alternative when the
+            operation is just traversing and handing elements to the caller,
+            without processing per type; when each element type needs to be
+            processed differently, Visitor is more appropriate.
+            <strong>Command</strong> encapsulates a discrete action on a
+            specific receiver; Visitor encapsulates an operation that's
+            distributed across an entire hierarchy — they're complementary
+            patterns when a system has both discrete actions (Command) and
+            analysis or transformation passes over data structures (Visitor).
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="5151515151"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

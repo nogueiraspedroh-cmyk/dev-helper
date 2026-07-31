@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Command — Design Patterns | Dev Helper Library</title>
+  <meta name="description" content="Learn the Command pattern (GoF) in depth: intent, problem, solution, structure, examples in TypeScript and PHP, when to use it, when to avoid it, and common pitfalls." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/command/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Command</span>
+        </nav>
+        <span class="artigo__categoria">Behavioral Pattern (GoF)</span>
+        <h1 class="artigo__titulo">Command</h1>
+        <p class="artigo__subtitulo">
+          Encapsulates a request as an object, decoupling whoever invokes the
+          action from whoever executes it — and enabling queuing, logging,
+          undoing and redoing operations through the same interface.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Represent an action as a self-contained object</strong> that
+            encapsulates the operation, the receiver, and all the parameters
+            needed to execute it and, optionally, undo it. The object that
+            triggers the action (Invoker) only knows the <code>Command</code>
+            interface — it doesn't know who executes it or how.
+          </p>
+          <p>
+            Cataloged by the GoF (1994) as a behavioral pattern, Command shows up
+            in editing systems (undo/redo), task queues, transactions,
+            application menus, and processing pipelines. In modern architectures
+            it's present in action dispatch (Redux/Flux), event sourcing, and
+            automation systems where actions need to be persisted, replayed, or
+            reverted.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Imagine a text editor where toolbar buttons perform operations on
+            the document. The direct approach couples each button to the editor
+            and prevents any undo mechanism:
+          </p>
+          <div class="code-bloco">
+<pre><code>// Naive approach — DON'T do this:
+class InsertButton {
+  constructor(private editor: TextEditor) {}
+
+  click(text: string, position: number): void {
+    // Direct coupling to the editor. No history, no undo.
+    this.editor.insert(text, position);
+  }
+}
+
+class DeleteButton {
+  constructor(private editor: TextEditor) {}
+
+  click(position: number, length: number): void {
+    // Same: every button needs to know the editor's internal API.
+    this.editor.delete(position, length);
+  }
+}</code></pre>
+          </div>
+          <p>
+            Immediate problems: there's no way to implement Ctrl+Z because there's
+            nowhere to store "what was done and how to revert it"; every button or
+            keyboard shortcut duplicates the invocation logic; adding new action
+            types requires creating more components coupled to the editor. Testing
+            also becomes harder because it's not possible to test the action
+            history independently.
+          </p>
+          <p>
+            Command solves this by turning each action into an immutable object
+            that carries the receiver, the parameters, and the state needed to
+            undo itself. The Invoker keeps a stack of these objects, and
+            implementing undo/redo becomes trivial — without modifying a single
+            button, shortcut, or domain component.
+          </p>
+        </section>
+
+        <!-- 3. SOLUTION -->
+        <section class="artigo__secao">
+          <h2>Solution</h2>
+          <p>Command organizes the code into four participants:</p>
+          <ol>
+            <li>
+              <strong>Command (interface):</strong> declares <code>execute()</code>
+              and, when undo is needed, <code>undo()</code>. Every concrete
+              command implements this interface — the Invoker only knows this
+              contract.
+            </li>
+            <li>
+              <strong>ConcreteCommand:</strong> captures the Receiver and the
+              needed parameters in its constructor. <code>execute()</code>
+              delegates to the Receiver; <code>undo()</code> reverts the
+              operation, usually by saving the prior state during
+              <code>execute()</code> itself.
+            </li>
+            <li>
+              <strong>Receiver:</strong> the object that knows how to perform the
+              actual operation — the "muscle" of the pattern. E.g.:
+              <code>TextEditor</code> with <code>insert()</code> and
+              <code>delete()</code> methods. The Receiver contains the domain
+              logic; the Command only orchestrates it.
+            </li>
+            <li>
+              <strong>Invoker:</strong> triggers the command via
+              <code>execute()</code> and keeps the history. It doesn't know the
+              concrete types — only the <code>Command</code> interface. It
+              implements undo/redo by walking the command stack.
+            </li>
+          </ol>
+          <p>
+            The separation between Invoker and Receiver is the central benefit: a
+            UI button, a keyboard shortcut, a REST API and an automation script
+            can all invoke the same <code>Command</code> with zero knowledge of
+            the <code>TextEditor</code>.
+          </p>
+        </section>
+
+        <!-- 4. STRUCTURE -->
+        <section class="artigo__secao">
+          <h2>Structure</h2>
+          <div class="code-bloco">
+<pre><code>         «interface»
+           Command
+  ┌───────────────────────────────┐
+  │ + execute(): void             │
+  │ + undo(): void                │
+  └───────────────────────────────┘
+              ▲
+   ┌──────────┴──────────────────────┐
+   │                                 │
+InsertTextCommand           DeleteTextCommand
+(ConcreteCommand)           (ConcreteCommand)
+  │                           │
+  │ uses                      │ uses
+  ▼                           ▼
+             TextEditor (Receiver)
+  ┌──────────────────────────────────────┐
+  │ + insert(text, position): void       │
+  │ + delete(position, length): void     │
+  │ + getContent(): string               │
+  └──────────────────────────────────────┘
+
+
+CommandHistory (Invoker)
+  ┌──────────────────────────────────────────┐
+  │ - history: Command[]                     │
+  │ - index: number                          │
+  │ + run(cmd: Command): void                │
+  │ + undo(): boolean                        │
+  │ + redo(): boolean                        │
+  └──────────────────────────────────────────┘
+              │ calls execute() / undo()
+              ▼
+           Command
+
+
+Typical flow (undo):
+
+  history.run(new InsertTextCommand(editor, "Hi", 0))
+    → InsertTextCommand.execute()
+      → editor.insert("Hi", 0)   → content: "Hi"
+
+  history.undo()
+    → InsertTextCommand.undo()
+      → editor.delete(0, 2)       → content: ""
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. CODE EXAMPLES -->
+        <section class="artigo__secao">
+          <h2>Code examples</h2>
+
+          <h3>Example 1 — Text editor with undo/redo history</h3>
+          <p>
+            A complete implementation with the <code>Command</code> interface,
+            two concrete commands that capture the state needed to undo
+            themselves, the Receiver (<code>TextEditor</code>) and the Invoker
+            (<code>CommandHistory</code>) with full undo and redo support. Note
+            how <code>DeleteTextCommand</code> saves the removed text during
+            <code>execute()</code> — essential for a correct undo.
+          </p>
+
+          <!-- TAB GROUP 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 1 — editor with undo/redo">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Command interface ─────────────────────────────────────────
+interface Command {
+  execute(): void;
+  undo(): void;
+}
+
+// ── Receiver ──────────────────────────────────────────────────
+class TextEditor {
+  private content: string = '';
+
+  insert(text: string, position: number): void {
+    this.content =
+      this.content.slice(0, position) + text + this.content.slice(position);
+  }
+
+  delete(position: number, length: number): void {
+    this.content =
+      this.content.slice(0, position) +
+      this.content.slice(position + length);
+  }
+
+  getContent(): string { return this.content; }
+}
+
+// ── ConcreteCommands ──────────────────────────────────────────
+class InsertTextCommand implements Command {
+  constructor(
+    private readonly editor: TextEditor,
+    private readonly text: string,
+    private readonly position: number
+  ) {}
+
+  execute(): void {
+    this.editor.insert(this.text, this.position);
+  }
+
+  // Undo: deletes exactly the text that was inserted.
+  undo(): void {
+    this.editor.delete(this.position, this.text.length);
+  }
+}
+
+class DeleteTextCommand implements Command {
+  // State captured during execute() — essential for a correct undo.
+  private removedText: string = '';
+
+  constructor(
+    private readonly editor: TextEditor,
+    private readonly position: number,
+    private readonly length: number
+  ) {}
+
+  execute(): void {
+    // Save the text BEFORE removing it.
+    this.removedText = this.editor
+      .getContent()
+      .slice(this.position, this.position + this.length);
+    this.editor.delete(this.position, this.length);
+  }
+
+  // Undo: reinserts the saved text at the original position.
+  undo(): void {
+    this.editor.insert(this.removedText, this.position);
+  }
+}
+
+// ── Invoker ───────────────────────────────────────────────────
+class CommandHistory {
+  private readonly history: Command[] = [];
+  private index: number = -1;
+
+  run(command: Command): void {
+    // Discards the history ahead of the cursor (drops any pending redo).
+    this.history.splice(this.index + 1);
+    this.history.push(command);
+    this.index++;
+    command.execute();
+  }
+
+  undo(): boolean {
+    if (this.index &lt; 0) return false;
+    this.history[this.index].undo();
+    this.index--;
+    return true;
+  }
+
+  redo(): boolean {
+    if (this.index &gt;= this.history.length - 1) return false;
+    this.index++;
+    this.history[this.index].execute();
+    return true;
+  }
+}
+
+// ── Usage ────────────────────────────────────────────────────
+const editor  = new TextEditor();
+const history = new CommandHistory();
+
+history.run(new InsertTextCommand(editor, 'Hi', 0));
+console.log(editor.getContent());   // 'Hi'
+
+history.run(new InsertTextCommand(editor, ' there', 2));
+console.log(editor.getContent());   // 'Hi there'
+
+history.run(new DeleteTextCommand(editor, 2, 6));
+console.log(editor.getContent());   // 'Hi'
+
+history.undo();
+console.log(editor.getContent());   // 'Hi there'
+
+history.undo();
+console.log(editor.getContent());   // 'Hi'
+
+history.redo();
+console.log(editor.getContent());   // 'Hi there'</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Command interface ─────────────────────────────────────────
+interface Command
+{
+    public function execute(): void;
+    public function undo(): void;
+}
+
+// ── Receiver ──────────────────────────────────────────────────
+class TextEditor
+{
+    private string $content = '';
+
+    public function insert(string $text, int $position): void
+    {
+        $this-&gt;content =
+            substr($this-&gt;content, 0, $position)
+            . $text
+            . substr($this-&gt;content, $position);
+    }
+
+    public function delete(int $position, int $length): void
+    {
+        $this-&gt;content =
+            substr($this-&gt;content, 0, $position)
+            . substr($this-&gt;content, $position + $length);
+    }
+
+    public function getContent(): string
+    {
+        return $this-&gt;content;
+    }
+}
+
+// ── ConcreteCommands ──────────────────────────────────────────
+class InsertTextCommand implements Command
+{
+    public function __construct(
+        private readonly TextEditor $editor,
+        private readonly string $text,
+        private readonly int $position
+    ) {}
+
+    public function execute(): void
+    {
+        $this-&gt;editor-&gt;insert($this-&gt;text, $this-&gt;position);
+    }
+
+    public function undo(): void
+    {
+        $this-&gt;editor-&gt;delete($this-&gt;position, strlen($this-&gt;text));
+    }
+}
+
+class DeleteTextCommand implements Command
+{
+    private string $removedText = '';
+
+    public function __construct(
+        private readonly TextEditor $editor,
+        private readonly int $position,
+        private readonly int $length
+    ) {}
+
+    public function execute(): void
+    {
+        // Save the text BEFORE removing it — needed for undo.
+        $this-&gt;removedText = substr(
+            $this-&gt;editor-&gt;getContent(),
+            $this-&gt;position,
+            $this-&gt;length
+        );
+        $this-&gt;editor-&gt;delete($this-&gt;position, $this-&gt;length);
+    }
+
+    public function undo(): void
+    {
+        $this-&gt;editor-&gt;insert($this-&gt;removedText, $this-&gt;position);
+    }
+}
+
+// ── Invoker ───────────────────────────────────────────────────
+class CommandHistory
+{
+    /** @var Command[] */
+    private array $history = [];
+    private int $index = -1;
+
+    public function run(Command $command): void
+    {
+        array_splice($this-&gt;history, $this-&gt;index + 1);
+        $this-&gt;history[] = $command;
+        $this-&gt;index++;
+        $command-&gt;execute();
+    }
+
+    public function undo(): bool
+    {
+        if ($this-&gt;index &lt; 0) return false;
+        $this-&gt;history[$this-&gt;index]-&gt;undo();
+        $this-&gt;index--;
+        return true;
+    }
+
+    public function redo(): bool
+    {
+        if ($this-&gt;index &gt;= count($this-&gt;history) - 1) return false;
+        $this-&gt;index++;
+        $this-&gt;history[$this-&gt;index]-&gt;execute();
+        return true;
+    }
+}
+
+// ── Usage ────────────────────────────────────────────────────
+$editor  = new TextEditor();
+$history = new CommandHistory();
+
+$history-&gt;run(new InsertTextCommand($editor, 'Hi', 0));
+echo $editor-&gt;getContent() . "\n";   // Hi
+
+$history-&gt;run(new InsertTextCommand($editor, ' there', 2));
+echo $editor-&gt;getContent() . "\n";   // Hi there
+
+$history-&gt;run(new DeleteTextCommand($editor, 2, 6));
+echo $editor-&gt;getContent() . "\n";   // Hi
+
+$history-&gt;undo();
+echo $editor-&gt;getContent() . "\n";   // Hi there
+
+$history-&gt;undo();
+echo $editor-&gt;getContent() . "\n";   // Hi
+
+$history-&gt;redo();
+echo $editor-&gt;getContent() . "\n";   // Hi there</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 1) -->
+
+          <h3>Example 2 — Remote control with MacroCommand</h3>
+          <p>
+            Command also allows composing multiple commands into a single
+            <code>MacroCommand</code> — executing and undoing a set of actions as
+            if they were an atomic unit. This demonstrates the pattern's
+            composability: a MacroCommand is a Command that contains other
+            Commands, applying undo in reverse order.
+          </p>
+
+          <!-- TAB GROUP 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 2 — remote control and MacroCommand">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// Command interface (same as Example 1).
+interface Command {
+  execute(): void;
+  undo(): void;
+}
+
+// ── Receiver: devices ─────────────────────────────────────────
+class Light {
+  private on = false;
+  private brightness = 100;
+
+  turnOn(): void  { this.on = true;  console.log(`Light on (${this.brightness}%)`); }
+  turnOff(): void { this.on = false; console.log('Light off'); }
+
+  setBrightness(pct: number): void {
+    const previous = this.brightness;
+    this.brightness = pct;
+    console.log(`Brightness: ${previous}% → ${pct}%`);
+  }
+
+  getBrightness(): number { return this.brightness; }
+}
+
+// ── ConcreteCommands ──────────────────────────────────────────
+class TurnOnLightCommand implements Command {
+  constructor(private readonly light: Light) {}
+  execute(): void { this.light.turnOn(); }
+  undo(): void    { this.light.turnOff(); }
+}
+
+class DimmerCommand implements Command {
+  private previousBrightness = 0;
+
+  constructor(
+    private readonly light: Light,
+    private readonly newBrightness: number
+  ) {}
+
+  execute(): void {
+    this.previousBrightness = this.light.getBrightness();
+    this.light.setBrightness(this.newBrightness);
+  }
+
+  undo(): void {
+    this.light.setBrightness(this.previousBrightness);
+  }
+}
+
+// MacroCommand: composes several Commands into a single Command object.
+class MacroCommand implements Command {
+  constructor(private readonly commands: Command[]) {}
+
+  execute(): void {
+    this.commands.forEach(c =&gt; c.execute());
+  }
+
+  // Undo in reverse order — undoes the last subcommand first.
+  undo(): void {
+    [...this.commands].reverse().forEach(c =&gt; c.undo());
+  }
+}
+
+// ── Invoker: remote control with an undo stack ────────────────
+class RemoteControl {
+  private readonly stack: Command[] = [];
+
+  press(command: Command): void {
+    command.execute();
+    this.stack.push(command);
+  }
+
+  undoLast(): void {
+    const last = this.stack.pop();
+    last?.undo();
+  }
+}
+
+// ── Usage ────────────────────────────────────────────────────
+const light  = new Light();
+const remote = new RemoteControl();
+
+remote.press(new TurnOnLightCommand(light));
+// Light on (100%)
+
+remote.press(new DimmerCommand(light, 40));
+// Brightness: 100% → 40%
+
+remote.undoLast();
+// Brightness: 40% → 100%
+
+// Macro: "movie mode" — turns on and dims as a single action.
+const movieMode = new MacroCommand([
+  new TurnOnLightCommand(light),
+  new DimmerCommand(light, 10),
+]);
+
+remote.press(movieMode);
+// Light on (100%)
+// Brightness: 100% → 10%
+
+// Undoes the whole macro in reverse order.
+remote.undoLast();
+// Brightness: 10% → 100%
+// Light off</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// Command interface (same as Example 1).
+interface Command
+{
+    public function execute(): void;
+    public function undo(): void;
+}
+
+// ── Receiver ─────────────────────────────────────────────────
+class Light
+{
+    private bool $on = false;
+    private int $brightness = 100;
+
+    public function turnOn(): void
+    {
+        $this-&gt;on = true;
+        echo "Light on ({$this-&gt;brightness}%)\n";
+    }
+
+    public function turnOff(): void
+    {
+        $this-&gt;on = false;
+        echo "Light off\n";
+    }
+
+    public function setBrightness(int $pct): void
+    {
+        $previous = $this-&gt;brightness;
+        $this-&gt;brightness = $pct;
+        echo "Brightness: {$previous}% → {$pct}%\n";
+    }
+
+    public function getBrightness(): int
+    {
+        return $this-&gt;brightness;
+    }
+}
+
+// ── ConcreteCommands ──────────────────────────────────────────
+class TurnOnLightCommand implements Command
+{
+    public function __construct(private readonly Light $light) {}
+
+    public function execute(): void { $this-&gt;light-&gt;turnOn(); }
+    public function undo(): void    { $this-&gt;light-&gt;turnOff(); }
+}
+
+class DimmerCommand implements Command
+{
+    private int $previousBrightness = 0;
+
+    public function __construct(
+        private readonly Light $light,
+        private readonly int $newBrightness
+    ) {}
+
+    public function execute(): void
+    {
+        $this-&gt;previousBrightness = $this-&gt;light-&gt;getBrightness();
+        $this-&gt;light-&gt;setBrightness($this-&gt;newBrightness);
+    }
+
+    public function undo(): void
+    {
+        $this-&gt;light-&gt;setBrightness($this-&gt;previousBrightness);
+    }
+}
+
+class MacroCommand implements Command
+{
+    /** @param Command[] $commands */
+    public function __construct(private readonly array $commands) {}
+
+    public function execute(): void
+    {
+        foreach ($this-&gt;commands as $c) {
+            $c-&gt;execute();
+        }
+    }
+
+    public function undo(): void
+    {
+        foreach (array_reverse($this-&gt;commands) as $c) {
+            $c-&gt;undo();
+        }
+    }
+}
+
+// ── Invoker ───────────────────────────────────────────────────
+class RemoteControl
+{
+    /** @var Command[] */
+    private array $stack = [];
+
+    public function press(Command $command): void
+    {
+        $command-&gt;execute();
+        $this-&gt;stack[] = $command;
+    }
+
+    public function undoLast(): void
+    {
+        $last = array_pop($this-&gt;stack);
+        $last?-&gt;undo();
+    }
+}
+
+// ── Usage ────────────────────────────────────────────────────
+$light  = new Light();
+$remote = new RemoteControl();
+
+$remote-&gt;press(new TurnOnLightCommand($light));
+// Light on (100%)
+
+$remote-&gt;press(new DimmerCommand($light, 40));
+// Brightness: 100% → 40%
+
+$remote-&gt;undoLast();
+// Brightness: 40% → 100%
+
+$movieMode = new MacroCommand([
+    new TurnOnLightCommand($light),
+    new DimmerCommand($light, 10),
+]);
+
+$remote-&gt;press($movieMode);
+// Light on (100%)
+// Brightness: 100% → 10%
+
+$remote-&gt;undoLast();
+// Brightness: 10% → 100%
+// Light off</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 2) -->
+
+        </section><!-- /.artigo__secao (examples) -->
+
+        <!-- 6. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>When you need undo/redo:</strong> Command captures
+              everything needed to revert an operation — the central use case of
+              the pattern in editors, spreadsheets, and any interactive editing
+              system.
+            </li>
+            <li>
+              <strong>When actions need to be queued or scheduled:</strong> task
+              queues, schedulers, and retry systems store Command objects for
+              later or repeated execution — without needing to know what each one
+              does.
+            </li>
+            <li>
+              <strong>For auditing and action logs:</strong> each Command is a
+              structured record of the action, its parameters, and its timestamp.
+              In financial or compliance systems, this provides an auditable
+              history of operations.
+            </li>
+            <li>
+              <strong>To decouple the UI from the domain:</strong> buttons,
+              keyboard shortcuts, and REST APIs can all invoke the same Commands
+              without knowing anything about the Receiver — the "what to do"
+              logic is centralized in the Command.
+            </li>
+            <li>
+              <strong>To compose actions into macros or transactions</strong>
+              using MacroCommand — a set of operations that must be executed and
+              undone as an atomic unit.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>When the action is simple, with no undo and no queue:</strong>
+              creating an interface and a class per action for something like
+              "print report" or "send e-mail" with no need to revert is
+              overengineering. A direct call or a closure is enough.
+            </li>
+            <li>
+              <strong>When class explosion becomes unmanageable:</strong> systems
+              with 50 action types generate 50 Command classes. In TypeScript,
+              closures or first-class functions are a viable alternative for
+              simple Commands with no undo state.
+            </li>
+            <li>
+              <strong>When undo is infeasible or irrelevant:</strong> operations
+              like "send SMS" or "debit bank account" have irreversible side
+              effects. Implementing real undo in these cases would require
+              complex compensations (refund, cancellation message) — and that's
+              usually business-domain concern, not a design-pattern one.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Decouples the Invoker from the Receiver — whoever triggers the action doesn't need to know how it's carried out.</li>
+            <li>Undo/redo is implemented in the Invoker, without modifying any UI or domain component.</li>
+            <li>Makes task queues, audit logs, retries, and scheduling of operations easier.</li>
+            <li>MacroCommand allows composing atomic operations without changing existing Commands.</li>
+            <li>Follows the Open/Closed Principle — new action types don't require modifying the Invoker.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Increases the number of classes — one class per action type can grow quickly.</li>
+            <li>For correct undo, each Command needs to capture and manage prior state — which can be complex for operations that affect multiple objects.</li>
+            <li>The Invoker can accumulate memory with an unbounded history — a depth limit needs to be defined.</li>
+            <li>For simple, stateless Commands, creating a full class is more verbose than a closure or function.</li>
+          </ul>
+        </section>
+
+        <!-- 8. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Anemic command (just forwards the call)</h3>
+          <p>
+            The most common mistake when learning the pattern: creating a
+            Command that encapsulates nothing beyond a direct call to the
+            Receiver, without capturing parameters in the constructor and
+            without implementing real undo. A <code>SaveCommand</code> that just
+            calls <code>repository.save(externalObject)</code> without fixing
+            the object in the constructor isn't a Command — it's useless
+            boilerplate.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Rule of thumb:</strong> if the Command doesn't capture
+            everything it needs to execute and undo <em>autonomously</em>, it's
+            anemic. The constructor should fix the Receiver + parameters;
+            <code>execute()</code> shouldn't receive arguments.
+          </p>
+
+          <h3>2. Poorly implemented undo (state not captured)</h3>
+          <p>
+            The most critical technical pitfall: implementing
+            <code>execute()</code> without capturing the prior state needed for
+            <code>undo()</code>. A <code>DeleteTextCommand</code> that removes
+            text without first saving it in <code>this.removedText</code>
+            permanently loses the ability to revert. Golden rule: capture
+            everything <code>undo()</code> will need <em>before</em> performing
+            the destructive operation.
+          </p>
+
+          <h3>3. Command class explosion</h3>
+          <p>
+            In systems with many action types, the number of Command classes
+            grows proportionally to the actions. When that happens and the
+            Commands have no undo state, closures are more idiomatic. In
+            TypeScript:
+          </p>
+          <div class="code-bloco">
+<pre><code>// Functional alternative for simple, stateless Commands:
+type SimpleCommand = () =&gt; void;
+
+const queue: SimpleCommand[] = [];
+queue.push(() =&gt; console.log('Task A'));
+queue.push(() =&gt; console.log('Task B'));
+queue.forEach(cmd =&gt; cmd());
+
+// Reserve Command classes for when undo, logging, or composition are needed.</code></pre>
+          </div>
+
+          <h3>4. Command vs Strategy — the intent distinction</h3>
+          <p>
+            The most frequent confusion between these two patterns.
+            <strong>Command</strong> encapsulates <em>a specific action</em>
+            with a defined lifecycle: creation → execution → (possible) undo.
+            The object represents "what to do and with what data" — it can be
+            stored, queued, and reverted. <strong>Strategy</strong> encapsulates
+            <em>an interchangeable algorithm</em> with no identity or lifecycle —
+            the context swaps the active strategy, but doesn't store strategies
+            as a history. Use Command when the action itself is a first-class
+            piece of data; use Strategy when only the algorithm's variation
+            matters.
+          </p>
+        </section>
+
+        <!-- 9. RELATED PATTERNS -->
+        <section class="artigo__secao">
+          <h2>Related patterns</h2>
+          <p>
+            Command interacts with patterns that complement undo, queuing, and
+            coordination of actions:
+          </p>
+          <!--
+            Link discipline: only link already-published articles.
+            Strategy exists → real link.
+            Mediator: published in this batch → real link.
+            Memento: published in this batch → real link.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../strategy/">Strategy</a></li>
+            <li><a href="../mediator/">Mediator</a></li>
+            <li><a href="../memento/">Memento</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Strategy</strong> and Command both encapsulate behavior in
+            objects, but with distinct intents: Strategy swaps interchangeable
+            algorithms in the context (no execute/undo lifecycle); Command
+            represents discrete actions that can be stored, queued, and
+            reverted. <strong>Mediator</strong> can use Commands to represent the
+            coordinated actions between components — the Mediator receives a
+            Command and decides which Receiver to forward it to, without the
+            colleagues knowing each other directly. <strong>Memento</strong> is
+            the natural complement to Command for complex undo: when the
+            Receiver's state is too rich to be captured in each individual
+            Command, Memento creates a complete snapshot of the object before
+            the operation, and the Command simply stores that snapshot to
+            restore it on undo.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="7070707073"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

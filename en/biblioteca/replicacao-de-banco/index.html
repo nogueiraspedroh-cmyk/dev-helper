@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Database Replication — Dev Helper Library</title>
+  <meta name="description" content="Understand database replication: primary/replica, synchronous vs asynchronous replication, replication lag, failover, and multi-primary. Learn the pitfalls of read-your-writes, silent replica lag, and split-brain." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/replicacao-de-banco/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Database Replication</span>
+        </nav>
+        <span class="artigo__categoria">System Design</span>
+        <h1 class="artigo__titulo">Database Replication</h1>
+        <p class="artigo__subtitulo">
+          Keeping synchronized copies of data across multiple nodes to increase
+          availability, fault tolerance, and read capacity — with clear
+          trade-offs between durability, write latency, and read consistency.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Replication keeps synchronized copies of data across
+            multiple nodes so that, if one node fails, data isn't lost and the
+            system keeps operating — and, as an added benefit, so read load
+            can be distributed across the copies.</strong>
+          </p>
+          <p>
+            A single-node database is a single point of failure: if the
+            server goes down, the whole system becomes unavailable. If the
+            disk fails without a recent backup, data is lost. Replication
+            solves both problems by keeping copies of the data on other
+            servers — the <em>replicas</em> — which can take over the service
+            if the main node fails, and which can serve reads while the
+            primary processes writes.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Production systems have two fundamental requirements that a
+            single database node can't guarantee at the same time:
+          </p>
+          <ul>
+            <li>
+              <strong>High availability:</strong> the database must stay
+              accessible even during hardware failures, maintenance, or
+              upgrades. With a single node, any failure means downtime.
+            </li>
+            <li>
+              <strong>Data durability:</strong> data confirmed to the client
+              must not be lost in case of failure. A single disk, no matter
+              how reliable, has a non-zero probability of failing.
+            </li>
+            <li>
+              <strong>Insufficient read capacity:</strong> in read-heavy
+              workloads (typical of web applications), a single node may not
+              have enough throughput to serve all reads at the expected
+              latency.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. HOW IT WORKS -->
+        <section class="artigo__secao">
+          <h2>How it works</h2>
+
+          <h3>Primary/Replica (Master/Slave)</h3>
+          <p>
+            The most common replication model: one node is designated
+            <strong>primary</strong> (or master) and receives all writes.
+            Changes are propagated to the <strong>replicas</strong> via a
+            replication log (WAL in PostgreSQL, binlog in MySQL). Replicas
+            serve reads.
+          </p>
+          <div class="code-bloco">
+<pre><code>  Application
+  │                  │
+  │ Writes           │ Reads
+  ▼                  ▼
+  ┌─────────┐      ┌──────────┐  ┌──────────┐
+  │ Primary │─────►│ Replica 1│  │ Replica 2│
+  └─────────┘      └──────────┘  └──────────┘
+       │ replication log
+       └──────────────────────────────────────►
+                                          Application [Reads]
+
+  Every write: Primary
+  Every read: Replica 1 or Replica 2 (or Primary if needed)
+</code></pre>
+          </div>
+          <p>
+            Separating reads and writes onto different nodes is one of the
+            simplest ways to increase read throughput without sharding. A
+            primary with two replicas triples the system's read capacity.
+          </p>
+
+          <h3>Synchronous vs asynchronous replication</h3>
+          <p>
+            The difference between the two modes defines the trade-off
+            between durability and latency:
+          </p>
+          <div class="code-bloco">
+<pre><code>  SYNCHRONOUS REPLICATION
+
+  1. Client sends a write to the Primary
+  2. Primary replicates to at least one Replica
+  3. Replica confirms receipt
+  4. Primary confirms the write to the client
+
+  ┌────────┐ ──write──► ┌─────────┐ ──replicate──► ┌─────────┐
+  │ Client │            │ Primary │                 │ Replica │
+  └────────┘ ◄──ack──── └─────────┘ ◄──────ack───── └─────────┘
+
+  RPO = 0 (zero loss of confirmed data)
+  Cost: write latency includes the round trip to the replica
+
+
+  ASYNCHRONOUS REPLICATION
+
+  1. Client sends a write to the Primary
+  2. Primary confirms the write to the client immediately
+  3. Primary replicates to the Replicas in the background
+
+  ┌────────┐ ──write──► ┌─────────┐
+  │ Client │            │ Primary │ ──replicate (async)──► ┌─────────┐
+  └────────┘ ◄──ack──── └─────────┘                        │ Replica │
+                                                            └─────────┘
+
+  RPO > 0 (data replicated with delay can be lost if the Primary crashes)
+  Benefit: minimal write latency (doesn't wait for the replica)
+</code></pre>
+          </div>
+          <p>
+            Most systems default to asynchronous replication (MySQL and
+            PostgreSQL by default) for latency reasons. Synchronous
+            replication — or semi-synchronous, which waits for confirmation
+            from at least one replica — is used where durability is
+            critical, such as in financial systems.
+          </p>
+
+          <h3>Replication lag</h3>
+          <p>
+            In asynchronous replication, there's always a delay between a
+            write being confirmed on the primary and the data becoming
+            available on the replicas. That delay is the
+            <strong>replication lag</strong>.
+          </p>
+          <p>
+            Under normal conditions, the lag is milliseconds. But under high
+            load, during maintenance operations, or with replicas in distant
+            availability zones, the lag can grow to seconds or minutes — and
+            the application doesn't know unless it explicitly monitors it.
+          </p>
+
+          <h3>Failover</h3>
+          <p>
+            When the primary goes down, a replica needs to be promoted to
+            primary. Failover can be:
+          </p>
+          <ul>
+            <li>
+              <strong>Manual:</strong> an operator decides which replica to
+              promote and updates the configuration. Safer, but slower —
+              minutes of downtime.
+            </li>
+            <li>
+              <strong>Automatic:</strong> an orchestration process (e.g.,
+              Patroni for PostgreSQL, MHA for MySQL, or RDS/Cloud SQL's
+              native mechanism) detects the failure and promotes the most
+              up-to-date replica. Seconds of downtime, but risk of
+              split-brain if the failure detection is a false positive.
+            </li>
+          </ul>
+
+          <h3>Multi-primary (Multi-master)</h3>
+          <p>
+            Multiple nodes accept writes simultaneously. Increases write
+            availability — if one primary goes down, the others keep
+            operating — but introduces the problem of
+            <strong>write conflicts</strong>: two nodes receive different
+            writes for the same record at the same time.
+          </p>
+          <p>
+            Conflict resolution is inherently complex: timestamp-based (the
+            most recent write wins, with the risk of losing the other one),
+            application-defined (the application defines the merge logic), or
+            last-write-wins (simple, but potentially destructive).
+            Multi-primary should be avoided unless there's a real need —
+            such as geographic replication where each region needs to accept
+            writes locally.
+          </p>
+        </section>
+
+        <!-- 4. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>High availability and failover:</strong> any production
+              system that can't tolerate prolonged downtime during hardware
+              failures should use replication. It's the minimum requirement
+              for a meaningful availability SLA.
+            </li>
+            <li>
+              <strong>Read-heavy workloads:</strong> when the ratio of reads
+              to writes is high (typical in web applications), distributing
+              reads across replicas increases throughput without the
+              complexity of sharding.
+            </li>
+            <li>
+              <strong>Online backups without impacting the primary:</strong>
+              running heavy backups directly on the replica prevents the
+              backup process from consuming primary resources and affecting
+              production latency.
+            </li>
+            <li>
+              <strong>Reporting and analytics:</strong> long analytical
+              queries can be directed to a dedicated replica, isolating the
+              OLAP workload from the OLTP workload on the primary.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>Multi-primary, unless there's a specific need:</strong>
+              resolving simultaneous write conflicts is expensive to
+              implement correctly. Systems that seem to need multi-primary
+              can often be redesigned with sharding or with Primary/Replica
+              and accept eventual consistency.
+            </li>
+            <li>
+              <strong>As a substitute for sharding:</strong> replication
+              increases read capacity, but not write capacity — all writes
+              still go through the primary. If the bottleneck is writes,
+              replication doesn't solve it.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 5. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>High availability: failure of the primary doesn't mean data loss or prolonged downtime — a replica takes over.</li>
+            <li>Read scalability: read throughput grows linearly with the number of replicas.</li>
+            <li>Durability: data exists on multiple nodes and geographies, drastically reducing the risk of permanent loss.</li>
+            <li>Workload isolation: dedicated replicas for analytics or backups protect the primary from the heaviest queries.</li>
+            <li>Geographic latency: replicas in regions close to users reduce read latency.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Eventual consistency: reads from replicas can return stale data if replication lag is high.</li>
+            <li>The write bottleneck persists: all writes go through the primary — replication doesn't solve write overload.</li>
+            <li>Operational complexity: monitoring replication lag, managing failover, and maintaining multiple nodes add operational overhead.</li>
+            <li>Split-brain risk in automatic failover: an incorrect failure detection can lead two nodes to consider themselves primary at the same time.</li>
+            <li>Infrastructure cost: each replica is an additional server with a cost proportional to the primary.</li>
+          </ul>
+        </section>
+
+        <!-- 6. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Read-your-writes: reading from a replica right after writing</h3>
+          <p>
+            A user updates their profile. The write goes to the primary and is
+            confirmed. The user is redirected to the profile page — which
+            reads from a replica. If replication lag is 200 ms, the page
+            shows the old profile. The user thinks the update failed, tries
+            again, and now the write is duplicated.
+          </p>
+          <p>
+            Solutions: <strong>sticky reads</strong> (direct reads to the
+            primary for a short period after the same user's write),
+            <strong>read from the primary for sensitive operations</strong>
+            (logged-in user's profile, balances), or
+            <strong>propagate the write's timestamp</strong> and only read
+            from replicas that have already reached that point (a technique
+            natively supported by some databases).
+          </p>
+
+          <h3>2. Silent replica lag</h3>
+          <p>
+            Replication lag has grown to minutes, but the application keeps
+            serving reads from the replicas without knowing it. Dashboards
+            show hours-old data, uniqueness validations pass on records that
+            were already created on the primary, and inventory reports show
+            quantities that were already sold.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Monitoring replication lag is mandatory.</strong>
+            Configure alerts for lag above a threshold acceptable to the
+            business (e.g., 5 seconds). In situations of high lag, consider
+            temporarily directing reads to the primary even if that increases
+            load.
+          </p>
+
+          <h3>3. Split-brain in automatic failover</h3>
+          <p>
+            The primary suffers a network failure that makes it unreachable
+            by the orchestrator but not by the database. The orchestrator
+            detects the failure and promotes a replica. Now two nodes
+            consider themselves primary: the original (which keeps receiving
+            writes from clients that still have a connection to it) and the
+            new one (which also accepts writes). The two versions of the data
+            diverge, and manual reconciliation can be destructive.
+          </p>
+          <p>
+            The solution is <strong>fencing</strong>: before promoting the
+            replica, the orchestrator ensures the old primary can no longer
+            accept writes — whether by revoking its credentials, blocking its
+            network, or using STONITH (Shoot The Other Node In The Head).
+            Never rely solely on failure detection to avoid split-brain.
+          </p>
+
+          <h3>4. Heavy queries on replicas blocking replication</h3>
+          <p>
+            In some databases (notably old MySQL versions with MyISAM, or
+            specific PostgreSQL configurations), long analytical queries on a
+            replica can block the application of replication events coming
+            from the primary. Lag increases while the heavy query runs. When
+            the query finishes, the replica needs to process the accumulated
+            backlog.
+          </p>
+          <p>
+            Solution: use dedicated analytics replicas with specific
+            configurations (e.g., transaction_timeout, or isolation via
+            logical replication in PostgreSQL) that prevent long queries from
+            blocking the replication process.
+          </p>
+        </section>
+
+        <!-- 7. RELATED -->
+        <section class="artigo__secao">
+          <h2>Related architectures and patterns</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../sharding/">Sharding and Partitioning</a></li>
+            <li><a href="../sql-vs-nosql/">SQL vs NoSQL</a></li>
+            <li><a href="../escalabilidade-horizontal-vertical/">Horizontal vs Vertical Scalability</a></li>
+            <li><a href="../caching/">Caching</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Sharding</strong> and replication are complementary
+            techniques: replication increases availability and read capacity
+            within each shard, while sharding distributes writes across
+            multiple primaries. Large-scale systems frequently combine both —
+            each shard has its own set of primary and replicas.
+          </p>
+          <p>
+            The distinction with <strong>horizontal scalability</strong> is
+            important: replication is horizontal scale for reads, not for
+            writes. To scale writes horizontally, sharding is necessary. The
+            two concepts are frequently confused because both involve
+            multiple database nodes.
+          </p>
+          <p>
+            <strong>Caching</strong> and read replicas are often used
+            together: the cache absorbs the most frequent reads (high hit
+            rate), and the replicas serve the reads that pass through the
+            cache (misses). The combination maximizes read throughput without
+            overloading any single component — and reduces the number of
+            replicas needed, lowering infrastructure cost.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="6464646464"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

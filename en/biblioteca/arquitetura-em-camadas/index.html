@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Layered Architecture — Architectures | Dev Helper Library</title>
+  <meta name="description" content="Understand Layered Architecture (Layered / N-tier): dependency rule, strict vs relaxed layering, when to use it, pitfalls and the relationship with MVC and Hexagonal." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/arquitetura-em-camadas/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Layered Architecture</span>
+        </nav>
+        <span class="artigo__categoria">Architecture</span>
+        <h1 class="artigo__titulo">Layered Architecture</h1>
+        <p class="artigo__subtitulo">
+          Organizes software into horizontal layers with well-defined
+          responsibilities, where each layer depends only on the layers below
+          it — creating a single direction of dependency and isolating business
+          logic from infrastructure.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Split the system into cohesive horizontal layers</strong>,
+            where each layer has a clear responsibility and knows only the
+            layers immediately below it. This creates a unidirectional
+            <em>dependency rule</em>: upper layers depend on lower layers, never
+            the other way around.
+          </p>
+          <p>
+            Layered Architecture (also called <em>N-tier Architecture</em>) is
+            one of the oldest and most widespread architectural patterns. It's
+            the foundation on which frameworks like Laravel, Spring, Django and
+            ASP.NET build their code-organization conventions. It's not a GoF
+            pattern — it's a larger-grained architectural pattern that organizes
+            how groups of classes relate to one another.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            In applications without layer separation, it's common to find:
+          </p>
+          <ul>
+            <li>Controllers that query the database directly.</li>
+            <li>Domain entities that know details of HTTP serialization or persistence.</li>
+            <li>Business rules scattered across controllers, models and even views.</li>
+            <li>Tests that need a real database to verify a simple business rule.</li>
+          </ul>
+          <p>
+            The result is high fragility: a database change breaks the
+            controller; an HTTP contract change breaks the domain. Layered
+            Architecture solves this by making explicit where each kind of code
+            lives and what it's allowed to depend on.
+          </p>
+        </section>
+
+        <!-- 3. STRUCTURE -->
+        <section class="artigo__secao">
+          <h2>Structure</h2>
+
+          <h3>The four typical layers</h3>
+          <div class="code-bloco">
+<pre><code>  ┌──────────────────────────────────────────────────────────┐
+  │                    Presentation Layer                    │
+  │   HTTP Controllers, CLI handlers, JSON serialization,    │
+  │   templates, input validation (format/type)              │
+  └──────────────────────────┬───────────────────────────────┘
+                             │ depends on
+                             ▼
+  ┌──────────────────────────────────────────────────────────┐
+  │               Application Layer (Service)                │
+  │   Use cases, domain orchestration, transactions,         │
+  │   per-use-case authorization, input/output DTOs          │
+  └──────────────────────────┬───────────────────────────────┘
+                             │ depends on
+                             ▼
+  ┌──────────────────────────────────────────────────────────┐
+  │                       Domain Layer                       │
+  │   Entities, Value Objects, business rules,               │
+  │   repository interfaces, domain events                   │
+  │   (pure core — imports nothing from the outer layers)    │
+  └──────────────────────────┬───────────────────────────────┘
+                             │
+                  ┌──────────┴────────────────────────────────────────────┐
+                  │  WITHOUT DIP (pure classic layering):                 │
+                  │  Domain → Infrastructure                              │
+                  │  (depends directly on the concrete implementation)    │
+                  │                                                       │
+                  │  WITH DIP + Repository (recommended practice):        │
+                  │  Infrastructure → Domain                              │
+                  │  (Infra implements the interface the Domain defines;  │
+                  │   the Domain does NOT know the concrete Infra)        │
+                  └───────────────────────────────────────────────────────┘
+                             │
+                             ▼
+  ┌──────────────────────────────────────────────────────────┐
+  │            Infrastructure / Persistence Layer            │
+  │   Repository implementations (SQL, NoSQL, API),          │
+  │   external gateways, queues, cache, email sending        │
+  └──────────────────────────────────────────────────────────┘
+
+  Arrow direction: whoever points depends on whoever is pointed to.
+  With DIP, Infrastructure points to the Domain (implements its interfaces);
+  the Domain remains free of external dependencies — the most stable form.
+</code></pre>
+          </div>
+
+          <h3>Strict vs Relaxed Layering</h3>
+          <p>
+            In <strong>strict layering</strong>, each layer can only call the
+            layer immediately below it. The Presentation Layer can't call the
+            Domain Layer directly — it has to go through the Application Layer.
+            This guarantees maximum isolation, but can add unnecessary
+            pass-through code in simple cases.
+          </p>
+          <p>
+            In <strong>relaxed layering</strong>, a layer can call any layer
+            below it, not just the immediate one. The Presentation Layer can
+            call the Domain Layer directly for simple read operations. More
+            pragmatic, but requires discipline to avoid shortcuts that erode
+            isolation.
+          </p>
+          <div class="code-bloco">
+<pre><code>  Strict layering:
+    Presentation → Application → Domain → Infrastructure
+    (each layer only sees the one immediately below it)
+
+  Relaxed layering:
+    Presentation → Application
+    Presentation → Domain         (allowed for simple reads)
+    Application  → Domain
+    Application  → Infrastructure (via Domain interfaces)
+    Domain       → (nothing external)
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 4. HOW IT WORKS -->
+        <section class="artigo__secao">
+          <h2>How it works — request flow</h2>
+          <p>
+            Following the direction of the dependencies, a typical request flows
+            from top to bottom, and the response goes back up:
+          </p>
+          <ol>
+            <li>
+              <strong>Presentation:</strong> the Controller receives the HTTP
+              request, validates the format of the parameters (types, required
+              fields) and builds a command/query DTO for the Application layer.
+            </li>
+            <li>
+              <strong>Application:</strong> the Application Service (or Use
+              Case) receives the DTO, applies per-use-case authorization rules,
+              coordinates the necessary domain operations and delegates
+              persistence to the repository interfaces.
+            </li>
+            <li>
+              <strong>Domain:</strong> entities and domain services apply the
+              business rules. This is where the invariants live — things that
+              must always hold true, regardless of any framework or database.
+            </li>
+            <li>
+              <strong>Infrastructure:</strong> concrete repository
+              implementations run queries; external-service adapters make HTTP
+              calls; the result flows back up the chain.
+            </li>
+          </ol>
+          <p>
+            The golden rule: <strong>dependencies only point downward</strong>.
+            The Domain never imports anything from the Application or the
+            Presentation. The Infrastructure implements interfaces defined by
+            the Domain — but the Domain doesn't know the Infrastructure.
+          </p>
+        </section>
+
+        <!-- 5. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>Business applications with non-trivial domain logic:</strong>
+              systems with complex authorization rules, workflows, business
+              calculations. Layer separation ensures the domain logic stays
+              testable and isolated.
+            </li>
+            <li>
+              <strong>Larger teams with split responsibilities:</strong> the
+              layer separation creates natural boundaries — one team handles the
+              domain layer, another the infrastructure, another the
+              presentation — with clear contracts between them.
+            </li>
+            <li>
+              <strong>When there are multiple entry points:</strong> a REST API,
+              a CLI interface and a queue worker can share the same Application
+              and Domain layers — only the Presentation changes.
+            </li>
+            <li>
+              <strong>To make infrastructure replacement easier:</strong>
+              switching databases, email providers or queue systems should
+              impact only the Infrastructure layer, without touching the
+              Domain.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>Simple CRUDs without real domain logic:</strong>
+              applications that are essentially create/read/update/delete forms
+              without complex rules don't justify four layers. A simpler
+              structure — or even direct MVC — is more appropriate.
+            </li>
+            <li>
+              <strong>Very small, focused microservices:</strong> a service that
+              does just one thing (e.g., sending notifications) rarely needs
+              separate domain layers. The architectural overhead doesn't pay
+              off.
+            </li>
+            <li>
+              <strong>Prototyping and MVPs:</strong> the layered structure has an
+              initial organizational cost. In discovery phases, the focus should
+              be on validating the idea — the architecture can evolve
+              afterward.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 6. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Clear and verifiable separation of responsibilities — you can audit whether the dependency rule is being respected.</li>
+            <li>Domain fully testable without a database, without HTTP, without a framework.</li>
+            <li>Makes replacing infrastructure easier without impacting the domain.</li>
+            <li>Well understood by most teams — has extensive documentation and examples in every major language.</li>
+            <li>Compatible with multiple entry points (HTTP, CLI, workers) sharing the same core.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Structuring overhead for simple systems — too many layers for a basic CRUD.</li>
+            <li>Risk of "lasagna effect": proliferation of layers without a clear purpose (a "helpers" layer, a "utilities" layer, sub-layers of sub-layers).</li>
+            <li>The dependency rule isn't enforced by the compiler — it requires team discipline or static analysis tools (e.g., ArchUnit, Deptrac).</li>
+            <li>Pass-through code: objects that exist only to carry data between layers without real transformation increase code volume without value.</li>
+          </ul>
+        </section>
+
+        <!-- 7. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Lasagna effect — too many layers without purpose</h3>
+          <p>
+            Every new layer added should have a clear justification: what kind
+            of responsibility does it encapsulate that doesn't belong to
+            adjacent layers? Layers like "Utils", "Helpers", "Common" or
+            "Shared" that accumulate everything nobody knows where to put are a
+            sign the structure isn't being thought through carefully. Prefer
+            few layers with sharp boundaries over many layers with vague
+            boundaries.
+          </p>
+
+          <h3>2. Leakage between layers</h3>
+          <p>
+            The most common type of violation: Domain entities with database
+            annotations (JPA, Doctrine, Eloquent casts that know the schema),
+            Controllers that directly manipulate database objects (ActiveRecord
+            in the Controller), or the Domain layer importing types from an
+            HTTP framework. These leaks gradually destroy the isolation — the
+            initial violation seems harmless, but it sets the precedent for the
+            next ones.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Watch out for Active Record:</strong> ORMs with the Active
+            Record pattern (Eloquent in Laravel, ActiveRecord in Rails) merge
+            the domain entity with the persistence infrastructure. They're
+            extremely productive, but make strict separation between Domain and
+            Infrastructure harder. In projects where that separation is
+            critical, prefer the Repository pattern with explicit mapping.
+          </p>
+
+          <h3>3. Anemic domain</h3>
+          <p>
+            When business rules that should live in the Domain migrate to the
+            Application Services, the Domain becomes just a set of data classes
+            with no behavior — the <em>Anemic Domain Model</em> described by
+            Martin Fowler. The result is that every rule ends up in services,
+            which become hard to compose and test in isolation. Keep the core
+            invariants and behaviors in the Domain's entities and Value Objects.
+          </p>
+
+          <h3>4. Not verifying the dependency rule automatically</h3>
+          <p>
+            In large teams, the rule "upper layers can't be imported by lower
+            layers" gets violated bit by bit, especially by less experienced
+            developers or under time pressure. Use dependency-analysis tools
+            (ArchUnit for Java, Deptrac for PHP, modules with import
+            restrictions in TypeScript/NestJS) to turn the violation into a
+            build error, not just a bad practice.
+          </p>
+        </section>
+
+        <!-- 8. RELATED ARCHITECTURES AND PATTERNS -->
+        <section class="artigo__secao">
+          <h2>Related architectures and patterns</h2>
+          <!--
+            Link discipline: only link already-published articles.
+            MVC, Hexagonal, Clean Architecture and Onion all exist within this
+            batch → real links to ../slug/.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../mvc/">MVC</a></li>
+            <li><a href="../arquitetura-hexagonal/">Hexagonal Architecture (Ports &amp; Adapters)</a></li>
+            <li><a href="../clean-architecture/">Clean Architecture</a></li>
+            <li><a href="../onion-architecture/">Onion Architecture</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>MVC</strong> can be seen as a specialization of Layered
+            Architecture focused on the separation between the presentation
+            layer (View + Controller) and the data/business layer (Model).
+            Layered Architecture defines what happens <em>inside</em> the Model
+            — how it subdivides into Application, Domain and Infrastructure.
+          </p>
+          <p>
+            <strong>Hexagonal Architecture</strong> shares the same concern of
+            isolating the domain from infrastructure, but explicitly inverts the
+            dependencies: instead of "infrastructure sits below the domain," it
+            says "infrastructure implements interfaces defined by the domain."
+            The result is the same isolation, but with a different mental model
+            — the domain at the center, adapters at the edges.
+          </p>
+          <p>
+            <strong>Clean Architecture</strong> and <strong>Onion
+            Architecture</strong> are evolutions of Layered Architecture with an
+            explicit emphasis on Dependency Inversion: the inner layers (domain)
+            define interfaces; the outer layers (infrastructure) implement those
+            interfaces. The dependency direction is explicitly inverted compared
+            to classic Layered Architecture, where the Infrastructure sits
+            "below" and is naturally a dependency of the upper layers.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="8989898989"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

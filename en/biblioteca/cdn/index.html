@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CDN — Dev Helper Library</title>
+  <meta name="description" content="Understand CDN (Content Delivery Network): how geographically distributed PoPs reduce latency, the difference between cache HIT and MISS, invalidation strategies, Pull vs Push CDN, and the pitfalls of long TTLs and dynamic content." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/cdn/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>CDN</span>
+        </nav>
+        <span class="artigo__categoria">System Design</span>
+        <h1 class="artigo__titulo">CDN — Content Delivery Network</h1>
+        <p class="artigo__subtitulo">
+          A network of geographically distributed servers that delivers
+          content to users from the closest node, reducing latency and
+          offloading the origin server — at the cost of dealing with cache
+          invalidation and eventual consistency at the edge.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>A CDN distributes copies of content across servers spread
+            around the world so each user is served by the geographically
+            closest node.</strong> Instead of every request crossing oceans
+            to reach the origin server, it's answered by a local PoP (Point
+            of Presence) — reducing round-trip time (RTT) from hundreds of
+            milliseconds to tens.
+          </p>
+          <p>
+            The benefit is twofold: <strong>lower latency for the user</strong>
+            (data travels less physical distance) and <strong>reduced load on
+            the origin server</strong> (most requests are absorbed by the
+            PoPs without ever reaching the origin). CDNs are the outermost
+            cache layer of a web system and are practically mandatory in any
+            product with a geographically distributed audience.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            The speed of light imposes a physical limit on network latency: a
+            packet between São Paulo and Frankfurt takes approximately
+            100–120 ms of RTT alone, even under ideal conditions. In systems
+            where the origin server lives in a single region, distant users
+            pay that cost on every request.
+          </p>
+          <ul>
+            <li>
+              <strong>Geographic latency:</strong> a European user accessing
+              a server in the US pays 80–150 ms of RTT for every resource
+              loaded. A page with 30 assets can easily accumulate seconds of
+              network latency before any processing even happens.
+            </li>
+            <li>
+              <strong>Origin overload during spikes:</strong> a product
+              launch or a viral event can multiply traffic a hundredfold in
+              minutes. Without absorption at the edge, all that volume hits
+              the origin server directly, which frequently doesn't have
+              capacity for the spike.
+            </li>
+            <li>
+              <strong>Origin bandwidth cost:</strong> transferring gigabytes
+              or terabytes of video, images, and assets from a single
+              datacenter is expensive — both financially and in bandwidth.
+              Distributing that traffic across the PoPs reduces the origin's
+              egress cost.
+            </li>
+            <li>
+              <strong>Availability and resilience:</strong> a single origin
+              server is a point of failure. If it's unavailable, no user can
+              access the content — unless there's an edge layer serving
+              cached content during the outage.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. HOW IT WORKS -->
+        <section class="artigo__secao">
+          <h2>How it works</h2>
+
+          <h3>PoP (Point of Presence)</h3>
+          <p>
+            Each node of a CDN is called a PoP: a server (or cluster of
+            servers) with local storage installed in a datacenter close to a
+            concentration of users. The CDN redirects each user to the
+            geographically closest PoP via DNS or Anycast IP.
+          </p>
+          <div class="code-bloco">
+<pre><code>  User (BR, São Paulo)
+        │
+        ▼
+  ┌─────────────────┐
+  │  CDN PoP SP     │  cache HIT?
+  │  (São Paulo)    │──────────────► Response (low latency)
+  └────────┬────────┘
+           │ cache MISS
+           ▼
+  ┌─────────────────┐
+  │  Origin Server  │
+  │  (USA)          │──► populates cache on the PoP ──► Response
+  └─────────────────┘
+
+  User (EU, Frankfurt)
+        │
+        ▼
+  ┌─────────────────┐
+  │  CDN PoP FRA    │  cache HIT?
+  │  (Frankfurt)    │──────────────► Response (low latency)
+  └─────────────────┘
+</code></pre>
+          </div>
+
+          <h3>Cache HIT vs MISS</h3>
+          <p>
+            When a user requests a resource:
+          </p>
+          <ul>
+            <li>
+              <strong>HIT:</strong> the PoP has a valid cached copy and
+              returns it directly, without contacting the origin. Minimal
+              latency — just the distance to the PoP.
+            </li>
+            <li>
+              <strong>MISS:</strong> the PoP doesn't have the resource (or the
+              cache expired). The PoP fetches it from the origin, stores the
+              response locally, and returns it to the user. The next request
+              for the same resource will be a HIT.
+            </li>
+          </ul>
+          <p>
+            The <strong>HIT rate</strong> is a CDN's central metric: the
+            higher it is, the more efficient the distribution and the less
+            traffic reaches the origin. Rates below 80–90% for static content
+            usually indicate problems in TTL configuration or caching
+            strategy.
+          </p>
+
+          <h3>Cache-Control and TTL</h3>
+          <p>
+            The origin server defines how long a PoP can store and serve a
+            resource via the HTTP <code>Cache-Control</code> header. The
+            <code>max-age</code> value specifies the TTL in seconds:
+          </p>
+          <div class="code-bloco">
+<pre><code>  # Static asset with hash — long TTL (1 year)
+  Cache-Control: public, max-age=31536000, immutable
+
+  # HTML — short TTL (no cache or short, since it changes frequently)
+  Cache-Control: no-cache
+
+  # Public API response — medium TTL (5 minutes)
+  Cache-Control: public, max-age=300, s-maxage=300
+
+  # Response with private data — must not be cached on the CDN
+  Cache-Control: private, no-store
+</code></pre>
+          </div>
+          <p>
+            A long TTL means fewer calls to the origin and a higher hit rate,
+            but more risk of serving stale content. A short TTL guarantees
+            fresh data, but reduces cache efficiency.
+          </p>
+
+          <h3>Cache invalidation</h3>
+          <p>
+            Forcing a PoP to discard cached content before the TTL expires is
+            called <strong>invalidation</strong>. It's needed when a new
+            deploy must be served immediately without waiting for the TTL.
+          </p>
+          <p>
+            The problem: invalidation needs to propagate to every PoP in the
+            network, which takes time (seconds to minutes) and has a cost —
+            many CDNs charge per invalidation operation, and propagation
+            isn't instantaneous.
+          </p>
+          <p>
+            The most robust strategy is <strong>URL-based cache busting</strong>:
+            including a content hash in the filename. When the file changes,
+            the URL changes, the cache is naturally bypassed (since it's a
+            new URL), and the old file expires via its TTL normally.
+          </p>
+          <div class="code-bloco">
+<pre><code>  # Without cache busting — problem when deploying
+  /static/app.js           # same URL, PoP serves the old version
+
+  # With cache busting — safe deploy
+  /static/app.a3f9b2c1.js  # new URL on every build, PoP always fetches
+  /static/app.min.js?v=42  # alternative: query string with a version
+</code></pre>
+          </div>
+
+          <h3>Content types: static vs dynamic</h3>
+          <ul>
+            <li>
+              <strong>Static content (ideal for CDN):</strong> images, CSS,
+              JavaScript, fonts, videos — don't vary by user and change
+              rarely. HIT rates close to 100% are achievable. This is the
+              case the CDN was originally built for.
+            </li>
+            <li>
+              <strong>Dynamic content (CDN can help partially):</strong>
+              API responses personalized per user have a composite cache key
+              (URL + authentication headers), resulting in a low hit rate by
+              definition. Even so, the CDN's geographic routing reduces
+              network latency even on MISSes — the PoP acts as a reverse
+              proxy close to the user, forwarding to the origin faster than
+              the user could reach it directly.
+            </li>
+          </ul>
+
+          <h3>Pull CDN vs Push CDN</h3>
+          <div class="code-bloco">
+<pre><code>  PULL CDN (more common)               PUSH CDN
+
+  User request                         You proactively push content
+        │                              to the PoPs before any
+        ▼                              request happens.
+  PoP checks cache
+        │ MISS                         Good for: large and predictable
+        ▼                              content (videos, downloadable
+  PoP fetches from origin              files), where a MISS on a
+  and populates the cache              Pull CDN would be costly.
+
+  Simple to operate.                   Higher complexity: you manage
+  PoPs are populated on                which files live on which
+  demand (lazy).                       PoPs.
+  First user per PoP
+  pays the MISS cost.
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 4. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>Static assets with a global audience:</strong> images,
+              JavaScript, CSS, and fonts for any product with users in more
+              than one region. The gain is immediate and the setup effort is
+              low.
+            </li>
+            <li>
+              <strong>Video streaming and large files:</strong> serving
+              videos from the origin to thousands of simultaneous users is
+              impractical. The CDN distributes bandwidth load across the PoPs
+              and serves content with less buffering for the end user.
+            </li>
+            <li>
+              <strong>Protecting the origin against traffic spikes:</strong>
+              events with unpredictable traffic (launches, viral campaigns)
+              can be absorbed by the PoPs without requiring the origin to
+              have capacity for the peak load.
+            </li>
+            <li>
+              <strong>DDoS mitigation:</strong> CDNs like Cloudflare and
+              Akamai can absorb volumetric distributed attacks at the edge,
+              before malicious traffic reaches the origin infrastructure.
+            </li>
+          </ul>
+
+          <h2>When to avoid or be careful</h2>
+          <ul>
+            <li>
+              <strong>Highly personalized content with a low hit rate:</strong>
+              if every user receives a unique, non-shareable response, the
+              CDN acts only as a geographic reverse proxy — useful for
+              reducing network latency, but without the benefit of caching.
+              The cost may not be worth it.
+            </li>
+            <li>
+              <strong>Sensitive data without a compliance review:</strong>
+              storing personal or confidential data on third-party servers
+              (the CDN's PoPs) can violate GDPR, LGPD, or internal
+              requirements. Responses with <code>Authorization</code> or
+              <code>Set-Cookie</code> must use
+              <code>Cache-Control: private</code> to never be cached on the
+              PoPs.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 5. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Latency reduction proportional to geographic distance: the farther the user from the origin, the greater the gain from the CDN.</li>
+            <li>Origin offload: the origin server processes only the MISSes, freeing up capacity for operations that can't be cached.</li>
+            <li>Automatic horizontal scalability: the CDN absorbs traffic spikes without requiring additional provisioning at the origin.</li>
+            <li>High availability: if the origin becomes temporarily unavailable, the PoP can keep serving cached content (stale-while-revalidate).</li>
+            <li>Built-in security: modern CDNs offer DDoS protection, WAF (Web Application Firewall), and TLS termination at the edge.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Eventual consistency: after a deploy, users on different PoPs may see different versions of the content until the TTL expires or the invalidation propagates.</li>
+            <li>Invalidation cost: propagating invalidations to every PoP has a cost (financial and time) and isn't instantaneous.</li>
+            <li>Third-party dependency: the CDN is a critical infrastructure point. A failure at the CDN provider (as happened with Fastly in 2021) can take down services worldwide simultaneously.</li>
+            <li>Debugging complexity: cache issues are hard to reproduce locally and diagnose in production — behavior varies by PoP, by TTL, and by headers.</li>
+            <li>Transfer cost: CDNs charge for volume of data transferred, which can be significant for video content or apps with many large assets.</li>
+          </ul>
+        </section>
+
+        <!-- 6. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Long TTL without cache busting</h3>
+          <p>
+            Setting <code>Cache-Control: max-age=31536000</code> on CSS and
+            JavaScript files without including a hash in the URL is a
+            dangerous combination. After a deploy, the PoPs keep serving the
+            old version until the TTL expires — which can be a year. Users
+            who already visited the site have the file cached in the browser
+            for that same period.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Rule of thumb:</strong> long TTL and URL-hash cache
+            busting go together. A long TTL without a hash in the URL is a
+            deploy bug waiting to happen. Never configure one without the
+            other for assets that change between deploys.
+          </p>
+
+          <h3>2. Treating expensive, slow invalidation as the default solution</h3>
+          <p>
+            Many teams assume "if we need to, we'll just invalidate." In
+            practice, manual invalidation has a cost, takes minutes to
+            propagate, and doesn't guarantee immediate consistency across all
+            PoPs. Planning the URL versioning strategy before you need to
+            invalidate is more robust — invalidation should be the
+            contingency plan, not the normal flow.
+          </p>
+
+          <h3>3. Caching responses with user data</h3>
+          <p>
+            Responses that contain <code>Set-Cookie</code>,
+            <code>Authorization</code>, or user-personalized data must not be
+            cached on the PoPs. If the <code>Cache-Control: private</code>
+            header is omitted and the CDN is configured to cache by default,
+            one user's data can be served to another — a critical data leak.
+          </p>
+          <div class="code-bloco">
+<pre><code>  # WRONG: response with user data not marked as private
+  HTTP/1.1 200 OK
+  # no Cache-Control → CDN may cache and serve it to others
+
+  # CORRECT: private data must never go into the CDN cache
+  HTTP/1.1 200 OK
+  Cache-Control: private, no-store
+</code></pre>
+          </div>
+
+          <h3>4. CORS not configured at the origin</h3>
+          <p>
+            Assets (fonts, scripts, images) served by the CDN on a domain
+            different from the main site need CORS headers configured on the
+            origin server. If the PoP caches a response without the correct
+            CORS headers, every user who receives that cached response will
+            have loading failures in the browser — and the problem only
+            resolves once the TTL expires or the invalidation propagates.
+          </p>
+        </section>
+
+        <!-- 7. RELATED -->
+        <section class="artigo__secao">
+          <h2>Related architectures and patterns</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../caching/">Caching</a></li>
+            <li><a href="../escalabilidade-horizontal-vertical/">Horizontal vs Vertical Scalability</a></li>
+            <li><a href="../load-balancing/">Load Balancing</a></li>
+            <li><a href="../api-gateway/">API Gateway</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>A CDN is a specialized instance of caching</strong> — it
+            applies the same principles of TTL, HIT/MISS, and invalidation,
+            but at the geographic edge layer instead of at the application
+            server. The same cache-busting and TTL strategies discussed in
+            <a href="../caching/">Caching</a> apply directly to configuring a
+            CDN.
+          </p>
+          <p>
+            <strong>Load Balancing</strong> and CDN are complementary: the
+            load balancer distributes traffic among origin server instances
+            within the same datacenter; the CDN distributes traffic across
+            geographic regions before it even reaches the origin. In modern
+            architectures, traffic passes through the CDN first and only then
+            reaches the origin's load balancer.
+          </p>
+          <p>
+            The <strong>API Gateway</strong> frequently operates alongside a
+            CDN: the CDN serves static assets at the edge while the API
+            Gateway manages authentication, routing, and rate limiting for
+            the dynamic calls that need to reach the origin.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="6565656565"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

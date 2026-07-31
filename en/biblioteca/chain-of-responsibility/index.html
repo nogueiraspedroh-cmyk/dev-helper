@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chain of Responsibility — Design Patterns | Dev Helper Library</title>
+  <meta name="description" content="Learn the Chain of Responsibility pattern (GoF) in depth: intent, problem, solution, structure, examples in TypeScript and PHP, when to use it, when to avoid it, and common pitfalls." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/chain-of-responsibility/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Chain of Responsibility</span>
+        </nav>
+        <span class="artigo__categoria">Behavioral Pattern (GoF)</span>
+        <h1 class="artigo__titulo">Chain of Responsibility</h1>
+        <p class="artigo__subtitulo">
+          Chains handlers in a sequential line, giving each one the chance to
+          process a request or pass it to the next — decoupling whoever sends
+          the request from whoever processes it.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Avoid coupling between sender and receiver</strong> of a
+            request, giving more than one object the opportunity to handle it.
+            Handlers are chained; each one can process the request and stop the
+            chain, or pass it to the next handler without the sender knowing
+            how many handlers exist or which one will act.
+          </p>
+          <p>
+            Cataloged by the GoF (1994) as a behavioral pattern, Chain of
+            Responsibility (CoR) shows up in HTTP middleware pipelines
+            (authentication → authorization → throttle → route handler), in
+            hierarchical approval flows (employee → manager → director → CEO),
+            in logging systems (debug → info → warning → error), and in UI
+            event filters. The chain is assembled at runtime with
+            <code>setNext()</code>, which allows changing, reordering, or
+            extending the handlers without modifying the sender.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Imagine a corporate expense approval system. Different amounts
+            require approval from different hierarchical levels. The naive
+            approach centralizes all the logic in a single point:
+          </p>
+          <div class="code-bloco">
+<pre><code>// Naive approach — DON'T do this:
+function approveExpense(amount: number, approver: string): boolean {
+  if (approver === 'lead' &amp;&amp; amount &lt;= 1000) {
+    console.log('Lead approved');
+    return true;
+  } else if (approver === 'manager' &amp;&amp; amount &lt;= 5000) {
+    console.log('Manager approved');
+    return true;
+  } else if (approver === 'director' &amp;&amp; amount &lt;= 20000) {
+    console.log('Director approved');
+    return true;
+  }
+  console.log('Rejected');
+  return false;
+}
+// Problem: the sender needs to know WHO should approve; adding a level
+// requires modifying this function; conditionals grow indefinitely.</code></pre>
+          </div>
+          <p>
+            Immediate problems: the sender needs to know every possible
+            approver and their rules; adding a new approval level requires
+            modifying the central function; each level's logic is mixed into a
+            single block; there's no way to reorder or replace an approver
+            without changing the code that uses them.
+          </p>
+          <p>
+            Chain of Responsibility solves this by turning each approver into a
+            handler with the same interface, chained via <code>setNext()</code>.
+            The sender sends to the first handler and doesn't know — and
+            doesn't need to know — who will process the request.
+          </p>
+        </section>
+
+        <!-- 3. SOLUTION -->
+        <section class="artigo__secao">
+          <h2>Solution</h2>
+          <p>Chain of Responsibility organizes the code around two central elements:</p>
+          <ol>
+            <li>
+              <strong>Handler (interface/abstract class):</strong> declares the
+              handling method (e.g.: <code>handle(request)</code>) and the
+              chaining method (<code>setNext(handler)</code>). The abstract base
+              class implements <code>setNext()</code> and the default
+              forwarding: if it doesn't process it, it delegates to the next.
+              The concrete handler only needs to implement its own decision
+              logic.
+            </li>
+            <li>
+              <strong>ConcreteHandler:</strong> implements the check logic —
+              decides whether to process the request (and stop the chain) or
+              call <code>super.handle()</code> to pass it to the next. E.g.:
+              <code>LeadHandler</code> that approves only if the amount is
+              &le; 1000.
+            </li>
+          </ol>
+          <p>
+            The chain is assembled by the client, chaining handlers with
+            <code>setNext()</code>. It usually returns <code>this</code> to
+            allow fluent chaining:
+            <code>lead.setNext(manager).setNext(director)</code>.
+          </p>
+        </section>
+
+        <!-- 4. STRUCTURE -->
+        <section class="artigo__secao">
+          <h2>Structure</h2>
+          <div class="code-bloco">
+<pre><code>          «interface» Handler
+  ┌────────────────────────────────────────┐
+  │ + setNext(h: Handler): Handler         │
+  │ + handle(req: Request): string|null    │
+  └────────────────────────────────────────┘
+               ▲
+    HandlerBase (abstract class)
+  ┌────────────────────────────────────────┐
+  │ - next: Handler | null                 │
+  │ + setNext(h: Handler): Handler         │
+  │   → this.next = h; return h            │
+  │ + handle(req): string|null             │
+  │   → this.next?.handle(req) ?? null     │
+  └────────────────────────────────────────┘
+               ▲
+   ┌───────────┴────────────┬──────────────────┐
+   │                        │                  │
+LeadHandler          ManagerHandler      DirectorHandler
+  │ handle(req):          │ handle(req):      │ handle(req):
+  │  if amount &lt;= 1000    │  if amount &lt;= 5000│  if amount &lt;= 20000
+  │    → processes        │    → processes    │    → processes
+  │  else                 │  else             │  else
+  │    → super.handle(req)│    → super        │    → super
+
+
+Chain assembly (client):
+
+  lead.setNext(manager).setNext(director)
+
+  Flow for amount = 3500:
+
+  lead.handle(3500)
+    → 3500 &gt; 1000 → passes to manager
+    manager.handle(3500)
+      → 3500 &lt;= 5000 → MANAGER APPROVES ✓ (chain stops)
+
+  Flow for amount = 50000:
+
+  lead → manager → director → null (no handler) → rejected
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. CODE EXAMPLES -->
+        <section class="artigo__secao">
+          <h2>Code examples</h2>
+
+          <h3>Example 1 — Expense approval pipeline</h3>
+          <p>
+            A complete implementation with the <code>Handler</code> interface,
+            an abstract base class that encapsulates forwarding, and concrete
+            handlers for each approval level. Note the fluent chaining via
+            <code>setNext()</code> returning the next handler.
+          </p>
+
+          <!-- TAB GROUP 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 1 — expense approval">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Handler interface ─────────────────────────────────────────
+interface Handler {
+  setNext(handler: Handler): Handler;
+  handle(amount: number): string | null;
+}
+
+// ── Abstract base class — implements setNext and default forwarding ─
+abstract class HandlerBase implements Handler {
+  private next: Handler | null = null;
+
+  setNext(handler: Handler): Handler {
+    this.next = handler;
+    return handler; // returns the next → fluent chaining
+  }
+
+  handle(amount: number): string | null {
+    // Default behavior: pass to the next or return null
+    return this.next ? this.next.handle(amount) : null;
+  }
+}
+
+// ── Concrete handlers ─────────────────────────────────────────
+class LeadHandler extends HandlerBase {
+  handle(amount: number): string | null {
+    if (amount &lt;= 1_000) {
+      return `Lead approved $${amount}`;
+    }
+    return super.handle(amount); // passes to the next
+  }
+}
+
+class ManagerHandler extends HandlerBase {
+  handle(amount: number): string | null {
+    if (amount &lt;= 5_000) {
+      return `Manager approved $${amount}`;
+    }
+    return super.handle(amount);
+  }
+}
+
+class DirectorHandler extends HandlerBase {
+  handle(amount: number): string | null {
+    if (amount &lt;= 20_000) {
+      return `Director approved $${amount}`;
+    }
+    return super.handle(amount);
+  }
+}
+
+// Final handler: catches whatever escaped the chain
+class RejectedHandler extends HandlerBase {
+  handle(amount: number): string | null {
+    return `REJECTED — $${amount} exceeds the $20,000 limit`;
+  }
+}
+
+// ── Chain assembly ──────────────────────────────────────────────
+const lead     = new LeadHandler();
+const manager  = new ManagerHandler();
+const director = new DirectorHandler();
+const end      = new RejectedHandler();
+
+// Fluent chaining: lead → manager → director → end
+lead.setNext(manager).setNext(director).setNext(end);
+
+// ── Usage ────────────────────────────────────────────────────
+const expenses = [500, 3_500, 15_000, 50_000];
+
+for (const amount of expenses) {
+  const result = lead.handle(amount);
+  console.log(result);
+}
+// Lead approved $500
+// Manager approved $3500
+// Director approved $15000
+// REJECTED — $50000 exceeds the $20,000 limit</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Handler interface ─────────────────────────────────────────
+interface Handler
+{
+    public function setNext(Handler $handler): Handler;
+    public function handle(int $amount): ?string;
+}
+
+// ── Abstract base class — implements setNext and default forwarding ─
+abstract class HandlerBase implements Handler
+{
+    private ?Handler $next = null;
+
+    public function setNext(Handler $handler): Handler
+    {
+        $this-&gt;next = $handler;
+        return $handler; // returns the next → fluent chaining
+    }
+
+    public function handle(int $amount): ?string
+    {
+        return $this-&gt;next?-&gt;handle($amount);
+    }
+}
+
+// ── Concrete handlers ─────────────────────────────────────────
+class LeadHandler extends HandlerBase
+{
+    public function handle(int $amount): ?string
+    {
+        if ($amount &lt;= 1_000) {
+            return "Lead approved \${$amount}";
+        }
+        return parent::handle($amount);
+    }
+}
+
+class ManagerHandler extends HandlerBase
+{
+    public function handle(int $amount): ?string
+    {
+        if ($amount &lt;= 5_000) {
+            return "Manager approved \${$amount}";
+        }
+        return parent::handle($amount);
+    }
+}
+
+class DirectorHandler extends HandlerBase
+{
+    public function handle(int $amount): ?string
+    {
+        if ($amount &lt;= 20_000) {
+            return "Director approved \${$amount}";
+        }
+        return parent::handle($amount);
+    }
+}
+
+// Final handler: catches whatever escaped the chain
+class RejectedHandler extends HandlerBase
+{
+    public function handle(int $amount): ?string
+    {
+        return "REJECTED — \${$amount} exceeds the \$20,000 limit";
+    }
+}
+
+// ── Chain assembly ──────────────────────────────────────────────
+$lead     = new LeadHandler();
+$manager  = new ManagerHandler();
+$director = new DirectorHandler();
+$end      = new RejectedHandler();
+
+// Fluent chaining: lead → manager → director → end
+$lead-&gt;setNext($manager)-&gt;setNext($director)-&gt;setNext($end);
+
+// ── Usage ────────────────────────────────────────────────────
+$expenses = [500, 3_500, 15_000, 50_000];
+
+foreach ($expenses as $amount) {
+    echo $lead-&gt;handle($amount) . "\n";
+}
+// Lead approved $500
+// Manager approved $3500
+// Director approved $15000
+// REJECTED — $50000 exceeds the $20,000 limit</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 1) -->
+
+          <h3>Example 2 — HTTP middleware: authentication → authorization → throttle</h3>
+          <p>
+            The pattern is identical to that of HTTP frameworks like Express.js
+            or Laravel. Each middleware decides to process (and pass to the
+            next) or stop the chain by returning an error response. The chain
+            is assembled in the application's configuration, independent of the
+            routes.
+          </p>
+
+          <!-- TAB GROUP 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 2 — HTTP middleware">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Simplified HTTP request/response types ────────────────────
+interface Request {
+  path: string;
+  token?: string;
+  role?: 'admin' | 'user';
+  ip: string;
+}
+
+interface Response {
+  status: number;
+  body: string;
+}
+
+// ── Middleware interface ──────────────────────────────────────
+interface Middleware {
+  setNext(m: Middleware): Middleware;
+  process(req: Request): Response;
+}
+
+// ── Abstract base class ───────────────────────────────────────
+abstract class MiddlewareBase implements Middleware {
+  private next: Middleware | null = null;
+
+  setNext(m: Middleware): Middleware {
+    this.next = m;
+    return m;
+  }
+
+  protected forward(req: Request): Response {
+    return this.next
+      ? this.next.process(req)
+      : { status: 204, body: 'OK (no final handler)' };
+  }
+
+  abstract process(req: Request): Response;
+}
+
+// ── Middleware 1: authentication ──────────────────────────────
+class AuthenticationMiddleware extends MiddlewareBase {
+  process(req: Request): Response {
+    if (!req.token) {
+      return { status: 401, body: 'Not authenticated — missing token' };
+    }
+    console.log('[Auth] valid token');
+    return this.forward(req);
+  }
+}
+
+// ── Middleware 2: authorization ───────────────────────────────
+class AuthorizationMiddleware extends MiddlewareBase {
+  constructor(private readonly requiredRole: 'admin' | 'user') {
+    super();
+  }
+
+  process(req: Request): Response {
+    if (req.role !== this.requiredRole &amp;&amp; req.role !== 'admin') {
+      return { status: 403, body: `Access denied — requires role "${this.requiredRole}"` };
+    }
+    console.log(`[Authz] role "${req.role}" authorized`);
+    return this.forward(req);
+  }
+}
+
+// ── Middleware 3: throttle by IP ──────────────────────────────
+class ThrottleMiddleware extends MiddlewareBase {
+  private readonly counters = new Map&lt;string, number&gt;();
+  private readonly limit: number;
+
+  constructor(requestsPerMinute: number) {
+    super();
+    this.limit = requestsPerMinute;
+  }
+
+  process(req: Request): Response {
+    const count = (this.counters.get(req.ip) ?? 0) + 1;
+    this.counters.set(req.ip, count);
+    if (count &gt; this.limit) {
+      return { status: 429, body: `Limit exceeded for IP ${req.ip}` };
+    }
+    console.log(`[Throttle] ${req.ip}: ${count}/${this.limit}`);
+    return this.forward(req);
+  }
+}
+
+// ── Final handler: route ──────────────────────────────────────
+class RouteHandler extends MiddlewareBase {
+  process(req: Request): Response {
+    return { status: 200, body: `GET ${req.path} — OK` };
+  }
+}
+
+// ── Chain assembly ──────────────────────────────────────────────
+const auth     = new AuthenticationMiddleware();
+const authz    = new AuthorizationMiddleware('admin');
+const throttle = new ThrottleMiddleware(3);
+const route    = new RouteHandler();
+
+auth.setNext(authz).setNext(throttle).setNext(route);
+
+// ── Usage ────────────────────────────────────────────────────
+const reqs: Request[] = [
+  { path: '/admin', ip: '10.0.0.1' },                       // no token
+  { path: '/admin', token: 'abc', role: 'user', ip: '10.0.0.2' }, // wrong role
+  { path: '/admin', token: 'xyz', role: 'admin', ip: '10.0.0.3' },  // ok
+  { path: '/admin', token: 'xyz', role: 'admin', ip: '10.0.0.3' },  // ok
+  { path: '/admin', token: 'xyz', role: 'admin', ip: '10.0.0.3' },  // ok
+  { path: '/admin', token: 'xyz', role: 'admin', ip: '10.0.0.3' },  // throttle
+];
+
+for (const req of reqs) {
+  const res = auth.process(req);
+  console.log(`${res.status} — ${res.body}\n`);
+}
+// 401 — Not authenticated — missing token
+// 403 — Access denied — requires role "admin"
+// [Auth] → [Authz] → [Throttle] → 200 — GET /admin — OK
+// ... (repeated)
+// 429 — Limit exceeded for IP 10.0.0.3</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Simplified types ───────────────────────────────────────────
+class Request
+{
+    public function __construct(
+        public readonly string $path,
+        public readonly string $ip,
+        public readonly ?string $token = null,
+        public readonly ?string $role = null  // 'admin' | 'user'
+    ) {}
+}
+
+class Response
+{
+    public function __construct(
+        public readonly int $status,
+        public readonly string $body
+    ) {}
+}
+
+// ── Middleware interface ──────────────────────────────────────
+interface Middleware
+{
+    public function setNext(Middleware $m): Middleware;
+    public function process(Request $req): Response;
+}
+
+// ── Abstract base class ───────────────────────────────────────
+abstract class MiddlewareBase implements Middleware
+{
+    private ?Middleware $next = null;
+
+    public function setNext(Middleware $m): Middleware
+    {
+        $this-&gt;next = $m;
+        return $m;
+    }
+
+    protected function forward(Request $req): Response
+    {
+        return $this-&gt;next
+            ? $this-&gt;next-&gt;process($req)
+            : new Response(204, 'OK (no final handler)');
+    }
+
+    abstract public function process(Request $req): Response;
+}
+
+// ── Middleware 1: authentication ──────────────────────────────
+class AuthenticationMiddleware extends MiddlewareBase
+{
+    public function process(Request $req): Response
+    {
+        if ($req-&gt;token === null) {
+            return new Response(401, 'Not authenticated — missing token');
+        }
+        echo "[Auth] valid token\n";
+        return $this-&gt;forward($req);
+    }
+}
+
+// ── Middleware 2: authorization ───────────────────────────────
+class AuthorizationMiddleware extends MiddlewareBase
+{
+    public function __construct(private readonly string $requiredRole) {}
+
+    public function process(Request $req): Response
+    {
+        if ($req-&gt;role !== $this-&gt;requiredRole &amp;&amp; $req-&gt;role !== 'admin') {
+            return new Response(
+                403,
+                "Access denied — requires role \"{$this-&gt;requiredRole}\""
+            );
+        }
+        echo "[Authz] role \"{$req-&gt;role}\" authorized\n";
+        return $this-&gt;forward($req);
+    }
+}
+
+// ── Middleware 3: throttle by IP ──────────────────────────────
+class ThrottleMiddleware extends MiddlewareBase
+{
+    /** @var array&lt;string, int&gt; */
+    private array $counters = [];
+
+    public function __construct(private readonly int $limit) {}
+
+    public function process(Request $req): Response
+    {
+        $this-&gt;counters[$req-&gt;ip] = ($this-&gt;counters[$req-&gt;ip] ?? 0) + 1;
+        $count = $this-&gt;counters[$req-&gt;ip];
+        if ($count &gt; $this-&gt;limit) {
+            return new Response(429, "Limit exceeded for IP {$req-&gt;ip}");
+        }
+        echo "[Throttle] {$req-&gt;ip}: {$count}/{$this-&gt;limit}\n";
+        return $this-&gt;forward($req);
+    }
+}
+
+// ── Final handler: route ──────────────────────────────────────
+class RouteHandler extends MiddlewareBase
+{
+    public function process(Request $req): Response
+    {
+        return new Response(200, "GET {$req-&gt;path} — OK");
+    }
+}
+
+// ── Chain assembly ──────────────────────────────────────────────
+$auth     = new AuthenticationMiddleware();
+$authz    = new AuthorizationMiddleware('admin');
+$throttle = new ThrottleMiddleware(3);
+$route    = new RouteHandler();
+
+$auth-&gt;setNext($authz)-&gt;setNext($throttle)-&gt;setNext($route);
+
+// ── Usage ────────────────────────────────────────────────────
+$reqs = [
+    new Request('/admin', '10.0.0.1'),
+    new Request('/admin', '10.0.0.2', 'abc', 'user'),
+    new Request('/admin', '10.0.0.3', 'xyz', 'admin'),
+    new Request('/admin', '10.0.0.3', 'xyz', 'admin'),
+    new Request('/admin', '10.0.0.3', 'xyz', 'admin'),
+    new Request('/admin', '10.0.0.3', 'xyz', 'admin'), // throttle
+];
+
+foreach ($reqs as $req) {
+    $res = $auth-&gt;process($req);
+    echo "{$res-&gt;status} — {$res-&gt;body}\n\n";
+}</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 2) -->
+
+        </section><!-- /.artigo__secao (examples) -->
+
+        <!-- 6. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>When more than one object can process a request and the
+              processor isn't known ahead of time:</strong> the sender shouldn't
+              embed routing logic. The chain dynamically decides who acts, based
+              on the request's state.
+            </li>
+            <li>
+              <strong>When you want to send a request to one of several objects
+              without specifying the receiver explicitly:</strong> middleware
+              pipelines, event filters, staged validation flows.
+            </li>
+            <li>
+              <strong>When the set of handlers should be configurable at
+              runtime:</strong> the chain is assembled by the client; handlers
+              can be added, removed, or reordered without modifying the sender
+              or existing handlers.
+            </li>
+            <li>
+              <strong>To implement validation or pre-processing pipelines where
+              each step is autonomous:</strong> each handler only knows its own
+              rule and the forwarding contract — it doesn't know the others.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>When guaranteed processing is mandatory:</strong> CoR
+              doesn't guarantee the request will be processed — it can fall
+              through if no handler accepts it. If processing is mandatory, use
+              a fallback final handler or choose another pattern.
+            </li>
+            <li>
+              <strong>When the chain is very long or nested:</strong> long
+              chains are hard to debug — tracing which handler a request went
+              through requires explicit logging at each link. The stack trace
+              can be deep and the root cause obscure.
+            </li>
+            <li>
+              <strong>When there's exactly one possible handler and it's known
+              statically:</strong> in that case, a direct call or Strategy is
+              simpler and more readable.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Decouples the sender from the receivers — the sender knows only the first handler of the chain.</li>
+            <li>Respects the Single Responsibility Principle: each handler has one handling rule.</li>
+            <li>Respects the Open/Closed Principle: new handlers can be inserted without modifying existing ones or the sender.</li>
+            <li>The chain is configurable at runtime — handlers can be reordered, added, or removed dynamically.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Doesn't guarantee processing — the request can fall through if no handler acts (requires an intentional fallback handler).</li>
+            <li>Makes debugging harder: the execution flow isn't obvious just by reading the code that assembles the chain.</li>
+            <li>Long chains can have a performance impact — each handler adds a method call.</li>
+            <li>Responsibility can become diffuse: when many handlers have overlapping rules, it's hard to know which one will process a given request.</li>
+          </ul>
+        </section>
+
+        <!-- 8. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. A request that falls through (no final handler)</h3>
+          <p>
+            The most common mistake: assembling the chain without a fallback
+            handler at the end. If no handler in the chain accepts the
+            request, it silently returns <code>null</code> — and the calling
+            code may not be prepared for that, causing a
+            <code>NullPointerException</code> or undefined behavior.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Rule of thumb:</strong> always add an explicit final
+            handler that deals with the case "no earlier handler wanted to
+            process this". It can be a warning logger, an exception thrower, or
+            a default error response. Never rely on implicit <code>null</code>
+            as an indicator of "unhandled".
+          </p>
+
+          <h3>2. A chain that never ends (loop)</h3>
+          <p>
+            If a handler calls <code>super.handle()</code> without checking the
+            condition — or if a handler is accidentally added to the end of its
+            own chain — CoR can enter an infinite loop or deep recursion. Make
+            sure every ConcreteHandler has a clear condition to stop the chain
+            and that no handler references itself as the next.
+          </p>
+
+          <h3>3. Diffuse responsibility — handlers that "listen" instead of "filter"</h3>
+          <p>
+            A frequent antipattern: handlers that always call
+            <code>super.handle()</code> regardless of the result — they process
+            AND forward. This turns CoR into a disguised Observer, where every
+            handler always runs. CoR's Single Responsibility Principle is: you
+            either handle and stop, or don't handle and pass. If the domain
+            requires everyone to handle it, use Observer or a listener list.
+          </p>
+
+          <h3>4. Chain of Responsibility vs Strategy — the intent distinction</h3>
+          <p>
+            The confusion arises because both encapsulate behavior in objects
+            with a common interface. The difference is structural and about
+            intent:
+          </p>
+          <ul>
+            <li>
+              <strong>Strategy:</strong> exactly <em>one</em> algorithm is
+              chosen by the context and applied. There's no chain, no
+              forwarding. The context decides which Strategy to use — and only
+              that one runs.
+            </li>
+            <li>
+              <strong>Chain of Responsibility:</strong> <em>zero or more</em>
+              handlers process the request sequentially, each able to stop or
+              continue. None knows the others. The set that will process it is
+              determined at runtime by the request's state.
+            </li>
+          </ul>
+
+          <h3>5. Distinction from Decorator</h3>
+          <p>
+            Structurally similar: both chain objects with the same interface.
+            The difference is that <strong>Decorator always delegates to the
+            next</strong> (adding behavior before or after, never
+            interrupting) and its intent is adding responsibilities to the
+            decorated object. <strong>CoR can interrupt the chain without
+            delegating</strong> — when it processes the request, the following
+            handlers aren't called. If the object always passes it along AND
+            adds behavior, it's Decorator. If it can stop the chain without
+            passing it, it's CoR.
+          </p>
+        </section>
+
+        <!-- 9. RELATED PATTERNS -->
+        <section class="artigo__secao">
+          <h2>Related patterns</h2>
+          <p>
+            Chain of Responsibility is frequently combined with or compared to
+            patterns that also deal with action dispatch and behavior
+            composition:
+          </p>
+          <!--
+            Link discipline: only link already-published articles.
+            Command and Decorator exist → real links.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../command/">Command</a></li>
+            <li><a href="../decorator/">Decorator</a></li>
+            <li><a href="../visitor/">Visitor</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Command</strong> and CoR frequently appear together:
+            Command encapsulates the request as an object, and CoR decides
+            which handler will process it — the Command carries the action's
+            data; CoR routes who acts on it. <strong>Decorator</strong> is the
+            pattern with the greatest structural similarity: both chain
+            objects with the same interface. The key difference is that
+            Decorator <em>always</em> delegates to the next and adds behavior
+            without interrupting the chain, while CoR can <em>stop</em> the
+            chain when it processes the request — the two have opposite
+            intents regarding control flow. <strong>Visitor</strong> can be
+            used to process the nodes of a CoR chain without modifying the
+            handler classes, separating the traversal logic from the handling
+            logic.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="4242424242"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

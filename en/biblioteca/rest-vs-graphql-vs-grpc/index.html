@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>REST vs GraphQL vs gRPC — Dev Helper Library</title>
+  <meta name="description" content="Compare the three dominant communication styles between services: REST, GraphQL, and gRPC. Understand the trade-offs, when to use each one, over-fetching, the N+1 problem, Protocol Buffers, and the pitfalls of each approach." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/rest-vs-graphql-vs-grpc/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>REST vs GraphQL vs gRPC</span>
+        </nav>
+        <span class="artigo__categoria">System Design</span>
+        <h1 class="artigo__titulo">REST vs GraphQL vs gRPC</h1>
+        <p class="artigo__subtitulo">
+          Three dominant styles of communication between services and clients.
+          Each solves a different problem — REST for maximum
+          interoperability, GraphQL for clients with heterogeneous needs, gRPC
+          for efficiency in inter-service communication. Choosing the wrong one
+          creates unnecessary friction.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Define how producers and consumers of data exchange
+            information over the network, under what contract, in what
+            format, and with what efficiency.</strong> REST, GraphQL, and gRPC
+            aren't direct substitutes for one another — each solves a
+            different set of problems and carries distinct trade-offs in
+            complexity, performance, and interoperability.
+          </p>
+          <p>
+            <strong>REST</strong> (Representational State Transfer) exposes
+            resources identified by URLs and uses HTTP verbs as the operation
+            protocol. It's the oldest of the three styles, the simplest to
+            consume, and the most interoperable — any HTTP client can consume a
+            REST API.
+          </p>
+          <p>
+            <strong>GraphQL</strong> centralizes access at a single typed
+            endpoint, where the client specifies exactly the fields it needs.
+            It solves REST's classic over-fetching and under-fetching problems,
+            at the cost of moving complexity to the server and introducing new
+            challenges such as the N+1 problem.
+          </p>
+          <p>
+            <strong>gRPC</strong> uses Protocol Buffers as its IDL and binary
+            serialization format over HTTP/2. It's the most efficient of the
+            three in bytes and CPU, supports native streaming, and generates
+            client/server code from the contract. The price is a steeper
+            learning curve and no direct compatibility with browsers.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Distributed systems need their components to communicate with
+            clear contracts, efficiency suited to the data volume, and
+            manageable coupling. No single style is optimal for every scenario:
+          </p>
+          <ul>
+            <li>
+              <strong>Over-fetching in REST:</strong> a user endpoint returns
+              name, email, address, date of birth, and preferences — but the
+              listing screen only needs name and email. The client receives,
+              and the server serializes, fields that will never be used. In
+              high-volume public APIs, this waste is real bandwidth and CPU
+              cost.
+            </li>
+            <li>
+              <strong>Under-fetching in REST:</strong> to build the profile
+              screen, the client needs the user, recent orders, and addresses.
+              That's three endpoints and three roundtrips — accumulated latency
+              is noticeable to the user on mobile or high-latency networks.
+            </li>
+            <li>
+              <strong>N+1 problem in GraphQL:</strong> an order-list resolver
+              that, for each order, makes a separate query to fetch the product
+              name results in 1 query for the list and N queries for the
+              products — exploding in production with real volume without a
+              DataLoader.
+            </li>
+            <li>
+              <strong>Efficiency and contract in internal communication:</strong>
+              microservices exchanging JSON via REST carry
+              serialization/deserialization overhead and the absence of a
+              compilable contract. Schema changes silently break clients
+              without explicit versioning.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. HOW IT WORKS -->
+        <section class="artigo__secao">
+          <h2>How it works</h2>
+
+          <h3>REST (Representational State Transfer)</h3>
+          <p>
+            Resources are identified by URLs; HTTP verbs define the operations.
+            GET fetches, POST creates, PUT/PATCH updates, DELETE removes. The
+            server is stateless — each request carries all the information
+            needed.
+          </p>
+          <div class="code-bloco">
+<pre><code>    Client                                   Server
+    │                                           │
+    │── GET /users/42 ──────────────────────────►
+    │                                           │ looks up user in the database
+    │◄─ 200 OK { id, name, email, address, ... }│
+    │  (returns ALL fields of the resource)     │
+    │                                           │
+    │── POST /orders ───────────────────────────►
+    │  { userId: 42, items: [...] }             │ creates the order
+    │◄─ 201 Created { orderId: 789 } ───────────│
+    │                                           │
+    │── GET /users/42/orders ───────────────────►  ← under-fetching:
+    │◄─ 200 OK [{ id, status, total }, ...] ────│    2nd roundtrip needed
+    │                                           │
+
+  Versioning:  /v1/users/42  →  /v2/users/42
+  Headers:     Accept: application/vnd.api+json;version=2
+</code></pre>
+          </div>
+          <p>
+            The response always returns the full representation of the
+            resource (or part of it, via projection query params, if the API
+            supports it). Caching is native via HTTP: GET responses can be
+            cached by a CDN, proxy, or browser with <code>Cache-Control</code>
+            and <code>ETag</code> headers. Versioning can be done via URL
+            (<code>/v1/</code>, <code>/v2/</code>) or via the
+            <code>Accept</code> header.
+          </p>
+
+          <h3>GraphQL</h3>
+          <p>
+            A single endpoint (typically <code>POST /graphql</code>) receives
+            operations described in SDL (Schema Definition Language). The
+            client specifies exactly the fields it wants. The server uses
+            resolvers to compose the response.
+          </p>
+          <div class="code-bloco">
+<pre><code>  # Schema (defined on the server)
+  type User {
+    id: ID!
+    name: String!
+    email: String!
+    orders: [Order!]!
+  }
+
+  type Query {
+    user(id: ID!): User
+  }
+
+  # Query (sent by the client)            # Response
+  query {                                  {
+    user(id: "42") {                         "data": {
+      name                                     "user": {
+      orders {                                   "name": "Ana",
+        status                                   "orders": [
+        total                                      { "status": "shipped",
+      }                                              "total": 149.90 }
+    }                                          ]
+  }                                          }
+                                           }
+                                         }
+
+  Operation types:
+    Query        → read (equivalent to GET)
+    Mutation     → write (equivalent to POST/PUT/DELETE)
+    Subscription → real-time events via WebSocket
+</code></pre>
+          </div>
+          <p>
+            <strong>Introspection</strong> lets tools like GraphiQL discover
+            the schema at runtime, generating automatic documentation and
+            autocomplete. The <strong>N+1 problem</strong> arises when a list
+            resolver makes a separate query for each child item — the standard
+            solution is DataLoader (batching + per-request caching).
+          </p>
+
+          <h3>gRPC</h3>
+          <p>
+            Uses Protocol Buffers (<code>.proto</code>) as its IDL and binary
+            serialization format. The <code>protoc</code> compiler generates
+            client and server code in the supported languages. Communication
+            uses HTTP/2, which supports stream multiplexing and native header
+            compression.
+          </p>
+          <div class="code-bloco">
+<pre><code>  // Contract (.proto)
+  syntax = "proto3";
+
+  service UserService {
+    rpc GetUser (GetUserRequest) returns (User);           // Unary
+    rpc ListOrders (ListOrdersRequest) returns             // Server streaming
+        (stream Order);
+    rpc UploadItems (stream Item) returns (UploadResult); // Client streaming
+    rpc Chat (stream Message) returns (stream Message);   // Bidirectional
+  }
+
+  message GetUserRequest { string id = 1; }
+  message User { string id = 1; string name = 2; string email = 3; }
+
+  Flow:
+      Client (generated stub)     Server (generated handler)
+      │── GetUser({ id: "42" }) ──────────────►
+      │  [protobuf binary, ~30 bytes]         │ deserializes, processes
+      │◄─ User { id, name, email } ───────────│
+      │  [protobuf binary, no null fields]    │
+
+  gRPC-Web: an intermediary proxy is required for browsers
+  Browser client → grpc-web proxy → gRPC server
+</code></pre>
+          </div>
+          <p>
+            The four RPC types: <strong>unary</strong> (simple
+            request/response), <strong>server streaming</strong> (server sends
+            multiple responses), <strong>client streaming</strong> (client
+            sends multiple messages), and <strong>bidirectional</strong> (both
+            sides send streams concurrently). The strong contract
+            (<code>.proto</code>) makes incompatible changes visible at
+            compile time.
+          </p>
+
+          <h3>Comparison table</h3>
+          <div class="code-bloco">
+<pre><code>  Criterion        REST              GraphQL           gRPC
+  ────────────────────────────────────────────────────────────────────────────
+  Protocol         HTTP/1.1+         HTTP/1.1+         HTTP/2
+  Format           JSON / XML        JSON              Protobuf (binary)
+  Schema           Optional          Required          Required (.proto)
+  Over-fetching    Yes               No                No
+  Under-fetching   Yes (multiple     No (one query)    No (streaming)
+                   roundtrips)
+  Streaming        Limited           Subscriptions     Native (4 modes)
+                   (SSE / polling)   via WebSocket
+  Browser          Yes               Yes               Requires grpc-web proxy
+  HTTP caching     Native (GET)      Not native        Not native
+  Learning curve   Low               Medium            High
+  Code generation  No                Optional          Native (protoc)
+  Introspection    No                Yes               Reflection (optional)
+  Ideal for        Public APIs,      BFF / mobile,     Inter-service,
+                   simple CRUD,      multiple clients  low latency,
+                   max               with distinct     streaming,
+                   interoperability  needs              strong contracts
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 4. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+
+          <h3>REST</h3>
+          <ul>
+            <li>
+              <strong>Public APIs:</strong> maximum interoperability — any HTTP
+              client, in any language, can consume it without specific
+              libraries.
+            </li>
+            <li>
+              <strong>Simple CRUD with well-defined resources:</strong> when
+              resources have clear boundaries and clients need the full
+              representation, REST is direct and predictable.
+            </li>
+            <li>
+              <strong>Native caching:</strong> when GET responses can be cached
+              by a CDN or reverse proxy without additional logic, REST is the
+              only one of the three that benefits transparently from HTTP
+              caching.
+            </li>
+            <li>
+              <strong>Heterogeneous teams:</strong> when clients are external,
+              public, or unknown, REST conventions minimize the learning curve
+              and the need for specific tooling.
+            </li>
+          </ul>
+
+          <h3>GraphQL</h3>
+          <ul>
+            <li>
+              <strong>BFF (Backend for Frontend):</strong> when there are
+              multiple clients (web, mobile, TV) with very distinct data needs,
+              GraphQL eliminates the proliferation of client-specific
+              endpoints.
+            </li>
+            <li>
+              <strong>Mobile apps with data constraints:</strong> mobile
+              networks have real latency and bandwidth costs. GraphQL lets the
+              client ask for exactly what it needs, reducing payload and number
+              of roundtrips.
+            </li>
+            <li>
+              <strong>Evolving schema without versioning:</strong> adding
+              fields is backward-compatible; fields not requested don't appear
+              in responses. Deprecation is done via schema annotation without
+              breaking existing clients.
+            </li>
+          </ul>
+
+          <h3>gRPC</h3>
+          <ul>
+            <li>
+              <strong>Internal communication between microservices:</strong>
+              when the services are controlled by the same organization, the
+              efficiency of protobuf and the strong <code>.proto</code>
+              contract outweigh the cost of the learning curve.
+            </li>
+            <li>
+              <strong>Critical low latency:</strong> binary serialization and
+              HTTP/2 multiplexing reduce overhead in high-call-frequency
+              scenarios.
+            </li>
+            <li>
+              <strong>Bidirectional streaming:</strong> telemetry, gaming,
+              chat, or real-time processing applications where both sides
+              continuously send data benefit from gRPC's native streams.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>REST with highly fragmented data and mobile clients:</strong>
+              if over-fetching and under-fetching are causing real performance
+              problems, REST with projection query params is a stopgap —
+              GraphQL solves it at the root.
+            </li>
+            <li>
+              <strong>GraphQL for simple public APIs:</strong> the complexity
+              of serving a GraphQL schema (resolvers, DataLoader,
+              introspection, protection against abusive queries) isn't
+              justified when REST does the job well and the audience is
+              external with homogeneous needs.
+            </li>
+            <li>
+              <strong>gRPC exposed directly to browsers:</strong> without a
+              grpc-web proxy, browsers don't support gRPC's HTTP/2 framing.
+              Putting gRPC at the public edge requires additional proxy
+              infrastructure.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 5. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>REST: minimal learning curve, native HTTP caching, universal interoperability, and mature tooling (OpenAPI, Swagger, Postman).</li>
+            <li>GraphQL: eliminates over-fetching and under-fetching, typed schema with introspection, evolution without versioning, and flexibility for multiple clients.</li>
+            <li>gRPC: compact binary serialization, strong contract with code generation, native streaming in four modes, and HTTP/2 multiplexing.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>REST: chronic over-fetching and under-fetching in APIs with heterogeneous clients; manual versioning and no compilable contract by default.</li>
+            <li>GraphQL: silent N+1 problem without DataLoader; HTTP caching doesn't work natively; abusive queries can overload the server without rate limiting or query depth limits.</li>
+            <li>gRPC: not supported by browsers without a proxy; harder debugging (binary payload isn't readable); steep learning curve; less mature in API gateway and monitoring tooling.</li>
+          </ul>
+        </section>
+
+        <!-- 6. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Migrating to GraphQL for over-fetching when the problem is poor API design</h3>
+          <p>
+            Chronic over-fetching in REST often indicates poorly designed
+            endpoints that return entire domain entities instead of
+            use-case-specific projections. Before migrating to GraphQL,
+            evaluate whether adding projection query params
+            (<code>?fields=name,email</code>) or creating screen-specific
+            endpoints solves the problem with much less complexity. GraphQL is
+            the right answer when there are multiple clients with genuinely
+            distinct needs — not when there's a single client and the API is
+            poorly designed.
+          </p>
+
+          <h3>2. GraphQL without DataLoader — silent N+1 in production</h3>
+          <p>
+            A resolver that fetches the product name for each item in a list of
+            orders makes one database query per item. With 10 orders, that's
+            11 queries (1 for the list + 10 for the products). With 1,000
+            orders in production, that's 1,001 queries per request. Without
+            DataLoader to batch and cache lookups per request, the database
+            silently collapses under real load. DataLoader must be configured
+            before exposing any list resolver with child fields.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Rule of thumb:</strong> every time a resolver accesses the
+            database inside a field that can be part of a list, evaluate
+            whether DataLoader is needed. The question is: "if this list has
+            1,000 items, how many queries will this field make?"
+          </p>
+
+          <h3>3. gRPC exposed directly to browsers without a grpc-web proxy</h3>
+          <p>
+            Browsers don't support HTTP/2 framing at the layer needed for
+            standard gRPC. Trying to use gRPC directly from the browser results
+            in silent failure or CORS errors. The solution is grpc-web (an
+            alternative protocol) with a proxy (Envoy, nginx with the grpc-web
+            module) between the browser and the gRPC server. Plan this
+            infrastructure before adopting gRPC in services accessed by
+            browsers.
+          </p>
+
+          <h3>4. Two contracts for the same entity</h3>
+          <p>
+            Mixing REST and GraphQL in the same service without a clear
+            criterion creates two parallel contracts for the same entity: a
+            REST endpoint <code>GET /users/42</code> and a GraphQL query
+            <code>user(id: "42")</code> that return slightly different
+            representations of the same data. Any change needs to be
+            synchronized on both sides. If the decision to use both styles is
+            deliberate (e.g., REST for a public API, GraphQL for an internal
+            BFF), the separation should be into distinct services with clear
+            boundaries, not within the same codebase.
+          </p>
+        </section>
+
+        <!-- 7. RELATED -->
+        <section class="artigo__secao">
+          <h2>Related architectures and patterns</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../event-driven/">Event-Driven Architecture</a></li>
+            <li><a href="../caching/">Caching</a></li>
+            <li><a href="../load-balancing/">Load Balancing</a></li>
+            <li><a href="../filas-de-mensagem/">Message Queues</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Event-Driven Architecture</strong> and gRPC solve
+            orthogonal problems: gRPC is synchronous point-to-point
+            communication (RPC), while EDA is asynchronous event-based
+            communication. In microservices, it's common to use gRPC for
+            internal synchronous calls that need an immediate response and
+            messaging/EDA for asynchronous operations that don't need to wait
+            for the consumer.
+          </p>
+          <p>
+            <strong>Caching</strong> interacts directly with REST and GraphQL
+            in distinct ways. REST benefits from native HTTP caching: GET
+            responses are cacheable by a CDN and browser with
+            <code>Cache-Control</code> and <code>ETag</code> without extra
+            code. GraphQL, since it uses POST for queries, isn't cacheable by
+            standard HTTP proxies — strategies like persisted queries,
+            per-resolver caching, or APQ (Automatic Persisted Queries) are
+            needed to take advantage of edge caching.
+          </p>
+          <p>
+            <strong>Load Balancing</strong> interacts with gRPC differently
+            than with REST. HTTP/2 multiplexes multiple streams over the same
+            TCP connection, which means an L4 (transport-layer) load balancer
+            sends all streams of a connection to the same server — nullifying
+            load balancing. L7 load balancers that understand HTTP/2 (like
+            Envoy) are needed to correctly distribute gRPC calls across
+            instances.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="5858585858"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

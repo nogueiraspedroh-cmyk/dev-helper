@@ -821,15 +821,14 @@ foreach (array_slice($document, 0, strlen($text)) as $c) {
             abstract-factory, builder, prototype — plus this batch's 7 —
             adapter, decorator, facade, proxy, composite, bridge, flyweight).
             Composite and Singleton are in this batch (or Batch 1) → real
-            ../slug/ links. Visitor has no article yet even in pt-BR (kept
-            as a pending span in the source article) → mirrored here as a
-            pending span, not a link, to preserve structural parity with the
-            pt-BR original.
+            ../slug/ links. Visitor has a pt-BR article but no English
+            translation yet → same fallback used by composite: link straight
+            to the pt-BR original via ../../../biblioteca/visitor/.
           -->
           <ul class="artigo__padroes-relacionados">
             <li><a href="../composite/">Composite</a></li>
             <li><a href="../singleton/">Singleton</a></li>
-            <li><span class="artigo__padrao-pendente">Visitor (coming soon)</span></li>
+            <li><a href="../../../biblioteca/visitor/">Visitor</a></li>
           </ul>
           <p class="mt-1">
             The <strong>Composite</strong> frequently uses Flyweight: when a

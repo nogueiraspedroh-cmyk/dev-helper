@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Folder Structure Best Practices — Code Organization | Dev Helper Library</title>
+  <meta name="description" content="Folder structure best practices for software projects: common conventions, how structure exposes architecture, backend API and frontend SPA examples, and pitfalls like the utils/ junk drawer and barrel re-exports with circular coupling." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/estrutura-de-pastas/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Folder Structure</span>
+        </nav>
+        <span class="artigo__categoria">Organization</span>
+        <h1 class="artigo__titulo">Folder Structure Best Practices</h1>
+        <p class="artigo__subtitulo">
+          A project's directory structure isn't just organization — it's
+          living documentation of the architecture. A well-thought-out
+          structure communicates where each thing lives, what the system's
+          boundaries are, and which conventions the team agreed to follow.
+          A poorly-thought-out structure hides the architecture, creates
+          friction, and turns into a junk drawer.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Define directory conventions that make the system's
+            architecture visible in the file structure</strong>, making
+            navigation easier, reducing the time it takes to find where
+            something is or should be, and making the boundaries and
+            responsibilities of each part of the system clear.
+          </p>
+          <p>
+            A good folder structure answers three questions without the
+            developer needing to open a single file: <em>what does this
+            project do</em>, <em>how is it organized</em>, and <em>where do
+            I put new code</em>.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Without explicit conventions, projects grow entropically:
+          </p>
+          <ul>
+            <li>Each developer puts files wherever they find convenient.</li>
+            <li>Code of different natures (configuration, business logic, utilities, infrastructure) gets mixed in the same directories.</li>
+            <li>The <code>utils/</code> folder becomes a repository for everything without a clear owner.</li>
+            <li>New team members take weeks to understand where to look for things.</li>
+            <li>The actual architecture and the folder structure diverge — the code says one thing, the folder says another.</li>
+          </ul>
+          <p>
+            The cost isn't just cosmetic. A confusing structure creates
+            circular imports, makes refactoring risky, and hurts visibility
+            into what can be reused.
+          </p>
+        </section>
+
+        <!-- 3. STRUCTURE -->
+        <section class="artigo__secao">
+          <h2>Structure</h2>
+
+          <h3>Common project-level conventions</h3>
+          <p>
+            Regardless of the language or framework, certain root-level
+            directory conventions repeat across most well-organized
+            projects:
+          </p>
+          <div class="code-bloco">
+<pre><code>  project/
+  ├── src/           ← application source code (the only place with logic)
+  ├── tests/         ← automated tests (or __tests__/ next to src/)
+  │     ├── unit/
+  │     ├── integration/
+  │     └── e2e/
+  ├── docs/          ← technical documentation (ADRs, diagrams, guides)
+  ├── config/        ← environment and tooling configuration files
+  │     ├── jest.config.ts
+  │     └── tsconfig.json
+  ├── scripts/       ← build, seed, migration and automation scripts
+  └── dist/          ← compiled artifact (generated; never versioned)
+</code></pre>
+          </div>
+
+          <h3>Example: backend API (Node/Express with layers)</h3>
+          <div class="code-bloco">
+<pre><code>  src/
+  ├── users/                       ← feature: users
+  │     ├── http/
+  │     │     ├── UserController.ts
+  │     │     └── CreateUserDto.ts
+  │     ├── application/
+  │     │     └── CreateUserUseCase.ts
+  │     ├── domain/
+  │     │     ├── User.ts           ← domain entity
+  │     │     └── IUserRepository.ts ← interface (port)
+  │     └── infra/
+  │           └── PrismaUserRepository.ts ← concrete implementation
+  │
+  ├── orders/                      ← feature: orders
+  │     ├── http/
+  │     ├── application/
+  │     ├── domain/
+  │     └── infra/
+  │
+  ├── shared/                      ← genuinely shared code
+  │     ├── errors/                ← domain error classes
+  │     ├── types/                 ← shared TypeScript types
+  │     └── middleware/            ← cross-cutting HTTP middleware
+  │
+  └── app.ts                       ← bootstrap: sets up the Express server
+</code></pre>
+          </div>
+
+          <h3>Example: frontend SPA (React/Vue)</h3>
+          <div class="code-bloco">
+<pre><code>  src/
+  ├── features/                    ← application features
+  │     ├── auth/
+  │     │     ├── components/      ← auth-specific components
+  │     │     ├── hooks/           ← auth hooks (useAuth, useLogin)
+  │     │     ├── services/        ← auth API calls
+  │     │     └── types.ts         ← auth types
+  │     │
+  │     └── dashboard/
+  │           ├── components/
+  │           ├── hooks/
+  │           └── services/
+  │
+  ├── components/                  ← reusable UI components (no business logic)
+  │     ├── Button/
+  │     │     ├── Button.tsx
+  │     │     └── Button.test.tsx
+  │     └── Modal/
+  │
+  ├── hooks/                       ← generic hooks (useDebounce, useFetch)
+  ├── services/                    ← HTTP client, API configuration
+  ├── store/                       ← global state (Redux, Zustand, Pinia)
+  ├── types/                       ← global TypeScript types
+  └── main.tsx                     ← entry point
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 4. HOW IT WORKS -->
+        <section class="artigo__secao">
+          <h2>How structure exposes (or hides) architecture</h2>
+
+          <h3>Screaming Architecture</h3>
+          <p>
+            Robert C. Martin proposed that a project's structure should
+            "scream" what the system does — not the framework it uses. A
+            root folder called <code>rails/</code> screams "this is a Rails
+            project." A root folder with <code>users/</code>,
+            <code>orders/</code> and <code>payments/</code> screams "this is
+            an e-commerce system." The second reveals the business intent.
+          </p>
+          <p>
+            In practice, this means the top-level directories should reflect
+            the system's features or domains, not its technical mechanisms.
+            Frameworks and libraries are details — they should only appear
+            in the outermost layers.
+          </p>
+
+          <h3>Where to put tests</h3>
+          <p>
+            There are two conventions, each with trade-offs:
+          </p>
+          <ul>
+            <li>
+              <strong>Next to the code (<code>User.test.ts</code> beside
+              <code>User.ts</code>):</strong> makes it easy to find and keep
+              the test next to the implementation. Favors unit tests. More
+              common in JavaScript/TypeScript projects with Jest or Vitest.
+            </li>
+            <li>
+              <strong>A separate <code>tests/</code> directory:</strong>
+              clearly separates production code from test code. Makes it
+              easier to have integration and e2e tests that exercise
+              multiple modules. More common in Python, Go and Java projects.
+            </li>
+          </ul>
+          <p>
+            The most important thing is to be consistent. Mixing both
+            conventions in the same project creates confusion about where
+            something's test lives.
+          </p>
+        </section>
+
+        <!-- 5. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>Practical principles</h2>
+
+          <h3>Name directories by purpose, not by type</h3>
+          <p>
+            <code>helpers/</code>, <code>utils/</code> and <code>misc/</code>
+            describe <em>the type</em> of file (auxiliary code), not its
+            <em>purpose</em>. Replace them with names that communicate
+            intent: <code>formatters/</code>, <code>validators/</code>,
+            <code>date-utils/</code>. If you can't name a directory
+            precisely, the code inside it probably doesn't have enough
+            cohesion to be grouped together.
+          </p>
+
+          <h3>Maximum useful depth</h3>
+          <p>
+            Structures with more than four or five levels of depth are hard
+            to navigate. If a file's path is
+            <code>src/features/orders/services/handlers/processors/</code>,
+            the hierarchy is likely modeling subdivisions that could be
+            captured by the file's name instead of by directories.
+          </p>
+
+          <h3>Consistency over perfection</h3>
+          <p>
+            A good structure applied consistently is more valuable than a
+            "perfect" structure that each developer interprets differently
+            when deciding where things go. Document the conventions in the
+            <code>README</code> or in an ADR (Architecture Decision Record)
+            and follow them.
+          </p>
+        </section>
+
+        <!-- 6. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Best practices vs anti-patterns</h2>
+
+          <h3>Best practices</h3>
+          <ul class="artigo__lista-pros">
+            <li>Separate source code (<code>src/</code>) from generated artifacts (<code>dist/</code>) and automation scripts (<code>scripts/</code>).</li>
+            <li>Lowercase, hyphenated directory names (kebab-case) — avoid problems on case-insensitive file systems.</li>
+            <li>A structure that reflects the business domain at the top levels.</li>
+            <li>Tests close to the code they test, or in a test directory with a mirrored structure.</li>
+            <li>An <code>index.ts</code> (barrel) per directory only when the module's public API is stable and explicitly defined.</li>
+          </ul>
+
+          <h3>Anti-patterns</h3>
+          <ul class="artigo__lista-contras">
+            <li><code>utils/</code> with no criterion: ends up with date formatting files, string helpers, math functions and ID validators all in the same directory.</li>
+            <li><code>shared/</code> or <code>common/</code> with no admission criterion: becomes the new <code>utils/</code>.</li>
+            <li>Directories with a single file: if there's only one file, the directory probably doesn't add value.</li>
+            <li>A structure that copies the framework, not the domain: <code>controllers/</code>, <code>models/</code>, <code>views/</code> folders as the top level hide what the system does.</li>
+            <li>Chained barrel re-exports (see below).</li>
+          </ul>
+        </section>
+
+        <!-- 7. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. The utils/ folder as a junk drawer</h3>
+          <p>
+            <code>utils/</code> starts with a date-formatting function and
+            ends up with 40 files of completely different natures. The
+            problem isn't having utility code — it's grouping it without a
+            cohesion criterion. When you can't describe what
+            <code>utils/</code> contains in one sentence, it has become a
+            junk drawer.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Solution:</strong> split by responsibility domain.
+            <code>formatters/</code> for value formatting,
+            <code>validators/</code> for validation, <code>parsers/</code>
+            for parsing. If a utility semantically belongs to a feature, put
+            it inside that feature.
+          </p>
+
+          <h3>2. Barrel re-exports creating circular coupling</h3>
+          <p>
+            Barrel exports (<code>index.ts</code> that re-exports everything
+            from a directory) are convenient for importing from a module
+            through a short path. The problem arises when barrels are
+            chained: <code>A</code> exports <code>B</code> and <code>C</code>;
+            <code>B</code> imports from <code>A</code> to use <code>C</code>.
+            Result: a circular dependency that the bundler may resolve in
+            unpredictable ways.
+          </p>
+          <div class="code-bloco">
+<pre><code>  // anti-pattern: B imports from A to use C (which A re-exports)
+  // src/users/index.ts
+  export { UserService } from './UserService';
+  export { UserUtils } from './UserUtils';   // C
+
+  // src/users/UserService.ts
+  import { UserUtils } from '../users';      // imports A to reach C
+  //                           ^^^^^^ creates a circular dependency: UserService -&gt; users/index -&gt; UserService
+
+  // correct: import directly
+  import { UserUtils } from './UserUtils';
+</code></pre>
+          </div>
+          <p>
+            Use barrels sparingly. An <code>index.ts</code> is appropriate
+            for defining a module's public API — what it exposes to other
+            modules. Don't use barrels as a shortcut to avoid direct imports
+            within the same module.
+          </p>
+
+          <h3>3. shared/ directory without an admission criterion</h3>
+          <p>
+            <code>shared/</code> solves the problem of code used by multiple
+            features, but without a clear criterion for what belongs there,
+            it becomes another dumping ground. Two signs that something
+            doesn't belong in <code>shared/</code>: (1) only one feature
+            uses it; (2) the code knows about the details of a specific
+            feature. Neither case is "genuinely shared."
+          </p>
+
+          <h3>4. Structure that diverges from the actual architecture</h3>
+          <p>
+            A layered structure with <code>controllers/</code> and
+            <code>services/</code> folders is cosmetic if
+            <code>UserController</code> accesses the database directly. A
+            feature-based structure is misleading if every feature freely
+            imports from every other one. The folder structure should
+            reflect the system's real boundaries — not create them on paper
+            while the code violates them.
+          </p>
+        </section>
+
+        <!-- 8. RELATED PATTERNS AND ARCHITECTURES -->
+        <section class="artigo__secao">
+          <h2>Related topics</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../feature-vs-layer/">Feature-based vs Layer-based Organization</a></li>
+            <li><a href="../arquitetura-em-camadas/">Layered Architecture</a></li>
+          </ul>
+          <p class="mt-1">
+            Folder structure and
+            <a href="../feature-vs-layer/">feature-based vs layer-based
+            organization</a> are complementary decisions: the organization
+            defines the primary grouping criterion; the folder structure
+            defines the naming conventions, depth and location of each type
+            of artifact within that criterion.
+          </p>
+          <p>
+            <a href="../arquitetura-em-camadas/">Layered Architecture</a>
+            defines dependency rules between parts of the system. The folder
+            structure is how those layers become visible in the file system.
+            A good structure makes architecture violations obvious — an
+            import from <code>infra/</code> into <code>domain/</code> is
+            immediately suspicious when directories are named consistently
+            with the architecture.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="4646464646"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

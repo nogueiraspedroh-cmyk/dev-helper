@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interpreter — Design Patterns | Dev Helper Library</title>
+  <meta name="description" content="Learn the Interpreter pattern (GoF) in depth: intent, problem, solution, structure, examples in TypeScript and PHP, when to use it, when to avoid it, and common pitfalls." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/interpreter/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Interpreter</span>
+        </nav>
+        <span class="artigo__categoria">Behavioral Pattern (GoF)</span>
+        <h1 class="artigo__titulo">Interpreter</h1>
+        <p class="artigo__subtitulo">
+          Defines a representation for a language's grammar and an interpreter
+          that uses that representation to process sentences — each grammar
+          rule becomes a class, and the syntax tree is built by composing
+          those classes.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Given a language, define a representation for its grammar
+            along with an interpreter that uses that representation to
+            process sentences in the language.</strong> Each grammar rule maps
+            to a class; complex expressions are formed by composing objects of
+            those classes into syntax trees — which are, therefore,
+            Composites.
+          </p>
+          <p>
+            Cataloged by the GoF (1994) as a behavioral pattern, Interpreter
+            is more educational than widely applied in modern projects. It's
+            useful for <strong>simple languages and small DSLs</strong> where
+            the grammar has few rules and the manual expressiveness of
+            classes pays off. For real grammars — with complex tokens,
+            operator precedence, lexical and syntax error handling — use
+            dedicated tools: parser generators (ANTLR, PEG.js, Tree-sitter),
+            parser combinators (Parsimmon, Chevrotain), or PEG/BNF grammars.
+            Interpreter's class-based approach quickly becomes unviable as the
+            grammar grows.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Imagine a configuration system that accepts filters written as
+            mathematical expressions with variables: <code>a + b * 3</code>,
+            where <code>a</code> and <code>b</code> come from a context
+            (record, session, configuration). The naive approach evaluates the
+            expression as a string at runtime — unsafe and inflexible:
+          </p>
+          <div class="code-bloco">
+<pre><code>// Naive approach — DON'T do this:
+function evaluate(expression: string, context: Record&lt;string, number&gt;): number {
+  // eval() executes arbitrary code — code injection risk.
+  // No validation, no typing, no useful error messages.
+  return eval(expression.replace(/([a-z]+)/g, (_, v) =&gt; String(context[v] ?? 0)));
+}
+
+console.log(evaluate('a + b * 3', { a: 5, b: 4 }));   // 17 (but dangerous!)
+// Worse: evaluate('process.exit(1)', {}) crashes the process.</code></pre>
+          </div>
+          <p>
+            Interpreter solves this by mapping each grammar rule to a class.
+            The expression is represented as a tree of objects — built
+            manually or by a simple parser. Each node knows how to interpret
+            itself given a context, and evaluation happens through
+            polymorphic calls over the tree — no <code>eval()</code>, no
+            arbitrary code.
+          </p>
+        </section>
+
+        <!-- 3. SOLUTION -->
+        <section class="artigo__secao">
+          <h2>Solution</h2>
+          <p>Interpreter organizes the code into four participants:</p>
+          <ol>
+            <li>
+              <strong>AbstractExpression (interface):</strong> declares the
+              <code>interpret(context): T</code> method that every expression
+              must implement. The return type depends on the language:
+              number, boolean, string. The context carries the external state
+              needed for evaluation (variable values, data records,
+              settings).
+            </li>
+            <li>
+              <strong>TerminalExpression:</strong> implements the
+              interpretation of a terminal symbol of the grammar — a symbol
+              that doesn't expand into others. Examples: <code>NumberLiteral</code>
+              (returns a literal value) and <code>Variable</code> (looks up
+              the context). These are the syntax tree's leaves.
+            </li>
+            <li>
+              <strong>NonTerminalExpression:</strong> implements a grammar
+              rule that references other expressions. Examples:
+              <code>Sum</code>, <code>Subtraction</code>,
+              <code>Multiplication</code>. Each NonTerminalExpression holds
+              references to sub-expressions (left and right) and delegates
+              interpretation to them before combining the results. Since each
+              NonTerminalExpression contains other <code>IExpression</code>
+              objects, the structure is a <strong>Composite</strong>.
+            </li>
+            <li>
+              <strong>Context:</strong> carries the global information needed
+              for interpretation — typically the variable values. In
+              TypeScript, it can be a simple
+              <code>Record&lt;string, number&gt;</code>; in more complex
+              systems, an object with query methods and accumulated state.
+            </li>
+          </ol>
+          <p>
+            Evaluation happens by calling
+            <code>rootExpression.interpret(context)</code>: the method
+            recursively walks the tree, from internal nodes down to the
+            leaves, and returns the combined result. The grammar is implicit
+            in the classes' structure — there's no parser generator, just
+            composed objects.
+          </p>
+        </section>
+
+        <!-- 4. STRUCTURE -->
+        <section class="artigo__secao">
+          <h2>Structure</h2>
+          <div class="code-bloco">
+<pre><code>         «interface»
+         IExpression
+  ┌────────────────────────────────────────┐
+  │ + interpret(ctx: Context): number      │
+  └────────────────────────────────────────┘
+               ▲
+   ┌───────────┼────────────────────────────────┐
+   │           │           │           │        │
+NumberLiteral Variable    Sum    Subtraction  Multiplication
+(Terminal) (Terminal) (NonTerminal)(NonTerminal)(NonTerminal)
+   │           │
+   │ returns   │ looks up ctx[name]
+   │ this.value│
+   │           │
+   └─ doesn't reference other IExpression (leaf)
+
+Sum / Subtraction / Multiplication:
+  ┌───────────────────────────────────────────────┐
+  │ - left: IExpression                           │
+  │ - right: IExpression                          │
+  │ + interpret(ctx): number                      │
+  │   return left.interpret(ctx)                  │
+  │        OP right.interpret(ctx)                │
+  └───────────────────────────────────────────────┘
+  (internal Composite — each node can contain other nodes)
+
+
+Context:
+  { a: 5, b: 4 }   (Record&lt;string, number&gt;)
+
+
+Flow for "a + (b * 3)", ctx = {a:5, b:4}:
+
+  Sum
+  ├── Variable('a')  → interpret(ctx) = 5
+  └── Multiplication
+       ├── Variable('b')      → interpret(ctx) = 4
+       └── NumberLiteral(3)   → interpret(ctx) = 3
+       → 4 * 3 = 12
+  → 5 + 12 = 17
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. CODE EXAMPLES -->
+        <section class="artigo__secao">
+          <h2>Code examples</h2>
+
+          <h3>Example 1 — Mathematical expressions with variables and context</h3>
+          <p>
+            A complete implementation with the <code>IExpression</code>
+            interface, two terminal expressions (<code>NumberLiteral</code>
+            and <code>Variable</code>), and three non-terminals
+            (<code>Sum</code>, <code>Subtraction</code>,
+            <code>Multiplication</code>). The context is a simple map of
+            variables. The tree is built manually — in real systems, a parser
+            would do this work.
+          </p>
+
+          <!-- TAB GROUP 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 1 — mathematical expressions with variables">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Context ───────────────────────────────────────────────────
+// Map of variables available during interpretation.
+type Context = Record&lt;string, number&gt;;
+
+// ── AbstractExpression ────────────────────────────────────────
+interface IExpression {
+  interpret(ctx: Context): number;
+}
+
+// ── TerminalExpressions ───────────────────────────────────────
+
+// NumberLiteral: a leaf that returns a literal value.
+class NumberLiteral implements IExpression {
+  constructor(private readonly value: number) {}
+
+  interpret(_ctx: Context): number {
+    return this.value;
+  }
+}
+
+// Variable: a leaf that looks up the context by name.
+class Variable implements IExpression {
+  constructor(private readonly name: string) {}
+
+  interpret(ctx: Context): number {
+    if (!(this.name in ctx)) {
+      throw new Error(`Variable '${this.name}' not defined in context`);
+    }
+    return ctx[this.name];
+  }
+}
+
+// ── NonTerminalExpressions ────────────────────────────────────
+
+class Sum implements IExpression {
+  constructor(
+    private readonly left: IExpression,
+    private readonly right: IExpression
+  ) {}
+
+  interpret(ctx: Context): number {
+    return this.left.interpret(ctx) + this.right.interpret(ctx);
+  }
+}
+
+class Subtraction implements IExpression {
+  constructor(
+    private readonly left: IExpression,
+    private readonly right: IExpression
+  ) {}
+
+  interpret(ctx: Context): number {
+    return this.left.interpret(ctx) - this.right.interpret(ctx);
+  }
+}
+
+class Multiplication implements IExpression {
+  constructor(
+    private readonly left: IExpression,
+    private readonly right: IExpression
+  ) {}
+
+  interpret(ctx: Context): number {
+    return this.left.interpret(ctx) * this.right.interpret(ctx);
+  }
+}
+
+// ── Usage ────────────────────────────────────────────────────
+// Expression: a + (b * 3) - 1
+// AST built manually — in production, a parser would do this.
+const expression: IExpression = new Subtraction(
+  new Sum(
+    new Variable('a'),
+    new Multiplication(new Variable('b'), new NumberLiteral(3))
+  ),
+  new NumberLiteral(1)
+);
+
+// Context 1
+const ctx1: Context = { a: 5, b: 4 };
+console.log(expression.interpret(ctx1));
+// 5 + (4 * 3) - 1 = 16
+
+// Context 2 — same expression, different values
+const ctx2: Context = { a: 10, b: 2 };
+console.log(expression.interpret(ctx2));
+// 10 + (2 * 3) - 1 = 15
+
+// Composite expression: (a - b) * (a + b)  → difference of squares
+const diffOfSquares: IExpression = new Multiplication(
+  new Subtraction(new Variable('a'), new Variable('b')),
+  new Sum(new Variable('a'), new Variable('b'))
+);
+// a=5, b=3 → (5-3)*(5+3) = 2*8 = 16
+console.log(diffOfSquares.interpret({ a: 5, b: 3 }));   // 16</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── AbstractExpression ────────────────────────────────────────
+interface IExpression
+{
+    /** @param array&lt;string, float&gt; $ctx */
+    public function interpret(array $ctx): float;
+}
+
+// ── TerminalExpressions ───────────────────────────────────────
+
+class NumberLiteral implements IExpression
+{
+    public function __construct(private readonly float $value) {}
+
+    public function interpret(array $ctx): float
+    {
+        return $this-&gt;value;
+    }
+}
+
+class Variable implements IExpression
+{
+    public function __construct(private readonly string $name) {}
+
+    public function interpret(array $ctx): float
+    {
+        if (!array_key_exists($this-&gt;name, $ctx)) {
+            throw new \RuntimeException(
+                "Variable '{$this-&gt;name}' not defined in context"
+            );
+        }
+        return (float) $ctx[$this-&gt;name];
+    }
+}
+
+// ── NonTerminalExpressions ────────────────────────────────────
+
+class Sum implements IExpression
+{
+    public function __construct(
+        private readonly IExpression $left,
+        private readonly IExpression $right
+    ) {}
+
+    public function interpret(array $ctx): float
+    {
+        return $this-&gt;left-&gt;interpret($ctx)
+             + $this-&gt;right-&gt;interpret($ctx);
+    }
+}
+
+class Subtraction implements IExpression
+{
+    public function __construct(
+        private readonly IExpression $left,
+        private readonly IExpression $right
+    ) {}
+
+    public function interpret(array $ctx): float
+    {
+        return $this-&gt;left-&gt;interpret($ctx)
+             - $this-&gt;right-&gt;interpret($ctx);
+    }
+}
+
+class Multiplication implements IExpression
+{
+    public function __construct(
+        private readonly IExpression $left,
+        private readonly IExpression $right
+    ) {}
+
+    public function interpret(array $ctx): float
+    {
+        return $this-&gt;left-&gt;interpret($ctx)
+             * $this-&gt;right-&gt;interpret($ctx);
+    }
+}
+
+// ── Usage ────────────────────────────────────────────────────
+// Expression: a + (b * 3) - 1
+$expression = new Subtraction(
+    new Sum(
+        new Variable('a'),
+        new Multiplication(new Variable('b'), new NumberLiteral(3))
+    ),
+    new NumberLiteral(1)
+);
+
+// Context 1
+$ctx1 = ['a' =&gt; 5, 'b' =&gt; 4];
+echo $expression-&gt;interpret($ctx1) . "\n";
+// 5 + (4 * 3) - 1 = 16
+
+// Context 2 — same expression, different values
+$ctx2 = ['a' =&gt; 10, 'b' =&gt; 2];
+echo $expression-&gt;interpret($ctx2) . "\n";
+// 10 + (2 * 3) - 1 = 15
+
+// Difference of squares: (a - b) * (a + b)
+$diffOfSquares = new Multiplication(
+    new Subtraction(new Variable('a'), new Variable('b')),
+    new Sum(new Variable('a'), new Variable('b'))
+);
+echo $diffOfSquares-&gt;interpret(['a' =&gt; 5, 'b' =&gt; 3]) . "\n";   // 16</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 1) -->
+
+          <h3>Example 2 — Mini boolean filter DSL</h3>
+          <p>
+            Interpreter is also well suited for small query or filter DSLs.
+            In this example, the language has three rules:
+            <code>Equals</code> (terminal — checks whether a record's field
+            has a given value), <code>And</code>, and <code>Or</code> as
+            non-terminals. The context is the record being evaluated. The
+            expression filters a list of records without <code>eval()</code>
+            and with type-safe composition.
+          </p>
+
+          <!-- TAB GROUP 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 2 — boolean filter DSL">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Context: a data record ────────────────────────────────────
+type Record_ = Record&lt;string, string | number&gt;;
+
+// ── AbstractExpression ────────────────────────────────────────
+interface ICondition {
+  evaluate(record: Record_): boolean;
+}
+
+// ── TerminalExpression: field = value ─────────────────────────
+class Equals implements ICondition {
+  constructor(
+    private readonly field: string,
+    private readonly value: string | number
+  ) {}
+
+  evaluate(record: Record_): boolean {
+    return record[this.field] === this.value;
+  }
+}
+
+// ── NonTerminalExpression: And ────────────────────────────────
+class And implements ICondition {
+  constructor(
+    private readonly left: ICondition,
+    private readonly right: ICondition
+  ) {}
+
+  evaluate(record: Record_): boolean {
+    // Short-circuit: if left is false, right isn't evaluated.
+    return this.left.evaluate(record) &amp;&amp; this.right.evaluate(record);
+  }
+}
+
+// ── NonTerminalExpression: Or ──────────────────────────────────
+class Or implements ICondition {
+  constructor(
+    private readonly left: ICondition,
+    private readonly right: ICondition
+  ) {}
+
+  evaluate(record: Record_): boolean {
+    return this.left.evaluate(record) || this.right.evaluate(record);
+  }
+}
+
+// ── Usage ────────────────────────────────────────────────────
+// DSL: status = 'active' AND (plan = 'pro' OR plan = 'enterprise')
+const filter: ICondition = new And(
+  new Equals('status', 'active'),
+  new Or(
+    new Equals('plan', 'pro'),
+    new Equals('plan', 'enterprise')
+  )
+);
+
+const records: Record_[] = [
+  { status: 'active',   plan: 'pro' },
+  { status: 'active',   plan: 'free' },
+  { status: 'inactive', plan: 'pro' },
+  { status: 'active',   plan: 'enterprise' },
+];
+
+const result = records.filter(r =&gt; filter.evaluate(r));
+console.log(result);
+// [{ status: 'active', plan: 'pro' }, { status: 'active', plan: 'enterprise' }]
+
+// The filter tree can be built dynamically from a JSON
+// configuration — no eval(), with full control over what
+// the language can express.</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── AbstractExpression ────────────────────────────────────────
+interface ICondition
+{
+    /** @param array&lt;string, string|float&gt; $record */
+    public function evaluate(array $record): bool;
+}
+
+// ── TerminalExpression: field = value ─────────────────────────
+class Equals implements ICondition
+{
+    public function __construct(
+        private readonly string $field,
+        private readonly string|float $value
+    ) {}
+
+    public function evaluate(array $record): bool
+    {
+        return isset($record[$this-&gt;field])
+            &amp;&amp; $record[$this-&gt;field] === $this-&gt;value;
+    }
+}
+
+// ── NonTerminalExpression: And ────────────────────────────────
+// Named AndCondition (not And) because "and" is a reserved operator in PHP.
+class AndCondition implements ICondition
+{
+    public function __construct(
+        private readonly ICondition $left,
+        private readonly ICondition $right
+    ) {}
+
+    public function evaluate(array $record): bool
+    {
+        // PHP's native short-circuit for &&.
+        return $this-&gt;left-&gt;evaluate($record)
+            &amp;&amp; $this-&gt;right-&gt;evaluate($record);
+    }
+}
+
+// ── NonTerminalExpression: Or ──────────────────────────────────
+// Named OrCondition (not Or) because "or" is a reserved operator in PHP.
+class OrCondition implements ICondition
+{
+    public function __construct(
+        private readonly ICondition $left,
+        private readonly ICondition $right
+    ) {}
+
+    public function evaluate(array $record): bool
+    {
+        return $this-&gt;left-&gt;evaluate($record)
+            || $this-&gt;right-&gt;evaluate($record);
+    }
+}
+
+// ── Usage ────────────────────────────────────────────────────
+// DSL: status = 'active' AND (plan = 'pro' OR plan = 'enterprise')
+$filter = new AndCondition(
+    new Equals('status', 'active'),
+    new OrCondition(
+        new Equals('plan', 'pro'),
+        new Equals('plan', 'enterprise')
+    )
+);
+
+$records = [
+    ['status' =&gt; 'active',   'plan' =&gt; 'pro'],
+    ['status' =&gt; 'active',   'plan' =&gt; 'free'],
+    ['status' =&gt; 'inactive', 'plan' =&gt; 'pro'],
+    ['status' =&gt; 'active',   'plan' =&gt; 'enterprise'],
+];
+
+$result = array_filter($records, fn($r) =&gt; $filter-&gt;evaluate($r));
+print_r(array_values($result));
+// [
+//   ['status' =&gt; 'active', 'plan' =&gt; 'pro'],
+//   ['status' =&gt; 'active', 'plan' =&gt; 'enterprise']
+// ]</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 2) -->
+
+        </section><!-- /.artigo__secao (examples) -->
+
+        <!-- 6. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>For small, stable DSLs:</strong> query filters, business
+              rule expressions, small configuration mini-languages, or
+              templates with few constructs. The number of expression classes
+              should be small — up to ten rules is reasonable; beyond that,
+              prefer a parser generator.
+            </li>
+            <li>
+              <strong>When the grammar is well known and rarely changes:</strong>
+              Interpreter is easy to extend with new operators (new classes),
+              but any change to the grammar's core structure can cascade
+              through every existing class.
+            </li>
+            <li>
+              <strong>For educational purposes and prototyping:</strong> the
+              pattern makes a grammar's structure explicit in class code —
+              useful for learning how parsers work internally before using
+              automated tools.
+            </li>
+            <li>
+              <strong>When security is critical:</strong> an
+              Interpreter-based DSL executes only the operations you defined
+              — with no risk of code injection via <code>eval()</code>.
+              Business rule systems, filtering configurations, and validation
+              engines benefit from this explicit control.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>Complex grammars:</strong> each rule becomes a class; a
+              grammar with 20 rules generates 20 classes — and the
+              interaction between them quickly becomes hard to maintain. Use
+              ANTLR, PEG.js, Chevrotain, or Tree-sitter for any language with
+              non-trivial operator precedence, error recovery, or complex
+              tokens.
+            </li>
+            <li>
+              <strong>When performance is critical:</strong> recursing over
+              the whole tree on every evaluation can be slow for complex or
+              high-frequency expressions. Real compilers don't interpret the
+              AST directly — they compile to bytecode or native code.
+            </li>
+            <li>
+              <strong>When the pattern already exists in the language:</strong>
+              many languages have idiomatic ways to compose predicates —
+              closures, functional combinators, regular expressions.
+              Class-based Interpreter is often more verbose than a functional
+              solution.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>The grammar is explicit in the code — each rule is a class with a descriptive name, easy to locate.</li>
+            <li>Open for new rules: adding an operator means creating a new class implementing the interface — without modifying existing expressions.</li>
+            <li>Safe, controlled evaluation: no eval(), no code injection, no access to unauthorized APIs.</li>
+            <li>The expression tree can be built dynamically (from JSON, a database, or a UI) — enabling runtime-configurable DSLs.</li>
+            <li>Clear separation between the expression's structure and the evaluation mechanism.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Class explosion for non-trivial grammars — one class per rule becomes unviable above ~10-15 rules.</li>
+            <li>No native support for lexical or syntax errors: building the tree manually doesn't detect invalid sentences — requires a separate parser.</li>
+            <li>Lower performance than bytecode or compiled code — interpreted recursion over the AST is orders of magnitude slower than native code.</li>
+            <li>Difficulty implementing operator precedence, associativity, and grouping without a dedicated parser.</li>
+          </ul>
+        </section>
+
+        <!-- 8. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Confusing Interpreter with Composite</h3>
+          <p>
+            Interpreter <em>uses</em> Composite internally — the syntax tree
+            is a Composite where the NonTerminalExpressions are the composite
+            nodes and the TerminalExpressions are the leaves. The difference
+            is one of intent: Composite organizes part-whole structures and
+            treats leaves and composites uniformly; Interpreter interprets
+            sentences of a specific grammar. When someone adds an
+            <code>interpret()</code> method to an existing Composite, they're
+            essentially applying Interpreter over the Composite's structure.
+          </p>
+
+          <h3>2. Uncontrolled class growth</h3>
+          <p>
+            The most critical scaling pitfall: every new grammar rule
+            requires a new class. A filter DSL that starts with
+            <code>Equals</code>, <code>And</code>, and <code>Or</code> seems
+            reasonable. But once you add <code>GreaterThan</code>,
+            <code>LessThan</code>, <code>Contains</code>,
+            <code>StartsWith</code>, <code>Not</code>, <code>Between</code>,
+            <code>In</code> — the number of classes grows quickly. Once that
+            point is reached, migrate to a parser combinator or a parser
+            generator.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Rule of thumb:</strong> if the grammar has more than 8 to
+            10 expression classes, seriously evaluate using a dedicated
+            parsing library. Interpreter as a class-based pattern is meant for
+            genuinely small DSLs — not for real languages.
+          </p>
+
+          <h3>3. No error handling when building the AST</h3>
+          <p>
+            Building the tree manually doesn't validate the sentence. An
+            expression like <code>new Sum(null, new NumberLiteral(3))</code>
+            compiles without errors but blows up at runtime with a null
+            reference exception. In TypeScript, use non-nullable types and
+            strict mode to mitigate this; in PHP, declare types in the
+            interface. For full validation of externally supplied sentences
+            (strings typed by the user), a parser with useful error messages
+            is indispensable.
+          </p>
+
+          <h3>4. Interpreter vs Composite — when to use which</h3>
+          <p>
+            Use <strong>Composite</strong> when the focus is the hierarchical
+            part-whole structure and the main operation is uniform across all
+            nodes (e.g.: calculating a folder's total size). Use
+            <strong>Interpreter</strong> when the focus is evaluating
+            sentences of a language with explicit grammar rules — where each
+            node type has different evaluation semantics (Sum adds,
+            Multiplication multiplies, Variable looks up the context). In
+            practice, Interpreter is always a Composite; but not every
+            Composite is an Interpreter.
+          </p>
+        </section>
+
+        <!-- 9. RELATED PATTERNS -->
+        <section class="artigo__secao">
+          <h2>Related patterns</h2>
+          <p>
+            Interpreter relates directly to structural and behavioral
+            patterns that organize and traverse hierarchies:
+          </p>
+          <!--
+            Link discipline: only link already-published articles.
+            Composite exists → real link.
+            Visitor created in this batch → real link to ../visitor/.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../composite/">Composite</a></li>
+            <li><a href="../visitor/">Visitor</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Composite</strong> is Interpreter's structural foundation:
+            the abstract syntax tree (AST) is a Composite where the
+            NonTerminalExpressions are composite nodes and the
+            TerminalExpressions are leaves. The <code>interpret()</code>
+            method walks that tree recursively — exactly like the
+            <code>operation()</code> method walks a Composite.
+            <strong>Visitor</strong> is Interpreter's natural complement:
+            while Interpreter defines a single operation
+            (<code>interpret()</code>) directly on each expression class,
+            Visitor separates the operations from the classes — allowing new
+            behaviors (printing, optimizing, compiling) to be added to the
+            same AST without modifying it. In real compilers, the AST is
+            built with Composite, interpreted with Interpreter in early
+            phases, and later traversed by multiple analysis and
+            transformation passes implemented as Visitors.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="5252525252"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

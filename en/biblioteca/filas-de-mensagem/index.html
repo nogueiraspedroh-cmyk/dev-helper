@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Message Queues — Dev Helper Library</title>
+  <meta name="description" content="Understand message queues: producer/consumer decoupling, delivery semantics (at-most-once, at-least-once, exactly-once), Dead Letter Queue, RabbitMQ vs Kafka, and the pitfalls of non-idempotent consumers." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/filas-de-mensagem/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Message Queues</span>
+        </nav>
+        <span class="artigo__categoria">System Design</span>
+        <h1 class="artigo__titulo">Message Queues</h1>
+        <p class="artigo__subtitulo">
+          Decouple producers from consumers, absorb load spikes, and guarantee
+          message delivery even when the consumer is temporarily unavailable.
+          The intermediary (broker) takes on the responsibility of storing and
+          delivering — freeing the producer to move on.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Separate the moment a producer generates a message from the
+            moment a consumer processes it.</strong> Message queues introduce a
+            durable intermediary (the broker) that stores the message until the
+            consumer is ready to process it, eliminating temporal coupling
+            between the two sides.
+          </p>
+          <p>
+            Without queues, the producer needs the consumer to be available,
+            healthy, and fast at the exact moment of the call. With queues, the
+            producer hands off to the broker and moves on. The consumer
+            processes at its own pace — possibly offline, under maintenance, or
+            simply slower than the producer for a period. The broker absorbs
+            that difference.
+          </p>
+          <p>
+            The practical result is a more resilient system: transient consumer
+            failures don't cause message loss; producer load spikes don't
+            propagate directly to the consumer; and multiple consumers can
+            process the same volume in parallel without explicit coordination
+            between them.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Direct synchronous calls between services create availability,
+            latency, and capacity dependencies that become increasingly costly
+            as the system grows:
+          </p>
+          <ul>
+            <li>
+              <strong>Temporal coupling:</strong> if the email service is down
+              at the moment the user completes registration, the HTTP request
+              fails and the user gets an error — even though the registration
+              itself succeeded. The producer (registration) is coupled to the
+              consumer's (email) availability.
+            </li>
+            <li>
+              <strong>Spike propagation:</strong> a flash sale multiplies
+              orders by ten in a few minutes. If receipt PDF generation is
+              synchronous, the PDF service receives the same spike and may
+              collapse — degrading the main payment flow along with it.
+            </li>
+            <li>
+              <strong>Asymmetric speeds:</strong> the producer generates events
+              at the user's speed; the consumer processes at the speed of a
+              database or a slower external API. Without a buffer, the consumer
+              needs capacity for the producer's peak in real time.
+            </li>
+            <li>
+              <strong>Reprocessing failures:</strong> when processing fails in
+              a synchronous call, retry logic lives in the producer. With
+              queues, the broker manages retries and the failure history is
+              visible in the Dead Letter Queue.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. HOW IT WORKS -->
+        <section class="artigo__secao">
+          <h2>How it works</h2>
+
+          <h3>Core concepts</h3>
+          <p>
+            The central roles and components of any messaging system:
+          </p>
+          <div class="code-bloco">
+<pre><code>  QUEUE (point-to-point) — each message goes to exactly one consumer
+
+  ┌──────────┐     publish     ┌─────────────────────┐     consume     ┌────────────┐
+  │ Producer │────────────────►│    Broker / Queue   │────────────────►│ Consumer A │
+  └──────────┘                 │                     │                 └────────────┘
+                               │  [msg1][msg2][msg3] │
+  ┌──────────┐     publish     │                     │     consume     ┌────────────┐
+  │ Producer │────────────────►│                     │────────────────►│ Consumer B │
+  └──────────┘                 └─────────────────────┘                 └────────────┘
+
+  Consumer A and B compete for the same message (Competing Consumers).
+  msg1 → Consumer A, msg2 → Consumer B, msg3 → Consumer A.
+  Scale-out: adding Consumer C increases throughput without changing the producer.
+
+  TOPIC / PUB-SUB — each message goes to ALL subscribers
+
+  ┌──────────┐   publish   ┌──────────┐   deliver   ┌──────────────┐
+  │ Producer │────────────►│  Topic   │────────────►│ Subscriber 1 │
+  └──────────┘             └──────────┘      │      └──────────────┘
+                                             │      ┌──────────────┐
+                                             └─────►│ Subscriber 2 │
+                                                    └──────────────┘
+  Broadcast/event semantics: every subscriber receives the same copy.
+</code></pre>
+          </div>
+          <ul>
+            <li><strong>Producer:</strong> whoever publishes the message to the broker. Doesn't know who will consume it or when.</li>
+            <li><strong>Consumer:</strong> whoever processes the message. There may be multiple consumers competing (queue) or multiple independent subscribers (topic).</li>
+            <li><strong>Broker:</strong> the intermediary that stores and delivers. Examples: RabbitMQ, Apache Kafka, Amazon SQS, Google Pub/Sub, Azure Service Bus.</li>
+            <li><strong>Queue (point-to-point):</strong> each message is consumed by exactly one consumer. Distributed-work semantics — ideal for tasks.</li>
+            <li><strong>Topic / Pub-Sub:</strong> a published message reaches every registered subscriber. Event semantics — ideal for notifications and integrations.</li>
+          </ul>
+
+          <h3>Delivery patterns</h3>
+          <p>
+            Delivery semantics define what happens when a message is published
+            and what the consumer can expect to receive:
+          </p>
+          <div class="code-bloco">
+<pre><code>  AT-MOST-ONCE
+    Producer publishes → Broker stores → Consumer receives → ACK before processing
+    Result: the message can be lost (if the consumer crashes after ACK, before processing).
+    Never duplicated. Fire-and-forget. Use: metrics, non-critical logs.
+
+  AT-LEAST-ONCE
+    Producer publishes → Broker stores → Consumer processes → ACK after processing
+    Result: the message is delivered at least once.
+    Can be duplicated if the consumer crashes after processing but before the ACK.
+    Use: most systems. The consumer MUST be idempotent.
+
+  EXACTLY-ONCE
+    No loss, no duplicates. Requires coordination:
+      - Transactional Outbox: the producer persists to the database + an outbox
+        table in the same transaction; a worker reads the outbox and publishes to the broker.
+      - Two-Phase Commit: distributed coordination between database and broker.
+      - Idempotency keys: the consumer detects and ignores duplicates by a unique key.
+    Use: financial transactions, account debits. High operational cost.
+</code></pre>
+          </div>
+          <p class="artigo__aviso">
+            <strong>Rule of thumb:</strong> design idempotent consumers and use
+            at-least-once semantics. Exactly-once is expensive to implement and
+            operate — in most cases, idempotency at the consumer solves the
+            duplicate problem with far less complexity.
+          </p>
+
+          <h3>Dead Letter Queue (DLQ)</h3>
+          <p>
+            When a message fails processing N consecutive times (a configurable
+            limit), the broker moves it to a separate queue called the Dead
+            Letter Queue (DLQ) instead of retrying indefinitely.
+          </p>
+          <div class="code-bloco">
+<pre><code>  Main queue
+  [msg-ok][msg-ok][msg-poison][msg-ok]
+                        │
+                        │ fails 3x (maxReceiveCount = 3)
+                        ▼
+  Dead Letter Queue
+  [msg-poison]  ← visible for monitoring and manual reprocessing
+
+  Benefits:
+    - Prevents a "poison message" from blocking the main queue indefinitely.
+    - Creates visibility into messages that could not be processed.
+    - Allows manual reprocessing after the consumer bug is fixed.
+    - DLQ alerts signal consumer problems without affecting the main flow.
+</code></pre>
+          </div>
+
+          <h3>RabbitMQ vs Kafka</h3>
+          <p>
+            The two most common brokers have fundamentally different
+            philosophies:
+          </p>
+          <div class="code-bloco">
+<pre><code>  RABBITMQ — smart broker, passive consumer
+
+  Producer → Exchange → Binding → Queue → Consumer
+                           │
+                        flexible routing:
+                        Direct, Topic, Fanout, Headers
+
+  - Message deleted from the broker after consumer ACK.
+  - Broker controls which consumer receives which message.
+  - Ideal for: work queues, async RPC, complex routing.
+  - When the consumer is offline: message stays in the queue waiting.
+
+  KAFKA — durable distributed log, smart consumer
+
+  Producer → Topic (partitioned) → Consumer Group
+               │
+            offset controlled by the consumer
+
+  - Message RETAINED for a configurable time (e.g. 7 days), not deleted.
+  - Consumer controls its own offset (read position).
+  - Replay: the consumer can re-read old messages by resetting the offset.
+  - Ideal for: event streaming, audit log, event sourcing, high throughput.
+  - Partitioning: messages with the same partition key go to the same
+    partition, guaranteeing order within a partition key.
+</code></pre>
+          </div>
+          <p>
+            The choice between the two isn't just about performance — it's
+            about mental model. RabbitMQ thinks in terms of <em>tasks to
+            execute</em>; Kafka thinks in terms of <em>events that
+            happened</em>. A "generate PDF" request is a task (RabbitMQ). An
+            "order created" event that multiple services need to consume
+            independently is an event (Kafka).
+          </p>
+        </section>
+
+        <!-- 4. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>Long-running tasks outside the HTTP flow:</strong>
+              sending email, PDF generation, image resizing, push
+              notifications. The user shouldn't wait for these operations —
+              they go to the queue and the HTTP response is immediate.
+            </li>
+            <li>
+              <strong>Absorbing load spikes:</strong> when the producer can
+              generate messages much faster than the consumer can process them
+              in real time, the queue acts as a buffer. Consumers process at
+              their own pace and the backlog is consumed gradually.
+            </li>
+            <li>
+              <strong>Communication between decoupled microservices:</strong>
+              instead of synchronous HTTP calls that create availability
+              dependencies, services publish events to the broker and other
+              services consume independently — able to evolve, scale, and fail
+              in isolation.
+            </li>
+            <li>
+              <strong>Audit log and event sourcing:</strong> Kafka retains
+              messages for a configurable time, making the event log the
+              canonical record of everything that happened in the system.
+              Projections and reports can be rebuilt from offset zero.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>When the producer needs the consumer's response
+              immediately:</strong> queues are asynchronous by nature. If the
+              flow requires knowing the processing result before continuing
+              (e.g., validating a credit card), use synchronous RPC (REST,
+              gRPC) — not a queue.
+            </li>
+            <li>
+              <strong>Volume so low the queue is pure operational overhead:</strong>
+              a system that sends 10 emails a day doesn't need a broker,
+              consumer, DLQ, lag monitoring, and alerts. A synchronous call
+              with simple retry solves it with zero additional infrastructure.
+            </li>
+            <li>
+              <strong>When exactly-once is critical and the cost can't be
+              paid:</strong> if exactly-once semantics are mandatory (financial
+              debit, invoice number generation) but the team doesn't have the
+              experience to correctly implement a Transactional Outbox or
+              idempotency keys, the risk of silent duplicates is high. In that
+              case, evaluate a synchronous transaction with idempotency at the
+              database before introducing messaging.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 5. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Temporal decoupling: producer and consumer don't need to be online at the same time.</li>
+            <li>Resilience: transient consumer failures don't cause message loss — they stay in the broker waiting.</li>
+            <li>Spike absorption: the broker acts as a buffer between asymmetric production and consumption speeds.</li>
+            <li>Processing scale-out: adding consumers increases throughput horizontally without changing the producer.</li>
+            <li>Failure visibility: the DLQ makes problematic messages visible and reprocessable without loss.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Operational complexity: broker, consumers, DLQ, lag monitoring, alerts, and retry strategy all need to be configured, operated, and monitored.</li>
+            <li>Harder debugging: tracing a message's path from producer to consumer crosses broker, queues, offsets, and distributed logs.</li>
+            <li>Additional latency: processing is asynchronous — the result isn't available immediately after publishing.</li>
+            <li>Mandatory idempotency: with at-least-once semantics, consumers must be designed to receive duplicates without corrupting data.</li>
+          </ul>
+        </section>
+
+        <!-- 6. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Non-idempotent consumer with at-least-once</h3>
+          <p>
+            At-least-once is the default semantics in most brokers. This means
+            duplicates are possible — and will happen in production, especially
+            during consumer restarts, deploys, and network failures. A consumer
+            that debits $100 from an account without checking whether that
+            transaction was already processed will debit it twice when the
+            message is delivered as a duplicate. Idempotency must be designed
+            from the start: a unique key per message (idempotency key) stored
+            in the database and checked before processing is the simplest and
+            most robust mechanism.
+          </p>
+
+          <h3>2. Queue without a configured DLQ</h3>
+          <p>
+            Without a DLQ, a "poison message" — one the consumer can never
+            successfully process (corrupted data, unexpected schema,
+            unavailable external dependency) — enters an infinite retry loop.
+            Depending on the broker's visibility configuration, it can block
+            processing of subsequent messages or consume the consumer's
+            resources on useless retries. Every production queue must have a
+            DLQ configured before receiving real traffic.
+          </p>
+
+          <h3>3. Infinite retry before having a DLQ — the poison message locks up the consumer</h3>
+          <p>
+            Even with a DLQ configured, <code>maxReceiveCount</code> (the
+            number of attempts before moving to the DLQ) needs to be
+            calibrated. A value that's too high (e.g., 100 attempts) means a
+            poison message will consume resources and time before reaching the
+            DLQ. A value that's too low (e.g., 1) means legitimate transient
+            errors will go to the DLQ without a chance to recover. The typical
+            value is between 3 and 10, with exponential backoff between
+            attempts.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Rule of thumb:</strong> configure the DLQ and
+            <code>maxReceiveCount</code> before the first production deploy.
+            Adding a DLQ after messages are already stuck in a loop is more
+            work and may require manually reprocessing the backlog.
+          </p>
+
+          <h3>4. Treating Kafka like a RabbitMQ queue</h3>
+          <p>
+            Kafka doesn't delete messages after consumption — it retains them
+            for a configurable time (default: 7 days). The consumer controls
+            its own position (offset) in the log. This means that if the
+            consumer group is deleted and recreated, the default offset can be
+            <code>earliest</code> (start of the log) or <code>latest</code>
+            (only new messages), depending on configuration. A newly created
+            consumer group with <code>auto.offset.reset=earliest</code> on a
+            topic with 7 days of messages will reprocess everything from the
+            beginning. Understanding offsets, consumer groups, and retention
+            semantics is a prerequisite for operating Kafka correctly.
+          </p>
+        </section>
+
+        <!-- 7. RELATED -->
+        <section class="artigo__secao">
+          <h2>Related architectures and patterns</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../event-driven/">Event-Driven Architecture</a></li>
+            <li><a href="../rest-vs-graphql-vs-grpc/">REST vs GraphQL vs gRPC</a></li>
+            <li><a href="../cqrs/">CQRS</a></li>
+            <li><a href="../escalabilidade-horizontal-vertical/">Horizontal vs Vertical Scalability</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Event-Driven Architecture</strong> uses queues and brokers
+            as core infrastructure. A message broker (Kafka, RabbitMQ) is the
+            transport mechanism for events in an EDA. The difference lies at
+            the conceptual layer: EDA defines the architectural style
+            (components communicate via events, not direct calls); the queue
+            is the technical implementation of that style. It's possible to
+            have EDA with RabbitMQ, Kafka, SNS/SQS, or any other broker.
+          </p>
+          <p>
+            <strong>REST vs GraphQL vs gRPC</strong> defines synchronous
+            point-to-point communication styles. Message queues are the
+            asynchronous complement: when the producer can't or shouldn't wait
+            for the consumer's response, the queue replaces the direct call. In
+            microservices, it's common to use gRPC or REST for synchronous
+            operations (queries, validations) and queues for asynchronous
+            operations (tasks, notifications, event propagation).
+          </p>
+          <p>
+            <strong>CQRS</strong> uses queues to propagate Commands and events
+            between the Write Model and the Read Model. At the full degree
+            (separate databases), the CommandHandler publishes a domain event
+            to the broker after persisting the write; a consumer on the read
+            side receives the event and updates the Read Model. The queue is
+            the mechanism that makes eventual consistency manageable and
+            auditable.
+          </p>
+          <p>
+            <strong>Horizontal Scalability</strong> and the Competing Consumers
+            pattern are directly complementary. Adding instances of a consumer
+            that reads from the same queue distributes work horizontally
+            without explicit coordination — the broker guarantees each message
+            is delivered to exactly one consumer. This is one of the simplest
+            and most effective cases of scale-out: processing throughput grows
+            linearly with the number of consumers.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="5959595959"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

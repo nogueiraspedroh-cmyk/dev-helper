@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Observability — Dev Helper Library</title>
+  <meta name="description" content="Observability in distributed systems: the three pillars (Logs, Metrics, and Distributed Tracing), the RED Method, OpenTelemetry, TraceID correlation, and common pitfalls." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/observabilidade/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: carregado uma vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Observability</span>
+        </nav>
+        <span class="artigo__categoria">System Design</span>
+        <h1 class="artigo__titulo">Observability</h1>
+        <p class="artigo__subtitulo">
+          The ability to understand a system's internal state from its
+          external outputs — without needing to deploy new code to
+          investigate a problem. The three pillars are Logs, Metrics, and
+          Distributed Tracing.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Observability is the property of a system that lets you
+            infer its internal state solely by analyzing the outputs it
+            produces.</strong> In production you don't have access to a
+            debugger — what you have are logs, metrics, and traces. Without
+            proper instrumentation, investigating an incident becomes
+            guesswork.
+          </p>
+          <p>
+            The term comes from control theory: a system is "observable" if
+            its state can be determined from its external outputs over
+            time. In the context of software, this means that when
+            something goes wrong in production, you can answer:
+            <em>what happened?</em> (logs), <em>how often and how
+            intensely?</em> (metrics), and <em>where exactly in the flow did
+            it occur?</em> (tracing). Without all three answers, the
+            investigation operates in the dark.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Modern distributed systems — with dozens of microservices,
+            synchronous and asynchronous calls, queues, caches, and
+            databases — are inherently opaque. A user request can cross
+            eight services before returning a response; when it fails, the
+            cause could be in any one of them or in the interaction between
+            them.
+          </p>
+          <ul>
+            <li>
+              <strong>Uncorrelated logs:</strong> when each service writes
+              independent logs without a common identifier, correlating the
+              behavior of a specific request across services requires hours
+              of manual grepping.
+            </li>
+            <li>
+              <strong>Average-only metrics:</strong> average latency can
+              look healthy while 1% of users experience 10-second timeouts.
+              Percentiles (p95, p99) reveal what the average hides.
+            </li>
+            <li>
+              <strong>No tracing, no bottleneck localization:</strong>
+              knowing that "the order service got slow" is different from
+              knowing that "the stock-lookup SQL query inside the order
+              service took 800 ms on that specific call."
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. HOW IT WORKS -->
+        <section class="artigo__secao">
+          <h2>How it works</h2>
+
+          <h3>Logs — discrete event records</h3>
+          <p>
+            Logs are event records with a timestamp, severity level, and
+            contextual data. <strong>JSON-structured logs</strong> are
+            preferable to free text because they allow filtering, indexing,
+            and querying in tools like Elasticsearch, Loki, or CloudWatch
+            Logs Insights.
+          </p>
+          <p>
+            Every log should include a <strong>Correlation ID</strong>
+            (also called a TraceID) — a unique identifier for the original
+            request that stays constant as it crosses every service.
+            Without this ID, correlating logs from different services is
+            unfeasible at any real traffic volume.
+          </p>
+          <div class="code-bloco">
+<pre><code>// Structured log — filterable and indexable
+{"timestamp":"2024-01-15T14:23:01Z","level":"ERROR",
+ "service":"order-svc","msg":"payment timeout",
+ "traceId":"abc-123","userId":"u-456","durationMs":5032}
+
+// Free-text log — hard to filter programmatically
+[ERROR] 2024-01-15 14:23:01 Payment timeout for user u-456
+</code></pre>
+          </div>
+          <p>
+            Severity levels: <code>DEBUG</code> (development details),
+            <code>INFO</code> (normal business events), <code>WARN</code>
+            (abnormal but recoverable situation), <code>ERROR</code>
+            (failure that requires attention). In production, use
+            <code>INFO</code> as the default — <code>DEBUG</code> generates
+            disproportionate volume and cost.
+          </p>
+
+          <h3>Metrics — aggregated numerical values</h3>
+          <p>
+            Metrics are numerical observations collected over time and
+            aggregated into time series. They're more efficient than logs
+            for trend analysis and alerting. The three fundamental types:
+          </p>
+          <ul>
+            <li>
+              <strong>Counter:</strong> a monotonic value that only
+              increases. E.g.: total requests, total errors. Useful for
+              calculating rates (<code>rate()</code> in Prometheus). Never
+              decreases — it only resets when the process restarts.
+            </li>
+            <li>
+              <strong>Gauge:</strong> an instantaneous value that goes up
+              and down. E.g.: open connections, memory used, queue size.
+              Captures the system's current state.
+            </li>
+            <li>
+              <strong>Histogram:</strong> distributes observations into
+              configurable buckets and allows calculating percentiles (p50,
+              p95, p99). Essential for latency, because the average hides
+              the tail — p99 can be 100x the average in systems with a
+              long-tail distribution.
+            </li>
+          </ul>
+          <p>
+            The <strong>RED Method</strong> (by Tom Wilkie) defines the
+            three essential metrics for any service: <em>Rate</em>
+            (requests per second), <em>Errors</em> (error rate), and
+            <em>Duration</em> (latency distribution). Any SLO starts here.
+            The most common open source stack is Prometheus for collection
+            and Grafana for visualization.
+          </p>
+
+          <h3>Distributed Tracing — request tracking</h3>
+          <p>
+            Distributed Tracing follows a request as it crosses multiple
+            services. Each unit of work — an HTTP call, a database query, a
+            cache operation — is a <strong>Span</strong>: an interval with a
+            start time, duration, attributes, and a reference to the parent
+            span. Related spans form a <strong>Trace</strong>.
+          </p>
+          <p>
+            The TraceID is propagated between services via HTTP headers.
+            The current standard is <strong>W3C Trace Context</strong> with
+            the <code>traceparent</code> header:
+          </p>
+          <div class="code-bloco">
+<pre><code>traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
+             ^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^ ^^
+             ver        trace-id (16 bytes)        parent-span-id  flags
+</code></pre>
+          </div>
+          <p>
+            <strong>OpenTelemetry</strong> is the current standard for
+            instrumentation — a vendor-neutral API and SDK that exports
+            telemetry to any backend (Jaeger, Zipkin, Grafana Tempo,
+            Datadog, Honeycomb). Adopting OpenTelemetry from the start
+            avoids lock-in to observability tools.
+          </p>
+          <p>
+            At high volume, collecting 100% of traces is prohibitive in
+            cost and overhead. <strong>Head-based sampling</strong> decides
+            at the start of the request (e.g., 1–10% of requests);
+            <strong>tail-based sampling</strong> decides at the end,
+            retaining 100% of traces with errors and discarding the healthy
+            ones — smarter, more complex to implement.
+          </p>
+
+          <!-- SVG: The three pillars -->
+          <figure class="artigo__figura">
+            <svg viewBox="0 0 760 360" width="100%" role="img" aria-label="The three pillars of observability: Logs (structured JSON events with TraceID on a dark background), Metrics (latency chart with p99 line in red, p95 in purple, and p50 in green), and Distributed Tracing (waterfall of spans for API Gateway, Order, Auth, and DB in blue-purple), all correlated by the same TraceID abc-123 in a connector bar at the bottom">
+              <defs>
+                <marker id="obs-arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                  <polygon points="0 0, 8 3, 0 6" fill="#59616e" />
+                </marker>
+              </defs>
+
+              <!-- ══ COLUMN 1: LOGS ════════════════════════════════════════════ -->
+              <rect x="8" y="8" width="229" height="28" rx="5" fill="#4f46e5" />
+              <text x="122" y="27" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#ffffff">LOGS</text>
+
+              <!-- Terminal background -->
+              <rect x="8" y="44" width="229" height="200" rx="4" fill="#0e1320" />
+
+              <!-- Log entry 1: INFO -->
+              <text x="18" y="68" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="9" fill="#e6e9f0">{"level":"INFO",</text>
+              <text x="18" y="81" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="9" fill="#e6e9f0"> "msg":"request started",</text>
+              <text x="18" y="94" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="9" fill="#10b981"> "traceId":"abc-123"}</text>
+
+              <line x1="18" y1="101" x2="229" y2="101" stroke="#1e293b" stroke-width="1" />
+
+              <!-- Log entry 2: WARN -->
+              <text x="18" y="115" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="9" fill="#e6e9f0">{"level":"WARN",</text>
+              <text x="18" y="128" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="9" fill="#e6e9f0"> "msg":"slow query 800ms",</text>
+              <text x="18" y="141" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="9" fill="#10b981"> "traceId":"abc-123"}</text>
+
+              <line x1="18" y1="148" x2="229" y2="148" stroke="#1e293b" stroke-width="1" />
+
+              <!-- Log entry 3: ERROR -->
+              <text x="18" y="162" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="9" fill="#ef4444">{"level":"ERROR",</text>
+              <text x="18" y="175" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="9" fill="#e6e9f0"> "msg":"timeout 5032ms",</text>
+              <text x="18" y="188" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="9" fill="#10b981"> "traceId":"abc-123"}</text>
+
+              <line x1="18" y1="195" x2="229" y2="195" stroke="#1e293b" stroke-width="1" />
+
+              <!-- Log entry 4: INFO response -->
+              <text x="18" y="209" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="9" fill="#e6e9f0">{"level":"INFO",</text>
+              <text x="18" y="222" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="9" fill="#e6e9f0"> "status":500,"service":"order",</text>
+              <text x="18" y="235" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="9" fill="#10b981"> "traceId":"abc-123"}</text>
+
+              <!-- Logs footer -->
+              <rect x="8" y="252" width="229" height="30" rx="4" fill="#f0f2f5" stroke="#e3e6ea" stroke-width="1" />
+              <text x="122" y="266" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">DEBUG · INFO · WARN · ERROR</text>
+              <text x="122" y="278" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">Structured JSON + Correlation ID</text>
+
+              <!-- ══ COLUMN 2: METRICS ═════════════════════════════════════════ -->
+              <rect x="250" y="8" width="238" height="28" rx="5" fill="#4f46e5" />
+              <text x="369" y="27" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#ffffff">METRICS</text>
+
+              <!-- Chart background -->
+              <rect x="250" y="44" width="238" height="200" rx="4" fill="#ffffff" stroke="#e3e6ea" stroke-width="1" />
+
+              <!-- Grid lines -->
+              <line x1="292" y1="75" x2="478" y2="75" stroke="#e3e6ea" stroke-width="1" stroke-dasharray="3,3" />
+              <line x1="292" y1="110" x2="478" y2="110" stroke="#e3e6ea" stroke-width="1" stroke-dasharray="3,3" />
+              <line x1="292" y1="145" x2="478" y2="145" stroke="#e3e6ea" stroke-width="1" stroke-dasharray="3,3" />
+              <!-- X axis -->
+              <line x1="292" y1="192" x2="478" y2="192" stroke="#e3e6ea" stroke-width="1" />
+
+              <!-- Y axis labels -->
+              <text x="256" y="78" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">p99</text>
+              <text x="256" y="113" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">p95</text>
+              <text x="256" y="148" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">p50</text>
+              <text x="256" y="195" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">0</text>
+
+              <!-- p99 line (red — volatile, highest) -->
+              <polyline points="292,83 311,73 330,65 349,80 368,68 387,78 406,70 425,86 444,68 463,76 478,65"
+                        fill="none" stroke="#ef4444" stroke-width="2" stroke-linejoin="round" />
+
+              <!-- p95 line (indigo — medium) -->
+              <polyline points="292,118 311,112 330,106 349,116 368,104 387,114 406,108 425,120 444,106 463,112 478,104"
+                        fill="none" stroke="#4f46e5" stroke-width="2" stroke-linejoin="round" />
+
+              <!-- p50 line (green — stable, lowest) -->
+              <polyline points="292,158 311,156 330,154 349,157 368,153 387,156 406,152 425,156 444,151 463,154 478,150"
+                        fill="none" stroke="#10b981" stroke-width="2" stroke-linejoin="round" />
+
+              <!-- X axis label -->
+              <text x="385" y="204" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">time →</text>
+
+              <!-- Legend -->
+              <line x1="260" y1="222" x2="274" y2="222" stroke="#ef4444" stroke-width="2" />
+              <text x="278" y="226" font-family="system-ui, sans-serif" font-size="9" fill="#1f2530">p99</text>
+              <line x1="306" y1="222" x2="320" y2="222" stroke="#4f46e5" stroke-width="2" />
+              <text x="324" y="226" font-family="system-ui, sans-serif" font-size="9" fill="#1f2530">p95</text>
+              <line x1="352" y1="222" x2="366" y2="222" stroke="#10b981" stroke-width="2" />
+              <text x="370" y="226" font-family="system-ui, sans-serif" font-size="9" fill="#1f2530">p50 (median)</text>
+
+              <!-- Metrics footer -->
+              <rect x="250" y="252" width="238" height="30" rx="4" fill="#f0f2f5" stroke="#e3e6ea" stroke-width="1" />
+              <text x="369" y="266" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">Counter · Gauge · Histogram</text>
+              <text x="369" y="278" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">RED Method: Rate · Errors · Duration</text>
+
+              <!-- ══ COLUMN 3: DISTRIBUTED TRACING ════════════════════════════ -->
+              <rect x="502" y="8" width="250" height="28" rx="5" fill="#4f46e5" />
+              <text x="627" y="27" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#ffffff">DISTRIBUTED TRACING</text>
+
+              <!-- Tracing background -->
+              <rect x="502" y="44" width="250" height="200" rx="4" fill="#f0f2f5" stroke="#e3e6ea" stroke-width="1" />
+
+              <!-- Span row labels (left) -->
+              <text x="508" y="76" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">API GW</text>
+              <text x="508" y="106" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">Order</text>
+              <text x="508" y="136" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">Auth</text>
+              <text x="508" y="166" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">DB</text>
+
+              <!-- Span bars (waterfall — each starts slightly indented from parent) -->
+              <!-- API GW: root span, full width -->
+              <rect x="542" y="63" width="200" height="20" rx="3" fill="#4f46e5" />
+              <text x="548" y="77" font-family="ui-monospace, monospace" font-size="8" font-weight="600" fill="#ffffff">320 ms</text>
+
+              <!-- Order Service: slightly indented -->
+              <rect x="546" y="93" width="183" height="20" rx="3" fill="#6d28d9" />
+              <text x="552" y="107" font-family="ui-monospace, monospace" font-size="8" font-weight="600" fill="#ffffff">296 ms</text>
+
+              <!-- Auth Service: deeper indent, shorter -->
+              <rect x="550" y="123" width="92" height="20" rx="3" fill="#5b21b6" />
+              <text x="556" y="137" font-family="ui-monospace, monospace" font-size="8" font-weight="600" fill="#ffffff">88 ms</text>
+
+              <!-- DB Query: deepest, shortest -->
+              <rect x="554" y="153" width="46" height="20" rx="3" fill="#1f2530" />
+              <text x="560" y="167" font-family="ui-monospace, monospace" font-size="8" font-weight="600" fill="#e6e9f0">44 ms</text>
+
+              <!-- TraceID highlight box inside tracing panel -->
+              <rect x="510" y="188" width="234" height="46" rx="4" fill="#ffffff" stroke="#4f46e5" stroke-width="1.5" />
+              <text x="627" y="205" text-anchor="middle" font-family="ui-monospace, monospace" font-size="10" fill="#4f46e5" font-weight="700">TraceID: abc-123</text>
+              <text x="627" y="221" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">4 spans · header traceparent W3C</text>
+              <text x="627" y="232" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">OpenTelemetry · Jaeger · Zipkin</text>
+
+              <!-- Tracing footer -->
+              <rect x="502" y="252" width="250" height="30" rx="4" fill="#f0f2f5" stroke="#e3e6ea" stroke-width="1" />
+              <text x="627" y="266" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">Per-request span waterfall</text>
+              <text x="627" y="278" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">1–10% sampling at high volume</text>
+
+              <!-- ══ TRACEID CONNECTOR ══════════════════════════════════════════ -->
+              <rect x="8" y="292" width="744" height="54" rx="6" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.5" stroke-dasharray="7,3" />
+              <text x="380" y="316" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#4f46e5">TraceID: abc-123</text>
+              <text x="380" y="335" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">The same TraceID appears in Logs + Metrics + Trace — correlation is what turns three silos into real observability</text>
+            </svg>
+            <figcaption>The three pillars of observability correlated by the same TraceID. Logs record discrete events, Metrics reveal trends and percentiles, Distributed Tracing pinpoints the exact bottleneck in the flow between services.</figcaption>
+          </figure>
+
+          <h3>Correlation between the three pillars</h3>
+          <p>
+            The three pillars are valuable individually, but real
+            observability emerges when they're correlated. The same
+            TraceID that appears in the error log lets you navigate
+            directly to the trace of that specific request, see which
+            spans were slow, and then go to that service's latency metrics
+            at the same instant. This fluid navigation (log → trace →
+            metric) is what distinguishes observability from traditional
+            monitoring.
+          </p>
+        </section>
+
+        <!-- 4. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>Any service in production:</strong> the three pillars
+              are a prerequisite, not a differentiator. Start with
+              structured logs and RED metrics; add tracing later.
+            </li>
+            <li>
+              <strong>Microservices and distributed systems:</strong>
+              tracing is especially valuable when a request crosses
+              multiple services. It's impossible to manually correlate the
+              behavior of 10 services without a TraceID and a span
+              waterfall.
+            </li>
+            <li>
+              <strong>When defining SLOs:</strong> the pillars provide the
+              data to measure SLIs — p99 latency, error rate, availability
+              — and to verify whether the objectives are being met.
+            </li>
+          </ul>
+
+          <h2>When to avoid (or size carefully)</h2>
+          <ul>
+            <li>
+              <strong>Tracing with 100% sampling at high volume:</strong>
+              on services with 10k req/s, storing every trace is
+              prohibitive. Use head-based or tail-based sampling. Alerts
+              and metrics don't need sampling.
+            </li>
+            <li>
+              <strong>DEBUG logs continuously in production:</strong> this
+              level can generate GBs per hour and disproportionate
+              ingestion cost. Use INFO as the default; DEBUG only during
+              specific investigation windows.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 5. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Drastically reduces MTTR: incidents are investigated with concrete data, not guesswork.</li>
+            <li>Enables SLOs based on real data — p99 latency, error rate, measured availability.</li>
+            <li>Tracing reveals bottlenecks invisible in isolated service metrics.</li>
+            <li>OpenTelemetry as a standard avoids lock-in to an observability vendor.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Cost: storing logs and traces at high volume can be significant — requires active retention and sampling management.</li>
+            <li>Instrumentation overhead: tracing adds latency (~1 ms) and CPU consumption per request. Sampling mitigates but doesn't eliminate it.</li>
+            <li>Setup complexity: configuring OpenTelemetry, Prometheus, Grafana, and Jaeger and correlating everything has a meaningful learning curve.</li>
+            <li>Retroactive instrumentation is much more expensive: adding observability to legacy code without dependency injection is orders of magnitude more work than instrumenting while developing.</li>
+          </ul>
+        </section>
+
+        <!-- 6. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Free-text logs</h3>
+          <p>
+            Unstructured logs — <code>[ERROR] Payment failed for user 12345</code>
+            — are readable for humans but impossible to filter
+            programmatically. When you need "all errors for user X in the
+            last 2 hours" on a system with 1k req/s, grepping free text
+            isn't a viable strategy. Use structured JSON with indexable
+            fields from day one.
+          </p>
+
+          <h3>2. Metrics without percentiles — the average trap</h3>
+          <p>
+            Average latency can look healthy while 1% of users suffer
+            30-second timeouts. This happens because the average is
+            sensitive to volume (many fast requests dilute the slow ones)
+            but insensitive to the tail. <strong>Always monitor p95 and
+            p99.</strong> In user-facing SLAs, the relevant percentile is
+            usually p99 — the "worst 1%" is the most impacted user.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Practice:</strong> set alerts on p99 latency and on the
+            error rate per route. Average latency as an alert generates
+            both false negatives (didn't alert when it should have) and
+            false positives (alerted on isolated outliers).
+          </p>
+
+          <h3>3. Tracing without sampling — cost and overhead</h3>
+          <p>
+            Collecting 100% of traces on a service with 5,000 requests per
+            second means storing 432 million traces per day. Beyond the
+            storage cost, exporting traces itself adds network overhead.
+            Use sampling: head-based (1–10%) for general cases; tail-based
+            (retains 100% of traces with errors) for failure diagnosis.
+          </p>
+
+          <h3>4. Observability added after the incident</h3>
+          <p>
+            Instrumentation is much cheaper when implemented alongside the
+            code. Adding observability after the fact — especially in
+            legacy code without dependency injection — is orders of
+            magnitude more expensive. Treat observability as a functional
+            requirement: the acceptance criteria for any service should
+            include "has structured logs, RED metrics, and traces with a
+            propagated TraceID."
+          </p>
+        </section>
+
+        <!-- 7. RELATED -->
+        <section class="artigo__secao">
+          <h2>Related architectures and patterns</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../sla-slo-sli/">SLA, SLO, and SLI</a></li>
+            <li><a href="../circuit-breaker/">Circuit Breaker</a></li>
+            <li><a href="../api-gateway/">API Gateway</a></li>
+            <li><a href="../filas-de-mensagem/">Message Queues</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>SLA, SLO, and SLI</strong> depend directly on
+            observability: it's not possible to measure whether a p99
+            latency SLO is being met without instrumented histogram metrics
+            and configured alerts.
+          </p>
+          <p>
+            <strong>Circuit Breaker</strong> is more effective when
+            combined with metrics: the circuit's state (open/closed/half-open)
+            should be an observable metric, and opening decisions should be
+            visible in logs and traces.
+          </p>
+          <p>
+            <strong>API Gateway</strong> is a natural instrumentation point:
+            positioned at the edge, it can inject a TraceID into every
+            incoming request, collect RED metrics from all downstream
+            services, and centralize access logs.
+          </p>
+          <p>
+            <strong>Message Queues</strong> add complexity to tracing: the
+            propagation context (TraceID) needs to be serialized into the
+            message metadata so the consumer can continue the same trace
+            from the producer, even when processing the message minutes
+            later.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="7171717171"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

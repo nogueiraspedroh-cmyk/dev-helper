@@ -1,7 +1,7 @@
 {
   "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"declare -A links\\nlinks[adapter]=\\\"../decorator/ ../facade/ ../proxy/ ../bridge/\\\"\\nlinks[decorator]=\\\"../adapter/ ../facade/ ../../../biblioteca/strategy/ ../composite/ ../proxy/\\\"\\nlinks...",
-  "error": "Exit code 1\n(eval):19: read-only variable: status",
-  "timestamp": "2026-07-26T05:17:40.567Z",
+  "tool_input_preview": "{\"command\":\"omc() { node /home/casa/.claude/plugins/cache/omc/oh-my-claudecode/4.15.4/bin/oh-my-claudecode.js \\\"$@\\\"; }\\ncd /home/casa/projetos/dev-helper\\nomc ultragoal checkpoint --goal-id G015-fina...",
+  "error": "Exit code 1\n[ultragoal] Cannot record a complete checkpoint for G015-final-revisaocompleta while it is pending; start or resume the active ultragoal before checkpointing it.",
+  "timestamp": "2026-07-30T00:45:38.237Z",
   "retry_count": 1
 }

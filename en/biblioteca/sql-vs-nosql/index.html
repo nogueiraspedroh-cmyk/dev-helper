@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SQL vs NoSQL — Dev Helper Library</title>
+  <meta name="description" content="Understand the trade-offs between relational (SQL) and non-relational (NoSQL) databases: the four NoSQL models, the CAP Theorem, ACID vs BASE, and when each type of database best solves the problem." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/sql-vs-nosql/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>SQL vs NoSQL</span>
+        </nav>
+        <span class="artigo__categoria">System Design</span>
+        <h1 class="artigo__titulo">SQL vs NoSQL</h1>
+        <p class="artigo__subtitulo">
+          The choice of database type affects modeling, consistency, scale, and
+          operations. Relational and non-relational databases aren't opposites
+          — they're tools with distinct trade-offs suited to different
+          problems.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Choosing the right database is a modeling decision, not a
+            scale decision.</strong> SQL (relational) and NoSQL
+            (non-relational) solve different problems: SQL shines with
+            structured data with complex relationships and a need for
+            transactional consistency; NoSQL offers modeling flexibility,
+            specialized performance, or horizontal scale for specific use
+            cases.
+          </p>
+          <p>
+            The false "SQL vs NoSQL" dichotomy leads to poor decisions. The
+            right question is: which data model best reflects the structure of
+            the problem? What consistency guarantees does the domain require?
+            Which access pattern dominates — reads by primary key, ad-hoc
+            queries, graph traversal, time series? The answer defines which
+            database — or combination of databases — is the right tool.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Systems with different data requirements often use the same
+            database for everything because it's the team's established
+            default, not because it's the best tool. This creates concrete
+            friction:
+          </p>
+          <ul>
+            <li>
+              <strong>Forced modeling:</strong> hierarchical, variable data (a
+              product with different attributes per category) modeled in
+              relational tables requires complex schemas with deep joins or the
+              generic-columns anti-pattern (<code>attr1</code>,
+              <code>attr2</code>, <code>attr3</code>).
+            </li>
+            <li>
+              <strong>Performance mismatched to the access pattern:</strong> a
+              relational database reading data by primary key for a session API
+              performs unnecessary joins and index scans. A document database
+              trying to join across different collections in the application is
+              slow and hard to maintain.
+            </li>
+            <li>
+              <strong>Scale mismatched to the model:</strong> scaling an ACID
+              relational database horizontally is complex. Using an eventually
+              consistent NoSQL database for a financial system that requires
+              strong consistency introduces integrity risks.
+            </li>
+            <li>
+              <strong>Rigid schema blocking fast iteration:</strong> in early
+              product phases, the schema changes frequently. Migrations in SQL
+              with production data can be slow and risky; a document database
+              lets the schema evolve per document without blocking the system.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. HOW IT WORKS -->
+        <section class="artigo__secao">
+          <h2>How it works</h2>
+
+          <h3>SQL — relational databases</h3>
+          <p>
+            Relational databases organize data in tables with a rigid schema,
+            declared relationships between tables (foreign keys), and SQL as
+            the standard query language. The fundamental property is
+            <strong>ACID</strong>:
+          </p>
+          <ul>
+            <li><strong>Atomicity:</strong> a transaction is all-or-nothing — either all operations are applied or none are.</li>
+            <li><strong>Consistency:</strong> a transaction moves the database from one valid state to another, respecting all defined constraints.</li>
+            <li><strong>Isolation:</strong> concurrent transactions behave as if executed sequentially — each sees the database in a consistent state.</li>
+            <li><strong>Durability:</strong> once committed, a transaction persists even in the face of system failures.</li>
+          </ul>
+          <p>
+            Examples: <strong>PostgreSQL</strong> (the standard for modern
+            applications), <strong>MySQL/MariaDB</strong> (widely used on the
+            web), <strong>SQLite</strong> (embedded, serverless),
+            <strong>SQL Server</strong>, <strong>Oracle</strong>.
+          </p>
+
+          <h3>NoSQL — four main models</h3>
+          <p>
+            "NoSQL" isn't a single type of database — it's a label for
+            non-relational databases with radically different data models, each
+            optimized for a specific usage pattern.
+          </p>
+
+          <h3>Comparison diagram: the same entity in SQL and Document</h3>
+          <div class="code-bloco">
+<pre><code>  ORDER — SQL (relational)                ORDER — Document (MongoDB)
+
+  table: orders                           document in the "orders" collection:
+  ┌────┬─────────────┬────────┐             {
+  │ id │ customer_id │ status │               "_id": "ord-001",
+  ├────┼─────────────┼────────┤               "customer_id": "cus-42",
+  │ 1  │      42     │  paid  │               "status": "paid",
+  └────┴─────────────┴────────┘               "items": [
+                                                { "product": "Keyboard", "qty": 1, "price": 350 },
+  table: order_items                            { "product": "Mouse",    "qty": 2, "price": 89  }
+  ┌────┬──────────┬──────────┬─────┬───────┐  ],
+  │ id │ order_id │ product  │ qty │ price │  "total": 528,
+  ├────┼──────────┼──────────┼─────┼───────┤  "created_at": "2026-06-30T10:00:00Z"
+  │ 1  │    1     │ Keyboard │  1  │  350  │}
+  │ 2  │    1     │  Mouse   │  2  │   89  │
+  └────┴──────────┴──────────┴─────┴───────┘  Order and items arrive together.
+                                               One read, no JOIN.
+  JOIN needed to reconstruct                  Flexible schema per document.
+  the order with its items.
+</code></pre>
+          </div>
+
+          <h3>Document (MongoDB, CouchDB)</h3>
+          <p>
+            Stores data in JSON/BSON format. Flexible schema — each document
+            can have different fields. Ideal for hierarchical data that arrives
+            and is read as a unit (order with items, article with comments,
+            profile with addresses). Queries within a single document are
+            efficient; queries that need data from multiple collections
+            require a lookup (similar to joins) or prior denormalization.
+          </p>
+
+          <h3>Key-Value (Redis, DynamoDB)</h3>
+          <p>
+            Maximum simplicity: a value associated with a key. No schema, no
+            relationships, no complex queries — just <em>get</em>,
+            <em>set</em>, and <em>delete</em>. Extremely low latency because
+            the data structure is simple and access is direct. Ideal for user
+            sessions, caching, simple queues, and feature flags. Redis adds
+            rich structures (lists, sets, hashes, sorted sets) that make it
+            versatile beyond simple key-value.
+          </p>
+
+          <h3>Wide column (Cassandra, HBase)</h3>
+          <p>
+            Organizes data into column families — tables with dynamic columns
+            that can vary per row. Optimized for massive writes and reads by
+            partition-key range or time range. Distributes data horizontally by
+            design, with automatic replication across nodes. Used in IoT
+            (device telemetry), high-throughput event analytics, and
+            time-series (logs, metrics, activity tracking).
+          </p>
+
+          <h3>Graph (Neo4j, Amazon Neptune)</h3>
+          <p>
+            Models entities as nodes and relationships as edges. Relationships
+            are first-class citizens — stored explicitly with properties — and
+            deep graph traversal is efficient by design. Queries that in SQL
+            would require multiple recursive self-joins are expressed directly
+            in the graph database's query language (Cypher, Gremlin). Used in
+            social networks (friends of friends), recommendation systems (users
+            who bought X also bought Y), and relationship-based fraud
+            detection.
+          </p>
+
+          <h3>CAP Theorem — consistency, availability, and partition tolerance</h3>
+          <p>
+            The CAP theorem states that a distributed database can guarantee
+            only two of three properties simultaneously:
+          </p>
+          <ul>
+            <li><strong>Consistency (C):</strong> every read reflects the most recent write.</li>
+            <li><strong>Availability (A):</strong> every request receives a response (even if not the most recent one).</li>
+            <li><strong>Partition Tolerance (P):</strong> the system keeps working even if messages between nodes are lost or delayed.</li>
+          </ul>
+          <p>
+            In distributed systems, network failures (partitions) are
+            inevitable — P is mandatory. The real choice is between C and A
+            during a partition. Traditional (non-distributed) relational
+            databases prioritize CA: on a single node, there's no partition.
+            Distributed NoSQL databases often choose AP (Cassandra, DynamoDB
+            with eventual consistency) or CP (MongoDB, Redis Cluster).
+          </p>
+
+          <h3>ACID vs BASE</h3>
+          <p>
+            ACID (relational databases) guarantees strong consistency and full
+            transactions. BASE is the model used by many distributed NoSQL
+            databases:
+          </p>
+          <ul>
+            <li><strong>Basically Available:</strong> the system always responds, even with possibly outdated data.</li>
+            <li><strong>Soft state:</strong> the system's state can change over time, even without new writes (due to ongoing replication).</li>
+            <li><strong>Eventually consistent:</strong> after a period with no new writes, all nodes converge to the same value.</li>
+          </ul>
+        </section>
+
+        <!-- 4. WHEN TO USE -->
+        <section class="artigo__secao">
+          <h2>When to use SQL</h2>
+          <ul>
+            <li>
+              <strong>Data with complex relationships between entities:</strong>
+              orders, customers, products, invoices — entities that intersect
+              in varied ways and need joins for business queries.
+            </li>
+            <li>
+              <strong>Transactions that span multiple entities:</strong>
+              debiting one account and crediting another, reserving inventory
+              and creating an order simultaneously. ACID guarantees either
+              everything happens or nothing does.
+            </li>
+            <li>
+              <strong>Ad-hoc queries and reports:</strong> SQL allows arbitrary
+              queries over the data without requiring predefined indexes. Ideal
+              for analytics, operational reports, and data exploration.
+            </li>
+            <li>
+              <strong>Well-understood domain with a stable schema:</strong>
+              when the data model is known and changes infrequently, a rigid
+              schema is protection against inconsistencies, not an obstacle.
+            </li>
+          </ul>
+
+          <h2>When to use NoSQL Document</h2>
+          <ul>
+            <li>Variable or rapidly evolving schema — different fields per entity, an early-stage product with a changing model.</li>
+            <li>Hierarchical data that arrives and is read as a unit, without frequent need for joins.</li>
+            <li>Teams working with JSON objects in the application who want to avoid the object-relational impedance mismatch.</li>
+          </ul>
+
+          <h2>When to use NoSQL Key-Value</h2>
+          <ul>
+            <li>Caching query results or API responses (Redis).</li>
+            <li>User sessions, auth tokens, temporary states.</li>
+            <li>Feature flags, configuration read at very high frequency.</li>
+            <li>Simple queues and real-time data structures (leaderboards with Redis Sorted Sets).</li>
+          </ul>
+
+          <h2>When to use NoSQL Wide Column</h2>
+          <ul>
+            <li>Time series with massive volume: IoT telemetry, infrastructure metrics, event logs.</li>
+            <li>Systems with very high write rate and reads by time range.</li>
+            <li>Data that needs to be distributed globally with multi-region replication by design.</li>
+          </ul>
+
+          <h2>When to use NoSQL Graph</h2>
+          <ul>
+            <li>Social networks where the question is "who knows whom" and N-degree traversal is frequent.</li>
+            <li>Recommendation systems based on relationships between users, products, and behaviors.</li>
+            <li>Fraud detection through pattern analysis in transaction networks.</li>
+            <li>Knowledge graphs and permission systems based on complex hierarchies.</li>
+          </ul>
+        </section>
+
+        <!-- 5. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+
+          <h3>SQL — Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Full ACID: strongly consistent transactions, no risk of partially written data.</li>
+            <li>Standard language: SQL is universally known and supported by BI tools, analytics, and ORMs.</li>
+            <li>Declarative referential integrity: foreign keys and constraints are enforced by the database, not the application.</li>
+            <li>Ad-hoc queries without predefined indexes: you can query any combination of fields with SQL.</li>
+            <li>Maturity and ecosystem: decades of optimizations, tools, knowledge, and support available.</li>
+          </ul>
+
+          <h3>SQL — Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Object-relational impedance mismatch: mapping hierarchical objects to flat tables requires ORMs or complex queries.</li>
+            <li>Rigid schema: schema changes in production with existing data require careful migrations.</li>
+            <li>Complex horizontal scale: sharding relational databases isn't trivial — most scale vertically up to a limit.</li>
+            <li>Performance for simple access patterns: a SELECT by primary key in PostgreSQL is slower than a GET in Redis for the same data.</li>
+          </ul>
+
+          <h3>NoSQL — Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Schema flexibility: adapt the data model without blocking migrations.</li>
+            <li>Specialized performance: each type of NoSQL is optimized for its specific access pattern.</li>
+            <li>Horizontal scale by design: Cassandra, DynamoDB, and MongoDB were designed for distribution across multiple nodes.</li>
+            <li>Expressive data models: graphs, hierarchical documents, time series — modeled directly without impedance mismatch.</li>
+          </ul>
+
+          <h3>NoSQL — Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Eventual consistency: many distributed NoSQL databases don't guarantee that a read after a write reflects the most recent data.</li>
+            <li>No cross-collection transactions (generally): atomic operations across multiple entities are more complex or impossible depending on the database.</li>
+            <li>Lower query expressiveness: without full SQL, complex queries need to be planned into the modeling or done in the application.</li>
+            <li>Smaller ecosystem: fewer tools, fewer experienced professionals, fewer forum answers for specific problems.</li>
+          </ul>
+        </section>
+
+        <!-- 6. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Using NoSQL to escape modeling</h3>
+          <p>
+            A flexible schema isn't the absence of modeling — it's deferred
+            modeling that turns into technical debt. Documents without a
+            defined structure result in inconsistently named fields, different
+            types for the same field across documents, and normalization logic
+            scattered throughout the application. When using a document
+            database, the schema still needs to be defined and enforced — the
+            difference is that the enforcer is the application, not the
+            database.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Rule of thumb:</strong> treat a NoSQL database's schema as
+            code: version it, document it, and validate it at the application
+            layer. Database flexibility isn't a license to create arbitrary
+            documents.
+          </p>
+
+          <h3>2. Joins in code due to lack of planning</h3>
+          <p>
+            The most common anti-pattern in document databases: data is
+            insufficiently denormalized — or not denormalized at all — and the
+            application makes multiple queries to different collections to
+            reconstruct an entity, then joins the results in code. The result
+            is slower and more fragile than the original SQL JOIN, without the
+            benefits of denormalization.
+          </p>
+          <p>
+            Modeling in document databases should start from the access
+            pattern, not the domain model: define which data arrives together
+            in a single read and denormalize it into the same document.
+          </p>
+
+          <h3>3. Assuming NoSQL scales and SQL doesn't</h3>
+          <p>
+            PostgreSQL with read replication, connection pooling (PgBouncer),
+            table partitioning, and well-planned indexes handles enormous
+            loads — most applications will never need more than that. The
+            decision between SQL and NoSQL is about data model and access
+            pattern, not scaling capacity. Using Cassandra for a system with
+            1,000 users because "NoSQL scales" is over-engineering with no
+            benefit.
+          </p>
+
+          <h3>4. Mixing strong and eventual consistency without realizing it</h3>
+          <p>
+            NoSQL databases with eventual replication can return outdated data
+            on reads immediately after writes. Reading from a read replica in
+            PostgreSQL with asynchronous replication has the same problem —
+            but in SQL, strong consistency is the default and eventual is
+            opt-in. In many NoSQL databases, eventual consistency is the
+            default and strong consistency is opt-in (and more expensive in
+            latency). Know your database's consistency model and configure it
+            explicitly for each critical operation.
+          </p>
+        </section>
+
+        <!-- 7. RELATED -->
+        <section class="artigo__secao">
+          <h2>Related architectures and patterns</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../caching/">Caching</a></li>
+            <li><a href="../cqrs/">CQRS</a></li>
+            <li><a href="../escalabilidade-horizontal-vertical/">Horizontal vs Vertical Scalability</a></li>
+            <li><a href="../event-driven/">Event-Driven Architecture</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Caching</strong> is often layered on top of SQL databases
+            to reduce the load of costly queries: results are stored in Redis
+            and served directly without touching the database for subsequent
+            requests. Redis (NoSQL Key-Value) and PostgreSQL (SQL) are used
+            together in most modern systems — not as competitors, but as
+            complementary layers.
+          </p>
+          <p>
+            <strong>CQRS</strong> allows the write model and the read model to
+            use different databases. The Write Model can persist in PostgreSQL
+            (ACID consistency for business transactions) while the Read Model
+            is designed in MongoDB or Redis (read performance optimized for the
+            query pattern). This combination is one of the most concrete use
+            cases for the deliberate choice of multiple database types in the
+            same system.
+          </p>
+          <p>
+            In <strong>Event-Driven Architecture</strong>, the event store
+            (where events are durably persisted) often uses a relational
+            database or one specialized in append-only workloads — while
+            projections derived from the events can live in any database type
+            suited to the read pattern: Elasticsearch for full-text, Redis for
+            caching, Cassandra for time series.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="5656565656"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sharding and Partitioning — Dev Helper Library</title>
+  <meta name="description" content="Understand sharding: horizontal and vertical partitioning, range-based, hash-based, and directory-based strategies, choosing a shard key, resharding with consistent hashing, and the pitfalls of hotspots and cross-shard joins." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/sharding/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Sharding and Partitioning</span>
+        </nav>
+        <span class="artigo__categoria">System Design</span>
+        <h1 class="artigo__titulo">Sharding and Partitioning</h1>
+        <p class="artigo__subtitulo">
+          Splitting a database's data into smaller partitions distributed
+          across multiple nodes to scale storage and writes horizontally — at
+          the cost of significant operational complexity and constraints on
+          access patterns.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Sharding splits a database's data into smaller partitions
+            (shards) spread across multiple nodes, allowing data volume and
+            write rate to grow beyond the limit of a single machine.</strong>
+          </p>
+          <p>
+            A single database server has physical limits: disk capacity, RAM,
+            and I/O bandwidth. When data volume exceeds those limits, scaling
+            vertically (more RAM, more CPU, more disk) becomes progressively
+            more expensive and eventually impossible. Sharding distributes the
+            load across multiple nodes — each responsible for a slice of the
+            dataset — turning the vertical capacity problem into a horizontal
+            coordination problem.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Systems that grow beyond tens or hundreds of gigabytes of active
+            data hit bottlenecks that indexing and query optimization alone
+            can't solve:
+          </p>
+          <ul>
+            <li>
+              <strong>Data volume exceeds a single node's capacity:</strong>
+              tables with billions of rows degrade performance even with
+              optimized indexes. The index itself becomes too large to fit in
+              memory, forcing disk I/O on every lookup operation.
+            </li>
+            <li>
+              <strong>Write rate exceeds a single node's throughput:</strong> a
+              single server has a maximum number of writes per second it can
+              process. In high-volume systems — logs, metrics, financial
+              transactions — that limit is reached before the storage limit
+              is.
+            </li>
+            <li>
+              <strong>Read replicas don't solve the write problem:</strong>
+              adding read replicas distributes read load, but every write
+              still goes through the primary. The write bottleneck remains.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. HOW IT WORKS -->
+        <section class="artigo__secao">
+          <h2>How it works</h2>
+
+          <h3>Horizontal vs vertical partitioning</h3>
+          <p>
+            It's important to distinguish the two types of partitioning, as the
+            term often causes confusion:
+          </p>
+          <ul>
+            <li>
+              <strong>Horizontal partitioning (sharding):</strong> splits a
+              table's <em>rows</em> across multiple nodes. All shards have the
+              same schema. E.g.: users with ID 1–1,000,000 on Shard A, ID
+              1,000,001–2,000,000 on Shard B. This is what "sharding" usually
+              means in most contexts.
+            </li>
+            <li>
+              <strong>Vertical partitioning:</strong> splits a table's
+              <em>columns</em> across different databases. E.g.: the
+              <code>users</code> table with profile data in one database and
+              payment data in another. A different technique, with a different
+              motivation — usually used to isolate domains for security or
+              compliance, not for volume scale.
+            </li>
+          </ul>
+
+          <h3>Sharding architecture</h3>
+          <p>
+            The central component of a sharded architecture is the
+            <strong>shard router</strong>: the layer that receives the
+            client's request, determines which shard the data lives on, and
+            forwards the operation to the right node.
+          </p>
+          <div class="code-bloco">
+<pre><code>  Client
+     │
+     ▼
+  ┌───────────────┐
+  │  Shard Router │  determines the shard based on the shard key
+  └───────┬───────┘
+          │
+     ┌────┼────┐
+     ▼    ▼    ▼
+   ┌───┐┌───┐┌───┐
+   │ A ││ B ││ C │   each shard is an independent database node
+   └───┘└───┘└───┘
+   (same schema across all shards)
+</code></pre>
+          </div>
+          <p>
+            The router can be implemented at the application layer (the code
+            decides which database to connect to), in a dedicated proxy (e.g.,
+            ProxySQL, Vitess), or natively in the database (e.g., MongoDB with
+            mongos, Cassandra with token-aware drivers).
+          </p>
+
+          <h3>Shard key</h3>
+          <p>
+            The <strong>shard key</strong> is the field (or combination of
+            fields) used to determine which shard a record belongs to. It's
+            the most critical design decision in a sharded architecture — a
+            poorly chosen shard key creates <em>hotspots</em>: one overloaded
+            shard while the others sit idle, nullifying the benefit of
+            distribution.
+          </p>
+          <p>
+            Criteria for a good shard key:
+          </p>
+          <ul>
+            <li><strong>High cardinality:</strong> many possible distinct values, so data spreads across many shards.</li>
+            <li><strong>Uniform distribution:</strong> values shouldn't concentrate in a few ranges or hashes.</li>
+            <li><strong>Alignment with access patterns:</strong> frequent operations should touch one shard at a time. Avoid shard keys that force the router to query every shard to answer a common query.</li>
+          </ul>
+
+          <h3>Sharding strategies</h3>
+
+          <h4>Range-based</h4>
+          <p>
+            The shard is determined by a range of shard-key values. E.g.:
+            records with <code>created_at</code> in January go to Shard A,
+            February to Shard B.
+          </p>
+          <div class="code-bloco">
+<pre><code>  shard key: user_id (numeric)
+
+  Shard A: user_id  1 - 1,000,000
+  Shard B: user_id  1,000,001 - 2,000,000
+  Shard C: user_id  2,000,001 - 3,000,000
+
+  Advantage: efficient range queries ("all users from 1 to 500k")
+  Risk: hotspot if new records are created sequentially
+        (they all go to the last shard while earlier ones sit idle)
+</code></pre>
+          </div>
+
+          <h4>Hash-based</h4>
+          <p>
+            The shard is determined by a hash function applied to the shard
+            key: <code>shard = hash(shard_key) % num_shards</code>.
+            Distributes data uniformly, eliminating range hotspots.
+          </p>
+          <div class="code-bloco">
+<pre><code>  shard key: user_id
+
+  shard = MD5(user_id) % 3
+
+  user_id=1001  → hash mod 3 = 2 → Shard C
+  user_id=1002  → hash mod 3 = 0 → Shard A
+  user_id=1003  → hash mod 3 = 1 → Shard B
+
+  Advantage: uniform distribution, no range hotspots
+  Risk: inefficient range queries (requires querying every shard)
+        resharding requires remapping almost every record
+</code></pre>
+          </div>
+
+          <h4>Directory-based</h4>
+          <p>
+            A lookup table (the "directory") explicitly maps each shard-key
+            value to its shard. The router consults the directory before every
+            operation.
+          </p>
+          <div class="code-bloco">
+<pre><code>  Lookup table (directory):
+  ┌──────────┬───────┐
+  │ tenant   │ shard │
+  ├──────────┼───────┤
+  │ company1 │ A     │
+  │ company2 │ B     │
+  │ company3 │ A     │
+  │ company4 │ C     │
+  └──────────┴───────┘
+
+  Advantage: flexible - can move tenants between shards without changing logic
+  Risk: the lookup table becomes a single point of failure and a latency bottleneck
+</code></pre>
+          </div>
+
+          <h3>Resharding and consistent hashing</h3>
+          <p>
+            When a shard becomes too large or overloaded, data needs to be
+            redistributed — an operation called <strong>resharding</strong>.
+            With simple hash-based sharding (<code>% N</code>), adding a shard
+            changes the formula and potentially invalidates the mapping of
+            nearly every record, requiring most of the data to be moved.
+          </p>
+          <p>
+            <strong>Consistent hashing</strong> solves this: shards and keys
+            are positioned on a circular ring, and each key belongs to the
+            nearest shard clockwise. When adding or removing a shard, only the
+            keys adjacent to it on the ring need to move — on average
+            <code>K/N</code> keys (where K is the total number of keys and N
+            the number of shards), instead of nearly all of them.
+          </p>
+
+          <h3>Cross-shard joins</h3>
+          <p>
+            Joins between data that live on different shards aren't executed
+            by the database — each shard is an independent database. The
+            application needs to fetch data from each shard separately and
+            combine the results in memory. Depending on volume, this can be
+            slower than the original join and introduces merge logic at the
+            application layer.
+          </p>
+          <p>
+            The most common solution is to <strong>denormalize</strong>:
+            duplicate the necessary data within the same shard to avoid the
+            cross-shard join. E.g.: instead of joining with the users table on
+            another shard, copy the user's name into the order record at
+            creation time.
+          </p>
+        </section>
+
+        <!-- 4. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>Data volume exceeds a single node's capacity:</strong>
+              when scaling vertically (more RAM, more disk) becomes cost-
+              prohibitive or technically infeasible.
+            </li>
+            <li>
+              <strong>Write rate exceeds a single node's throughput:</strong>
+              high-volume systems such as real-time analytics, IoT time
+              series, or large-scale e-commerce platforms.
+            </li>
+            <li>
+              <strong>The data has a natural partitioning dimension:</strong>
+              by user (social networks, multi-tenant SaaS), by geographic
+              region, or by time period. The shard key emerges naturally from
+              the domain.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>Exhaust the simpler alternatives first:</strong> correct
+              indexing, query optimization, caching, and read replicas can
+              delay or eliminate the need for sharding for a long time.
+              Sharding adds permanent operational complexity.
+            </li>
+            <li>
+              <strong>Cross-shard joins are frequent in your workload:</strong>
+              if the system's access pattern frequently requires combining
+              data across multiple dimensions, sharding turns every simple
+              operation into a distributed coordination problem.
+            </li>
+            <li>
+              <strong>No natural shard key:</strong> if there's no key that
+              distributes data uniformly and aligns with access patterns, the
+              system will create hotspots. Sharding without a good shard key
+              is worse than not sharding at all.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 5. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Real horizontal write scale: ingestion capacity grows linearly with the number of shards.</li>
+            <li>Unlimited data volume: the dataset can grow beyond the limit of any individual machine.</li>
+            <li>Failure isolation: a shard's failure affects only the data in that shard, not the whole system.</li>
+            <li>Localized queries get faster: with a good shard key, most queries touch only one shard — a smaller dataset, with smaller indexes that fit entirely in memory.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>High operational complexity: monitoring, backing up, restoring, and upgrading N independent databases instead of one.</li>
+            <li>Cross-shard joins: need to be implemented at the application layer, with manual merge logic and multiple network round trips.</li>
+            <li>Cross-shard transactions: ACID doesn't apply across shards. Two-phase commit or patterns like Saga are needed, with significant consistency trade-offs.</li>
+            <li>Resharding is costly: redistributing data with the system in production requires careful coordination to avoid inconsistency and downtime.</li>
+            <li>Hotspots are hard to diagnose: distribution can look uniform in the data but be extremely uneven in access.</li>
+          </ul>
+        </section>
+
+        <!-- 6. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Shard key that creates a hotspot</h3>
+          <p>
+            The classic example is using <code>created_at</code> (a timestamp)
+            as the shard key in a logging or event system. All new traffic
+            goes to the most recent period's shard — older shards sit idle
+            while the current shard gets hammered. The sharded system performs
+            worse than the unsharded one because the load, instead of being
+            distributed, is concentrated on a single node.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Rule of thumb:</strong> before adopting a shard key,
+            simulate the distribution with real production data (not with
+            uniform test data) and with the projected future access pattern,
+            not just the current one.
+          </p>
+
+          <h3>2. Cross-shard joins in a loop</h3>
+          <p>
+            The application fetches a list of IDs from Shard A and, for each
+            ID, queries Shard B for related data — the N+1 problem at
+            distributed scale. Instead of an efficient database join, there
+            are N serialized network queries. The result is worse in latency
+            and load than before sharding.
+          </p>
+          <p>
+            Solutions: denormalize the necessary data into the same shard at
+            write time, or use fan-out (query every shard in parallel and
+            aggregate the results), accepting the cost of multiple
+            connections.
+          </p>
+
+          <h3>3. Unplanned resharding</h3>
+          <p>
+            The system's growth exceeds the existing shards' capacity and new
+            shards need to be added. With simple hash-based sharding, this
+            requires moving most of the data. With the system in production,
+            the consistency window during migration needs to be managed — data
+            being moved can't be accessed by the old router, and the new
+            router doesn't yet know the final destination. Planning
+            resharding before you need it is part of the architecture.
+          </p>
+
+          <h3>4. Cross-shard transactions</h3>
+          <p>
+            An operation that needs to modify data on two different shards has
+            no ACID guarantee. If the system commits the write on Shard A but
+            fails before writing to Shard B, the data ends up in an
+            inconsistent state. Two-phase commit (2PC) solves the problem but
+            introduces distributed locks and degrades availability. The Saga
+            pattern replaces the distributed transaction with a sequence of
+            local transactions with compensations on failure.
+          </p>
+        </section>
+
+        <!-- 7. RELATED -->
+        <section class="artigo__secao">
+          <h2>Related architectures and patterns</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../../../biblioteca/replicacao-de-banco/">Database Replication</a></li>
+            <li><a href="../sql-vs-nosql/">SQL vs NoSQL</a></li>
+            <li><a href="../escalabilidade-horizontal-vertical/">Horizontal vs Vertical Scalability</a></li>
+            <li><a href="../caching/">Caching</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Replication</strong> and sharding are complementary
+            techniques often used together: sharding distributes writes across
+            multiple primary nodes, while replication adds read replicas to
+            each shard to increase read throughput and availability. The
+            resulting architecture has both horizontal write scale and fault
+            tolerance.
+          </p>
+          <p>
+            <strong>NoSQL</strong> databases like Cassandra, DynamoDB, and
+            MongoDB were designed with native sharding — the distribution
+            logic is part of the database, not the application. In relational
+            SQL databases, sharding is normally implemented at the application
+            layer or with tools like Vitess (MySQL) or Citus (PostgreSQL). The
+            choice between SQL and NoSQL is influenced by how central sharding
+            is to the design from the start.
+          </p>
+          <p>
+            <strong>Caching</strong> is often the first line of defense
+            against database overload: by reducing the number of reads that
+            reach the database, caching delays the moment sharding becomes
+            necessary. Evaluating caching before sharding is the correct
+            sequence of architectural decisions.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="6363636363"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

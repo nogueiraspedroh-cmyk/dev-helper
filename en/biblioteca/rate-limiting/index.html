@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rate Limiting — Dev Helper Library</title>
+  <meta name="description" content="Rate Limiting: control request rates to protect services from abuse and overload. Understand Token Bucket, Leaky Bucket, Fixed Window, and Sliding Window, storage with Redis, and the pitfalls of burst at window boundaries." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/rate-limiting/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Rate Limiting</span>
+        </nav>
+        <span class="artigo__categoria">System Design</span>
+        <h1 class="artigo__titulo">Rate Limiting</h1>
+        <p class="artigo__subtitulo">
+          Controlling the rate of requests a client can make to a service
+          within a given period — protecting against abuse, low-intensity
+          DDoS, and excessive consumption of shared resources.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Rate limiting imposes a ceiling on the rate at which a
+            client can consume a service, guaranteeing that no client — by
+            mistake or bad faith — can monopolize resources and degrade the
+            experience for everyone else.</strong>
+          </p>
+          <p>
+            Without rate limiting, a single client that fires off an
+            infinite request loop, an aggressive scraping bot, or a
+            volumetric attack can completely saturate the service's
+            processing capacity, making it unavailable to everyone. Rate
+            limiting is the first line of defense against this kind of
+            overload — simpler and more effective than sizing the
+            infrastructure to absorb any possible spike.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Services exposed to multiple clients face challenges that rate
+            limiting solves directly:
+          </p>
+          <ul>
+            <li>
+              <strong>Abuse and scraping:</strong> bots that make thousands
+              of requests per second to extract data, brute-force
+              passwords, or simply overload the service.
+            </li>
+            <li>
+              <strong>Buggy clients:</strong> a client stuck in a retry loop
+              without backoff can generate more requests than the entire
+              normal client base combined.
+            </li>
+            <li>
+              <strong>Disproportionate consumption of paid APIs:</strong> in
+              a per-request cost model, a single client with erratic
+              behavior can generate unexpected costs for the provider.
+            </li>
+            <li>
+              <strong>Protecting expensive endpoints:</strong> PDF report
+              generation, data export, mass email sending, calls to paid
+              external APIs — operations that consume significant resources
+              need to be limited independently of the rest.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. HOW IT WORKS -->
+        <section class="artigo__secao">
+          <h2>How it works</h2>
+
+          <h3>Main algorithms</h3>
+
+          <h3>Token Bucket</h3>
+          <p>
+            A bucket stores up to <em>N</em> tokens (maximum capacity).
+            Tokens are added at a fixed rate (e.g., 10 tokens per second).
+            Each request consumes one token; if the bucket is empty, the
+            request is rejected. If the bucket is full and no request
+            arrives, tokens accumulate up to the maximum limit.
+          </p>
+          <p>
+            <strong>Advantage:</strong> allows legitimate bursts — an idle
+            client accumulates tokens and can make N requests in a burst
+            when it needs to. <strong>Disadvantage:</strong> a burst of up
+            to N can happen at any moment, which can overload a downstream
+            service that isn't prepared for spikes.
+          </p>
+
+          <h3>Leaky Bucket</h3>
+          <p>
+            Requests enter a queue and are processed at a constant rate
+            (e.g., 10 req/second), independent of the arrival rate. If the
+            queue fills up, new requests are rejected. The "faucet" leaks at
+            a constant pace — hence the name.
+          </p>
+          <p>
+            <strong>Advantage:</strong> smooths bursts, protecting the
+            downstream system from spikes. <strong>Disadvantage:</strong>
+            valid burst requests wait in the queue, increasing perceived
+            latency.
+          </p>
+
+          <h3>Fixed Window Counter</h3>
+          <p>
+            Counts requests within a fixed window (e.g., 100 req per minute,
+            window resets every minute at second :00). Simple to implement
+            with an atomic counter and TTL.
+          </p>
+          <p>
+            <strong>Classic problem:</strong> a client can make 100 requests
+            in the last 5 seconds of one window and 100 in the first 5
+            seconds of the next — 200 requests in 10 seconds, double the
+            intended limit.
+          </p>
+
+          <h3>Sliding Window Log</h3>
+          <p>
+            Records the timestamp of each request in a list. For each new
+            request, it removes timestamps older than N seconds from the
+            list and counts what remains. If the count exceeds the limit,
+            it rejects the request. More precise than Fixed Window, but
+            consumes more memory (one timestamp per request per client).
+          </p>
+
+          <h3>Sliding Window Counter</h3>
+          <p>
+            An efficient hybrid: keeps the counter for the current window
+            and the previous window, calculating an approximation
+            proportional to the overlap with the previous window. E.g.: if
+            the previous window had 80 requests, the current window has 20,
+            and we're 30% into the current window, the estimated count is
+            80 × 0.7 + 20 = 76.
+          </p>
+          <p>
+            Widely used in production: constant memory (two counters per
+            client), without Fixed Window's burst vulnerability, and with
+            good accuracy.
+          </p>
+
+          <figure class="artigo__figura">
+            <svg viewBox="0 0 760 300" width="100%" role="img" aria-label="Diagram comparing Token Bucket and Fixed Window Counter: Token Bucket shows a bucket with tokens being added and consumed, allowing bursts; Fixed Window shows the burst problem at the window boundary, where double the limit can pass in two adjacent seconds">
+              <defs>
+                <marker id="rl-arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                  <polygon points="0 0, 10 3.5, 0 7" fill="#59616e" />
+                </marker>
+                <marker id="rl-arrow-ok" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                  <polygon points="0 0, 10 3.5, 0 7" fill="#10b981" />
+                </marker>
+                <marker id="rl-arrow-err" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                  <polygon points="0 0, 10 3.5, 0 7" fill="#ef4444" />
+                </marker>
+              </defs>
+
+              <!-- ── LEFT PANEL: Token Bucket ── -->
+              <text x="185" y="22" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#1f2530">Token Bucket</text>
+
+              <!-- Bucket shape -->
+              <rect x="140" y="35" width="90" height="90" rx="4" fill="#f0f2f5" stroke="#e3e6ea" stroke-width="1.5" />
+              <!-- Tokens inside bucket (circles) -->
+              <circle cx="165" cy="60" r="10" fill="#4f46e5" fill-opacity="0.8" />
+              <circle cx="190" cy="60" r="10" fill="#4f46e5" fill-opacity="0.8" />
+              <circle cx="215" cy="60" r="10" fill="#4f46e5" fill-opacity="0.8" />
+              <circle cx="165" cy="85" r="10" fill="#4f46e5" fill-opacity="0.8" />
+              <circle cx="190" cy="85" r="10" fill="#4f46e5" fill-opacity="0.8" />
+              <circle cx="215" cy="85" r="10" fill="#4f46e5" fill-opacity="0.8" />
+              <text x="185" y="117" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#59616e">bucket: 6/10 tokens</text>
+
+              <!-- Add tokens arrow (top) -->
+              <line x1="185" y1="20" x2="185" y2="33" stroke="#10b981" stroke-width="1.5" marker-end="url(#rl-arrow-ok)" />
+              <text x="235" y="20" font-family="system-ui, sans-serif" font-size="9" fill="#10b981">+10 tokens/s</text>
+
+              <!-- Consume arrow (right) -->
+              <line x1="232" y1="75" x2="260" y2="75" stroke="#59616e" stroke-width="1.5" marker-end="url(#rl-arrow)" />
+              <text x="265" y="65" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">request</text>
+              <text x="265" y="77" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">-1 token</text>
+
+              <!-- ACCEPT label -->
+              <rect x="300" y="62" width="55" height="26" rx="4" fill="#d1fae5" stroke="#10b981" stroke-width="1" />
+              <text x="328" y="79" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#10b981">200 OK</text>
+
+              <!-- REJECT scenario -->
+              <line x1="232" y1="105" x2="260" y2="118" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#rl-arrow-err)" />
+              <text x="265" y="112" font-family="system-ui, sans-serif" font-size="9" fill="#ef4444">empty bucket</text>
+
+              <rect x="300" y="108" width="55" height="26" rx="4" fill="#fef2f2" stroke="#ef4444" stroke-width="1" />
+              <text x="328" y="125" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#ef4444">429</text>
+
+              <!-- Burst note -->
+              <rect x="80" y="150" width="280" height="36" rx="4" fill="#eff6ff" stroke="#4f46e5" stroke-width="1" />
+              <text x="220" y="165" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#4f46e5">Allows burst: idle client accumulates tokens</text>
+              <text x="220" y="178" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#4f46e5">and can make N requests in a burst</text>
+
+              <!-- Vertical divider -->
+              <line x1="390" y1="10" x2="390" y2="295" stroke="#e3e6ea" stroke-width="1.5" stroke-dasharray="6,4" />
+
+              <!-- ── RIGHT PANEL: Fixed Window burst problem ── -->
+              <text x="570" y="22" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#1f2530">Fixed Window — Burst Problem</text>
+
+              <!-- Timeline bar -->
+              <rect x="410" y="50" width="330" height="20" rx="3" fill="#f0f2f5" stroke="#e3e6ea" stroke-width="1" />
+              <!-- Window 1 (left half) -->
+              <rect x="410" y="50" width="165" height="20" rx="3" fill="#e0e7ff" stroke="#4f46e5" stroke-width="1" />
+              <text x="492" y="65" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#4f46e5">Window 1 (0:00 – 0:59)</text>
+              <!-- Window 2 (right half) -->
+              <rect x="575" y="50" width="165" height="20" rx="3" fill="#e0e7ff" stroke="#4f46e5" stroke-width="1" />
+              <text x="658" y="65" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#4f46e5">Window 2 (1:00 – 1:59)</text>
+
+              <!-- Window boundary marker -->
+              <line x1="575" y1="40" x2="575" y2="85" stroke="#59616e" stroke-width="1.5" stroke-dasharray="4,3" />
+              <text x="575" y="37" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">1:00</text>
+
+              <!-- Burst 1: 100 req at end of window 1 -->
+              <rect x="500" y="80" width="70" height="28" rx="3" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" />
+              <text x="535" y="93" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="600" fill="#92400e">100 req</text>
+              <text x="535" y="103" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#92400e">0:55–0:59</text>
+
+              <!-- Burst 2: 100 req at start of window 2 -->
+              <rect x="578" y="80" width="70" height="28" rx="3" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" />
+              <text x="613" y="93" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="600" fill="#92400e">100 req</text>
+              <text x="613" y="103" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#92400e">1:00–1:04</text>
+
+              <!-- Both accepted -->
+              <text x="535" y="122" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#10b981">✓ 100 accepted</text>
+              <text x="613" y="122" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#10b981">✓ 100 accepted</text>
+
+              <!-- Problem annotation -->
+              <rect x="420" y="138" width="320" height="42" rx="4" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5" />
+              <text x="580" y="155" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#ef4444">200 requests in 10 seconds!</text>
+              <text x="580" y="172" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#59616e">Limit: 100/min — but both windows validate</text>
+
+              <!-- Solution note -->
+              <rect x="420" y="196" width="320" height="36" rx="4" fill="#f0fdf4" stroke="#10b981" stroke-width="1" />
+              <text x="580" y="211" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#10b981">Solution: Sliding Window Counter approximates the</text>
+              <text x="580" y="224" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#10b981">count with weighted overlap from the previous window</text>
+
+              <!-- HTTP response header note (bottom) -->
+              <rect x="20" y="210" width="355" height="82" rx="4" fill="#0e1320" stroke="#e3e6ea" stroke-width="1" />
+              <text x="197" y="228" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="600" fill="#e6e9f0">HTTP response headers (RFC 6585 + industry standard)</text>
+              <text x="30" y="247" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="10" fill="#10b981">HTTP/1.1 429 Too Many Requests</text>
+              <text x="30" y="261" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="10" fill="#4f46e5">X-RateLimit-Limit: 100</text>
+              <text x="30" y="275" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="10" fill="#4f46e5">X-RateLimit-Remaining: 0</text>
+              <text x="30" y="289" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="10" fill="#4f46e5">Retry-After: 42</text>
+            </svg>
+            <figcaption>Token Bucket allows controlled bursts (accumulated tokens). Fixed Window Counter has the classic vulnerability of accepting double the limit in two adjacent seconds at the window boundary — Sliding Window Counter solves this.</figcaption>
+          </figure>
+
+          <h3>Rate limiting dimensions</h3>
+          <p>
+            Rate limiting can be applied across multiple dimensions,
+            combined depending on the use case:
+          </p>
+          <div class="code-bloco">
+<pre><code>  By IP            — basic protection against bots; penalizes users
+                     behind corporate NAT (see pitfalls)
+  By user          — limit per authenticated account; fairer
+  By API key       — granular control for integrations and partners
+  By endpoint      — different limits for /login (5/min) vs
+                     /search (100/min)
+  By tenant        — in multi-tenant SaaS, limit per organization
+  Combined         — by IP AND by user AND by endpoint simultaneously
+</code></pre>
+          </div>
+
+          <h3>Implementation with Redis</h3>
+          <p>
+            Redis is the standard for rate limiting in distributed
+            environments (multiple server instances). The counter needs to
+            be shared — if each instance keeps its own counter, a client can
+            make N requests per instance, multiplying the limit by the
+            number of instances.
+          </p>
+          <div class="code-bloco">
+<pre><code>  -- Fixed Window with Redis (Lua script for atomicity)
+  local key = "rl:" .. client_id .. ":" .. window_start
+  local count = redis.call("INCR", key)
+  if count == 1 then
+    redis.call("EXPIRE", key, window_size_seconds)
+  end
+  if count > limit then
+    return 429
+  end
+  return 200
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 4. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>Public APIs:</strong> any API exposed to the internet
+              should have rate limiting. Without it, a single misconfigured
+              or malicious client can bring down the entire service.
+            </li>
+            <li>
+              <strong>Authentication endpoints:</strong> aggressive limiting
+              on <code>/login</code>, <code>/forgot-password</code>, and OTP
+              verification is the basic protection against brute force — 5
+              attempts per minute per IP is a reasonable starting point.
+            </li>
+            <li>
+              <strong>Expensive operations:</strong> PDF report generation,
+              data export, mass email sending, calls to paid external APIs.
+              Rate limiting protects both operational cost and
+              availability.
+            </li>
+          </ul>
+
+          <h2>When to be careful</h2>
+          <ul>
+            <li>
+              <strong>Overly aggressive rate limiting on internal APIs:</strong>
+              internal services that call each other at high frequency can
+              suffer artificial degradation from poorly sized limits.
+              Monitor and calibrate based on real production data before
+              tightening limits.
+            </li>
+            <li>
+              <strong>Limiting only by IP in corporate contexts:</strong>
+              hundreds of employees at a company may share a single public
+              IP — rate limiting by IP treats them as a single client.
+              Prefer limiting by authenticated user in these contexts.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 5. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Protects service availability against abuse, client bugs, and low-intensity volumetric attacks.</li>
+            <li>Guarantees fairness among clients: no individual client monopolizes shared resources.</li>
+            <li>Protects operational costs in APIs charged per request or per expensive operation.</li>
+            <li>Relatively simple to implement with Redis and idiomatic in API Gateways (Kong, AWS API Gateway, Nginx).</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Legitimate clients can be penalized if limits are poorly sized or if they share an IP with other clients.</li>
+            <li>Not sufficient defense against high-intensity volumetric DDoS attacks — for that, WAF and CDN with DDoS protection are needed.</li>
+            <li>Requires distributed state (Redis) in environments with multiple instances, adding latency and infrastructure dependency.</li>
+            <li>Fixed limits don't adapt to legitimate load variations — a more sophisticated algorithm (e.g., Token Bucket with a generous burst) is fairer.</li>
+          </ul>
+        </section>
+
+        <!-- 6. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Fixed Window with burst at the boundary</h3>
+          <p>
+            The most classic rate limiting problem: 100 requests in the last
+            5 seconds of a window plus 100 in the first 5 seconds of the
+            next add up to 200 in 10 seconds, even though the limit is
+            100/minute. Use Sliding Window Counter to mitigate this — it's
+            the option with the best balance between accuracy, memory cost,
+            and implementation simplicity.
+          </p>
+
+          <h3>2. Rate limiting by IP on corporate networks</h3>
+          <p>
+            A company with 500 employees may have all of them going out
+            through the same public IP range via NAT. Aggressive rate
+            limiting by IP causes an employee making normal requests to be
+            blocked because of a coworker's behavior. Always offer limits
+            by authenticated user as an alternative.
+          </p>
+
+          <h3>3. No informative headers in the 429 response</h3>
+          <p>
+            A <code>429 Too Many Requests</code> response without
+            informative headers leaves the client in the dark: it doesn't
+            know how many requests remain, when the limit resets, or how
+            long to wait. The result is retry loops with arbitrary backoff
+            or, worse, immediate retries that make the overload worse.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Always include:</strong> <code>Retry-After</code>
+            (seconds until it can try again), <code>X-RateLimit-Limit</code>
+            (configured limit), <code>X-RateLimit-Remaining</code>
+            (requests remaining in the current window), and
+            <code>X-RateLimit-Reset</code> (Unix timestamp of the next
+            reset).
+          </p>
+
+          <h3>4. Rate limiting only at the edge without protecting internal services</h3>
+          <p>
+            If rate limiting exists only at the API Gateway, internal
+            services that call each other directly (without going through
+            the gateway) remain unprotected. A bug in service A that makes
+            calls in a loop to service B can take down B even with the
+            gateway protecting external traffic. Consider service-level
+            rate limiting for critical internal communication.
+          </p>
+        </section>
+
+        <!-- 7. RELATED -->
+        <section class="artigo__secao">
+          <h2>Related architectures and patterns</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../api-gateway/">API Gateway</a></li>
+            <li><a href="../circuit-breaker/">Circuit Breaker</a></li>
+            <li><a href="../idempotencia/">Idempotency</a></li>
+            <li><a href="../escalabilidade-horizontal-vertical/">Horizontal vs Vertical Scalability</a></li>
+          </ul>
+          <p class="mt-1">
+            The <strong>API Gateway</strong> is the most common place to
+            implement rate limiting in microservices — centralizing the
+            policy at a single point instead of duplicating the logic in
+            each service. Kong, AWS API Gateway, NGINX, and Traefik offer
+            rate limiting as a configurable native feature.
+          </p>
+          <p>
+            <strong>Circuit Breaker</strong> and Rate Limiting are
+            complementary: Rate Limiting protects a service from overload
+            caused by too many clients, while Circuit Breaker protects a
+            client from continuing to call a service that's already
+            failing. Together, they form a robust resilience layer.
+          </p>
+          <p>
+            Retries after receiving a <code>429</code> should respect
+            <code>Retry-After</code> and be <strong>idempotent</strong> —
+            the server must be prepared to receive the same request more
+            than once without unwanted side effects.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="7070707070"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

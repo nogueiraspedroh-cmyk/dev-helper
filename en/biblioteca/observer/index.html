@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Observer — Design Patterns | Dev Helper Library</title>
+  <meta name="description" content="Learn the Observer pattern (GoF) in depth: intent, problem, solution, push vs pull, Pub/Sub, examples in TypeScript and PHP, when to use it, when to avoid it, and common pitfalls." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/observer/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Observer</span>
+        </nav>
+        <span class="artigo__categoria">Behavioral Pattern (GoF)</span>
+        <h1 class="artigo__titulo">Observer</h1>
+        <p class="artigo__subtitulo">
+          Defines a one-to-many dependency between objects: when the subject
+          changes state, all its observers are notified and updated automatically
+          — without the subject needing to know each of them.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Establish a one-to-many dependency relationship</strong> so
+            that, when the <em>subject</em> (Subject / Observable) changes its
+            internal state, all registered <em>observers</em> are notified
+            automatically. The subject doesn't know the concrete types of the
+            observers — it communicates only through the <code>Observer</code>
+            interface.
+          </p>
+          <p>
+            Cataloged by the GoF (1994) as a behavioral pattern, Observer is the
+            conceptual foundation of event systems, data-binding in UI frameworks
+            (React, Vue, Angular), reactive streams (RxJS, ReactiveX), and any
+            notification mechanism where the data producer must not be tightly
+            coupled to its consumers.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Imagine a weather station that measures temperature, humidity, and
+            pressure. Multiple displays need to show this data: a current-readings
+            panel, a historical chart, and an alerts display. The naive approach
+            would couple the station directly to each display:
+          </p>
+          <div class="code-bloco">
+<pre><code>// Naive approach — DON'T do this:
+class WeatherStation {
+  private currentPanel: CurrentPanel;
+  private historyChart: HistoryChart;
+  private alertsDisplay: AlertsDisplay;
+
+  update(temp: number, humidity: number, pressure: number): void {
+    this.currentPanel.show(temp, humidity, pressure);
+    this.historyChart.record(temp, humidity, pressure);
+    this.alertsDisplay.check(temp, humidity, pressure);
+    // Every new display requires modifying this class.
+  }
+}</code></pre>
+          </div>
+          <p>
+            Adding or removing a display requires modifying
+            <code>WeatherStation</code> — a violation of the Open/Closed Principle.
+            Displays also can't be registered or removed at runtime. Observer
+            solves both problems: the station doesn't know the displays, it just
+            publishes changes; displays subscribe and unsubscribe independently.
+          </p>
+        </section>
+
+        <!-- 3. SOLUTION -->
+        <section class="artigo__secao">
+          <h2>Solution</h2>
+          <p>Observer organizes the code into three participants:</p>
+          <ol>
+            <li>
+              <strong>Subject (Observable):</strong> keeps a list of observers and
+              offers methods to register them (<code>subscribe</code>) and remove
+              them (<code>unsubscribe</code>). When its state changes, it calls
+              <code>notify</code> to walk the list and inform each observer.
+            </li>
+            <li>
+              <strong>Observer (interface):</strong> declares the update method
+              that the Subject calls. E.g.: <code>update(data)</code>.
+            </li>
+            <li>
+              <strong>ConcreteObserver:</strong> implements <code>Observer</code>
+              and reacts to the notification according to its responsibility —
+              displaying data, logging, sending an alert.
+            </li>
+          </ol>
+
+          <h3>Push vs Pull</h3>
+          <p>
+            There are two approaches to what the Subject sends in the
+            notification:
+          </p>
+          <ul>
+            <li>
+              <strong>Push:</strong> the Subject sends the current data directly
+              in the notification argument — <code>update(temp, humidity, pressure)</code>.
+              It's more direct, but it couples the <code>Observer</code>'s
+              signature to the exact shape of the Subject's data. When the state
+              grows, the Observer interface changes.
+            </li>
+            <li>
+              <strong>Pull:</strong> the Subject notifies without data (or with a
+              reference to itself) — <code>update(subject)</code>. Each Observer
+              asks the Subject only for what it needs. More flexible: new data can
+              be added to the Subject without breaking the Observer's signature.
+              The cost is that the Observer needs to know the Subject's interface
+              to pull data.
+            </li>
+          </ul>
+
+          <h3>Observer vs Pub/Sub</h3>
+          <p>
+            Observer and Publish/Subscribe are frequently confused, but they
+            differ in coupling:
+          </p>
+          <ul>
+            <li>
+              <strong>Observer:</strong> the Subject directly knows its Observers
+              (it keeps the list). There's direct coupling Subject ↔ Observer, but
+              not between Observers.
+            </li>
+            <li>
+              <strong>Pub/Sub:</strong> introduces a <em>broker</em> (event bus)
+              between publishers and subscribers. Publishers and subscribers don't
+              know each other — they communicate only through the channel/topic.
+              Decoupling is total, but flow traceability is lower.
+            </li>
+          </ul>
+          <p>
+            Use Observer when the number of observers is manageable and the
+            Subject–Observer relationship is direct. Use Pub/Sub when
+            communication needs to cross modules or services without direct
+            coupling.
+          </p>
+        </section>
+
+        <!-- 4. STRUCTURE -->
+        <section class="artigo__secao">
+          <h2>Structure</h2>
+          <div class="code-bloco">
+<pre><code>         «interface»
+           Observer
+    ┌──────────────────────────┐
+    │ + update(data: T): void  │
+    └──────────────────────────┘
+              ▲
+   ┌──────────┴─────────────────────┐
+   │                                │
+CurrentPanel                HistoryChart
+(ConcreteObserver)        (ConcreteObserver)
+
+
+           Subject
+  ┌───────────────────────────────────────────┐
+  │ - observers: Observer[]                   │
+  │ + subscribe(o: Observer): void            │
+  │ + unsubscribe(o: Observer): void          │
+  │ # notify(): void                          │
+  └───────────────────────────────────────────┘
+              ▲
+  WeatherStation (ConcreteSubject)
+  ┌───────────────────────────────────────────┐
+  │ - temperature: number                     │
+  │ - humidity: number                        │
+  │ + setReading(t, h): void                  │
+  │   → calls this.notify()                   │
+  └───────────────────────────────────────────┘
+
+
+Notification flow (push model):
+
+  station.setReading(25, 60)
+    → notify()
+      → panel.update({ temperature: 25, humidity: 60 })
+      → chart.update({ temperature: 25, humidity: 60 })
+      → alerts.update({ temperature: 25, humidity: 60 })
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. CODE EXAMPLES -->
+        <section class="artigo__secao">
+          <h2>Code examples</h2>
+
+          <h3>Example 1 — Weather station with multiple displays</h3>
+          <p>
+            A complete implementation with a generic Subject, subscribe/unsubscribe
+            and notification. Uses the push model with a typed data object.
+          </p>
+
+          <!-- TAB GROUP 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 1 — weather station">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Interfaces ────────────────────────────────────────────────
+interface WeatherData {
+  temperature: number;
+  humidity: number;
+}
+
+interface Observer&lt;T&gt; {
+  update(data: T): void;
+}
+
+// ── Generic Subject ──────────────────────────────────────────
+class Subject&lt;T&gt; {
+  private readonly observers: Set&lt;Observer&lt;T&gt;&gt; = new Set();
+
+  subscribe(observer: Observer&lt;T&gt;): void {
+    this.observers.add(observer);
+  }
+
+  unsubscribe(observer: Observer&lt;T&gt;): void {
+    this.observers.delete(observer);
+  }
+
+  protected notify(data: T): void {
+    for (const observer of this.observers) {
+      observer.update(data);
+    }
+  }
+}
+
+// ── ConcreteSubject ───────────────────────────────────────────
+class WeatherStation extends Subject&lt;WeatherData&gt; {
+  private temperature = 0;
+  private humidity = 0;
+
+  setReading(temperature: number, humidity: number): void {
+    this.temperature = temperature;
+    this.humidity = humidity;
+    this.notify({ temperature: this.temperature, humidity: this.humidity });
+  }
+}
+
+// ── ConcreteObservers ─────────────────────────────────────────
+class CurrentPanel implements Observer&lt;WeatherData&gt; {
+  update(data: WeatherData): void {
+    console.log(
+      `[Panel] Temp: ${data.temperature}C  Humidity: ${data.humidity}%`
+    );
+  }
+}
+
+class AlertsDisplay implements Observer&lt;WeatherData&gt; {
+  update(data: WeatherData): void {
+    if (data.temperature &gt; 35) {
+      console.log("[ALERT] Critical temperature:", data.temperature + "C");
+    }
+    if (data.humidity &lt; 30) {
+      console.log("[ALERT] Low humidity:", data.humidity + "%");
+    }
+  }
+}
+
+class HistoryChart implements Observer&lt;WeatherData&gt; {
+  private readonly history: WeatherData[] = [];
+
+  update(data: WeatherData): void {
+    this.history.push(data);
+    console.log(`[Chart] Records: ${this.history.length}`);
+  }
+
+  getData(): readonly WeatherData[] {
+    return this.history;
+  }
+}
+
+// ── Usage ────────────────────────────────────────────────────
+const station = new WeatherStation();
+const panel = new CurrentPanel();
+const alerts = new AlertsDisplay();
+const chart = new HistoryChart();
+
+station.subscribe(panel);
+station.subscribe(alerts);
+station.subscribe(chart);
+
+station.setReading(25, 60);
+// [Panel] Temp: 25C  Humidity: 60%
+// [Chart] Records: 1
+
+station.setReading(38, 25);
+// [Panel] Temp: 38C  Humidity: 25%
+// [ALERT] Critical temperature: 38C
+// [ALERT] Low humidity: 25%
+// [Chart] Records: 2
+
+// Unsubscribe the panel — it stops receiving notifications.
+station.unsubscribe(panel);
+station.setReading(20, 70);
+// [Chart] Records: 3  (panel was not notified)</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Interfaces ────────────────────────────────────────────────
+// PHP has native SplSubject and SplObserver; here we use manual
+// interfaces for clarity and explicit typing.
+
+interface WeatherData
+{
+    public function getTemperature(): float;
+    public function getHumidity(): float;
+}
+
+interface WeatherObserver
+{
+    public function update(WeatherData $data): void;
+}
+
+// ── Value Object ──────────────────────────────────────────────
+final class Reading implements WeatherData
+{
+    public function __construct(
+        private readonly float $temperature,
+        private readonly float $humidity
+    ) {}
+
+    public function getTemperature(): float { return $this-&gt;temperature; }
+    public function getHumidity(): float    { return $this-&gt;humidity; }
+}
+
+// ── ConcreteSubject ───────────────────────────────────────────
+class WeatherStation
+{
+    /** @var WeatherObserver[] */
+    private array $observers = [];
+
+    public function subscribe(WeatherObserver $observer): void
+    {
+        $this-&gt;observers[] = $observer;
+    }
+
+    public function unsubscribe(WeatherObserver $observer): void
+    {
+        $this-&gt;observers = array_filter(
+            $this-&gt;observers,
+            fn($o) =&gt; $o !== $observer
+        );
+    }
+
+    public function setReading(float $temperature, float $humidity): void
+    {
+        $data = new Reading($temperature, $humidity);
+        foreach ($this-&gt;observers as $observer) {
+            $observer-&gt;update($data);
+        }
+    }
+}
+
+// ── ConcreteObservers ─────────────────────────────────────────
+class CurrentPanel implements WeatherObserver
+{
+    public function update(WeatherData $data): void
+    {
+        printf(
+            "[Panel] Temp: %.1fC  Humidity: %.1f%%\n",
+            $data-&gt;getTemperature(),
+            $data-&gt;getHumidity()
+        );
+    }
+}
+
+class AlertsDisplay implements WeatherObserver
+{
+    public function update(WeatherData $data): void
+    {
+        if ($data-&gt;getTemperature() &gt; 35) {
+            echo "[ALERT] Critical temperature: " . $data-&gt;getTemperature() . "C\n";
+        }
+        if ($data-&gt;getHumidity() &lt; 30) {
+            echo "[ALERT] Low humidity: " . $data-&gt;getHumidity() . "%\n";
+        }
+    }
+}
+
+class HistoryChart implements WeatherObserver
+{
+    /** @var WeatherData[] */
+    private array $history = [];
+
+    public function update(WeatherData $data): void
+    {
+        $this-&gt;history[] = $data;
+        echo "[Chart] Records: " . count($this-&gt;history) . "\n";
+    }
+}
+
+// ── Usage ────────────────────────────────────────────────────
+$station = new WeatherStation();
+$panel   = new CurrentPanel();
+$alerts  = new AlertsDisplay();
+$chart   = new HistoryChart();
+
+$station-&gt;subscribe($panel);
+$station-&gt;subscribe($alerts);
+$station-&gt;subscribe($chart);
+
+$station-&gt;setReading(25, 60);
+// [Panel] Temp: 25.0C  Humidity: 60.0%
+// [Chart] Records: 1
+
+$station-&gt;setReading(38, 25);
+// [Panel] Temp: 38.0C  Humidity: 25.0%
+// [ALERT] Critical temperature: 38C
+// [ALERT] Low humidity: 25%
+// [Chart] Records: 2
+
+// Unsubscribe the panel.
+$station-&gt;unsubscribe($panel);
+$station-&gt;setReading(20, 70);
+// [Chart] Records: 3</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 1) -->
+
+          <h3>Example 2 — Typed event system (pull model)</h3>
+          <p>
+            In the pull model, the Subject only notifies that something changed
+            (passing a reference to itself). Each Observer queries the data it
+            needs. This pattern is more flexible when the Subject has rich state
+            and different Observers need distinct subsets of information.
+          </p>
+
+          <!-- TAB GROUP 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 2 — pull model">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// Pull model: the Observer receives a reference to the Subject
+// and "pulls" only the data it needs.
+
+interface OrderObserver {
+  onOrderUpdated(order: Order): void;
+}
+
+class Order {
+  private readonly observers: Set&lt;OrderObserver&gt; = new Set();
+
+  private _status: string = "draft";
+  private _items: string[] = [];
+
+  subscribe(o: OrderObserver): void    { this.observers.add(o); }
+  unsubscribe(o: OrderObserver): void  { this.observers.delete(o); }
+
+  get status(): string           { return this._status; }
+  get items(): readonly string[] { return this._items; }
+  get total(): number            { return this._items.length * 50; } // $50/item (simplified)
+
+  addItem(item: string): void {
+    this._items.push(item);
+    this.notify();
+  }
+
+  advanceStatus(newStatus: string): void {
+    this._status = newStatus;
+    this.notify();
+  }
+
+  private notify(): void {
+    for (const o of this.observers) {
+      o.onOrderUpdated(this); // passes `this` — the Observer pulls what it needs
+    }
+  }
+}
+
+// Observer that only cares about the status:
+class StatusLogger implements OrderObserver {
+  onOrderUpdated(order: Order): void {
+    console.log(`[Log] Current status: ${order.status}`);
+  }
+}
+
+// Observer that only cares about the total:
+class TotalCalculator implements OrderObserver {
+  onOrderUpdated(order: Order): void {
+    console.log(`[Total] $${order.total.toFixed(2)} (${order.items.length} items)`);
+  }
+}
+
+// ── Usage ────────────────────────────────────────────────────
+const order = new Order();
+order.subscribe(new StatusLogger());
+order.subscribe(new TotalCalculator());
+
+order.addItem("Keyboard");
+// [Log] Current status: draft
+// [Total] $50.00 (1 items)
+
+order.addItem("Mouse");
+// [Log] Current status: draft
+// [Total] $100.00 (2 items)
+
+order.advanceStatus("confirmed");
+// [Log] Current status: confirmed
+// [Total] $100.00 (2 items)</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// Pull model in PHP — Observer receives a reference to the Subject.
+
+interface OrderObserver
+{
+    public function onOrderUpdated(Order $order): void;
+}
+
+class Order
+{
+    /** @var OrderObserver[] */
+    private array $observers = [];
+
+    private string $status = 'draft';
+    /** @var string[] */
+    private array $items = [];
+
+    public function subscribe(OrderObserver $o): void
+    {
+        $this-&gt;observers[] = $o;
+    }
+
+    public function unsubscribe(OrderObserver $o): void
+    {
+        $this-&gt;observers = array_filter($this-&gt;observers, fn($obs) =&gt; $obs !== $o);
+    }
+
+    public function getStatus(): string     { return $this-&gt;status; }
+    public function getItems(): array       { return $this-&gt;items; }
+    public function getTotal(): float       { return count($this-&gt;items) * 50.0; }
+
+    public function addItem(string $item): void
+    {
+        $this-&gt;items[] = $item;
+        $this-&gt;notify();
+    }
+
+    public function advanceStatus(string $newStatus): void
+    {
+        $this-&gt;status = $newStatus;
+        $this-&gt;notify();
+    }
+
+    private function notify(): void
+    {
+        foreach ($this-&gt;observers as $o) {
+            $o-&gt;onOrderUpdated($this);
+        }
+    }
+}
+
+class StatusLogger implements OrderObserver
+{
+    public function onOrderUpdated(Order $order): void
+    {
+        echo "[Log] Current status: " . $order-&gt;getStatus() . "\n";
+    }
+}
+
+class TotalCalculator implements OrderObserver
+{
+    public function onOrderUpdated(Order $order): void
+    {
+        printf(
+            "[Total] $%.2f (%d items)\n",
+            $order-&gt;getTotal(),
+            count($order-&gt;getItems())
+        );
+    }
+}
+
+// ── Usage ────────────────────────────────────────────────────
+$order = new Order();
+$order-&gt;subscribe(new StatusLogger());
+$order-&gt;subscribe(new TotalCalculator());
+
+$order-&gt;addItem('Keyboard');
+// [Log] Current status: draft
+// [Total] $50.00 (1 items)
+
+$order-&gt;addItem('Mouse');
+// [Log] Current status: draft
+// [Total] $100.00 (2 items)
+
+$order-&gt;advanceStatus('confirmed');
+// [Log] Current status: confirmed
+// [Total] $100.00 (2 items)</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 2) -->
+
+        </section><!-- /.artigo__secao (examples) -->
+
+        <!-- 6. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>When a change in one object requires updating others</strong>
+              and you don't know how many or which ones at design time.
+              Notification systems, live data feeds, processing pipelines.
+            </li>
+            <li>
+              <strong>When observers need to be registered and removed
+              dynamically</strong> at runtime — modules that enter and leave the
+              system without requiring a recompile.
+            </li>
+            <li>
+              <strong>To implement MVC/MVP:</strong> the Model is the Subject;
+              Views are Observers that update automatically when the Model
+              changes. It's the foundation of data-binding in Angular, Vue and
+              similar frameworks.
+            </li>
+            <li>
+              <strong>When you want to decouple the data producer from its
+              consumers</strong> without introducing an intermediate broker (use
+              Pub/Sub for that).
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>When notification order matters and is critical:</strong>
+              Observer doesn't guarantee notification order by default. If
+              Observer B depends on Observer A having already processed the
+              notification, the pure pattern doesn't guarantee that — extra logic
+              is needed.
+            </li>
+            <li>
+              <strong>When observers are few, fixed, and known:</strong> a direct
+              call is simpler and more traceable than setting up the Observer
+              infrastructure.
+            </li>
+            <li>
+              <strong>When cascading notifications are likely:</strong> if an
+              Observer modifies the Subject during <code>update</code>, triggering
+              new notifications, the system can enter loops or exhibit
+              unpredictable behavior.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Decouples the Subject from its Observers — the Subject doesn't need to know their concrete types.</li>
+            <li>Observers can be added and removed at runtime without changing the Subject.</li>
+            <li>Follows the Open/Closed Principle — new Observers don't require modifying the Subject.</li>
+            <li>Natural foundation for reactive systems, data-binding, and event-driven architecture.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Memory leaks: Observers that aren't removed keep the Subject (and themselves) alive — a classic pitfall in garbage-collected languages.</li>
+            <li>Indeterminate notification order: dependencies between Observers are hard to manage.</li>
+            <li>Cascading updates: an Observer that modifies the Subject can trigger unexpected notifications.</li>
+            <li>Hard to trace the data flow: with many Observers, understanding "who triggered what" requires specific debugging tools.</li>
+          </ul>
+        </section>
+
+        <!-- 8. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Memory leaks from not unsubscribing</h3>
+          <p>
+            The most frequent pitfall: registering an Observer and forgetting to
+            call <code>unsubscribe</code> when it's no longer needed. As long as
+            the Subject exists, it keeps a strong reference to the Observer —
+            preventing the GC from collecting the object. In long-lived
+            environments (servers, SPAs), the accumulation of "dead" Observers
+            causes memory leaks.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Solution:</strong> use a <code>Set</code> (makes removal by
+            reference easier), return a cancellation function (<em>disposable</em>)
+            from <code>subscribe</code>, or use <code>WeakRef</code> for optional
+            Observers. In TypeScript with RxJS, use <code>takeUntil</code> and
+            <code>unsubscribe</code> in the component's lifecycle.
+          </p>
+
+          <h3>2. Cascading updates</h3>
+          <p>
+            If an Observer calls a Subject method that triggers another round of
+            notifications, the result can be an infinite loop or an unpredictable
+            update order. Rule of thumb: Observers shouldn't modify the Subject's
+            state during <code>update</code>. If needed, use an event-queue
+            mechanism (next tick, microtask, setTimeout) to process the change
+            outside the current notification cycle.
+          </p>
+
+          <h3>3. Excessive notifications</h3>
+          <p>
+            A Subject that notifies on every small change (e.g.: every keystroke
+            in a text field) can overload slow Observers. Mitigation techniques:
+            debounce (groups changes within a time window), dirty flag (notifies
+            only if the value actually changed), or batch notification (accumulates
+            changes and notifies once at the end of the cycle).
+          </p>
+
+          <h3>4. Confusing Observer with Pub/Sub</h3>
+          <p>
+            Observer implies direct knowledge: the Subject keeps the list of
+            Observers and calls them directly. Pub/Sub uses an intermediate broker
+            (EventEmitter, Message Bus) that fully decouples publishers from
+            subscribers. Use Observer when direct coupling is acceptable; use
+            Pub/Sub when you need decoupling between independent modules or
+            services.
+          </p>
+        </section>
+
+        <!-- 9. RELATED PATTERNS -->
+        <section class="artigo__secao">
+          <h2>Related patterns</h2>
+          <p>
+            Observer relates to other behavioral and structural patterns:
+          </p>
+          <!--
+            Link discipline: only link already-published articles.
+            Strategy, State and Mediator all exist → real links.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../strategy/">Strategy</a></li>
+            <li><a href="../state/">State</a></li>
+            <li><a href="../mediator/">Mediator</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Strategy</strong> and Observer both use interfaces for
+            decoupling, but for different purposes: Strategy swaps algorithms in
+            the context; Observer distributes state notifications to multiple
+            receivers. <strong>State</strong> also manages implicit notifications
+            when the object changes state — in some implementations, the State
+            notifies an Observer or uses a Subject to propagate the change.
+            <strong>Mediator</strong> centralizes communication between objects,
+            eliminating direct references between them — it's an alternative to
+            Observer when many objects need to communicate bidirectionally, since
+            Observer still couples the Subject to its Observers through the
+            registration list.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="8484848484"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

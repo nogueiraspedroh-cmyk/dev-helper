@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MVP (Model-View-Presenter) — Architectures | Dev Helper Library</title>
+  <meta name="description" content="Understand the MVP (Model-View-Presenter) architecture: passive View, Presenter as total mediator, Passive View and Supervising Controller variants, UI-free testability, and the fat Presenter pitfall." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/mvp/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>MVP</span>
+        </nav>
+        <span class="artigo__categoria">Architecture</span>
+        <h1 class="artigo__titulo">MVP</h1>
+        <p class="artigo__subtitulo">
+          An evolution of MVC where the View is completely passive — it delegates
+          all presentation logic to the <strong>Presenter</strong>, which mediates
+          it through an interface, making UI logic fully testable without
+          instantiating the screen.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Remove all presentation logic from the View and move it to
+            the Presenter</strong>, so the View becomes "dumb" enough to be
+            replaced by a mock in tests. The Presenter knows the View only
+            through a narrow interface — and never through references to
+            concrete widgets or UI components.
+          </p>
+          <p>
+            MVP emerged in the early 1990s in work by Mike Potel (Taligent) and
+            was popularized in the Android and Windows Forms worlds as a
+            solution to a problem classic MVC left open: in web MVC, the
+            Controller was thin and delegated to the Model, but in desktop
+            applications the View tended to accumulate presentation logic —
+            color choices, formatting, button enabling — mixed together with UI
+            events.
+          </p>
+          <p>
+            MVP solves this directly: the View implements an interface (e.g.,
+            <code>IUserView</code>) that exposes only display and event-notification
+            operations. The Presenter receives that interface by injection and
+            uses it to read data from the Model and push results back to the
+            View. The View never talks to the Model; the Presenter is the sole
+            mediator.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            In graphical interfaces (desktop, mobile, complex web forms),
+            classic MVC doesn't clearly define who's responsible for
+            presentation logic — that layer between "raw data" and "pixel on
+            screen": value formatting, conditional enabling of controls, form
+            validation, error-message selection. The practical consequences are:
+          </p>
+          <ul>
+            <li>
+              <strong>View with presentation business code:</strong> the View
+              starts containing conditionals like "if the balance is negative,
+              show it in red" — logic that belongs to whoever knows the state,
+              not whoever draws pixels.
+            </li>
+            <li>
+              <strong>Zero testability of UI logic:</strong> to test whether the
+              error message displays correctly, you need to instantiate the
+              whole screen — with a graphical framework, a UI thread, a click
+              event. The feedback loop is slow and fragile.
+            </li>
+            <li>
+              <strong>Direct View-Model coupling:</strong> if the View reads the
+              Model directly (as in classic MVC with Observer), any change in
+              the model can force a change in the View — the two evolve
+              coupled.
+            </li>
+          </ul>
+          <p>
+            MVP solves these three problems: the Presenter is testable with an
+            IView mock; the View doesn't know the Model; and presentation logic
+            has a defined place — in the Presenter.
+          </p>
+        </section>
+
+        <!-- 3. STRUCTURE -->
+        <section class="artigo__secao">
+          <h2>Structure</h2>
+          <div class="code-bloco">
+<pre><code>  ┌────────────────────────────────────────────────────────────────┐
+  │                              User                              │
+  │                    (interacts with the View)                   │
+  └───────────────────────────┬────────────────────────────────────┘
+                              │ event (click, input)
+                              ▼
+  ┌─────────────────────────────────────────────────────────────┐
+  │                            VIEW                             │
+  │  - implements IView (narrow interface)                      │
+  │  - displays data pushed by the Presenter                    │
+  │  - delegates ALL events to the Presenter                    │
+  │  - does NOT know the Model                                  │
+  └───────────────────────────┬─────────────────────────────────┘
+                              │ notifies events via IView
+                              ▼
+  ┌─────────────────────────────────────────────────────────────┐
+  │                          PRESENTER                          │
+  │  - receives IView by injection (never the concrete class)   │
+  │  - contains all presentation logic                          │
+  │  - queries/updates the Model                                │
+  │  - pushes results by calling IView methods                  │
+  └───────────────────────────┬─────────────────────────────────┘
+                              │ uses
+                              ▼
+  ┌─────────────────────────────────────────────────────────────┐
+  │                            MODEL                            │
+  │  - data + business rules                                    │
+  │  - completely unaware of the View and the Presenter         │
+  └─────────────────────────────────────────────────────────────┘
+
+  Dependencies:
+    View        → IView          (implements the interface)
+    Presenter   → IView          (depends on the abstraction, not the concrete View)
+    Presenter   → Model          (reads and updates data)
+    Model       → (nobody)       (doesn't know View or Presenter)
+</code></pre>
+          </div>
+
+          <h3>Variant: Passive View</h3>
+          <p>
+            In the <strong>Passive View</strong> variant (the most common and
+            strictest one), the View has absolutely no logic at all: it only
+            exposes properties (text fields, labels, button state) that the
+            Presenter reads and writes. The View doesn't format data, doesn't
+            validate input, doesn't make visual decisions — all of that is the
+            Presenter's responsibility. The payoff is maximum testability: the
+            Presenter can be tested with a trivial IView mock.
+          </p>
+
+          <h3>Variant: Supervising Controller</h3>
+          <p>
+            In the <strong>Supervising Controller</strong> variant (or
+            Supervising Presenter), the View is a bit less passive: it performs
+            simple, direct binding with the Model for trivial cases (like
+            displaying a field's name with no transformation), while the
+            Presenter steps in only for more complex presentation logic. This
+            variant is a middle ground between MVP and MVVM — it gains
+            simplicity in the Presenter at the cost of a small residual
+            coupling of the View to the Model.
+          </p>
+        </section>
+
+        <!-- 4. HOW IT WORKS -->
+        <section class="artigo__secao">
+          <h2>How it works</h2>
+
+          <h3>The IView interface</h3>
+          <p>
+            The centerpiece of MVP is the interface the View implements. It
+            must be narrow — only the methods the Presenter actually needs to
+            call. It shouldn't expose widgets, DOM elements, framework
+            components or any concrete UI type. It should speak in terms of
+            data and intent: <code>displayUserName(name: string)</code>,
+            <code>showEmailError(message: string)</code>,
+            <code>enableSaveButton(enabled: boolean)</code>.
+          </p>
+
+          <h3>The Presenter</h3>
+          <p>
+            The Presenter is injected with the IView (and with the Model or
+            repository it needs). It registers itself as a listener for the
+            View's events — or the View calls Presenter methods directly when
+            the user acts. When an event occurs, the Presenter runs the logic,
+            queries the Model if needed, and calls the IView's methods to
+            update the screen. The Presenter <em>never</em> instantiates the
+            View; it receives it ready-made.
+          </p>
+
+          <h3>Code example</h3>
+          <div class="code-tabs" role="tablist" aria-label="MVP — interface and presenter">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- Painel TypeScript -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── MODEL — data and business rules ──────────────────────────
+class UserModel {
+  findById(id: string): { name: string; email: string } | null {
+    // hits a repository; the View never calls this directly
+    return { name: 'Ana', email: 'ana@example.com' };
+  }
+}
+
+// ── IVIEW — narrow interface the View implements ──────────────
+// Only display and notification operations — no concrete widgets.
+interface IProfileView {
+  displayName(name: string): void;
+  displayEmail(email: string): void;
+  showError(message: string): void;
+  enableEditing(enabled: boolean): void;
+}
+
+// ── PRESENTER — all presentation logic ─────────────────────────
+class ProfilePresenter {
+  constructor(
+    private readonly view: IProfileView,
+    private readonly model: UserModel,
+  ) {}
+
+  loadProfile(id: string): void {
+    const user = this.model.findById(id);
+    if (!user) {
+      this.view.showError('User not found.');
+      this.view.enableEditing(false);
+      return;
+    }
+    this.view.displayName(user.name);
+    this.view.displayEmail(user.email);
+    this.view.enableEditing(true);
+  }
+}
+
+// ── CONCRETE VIEW — implements IProfileView ────────────────────
+// Could be DOM, React, Android Activity, Windows Form, etc.
+class ProfileViewDOM implements IProfileView {
+  displayName(name: string): void {
+    document.getElementById('name')!.textContent = name;
+  }
+  displayEmail(email: string): void {
+    document.getElementById('email')!.textContent = email;
+  }
+  showError(message: string): void {
+    document.getElementById('error')!.textContent = message;
+  }
+  enableEditing(enabled: boolean): void {
+    (document.getElementById('btn-edit') as HTMLButtonElement)
+      .disabled = !enabled;
+  }
+}
+
+// ── MOCK VIEW — used in the Presenter's unit tests ─────────────
+class MockProfileView implements IProfileView {
+  displayedName = '';
+  displayedError = '';
+  editingEnabled = false;
+  displayName(name: string): void  { this.displayedName = name; }
+  displayEmail(_email: string): void { /* ignored in the test */ }
+  showError(msg: string): void  { this.displayedError = msg; }
+  enableEditing(e: boolean): void { this.editingEnabled = e; }
+}</code></pre>
+            </div>
+
+            <!-- Painel PHP -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── MODEL — data and business rules ──────────────────────────
+class UserModel
+{
+    public function findById(string $id): ?array
+    {
+        // hits a repository; the View never calls this directly
+        return ['name' =&gt; 'Ana', 'email' =&gt; 'ana@example.com'];
+    }
+}
+
+// ── IVIEW — narrow interface the View implements ──────────────
+// Only display and notification operations — no concrete widgets.
+interface IProfileView
+{
+    public function displayName(string $name): void;
+    public function displayEmail(string $email): void;
+    public function showError(string $message): void;
+    public function enableEditing(bool $enabled): void;
+}
+
+// ── PRESENTER — all presentation logic ─────────────────────────
+class ProfilePresenter
+{
+    public function __construct(
+        private readonly IProfileView $view,
+        private readonly UserModel $model,
+    ) {}
+
+    public function loadProfile(string $id): void
+    {
+        $user = $this-&gt;model-&gt;findById($id);
+        if ($user === null) {
+            $this-&gt;view-&gt;showError('User not found.');
+            $this-&gt;view-&gt;enableEditing(false);
+            return;
+        }
+        $this-&gt;view-&gt;displayName($user['name']);
+        $this-&gt;view-&gt;displayEmail($user['email']);
+        $this-&gt;view-&gt;enableEditing(true);
+    }
+}
+
+// ── CONCRETE VIEW — implements IProfileView ────────────────────
+// Could be a Blade template, a Livewire component, etc.
+class ProfileViewHtml implements IProfileView
+{
+    private string $name = '';
+    private string $email = '';
+    private string $error = '';
+    private bool $editingEnabled = false;
+
+    public function displayName(string $name): void      { $this-&gt;name = $name; }
+    public function displayEmail(string $email): void    { $this-&gt;email = $email; }
+    public function showError(string $message): void     { $this-&gt;error = $message; }
+    public function enableEditing(bool $enabled): void    { $this-&gt;editingEnabled = $enabled; }
+
+    public function render(): string
+    {
+        // All HTML output generated here — no presentation logic
+        $nameEsc  = htmlspecialchars($this-&gt;name,  ENT_QUOTES, 'UTF-8');
+        $emailEsc = htmlspecialchars($this-&gt;email, ENT_QUOTES, 'UTF-8');
+        $errorEsc = htmlspecialchars($this-&gt;error, ENT_QUOTES, 'UTF-8');
+        $disabled = $this-&gt;editingEnabled ? '' : 'disabled';
+        return "&lt;p&gt;{$nameEsc}&lt;/p&gt;&lt;p&gt;{$emailEsc}&lt;/p&gt;"
+             . "&lt;p class='error'&gt;{$errorEsc}&lt;/p&gt;"
+             . "&lt;button {$disabled}&gt;Edit&lt;/button&gt;";
+    }
+}</code></pre>
+            </div>
+          </div><!-- /.code-tabs -->
+
+          <p>
+            Note that <code>ProfilePresenter</code> can be unit tested by
+            instantiating a <code>MockProfileView</code> and a
+            <code>UserModel</code> with fake data — no graphical framework, no
+            DOM, no HTTP. That's MVP's central payoff.
+          </p>
+        </section>
+
+        <!-- 5. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>Desktop or mobile applications with complex presentation
+              logic:</strong> forms with conditional validation, dynamic
+              control enabling, rule-dependent formatting — these are scenarios
+              where the Presenter has real work to do and testability without a
+              physical UI is an immediate win.
+            </li>
+            <li>
+              <strong>When UI-logic testability is a priority:</strong> MVP lets
+              you test all the visual behavior (what shows, when it shows, in
+              what state) without instantiating a single widget or opening a
+              browser. For legacy Android or Windows Forms applications, it was
+              the main testing strategy.
+            </li>
+            <li>
+              <strong>When the View can be swapped without changing the
+              logic:</strong> by defining IView as a contract, you can have a
+              graphical View for production and a console View for tests or
+              scripts — the Presenter doesn't change.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>Modern frameworks with native data binding (Vue, Angular,
+              React + state management):</strong> in those environments,
+              declarative binding eliminates the need for the Presenter to
+              explicitly "push" data to the View. The right pattern becomes
+              <a href="../mvvm/">MVVM</a> or reactive-state-based architectures
+              (Flux, Redux, Signals).
+            </li>
+            <li>
+              <strong>Views with minimal or no logic:</strong> if the View is
+              just a static template that renders data without meaningful
+              conditional logic, the Presenter layer is unnecessary — a simple
+              MVC is more productive.
+            </li>
+            <li>
+              <strong>Teams unfamiliar with dependency inversion:</strong> the
+              IView is a contract that needs to stay consistent between View
+              and Presenter. If the team isn't disciplined, the interface leaks
+              concrete UI details (parameters of type <code>HTMLElement</code>
+              or <code>Button</code>), destroying the testability MVP promises.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 6. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Presenter fully testable without instantiating the real View — just an IView mock is enough.</li>
+            <li>Passive View: can be swapped (DOM, Android, console) without changing the Presenter.</li>
+            <li>Clear separation between presentation logic (Presenter) and rendering (View).</li>
+            <li>Model fully isolated from the presentation layer — the View never touches it directly.</li>
+            <li>Explicit contracts via IView ease parallel work between whoever builds the UI and whoever implements the logic.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>More infrastructure code: every View needs an IView interface, a Presenter and Presenter tests — MVP multiplies artifacts even for simple screens.</li>
+            <li>Risk of a fat Presenter: without discipline, all application logic migrates into the Presenter, which ends up orchestrating use cases, validating business rules and formatting data — mixing responsibilities that belong to the Model.</li>
+            <li>IView maintenance: every screen change that requires a new piece of data pushed by the Presenter requires updating the interface, the concrete View and the test mock.</li>
+            <li>Less suited to modern reactive UIs: the "Presenter calls view.display()" flow is imperative and doesn't naturally fit observable-state-based architectures.</li>
+          </ul>
+        </section>
+
+        <!-- 7. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Fat Presenter</h3>
+          <p>
+            The most frequent pitfall in MVP. The Presenter starts focused on
+            presentation, but gradually accumulates calls to external services,
+            business validation rules, orchestration of multiple use cases and
+            even data transformations that belong to the Model. The result is a
+            Presenter with hundreds of lines mixing presentation, application
+            and domain concerns. The rule of thumb is clear: the Presenter
+            should delegate to the Model (or to application services) anything
+            that isn't a decision about how to display data on screen.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Rule of thumb:</strong> if the Presenter contains business
+            calculations, database queries or direct external API calls
+            (without going through services or repositories), it's fat.
+            Extract those responsibilities to the Model or to an application
+            layer.
+          </p>
+
+          <h3>2. IView that leaks concrete widgets</h3>
+          <p>
+            If the IView interface defines methods like
+            <code>getEmailTextField(): TextField</code> or takes parameters of
+            type <code>Button</code> or <code>HTMLInputElement</code>, the
+            Presenter ends up depending on the graphical framework — and
+            testability collapses. IView should speak only in terms of data and
+            intent: <code>getTypedEmail(): string</code>,
+            <code>enableConfirmButton(enabled: boolean): void</code>. No
+            concrete UI type should appear in the interface's parameters or
+            return values.
+          </p>
+
+          <h3>3. View that bypasses the Presenter</h3>
+          <p>
+            In applications with easy access to the repository or the Model
+            (via global dependency injection or a singleton), it's tempting for
+            the View to call the Model directly "just to read a quick piece of
+            data." That bypass destroys MVP's central invariant: the View
+            doesn't know the Model. Once introduced, that exception tends to
+            multiply, degrading the pattern into a poorly structured MVC.
+          </p>
+
+          <h3>4. Confusing MVP with renamed MVC</h3>
+          <p>
+            In classic web MVC (Laravel, Rails, Django), the Controller
+            receives the request, calls the Model and passes data to the View
+            to render. The View can even read data from the Model directly in
+            some frameworks. In MVP, the View <em>never</em> knows the Model —
+            that's the defining distinction. If your "Presenter" still passes
+            the whole Model object to the View to render, you have MVC with a
+            renamed Controller, not MVP.
+          </p>
+        </section>
+
+        <!-- 8. RELATED ARCHITECTURES AND PATTERNS -->
+        <section class="artigo__secao">
+          <h2>Related architectures and patterns</h2>
+          <!--
+            Link discipline: only link already-published articles.
+            MVC, Observer exist → real links.
+            MVVM exists in this batch → real link.
+            Humble Object — doesn't exist yet → pending span.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../mvc/">MVC</a></li>
+            <li><a href="../mvvm/">MVVM (Model-View-ViewModel)</a></li>
+            <li><a href="../observer/">Observer</a></li>
+            <li><span class="artigo__padrao-pendente">Humble Object (coming soon)</span></li>
+          </ul>
+          <p class="mt-1">
+            <strong>MVC</strong> is MVP's direct predecessor. The key
+            difference is the role of the View: in classic MVC, the View can
+            observe the Model directly (via the Observer pattern) and update
+            itself without going through the Controller; in MVP, the View never
+            touches the Model — the Presenter is the sole link between the two.
+            MVP can be seen as an MVC where the Controller was renamed to
+            Presenter and the View was made completely passive.
+          </p>
+          <p>
+            <strong>Observer</strong> is the mechanism MVP uses so the View can
+            notify the Presenter of user events: the View fires events (click,
+            submit, typing) and the Presenter is the registered observer.
+            Alternatively, the View calls Presenter methods directly — but even
+            then the Observer pattern is implicit in the platform's event model
+            (DOM events, Android listeners).
+          </p>
+          <p>
+            <strong>MVVM</strong> can be understood as an evolution of MVP for
+            environments with native data binding. The key difference: in MVP
+            the Presenter pushes data to the View by explicitly calling IView
+            methods; in MVVM the ViewModel exposes observable state and the
+            binding syncs the View automatically — the ViewModel doesn't call
+            the View, it doesn't know it. In modern reactive UIs (Vue, Angular,
+            SwiftUI, Compose), MVVM is more natural than MVP.
+          </p>
+          <p>
+            <strong>Humble Object</strong> is a testability pattern described by
+            Gerard Meszaros that formalizes exactly what MVP practices:
+            separating hard-to-test code (the View with a graphical framework)
+            from easy-to-test code (the Presenter with pure logic). The View in
+            MVP is literally a Humble Object — it has no logic of its own worth
+            testing.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="7070707071"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

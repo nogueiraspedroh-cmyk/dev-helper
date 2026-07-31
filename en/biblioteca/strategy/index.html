@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Strategy — Design Patterns | Dev Helper Library</title>
+  <meta name="description" content="Learn the Strategy pattern (GoF) in depth: intent, problem, solution, structure, examples in TypeScript and PHP, when to use it, when to avoid it, and common pitfalls." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/strategy/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Strategy</span>
+        </nav>
+        <span class="artigo__categoria">Behavioral Pattern (GoF)</span>
+        <h1 class="artigo__titulo">Strategy</h1>
+        <p class="artigo__subtitulo">
+          Defines a family of algorithms, encapsulates each of them, and makes them
+          interchangeable — letting the algorithm vary independently from the
+          clients that use it, and be swapped at runtime.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Encapsulate each algorithm variation</strong> in its own class
+            (or function), making them interchangeable. The context that uses the
+            algorithm doesn't know which implementation is active — it just calls
+            the interface method. This allows swapping behavior at runtime without
+            changing the context.
+          </p>
+          <p>
+            Strategy belongs to the <strong>behavioral patterns</strong> category
+            in the GoF catalog (Gamma, Helm, Johnson and Vlissides, 1994). It's one
+            of the most applied patterns in practice — often without the developer
+            realizing they're following a named pattern — and is the core mechanism
+            behind many validation, sorting, and routing frameworks.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Consider an e-commerce system that calculates the shipping cost of an
+            order. At first, there was only one carrier. As the business grew,
+            several options appeared: postal service (standard and express),
+            private carriers, in-store pickup, and expedited delivery. The naive
+            implementation concentrates all the calculation logic in a single
+            class with growing conditionals:
+          </p>
+          <div class="code-bloco">
+<pre><code>// Naive approach — DON'T do this:
+calculateShipping(type: string, weight: number, distance: number): number {
+  if (type === "standard") {
+    return weight * 0.05 + distance * 0.01;
+  } else if (type === "express") {
+    return weight * 0.12 + distance * 0.02 + 5;
+  } else if (type === "overnight") {
+    return weight * 0.20 + distance * 0.03 + 15;
+  } else if (type === "pickup") {
+    return 0;
+  }
+  throw new Error(`Unknown type: ${type}`);
+}</code></pre>
+          </div>
+          <p>
+            Every new carrier requires modifying this method: risk of regression,
+            difficulty testing each case in isolation, and a violation of the
+            Open/Closed Principle. On top of that, the calculation logic can't be
+            reused independently — it's stuck inside the conditional.
+          </p>
+          <p>
+            The Strategy pattern solves this by extracting each calculation
+            algorithm into its own class implementing a common interface. The
+            context (order, cart) receives the strategy via injection and calls it
+            without knowing which one it is.
+          </p>
+        </section>
+
+        <!-- 3. SOLUTION -->
+        <section class="artigo__secao">
+          <h2>Solution</h2>
+          <p>Strategy organizes the code into three participants:</p>
+          <ol>
+            <li>
+              <strong>Strategy (interface):</strong> declares the method every
+              algorithm must implement. E.g.: <code>ShippingStrategy</code> with the
+              method <code>calculate(weight, distance)</code>.
+            </li>
+            <li>
+              <strong>ConcreteStrategy:</strong> implements the specific algorithm.
+              E.g.: <code>StandardShipping</code>, <code>ExpressShipping</code>,
+              <code>OvernightShipping</code>, <code>StorePickup</code>.
+            </li>
+            <li>
+              <strong>Context:</strong> keeps a reference to a Strategy object and
+              delegates the work to it. The context can allow swapping the strategy
+              at runtime through a setter. E.g.: an <code>Order</code> class that
+              stores the shipping strategy and invokes it when calculating the
+              total.
+            </li>
+          </ol>
+
+          <h3>Strategy in TypeScript: functions as strategies</h3>
+          <p>
+            In TypeScript (and JavaScript), functions are first-class citizens —
+            you can pass a function directly as a strategy, without needing to
+            create an extra class. This variant is lighter and more idiomatic in TS
+            for stateless strategies:
+          </p>
+          <div class="code-bloco">
+<pre><code>// Instead of an interface with a class, the strategy is simply a function type:
+type ShippingStrategy = (weight: number, distance: number) =&gt; number;
+
+const standardStrategy: ShippingStrategy = (w, d) =&gt; w * 0.05 + d * 0.01;
+const expressStrategy: ShippingStrategy  = (w, d) =&gt; w * 0.12 + d * 0.02 + 5;
+
+// The context accepts any function of the correct type:
+class Order {
+  constructor(private shippingStrategy: ShippingStrategy) {}
+
+  calculateShipping(weight: number, distance: number): number {
+    return this.shippingStrategy(weight, distance);
+  }
+}</code></pre>
+          </div>
+          <p>
+            In PHP, first-class functions also exist (callables, closures, arrow
+            functions), but for strategies with state or that need injected
+            dependencies, interfaces with concrete classes are more idiomatic and
+            recommended by PHPStan/Psalm's strict typing.
+          </p>
+        </section>
+
+        <!-- 4. STRUCTURE -->
+        <section class="artigo__secao">
+          <h2>Structure</h2>
+          <div class="code-bloco">
+<pre><code>          «interface»
+        ShippingStrategy
+  ┌───────────────────────────────────┐
+  │ + calculate(weight, dist): number │
+  └───────────────────────────────────┘
+              ▲
+   ┌──────────┼──────────────────┐
+   │          │                  │
+StandardShipping  ExpressShipping  StorePickup
+(Concrete)        (Concrete)       (Concrete)
+
+
+              Order (Context)
+  ┌──────────────────────────────────────┐
+  │ - strategy: ShippingStrategy         │
+  │ + setStrategy(s: ShippingStrategy)   │
+  │ + calculateShipping(w, dist): number │
+  └──────────────────────────────────────┘
+              │ uses (delegates to)
+              ▼
+         ShippingStrategy
+
+
+Runtime swap flow:
+
+  order.setStrategy(new StandardShipping())
+  order.calculateShipping(2, 50)  →  StandardShipping.calculate(2, 50)
+
+  // User switches to overnight delivery:
+  order.setStrategy(new OvernightShipping())
+  order.calculateShipping(2, 50)  →  OvernightShipping.calculate(2, 50)
+  // Without changing Order; without if/else.
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. CODE EXAMPLES -->
+        <section class="artigo__secao">
+          <h2>Code examples</h2>
+
+          <h3>Example 1 — Shipping cost strategies</h3>
+          <p>
+            A complete implementation with a typed interface, concrete strategies
+            and a context. The strategy can be swapped at any time via a setter.
+          </p>
+
+          <!-- TAB GROUP 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 1 — shipping cost calculation">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Strategy interface ────────────────────────────────────────
+interface ShippingStrategy {
+  calculate(weightKg: number, distanceKm: number): number;
+  description(): string;
+}
+
+// ── ConcreteStrategies ────────────────────────────────────────
+class StandardShipping implements ShippingStrategy {
+  calculate(weightKg: number, distanceKm: number): number {
+    return weightKg * 0.05 + distanceKm * 0.01;
+  }
+  description(): string { return "Standard mail (economy)"; }
+}
+
+class ExpressShipping implements ShippingStrategy {
+  calculate(weightKg: number, distanceKm: number): number {
+    return weightKg * 0.12 + distanceKm * 0.02 + 5;
+  }
+  description(): string { return "Express mail"; }
+}
+
+class CarrierShipping implements ShippingStrategy {
+  constructor(private readonly baseFee: number) {}
+
+  calculate(weightKg: number, distanceKm: number): number {
+    return this.baseFee + weightKg * 0.08 + distanceKm * 0.015;
+  }
+  description(): string { return `Carrier (base fee: $${this.baseFee})`; }
+}
+
+class StorePickup implements ShippingStrategy {
+  calculate(_weightKg: number, _distanceKm: number): number { return 0; }
+  description(): string { return "Store pickup (free)"; }
+}
+
+// ── Context ───────────────────────────────────────────────────
+class Order {
+  private strategy: ShippingStrategy;
+
+  constructor(strategy: ShippingStrategy) {
+    this.strategy = strategy;
+  }
+
+  // Allows swapping the strategy at runtime (e.g.: user changes delivery option).
+  setShippingStrategy(strategy: ShippingStrategy): void {
+    this.strategy = strategy;
+  }
+
+  calculateShipping(weightKg: number, distanceKm: number): number {
+    return this.strategy.calculate(weightKg, distanceKm);
+  }
+
+  summary(weightKg: number, distanceKm: number): void {
+    const value = this.calculateShipping(weightKg, distanceKm);
+    console.log(
+      `${this.strategy.description()}: $${value.toFixed(2)}`
+    );
+  }
+}
+
+// ── Usage ────────────────────────────────────────────────────
+const order = new Order(new StandardShipping());
+order.summary(3, 200);
+// → Standard mail (economy): $2.15
+
+order.setShippingStrategy(new ExpressShipping());
+order.summary(3, 200);
+// → Express mail: $9.36
+
+order.setShippingStrategy(new CarrierShipping(10));
+order.summary(3, 200);
+// → Carrier (base fee: $10): $13.24
+
+order.setShippingStrategy(new StorePickup());
+order.summary(3, 200);
+// → Store pickup (free): $0.00</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Strategy interface ────────────────────────────────────────
+interface ShippingStrategy
+{
+    public function calculate(float $weightKg, float $distanceKm): float;
+    public function description(): string;
+}
+
+// ── ConcreteStrategies ────────────────────────────────────────
+class StandardShipping implements ShippingStrategy
+{
+    public function calculate(float $weightKg, float $distanceKm): float
+    {
+        return $weightKg * 0.05 + $distanceKm * 0.01;
+    }
+
+    public function description(): string
+    {
+        return 'Standard mail (economy)';
+    }
+}
+
+class ExpressShipping implements ShippingStrategy
+{
+    public function calculate(float $weightKg, float $distanceKm): float
+    {
+        return $weightKg * 0.12 + $distanceKm * 0.02 + 5;
+    }
+
+    public function description(): string
+    {
+        return 'Express mail';
+    }
+}
+
+class CarrierShipping implements ShippingStrategy
+{
+    public function __construct(private readonly float $baseFee) {}
+
+    public function calculate(float $weightKg, float $distanceKm): float
+    {
+        return $this-&gt;baseFee + $weightKg * 0.08 + $distanceKm * 0.015;
+    }
+
+    public function description(): string
+    {
+        return "Carrier (base fee: \${$this-&gt;baseFee})";
+    }
+}
+
+class StorePickup implements ShippingStrategy
+{
+    public function calculate(float $weightKg, float $distanceKm): float
+    {
+        return 0.0;
+    }
+
+    public function description(): string
+    {
+        return 'Store pickup (free)';
+    }
+}
+
+// ── Context ───────────────────────────────────────────────────
+class Order
+{
+    public function __construct(private ShippingStrategy $strategy) {}
+
+    // Allows swapping the strategy at runtime.
+    public function setShippingStrategy(ShippingStrategy $strategy): void
+    {
+        $this-&gt;strategy = $strategy;
+    }
+
+    public function calculateShipping(float $weightKg, float $distanceKm): float
+    {
+        return $this-&gt;strategy-&gt;calculate($weightKg, $distanceKm);
+    }
+
+    public function summary(float $weightKg, float $distanceKm): void
+    {
+        $value = $this-&gt;calculateShipping($weightKg, $distanceKm);
+        echo sprintf(
+            "%s: $%.2f\n",
+            $this-&gt;strategy-&gt;description(),
+            $value
+        );
+    }
+}
+
+// ── Usage ────────────────────────────────────────────────────
+$order = new Order(new StandardShipping());
+$order-&gt;summary(3, 200);
+// → Standard mail (economy): $2.15
+
+$order-&gt;setShippingStrategy(new ExpressShipping());
+$order-&gt;summary(3, 200);
+// → Express mail: $9.36
+
+$order-&gt;setShippingStrategy(new CarrierShipping(10));
+$order-&gt;summary(3, 200);
+// → Carrier (base fee: $10): $13.24
+
+$order-&gt;setShippingStrategy(new StorePickup());
+$order-&gt;summary(3, 200);
+// → Store pickup (free): $0.00</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 1) -->
+
+          <h3>Example 2 — Strategy as a function (TypeScript) vs callable (PHP)</h3>
+          <p>
+            For simple stateless strategies, functions are lighter than classes.
+            TypeScript treats functions as first-class types; PHP uses
+            <code>callable</code> or closures. The difference matters for
+            testability and for dependency injection.
+          </p>
+
+          <!-- TAB GROUP 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 2 — functional strategy">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// Strategy as a function type — no extra classes.
+type Comparator&lt;T&gt; = (a: T, b: T) =&gt; number;
+
+// Concrete strategies: simple arrow functions.
+const byPriceAsc: Comparator&lt;{ price: number }&gt;  = (a, b) =&gt; a.price - b.price;
+const byPriceDesc: Comparator&lt;{ price: number }&gt; = (a, b) =&gt; b.price - a.price;
+const byName: Comparator&lt;{ name: string }&gt;       = (a, b) =&gt; a.name.localeCompare(b.name);
+
+// Generic context: accepts any strategy compatible with type T.
+function sortItems&lt;T&gt;(items: T[], comparator: Comparator&lt;T&gt;): T[] {
+  return [...items].sort(comparator);
+}
+
+// ── Usage ────────────────────────────────────────────────────
+const products = [
+  { name: "Pen",     price: 2.50 },
+  { name: "Notebook", price: 18.90 },
+  { name: "Eraser",  price: 1.20 },
+];
+
+console.log(sortItems(products, byPriceAsc).map(p =&gt; p.name));
+// ["Eraser", "Pen", "Notebook"]
+
+console.log(sortItems(products, byPriceDesc).map(p =&gt; p.name));
+// ["Notebook", "Pen", "Eraser"]
+
+console.log(sortItems(products, byName).map(p =&gt; p.name));
+// ["Eraser", "Notebook", "Pen"]
+
+// Inline anonymous strategy — for one-off cases without reuse:
+const byNameDesc = sortItems(products, (a, b) =&gt; b.name.localeCompare(a.name));
+console.log(byNameDesc.map(p =&gt; p.name));
+// ["Pen", "Notebook", "Eraser"]</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// In PHP, callable and closures work as functional strategies.
+// For PHPStan/Psalm, type docblocks help with static analysis.
+
+/** @param array&lt;array{name: string, price: float}&gt; $items */
+function sortItems(array $items, callable $comparator): array
+{
+    usort($items, $comparator);
+    return $items;
+}
+
+// Strategies as arrow functions (PHP 7.4+):
+$byPriceAsc  = fn($a, $b) =&gt; $a['price'] &lt;=&gt; $b['price'];
+$byPriceDesc = fn($a, $b) =&gt; $b['price'] &lt;=&gt; $a['price'];
+$byName      = fn($a, $b) =&gt; strcmp($a['name'], $b['name']);
+
+// ── Usage ────────────────────────────────────────────────────
+$products = [
+    ['name' =&gt; 'Pen',      'price' =&gt; 2.50],
+    ['name' =&gt; 'Notebook', 'price' =&gt; 18.90],
+    ['name' =&gt; 'Eraser',   'price' =&gt; 1.20],
+];
+
+$result = sortItems($products, $byPriceAsc);
+echo implode(', ', array_column($result, 'name')) . PHP_EOL;
+// Eraser, Pen, Notebook
+
+$result = sortItems($products, $byPriceDesc);
+echo implode(', ', array_column($result, 'name')) . PHP_EOL;
+// Notebook, Pen, Eraser
+
+$result = sortItems($products, $byName);
+echo implode(', ', array_column($result, 'name')) . PHP_EOL;
+// Eraser, Notebook, Pen
+
+// Inline anonymous strategy:
+$result = sortItems($products, fn($a, $b) =&gt; strcmp($b['name'], $a['name']));
+echo implode(', ', array_column($result, 'name')) . PHP_EOL;
+// Pen, Notebook, Eraser</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 2) -->
+
+        </section><!-- /.artigo__secao (examples) -->
+
+        <!-- 6. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>When there are multiple variations of an algorithm</strong>
+              that need to be interchangeable — shipping cost, discount, validation,
+              sorting, compression, authentication, serialization.
+            </li>
+            <li>
+              <strong>When the algorithm needs to vary at runtime:</strong> the user
+              chooses the payment method, the delivery option, the export format.
+              With Strategy, the swap is simple — a setter or an injection at
+              construction time.
+            </li>
+            <li>
+              <strong>To eliminate repetitive conditionals:</strong> if you have an
+              <code>if/else</code> or <code>switch</code> that grows with every new
+              variation and is scattered across several methods, Strategy extracts
+              each branch into its own testable class.
+            </li>
+            <li>
+              <strong>To isolate algorithms in unit tests:</strong> each strategy
+              can be tested independently, without needing the whole context.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>When there are only two simple, stable cases:</strong> a
+              direct <code>if/else</code> is more readable than creating an
+              interface, two classes and an injection mechanism for something that
+              will never change.
+            </li>
+            <li>
+              <strong>When the algorithm has no real variation:</strong> if the
+              "strategy" is always the same and no alternative is planned, the
+              pattern adds unnecessary abstraction.
+            </li>
+            <li>
+              <strong>When the context needs to know details of each strategy:</strong>
+              if the context needs to downcast to figure out which strategy is
+              active and act differently in each case, the abstraction was applied
+              poorly — the conditional logic just came back in disguise.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Allows swapping algorithms at runtime without changing the context.</li>
+            <li>Isolates each algorithm variation in its own class — easier to test, understand and maintain.</li>
+            <li>Eliminates long conditionals (if/else or switch) that grow with every new variation.</li>
+            <li>Follows the Open/Closed Principle — new strategies don't require modifying the context.</li>
+            <li>Favors composition over inheritance — behavior is injected, not inherited.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Increases the number of classes/objects in the system — overengineering for trivial cases.</li>
+            <li>The client needs to know the available strategies in order to choose and inject the right one.</li>
+            <li>Stateless strategies could be simple functions — creating a full class for that is verbose, especially in PHP.</li>
+            <li>If strategies need a lot of data from the context, the interface can become coupled to the context, reducing flexibility.</li>
+          </ul>
+        </section>
+
+        <!-- 8. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Overengineering for two trivial cases</h3>
+          <p>
+            The most frequent mistake: applying Strategy when there are exactly two
+            cases and no prospect of growth. If the system will always have "free
+            shipping for orders above $100" and "flat $15 shipping for the rest," a
+            simple ternary is more readable than an interface with two classes.
+            Reserve Strategy for when the variation is the real extension point of
+            the design.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Rule of thumb:</strong> if you're wondering "is it worth
+            extracting this to Strategy?", first ask whether there are three or
+            more variations — or whether a third one is certain to appear. With two
+            fixed variations, the answer is usually no.
+          </p>
+
+          <h3>2. Context leaking into the strategy</h3>
+          <p>
+            The strategy interface should receive only the data the algorithm
+            needs — not the entire context. Passing the full <code>Order</code>
+            object to <code>ShippingStrategy.calculate(order)</code> creates
+            bidirectional coupling: the strategy starts depending on the internal
+            structure of the context. Prefer primitive parameters or specific
+            DTOs: <code>calculate(weightKg, distanceKm)</code>.
+          </p>
+
+          <h3>3. State shared across calls</h3>
+          <p>
+            If the strategy accumulates state between calls (e.g.: request count,
+            internal cache), it stops being safe for concurrent environments
+            (Node.js multi-request, multi-threaded servers) or for reuse in tests.
+            Strategies should be <strong>stateless</strong> whenever possible — or,
+            if they need state, that state should be passed explicitly in the
+            method call.
+          </p>
+
+          <h3>4. Strategy vs Template Method</h3>
+          <p>
+            Both solve behavior variation, but in opposite ways. <strong>Template
+            Method</strong> uses <em>inheritance</em>: the base class defines the
+            skeleton and subclasses fill in the variable steps — the algorithm is
+            fixed, only parts of it vary. <strong>Strategy</strong> uses
+            <em>composition</em>: the entire algorithm is swappable, the context is
+            stable. Prefer Strategy when the whole algorithm varies; prefer
+            Template Method when only parts of the algorithm vary and the overall
+            structure is fixed.
+          </p>
+        </section>
+
+        <!-- 9. RELATED PATTERNS -->
+        <section class="artigo__secao">
+          <h2>Related patterns</h2>
+          <p>
+            Strategy interacts with several other behavioral and creational
+            patterns:
+          </p>
+          <!--
+            Link discipline: only link already-published articles.
+            Factory Method, State and Template Method exist → real links.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../factory-method/">Factory Method</a></li>
+            <li><a href="../state/">State</a></li>
+            <li><a href="../template-method/">Template Method</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Factory Method</strong> is frequently used to create and inject
+            the correct strategy into the context: the creator selects which
+            ConcreteStrategy to instantiate based on configuration or type,
+            handing it ready to the Context. The <strong>State</strong> pattern is
+            structurally identical to Strategy — both encapsulate variable
+            behavior in interchangeable objects — but with different intents:
+            Strategy swaps algorithms (the context doesn't know which one is
+            active and doesn't care), while State manages state transitions (the
+            object behaves differently in each state and the transitions are part
+            of the design). <strong>Template Method</strong> is Strategy's
+            "inheritance cousin": it uses inheritance to vary parts of the
+            algorithm, while Strategy uses composition to vary the whole
+            algorithm.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="8080808080"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

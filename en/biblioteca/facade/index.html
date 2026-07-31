@@ -158,14 +158,14 @@
   ┌───────────────────────────────────────────────────┐
   │ - stock: StockService                             │
   │ - payment: PaymentService                         │
-  │ - shipping: ShippingService                        │
-  │ - email: EmailService                              │
-  │                                                    │
-  │ + checkout(order): CheckoutResult                  │
-  │   1. stock.check(order.items)                      │
-  │   2. payment.process(order.payment)                │
-  │   3. shipping.calculateAndSchedule(order.address)  │
-  │   4. email.sendConfirmation(order.customer)        │
+  │ - shipping: ShippingService                       │
+  │ - email: EmailService                             │
+  │                                                   │
+  │ + checkout(order): CheckoutResult                 │
+  │   1. stock.check(order.items)                     │
+  │   2. payment.process(order.payment)               │
+  │   3. shipping.calculateAndSchedule(order.address) │
+  │   4. email.sendConfirmation(order.customer)       │
   └───────────────────────────────────────────────────┘
         │              │               │               │
         ▼              ▼               ▼               ▼

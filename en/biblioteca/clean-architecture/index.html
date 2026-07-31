@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clean Architecture — Architectures | Dev Helper Library</title>
+  <meta name="description" content="Understand Clean Architecture: dependency rule, concentric layers, boundaries, DTOs between layers, and the distinction from Hexagonal and Onion." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/clean-architecture/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Clean Architecture</span>
+        </nav>
+        <span class="artigo__categoria">Architecture</span>
+        <h1 class="artigo__titulo">Clean Architecture</h1>
+        <p class="artigo__subtitulo">
+          Organizes the system into concentric layers where dependencies
+          <em>only point inward</em> — frameworks and databases sit at the
+          outer edge, business entities at the core — and explicit boundaries
+          isolate each layer through dependency inversion.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Make implementation details — frameworks, databases, UI,
+            devices — replaceable without affecting business logic.</strong>
+            Clean Architecture, described by Robert C. Martin in 2012, formulates
+            the <em>dependency rule</em>: source code in an inner layer must
+            never mention anything from an outer layer. Dependencies only point
+            inward.
+          </p>
+          <p>
+            The central point isn't the diagram of circles itself, but the rule
+            it represents: <strong>business entities don't know about use
+            cases; use cases don't know about controllers; controllers don't
+            know about the database</strong>. Every boundary crossing uses an
+            abstraction — an interface or a DTO — so that the inner layer
+            defines the contract and the outer layer implements it.
+          </p>
+          <p>
+            Clean Architecture converges with
+            <a href="../arquitetura-hexagonal/">Hexagonal Architecture</a> and
+            with <a href="../onion-architecture/">Onion Architecture</a>: all of
+            them share the idea of an isolated domain at the center and
+            infrastructure at the edges. The difference is in granularity:
+            Clean Architecture explicitly details the separation between
+            <em>entities</em> (pure business rules) and <em>use cases</em>
+            (application rules), and turns <em>boundaries</em> (boundary-crossing
+            interfaces) into a formal element of the model.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            The problem Clean Architecture attacks is coupling to detail:
+          </p>
+          <ul>
+            <li>
+              <strong>Coupling to the framework:</strong> when entities inherit
+              from framework classes (ActiveRecord, JPA Entity), switching ORMs
+              requires rewriting the domain. The framework should be a
+              replaceable detail, not the foundation of the architecture.
+            </li>
+            <li>
+              <strong>Coupling to the database:</strong> business rules that
+              depend on SQL, specific schemas or database transactions make the
+              domain untestable without real infrastructure.
+            </li>
+            <li>
+              <strong>Coupling to the UI:</strong> business logic scattered
+              across controllers, UI components or HTTP handlers that need to be
+              duplicated whenever a new entry channel (CLI, queue, GraphQL API)
+              is added.
+            </li>
+            <li>
+              <strong>Compromised testability:</strong> when a simple business
+              rule ("the maximum discount is 30%") can only be verified by
+              spinning up an HTTP server with a database, the cost of testing is
+              high and the feedback loop is slow.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. STRUCTURE -->
+        <section class="artigo__secao">
+          <h2>Structure</h2>
+          <p>
+            Clean Architecture is represented as concentric circles. Every outer
+            circle is a detail; every inner circle is a policy. The rule is
+            simple: <strong>an inner circle can never depend on an outer
+            circle</strong>.
+          </p>
+          <div class="code-bloco">
+<pre><code>  ╔═══════════════════════════════════════════════════════════════════╗
+  ║  FRAMEWORKS &amp; DRIVERS (outermost edge)                            ║
+  ║  Web, databases, UI, devices, external services                   ║
+  ║  ┌─────────────────────────────────────────────────────────────┐  ║
+  ║  │  INTERFACE ADAPTERS                                         │  ║
+  ║  │  Controllers, Presenters, Gateways, Serializers             │  ║
+  ║  │  ┌───────────────────────────────────────────────────────┐  │  ║
+  ║  │  │  USE CASES (Application Business Rules)               │  │  ║
+  ║  │  │  Use Case Interactors, Application Services           │  │  ║
+  ║  │  │  ┌─────────────────────────────────────────────────┐  │  │  ║
+  ║  │  │  │  ENTITIES (Enterprise Business Rules)           │  │  │  ║
+  ║  │  │  │  Entities, Value Objects, Business Rules        │  │  │  ║
+  ║  │  │  │  Pure — no dependency on anything external      │  │  │  ║
+  ║  │  │  └─────────────────────────────────────────────────┘  │  │  ║
+  ║  │  └───────────────────────────────────────────────────────┘  │  ║
+  ║  └─────────────────────────────────────────────────────────────┘  ║
+  ╚═══════════════════════════════════════════════════════════════════╝
+
+  Dependency rule: arrows point ONLY inward.
+  Entities don't know about Use Cases.
+  Use Cases don't know about Controllers.
+  Controllers don't know about Frameworks directly (they use interfaces).
+</code></pre>
+          </div>
+
+          <h3>The four layers</h3>
+          <ul>
+            <li>
+              <strong>Entities:</strong> encapsulate the most general,
+              highest-level business rules of the enterprise. They're the
+              objects that would exist even without any software — the policies
+              that hold for any system implementing that domain. They depend on
+              nothing external.
+            </li>
+            <li>
+              <strong>Use cases:</strong> contain the application-specific
+              business rules. They orchestrate the flow of data to and from the
+              entities, and direct the entities to use their business rules to
+              achieve the use case's goal. They know entities, but don't know
+              controllers or the database.
+            </li>
+            <li>
+              <strong>Interface adapters:</strong> convert data between the
+              format most convenient for use cases and entities and the format
+              most convenient for some external agent like a database or the
+              web. Controllers, Presenters and Gateways live here.
+            </li>
+            <li>
+              <strong>Frameworks and drivers:</strong> the outermost layer. This
+              is where the details live: the web framework, the database, email
+              services. You shouldn't write much code here — just glue code that
+              communicates inward to the next layer.
+            </li>
+          </ul>
+
+          <h3>Boundaries and DTOs</h3>
+          <p>
+            When data crosses a boundary between layers, it must do so through
+            simple data structures — <em>DTOs</em> (Data Transfer Objects) —
+            and never through inner-layer entities. This guarantees the outer
+            layer doesn't drag dependencies inward.
+          </p>
+          <p>
+            The crossing happens through a <em>boundary</em>: an interface
+            defined by the inner layer that the outer layer implements. The use
+            case defines the repository interface it needs; the infrastructure
+            implements that interface. The use case never imports the concrete
+            implementation.
+          </p>
+        </section>
+
+        <!-- 4. HOW IT WORKS -->
+        <section class="artigo__secao">
+          <h2>How it works — the dependency rule in practice</h2>
+          <p>
+            The snippet below shows the dependency rule applied to a simple use
+            case. The repository interface is defined inside the use-case
+            layer; the concrete implementation lives in the infrastructure and
+            points inward — never the other way around.
+          </p>
+          <div class="code-bloco">
+<pre><code>// ── ENTITY (innermost layer) ─────────────────────────────────
+// No external imports. Only pure business rules.
+class Order {
+  constructor(
+    readonly id: string,
+    readonly items: OrderItem[],
+  ) {}
+
+  calculateTotal(): number {
+    return this.items.reduce((acc, item) =&gt; acc + item.subtotal(), 0);
+  }
+
+  validate(): void {
+    if (this.items.length === 0) {
+      throw new Error('Order must have at least one item');
+    }
+  }
+}
+
+// ── USE CASE (knows Entity; defines its own interface) ────────
+// OutputBoundary is defined here — the outer layer implements it.
+interface CreateOrderOutputBoundary {
+  present(result: { orderId: string; total: number }): void;
+}
+
+interface OrderRepository {
+  save(order: Order): Promise&lt;void&gt;;
+}
+
+class CreateOrderUseCase {
+  constructor(
+    private readonly repo: OrderRepository,
+    private readonly output: CreateOrderOutputBoundary,
+  ) {}
+
+  async execute(dto: { items: { productId: string; quantity: number; price: number }[] }): Promise&lt;void&gt; {
+    const order = new Order(
+      crypto.randomUUID(),
+      dto.items.map(i =&gt; new OrderItem(i.productId, i.quantity, i.price)),
+    );
+    order.validate();
+    await this.repo.save(order);
+    this.output.present({ orderId: order.id, total: order.calculateTotal() });
+  }
+}
+
+// ── INTERFACE ADAPTER (Controller) ─────────────────────────────
+// Knows the use case; doesn't know Entity directly.
+class CreateOrderController {
+  constructor(private readonly useCase: CreateOrderUseCase) {}
+
+  async handle(req: Request): Promise&lt;void&gt; {
+    await this.useCase.execute({ items: req.body.items });
+  }
+}
+
+// ── INFRASTRUCTURE (outer edge) implements the inner interface ──
+// The dependency points INWARD: Infra knows the Use Case.
+class PostgresOrderRepository implements OrderRepository {
+  async save(order: Order): Promise&lt;void&gt; {
+    // accesses the database; the Use Case doesn't know this detail
+  }
+}</code></pre>
+          </div>
+          <p>
+            The critical point: <code>OrderRepository</code> and
+            <code>CreateOrderOutputBoundary</code> are interfaces declared
+            inside the use-case layer. <code>PostgresOrderRepository</code>
+            lives in the infrastructure and imports the use case — the
+            dependency points inward. The use case never imports
+            <code>PostgresOrderRepository</code>.
+          </p>
+        </section>
+
+        <!-- 5. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>Systems with a rich business domain and long
+              longevity:</strong> the more complex the business rules and the
+              longer the system's lifecycle, the more the investment in
+              boundaries pays off. The ability to replace the database, the
+              framework or the entry channel without touching the domain
+              becomes more valuable over time.
+            </li>
+            <li>
+              <strong>When testability is a priority:</strong> the explicit
+              separation of entities and use cases lets you test all the
+              business logic with in-memory repository implementations — no
+              database, no HTTP, running in milliseconds.
+            </li>
+            <li>
+              <strong>Multiple entry channels:</strong> the same set of use
+              cases can be driven by HTTP, CLI, messaging or tests without
+              modification, since each channel is just a different interface
+              adapter.
+            </li>
+            <li>
+              <strong>Teams that need clear boundaries:</strong> the formal
+              separation between layers — reinforced by boundaries — lets
+              different teams work in different layers with minimal coupling.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>Simple CRUDs without domain logic:</strong> creating
+              entities, use cases, boundaries and DTOs for an application that
+              only persists and reads records without complex rules is
+              over-engineering with a real cost. A simple Layered Architecture,
+              or even direct MVC, is more productive.
+            </li>
+            <li>
+              <strong>Short-lived projects or small teams without experience:</strong>
+              Clean Architecture requires the team to understand dependency
+              inversion, boundary DTOs and the distinction between entity and
+              use case. Without that understanding, the result is usually a
+              Layered Architecture with different names and redundant mappers
+              without a clear purpose.
+            </li>
+            <li>
+              <strong>When boundary mappers become the largest volume of
+              code:</strong> a sign the architecture may be applied with
+              excessive granularity — mapping each field 1:1 between adjacent
+              layers with no real transformation adds no value.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 6. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Framework independence: the domain doesn't depend on any external library — frameworks are replaceable details.</li>
+            <li>Total testability of the domain without real infrastructure: entities and use cases are tested with simple interface mocks.</li>
+            <li>Database independence: switching from PostgreSQL to MongoDB (or to in-memory) means swapping the repository adapter, without touching the domain.</li>
+            <li>UI independence: the same business logic serves HTTP, CLI, tests and queues — each with its own adapter.</li>
+            <li>Formal boundaries make the contracts between layers explicit — they serve as living documentation of the architecture.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Larger code volume: boundary interfaces, input/output DTOs and mappers between layers multiply the file count even for simple features.</li>
+            <li>Learning curve: the distinction between entity, use case, adapter and framework — and the dependency inversion running through all of it — isn't intuitive the first time.</li>
+            <li>Risk of over-engineering for simple domains: applying four concentric layers with formal boundaries to a basic CRUD generates cost without an equivalent benefit.</li>
+            <li>Redundant mappers: with excessive granularity, the DTO converters between adjacent layers become the largest volume of code in the project without adding business logic.</li>
+          </ul>
+        </section>
+
+        <!-- 7. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Mapping folders 1:1 to the four layers and creating redundant mappers</h3>
+          <p>
+            The most common pitfall is creating four directories
+            (<code>entities/</code>, <code>use-cases/</code>,
+            <code>adapters/</code>, <code>frameworks/</code>) and mechanically
+            converting every object between layers, even when there's no real
+            transformation. If the use case's input DTO is structurally
+            identical to the HTTP request payload, a mapper that copies field by
+            field with no transformation adds no value — it only adds volume
+            and maintenance complexity.
+          </p>
+          <p>
+            The dependency rule is what matters, not the number of directories.
+            The folder structure should reflect the real dependency boundaries,
+            not literally imitate the circle diagram.
+          </p>
+
+          <h3>2. Inverting the dependency in the wrong direction</h3>
+          <p>
+            The most serious and silent mistake: the use case imports the
+            concrete repository implementation instead of the interface. This
+            happens when the <code>OrderRepository</code> interface is declared
+            in the infrastructure package and the use case imports that
+            package. The dependency should be the other way around: the
+            interface lives inside the use-case package, and the infrastructure
+            imports the use case to implement the interface.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Quick test:</strong> if you delete the infrastructure
+            folder, the entities and use-cases code should still compile
+            without errors. If it doesn't compile, there's a dependency
+            inverted in the wrong direction somewhere.
+          </p>
+
+          <h3>3. Over-engineering for CRUD</h3>
+          <p>
+            Applying Clean Architecture to a service that creates, reads,
+            updates and deletes records without complex business rules
+            generates a real development and maintenance cost with no
+            equivalent benefit. The principle "the detail shouldn't influence
+            the policy" only has value when there's a policy (business rule) to
+            protect. For CRUDs, consider a simpler approach and refactor as the
+            domain's complexity grows.
+          </p>
+
+          <h3>4. Ignoring the entities layer and putting everything in the use cases</h3>
+          <p>
+            When all the business rules end up in the use-case interactors and
+            the entities are just data structures with no behavior, the result
+            is an anemic domain — the same problem as a poorly applied
+            <a href="../arquitetura-em-camadas/">Layered Architecture</a>.
+            Entities should encapsulate the most general and stable business
+            rules; use cases orchestrate those entities to achieve
+            application-specific goals.
+          </p>
+        </section>
+
+        <!-- 8. RELATED ARCHITECTURES AND PATTERNS -->
+        <section class="artigo__secao">
+          <h2>Related architectures and patterns</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../arquitetura-hexagonal/">Hexagonal Architecture (Ports &amp; Adapters)</a></li>
+            <li><a href="../onion-architecture/">Onion Architecture</a></li>
+            <li><a href="../arquitetura-em-camadas/">Layered Architecture</a></li>
+            <li><a href="../mvc/">MVC</a></li>
+            <li><a href="../adapter/">Adapter (GoF)</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Hexagonal Architecture</strong> is the architecture closest
+            to Clean Architecture, and the two are often confused. The key
+            difference is granularity: Hexagonal talks about <em>ports</em>
+            (interfaces) and <em>adapters</em> (implementations), without
+            formally distinguishing between entities and use cases inside the
+            core. Clean Architecture adds that explicit distinction and
+            formalizes <em>boundaries</em> as an element of the architecture. In
+            practice, the two are compatible and convergent — a well-structured
+            hexagonal implementation typically respects Clean Architecture's
+            dependency rule.
+          </p>
+          <p>
+            <strong>Onion Architecture</strong> (Jeffrey Palermo, 2008) is the
+            most direct precursor of Clean Architecture. It shares the idea of a
+            domain at the center, dependencies pointing inward and
+            infrastructure at the outer shell. The main difference is that
+            Onion emphasizes the <em>rich domain model</em> at the core
+            (entities with behavior, domain services) and tends to be less
+            prescriptive about the separation between entities and use cases
+            than Clean Architecture.
+          </p>
+          <p>
+            <strong>Layered Architecture</strong> is the simplest way to
+            separate responsibilities horizontally. Clean Architecture refines
+            it by explicitly inverting the dependency at the boundary between
+            domain and infrastructure — instead of infrastructure sitting
+            "below" as a natural dependency, it sits "outside" and implements
+            interfaces defined by the domain.
+          </p>
+          <p>
+            The <strong>Adapter</strong> (GoF) pattern is the implementation
+            mechanism of the interface adapters: every gateway, controller or
+            presenter is an Adapter that converts between the inner layer's
+            format and the external agent's format.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="9494949494"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

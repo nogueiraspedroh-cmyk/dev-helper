@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Saga Pattern — Dev Helper Library</title>
+  <meta name="description" content="Saga Pattern: manage distributed transactions in microservices with sequences of local transactions and compensations. Understand Choreography vs Orchestration, intermediate state, and idempotency pitfalls." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/saga/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Saga Pattern</span>
+        </nav>
+        <span class="artigo__categoria">System Design</span>
+        <h1 class="artigo__titulo">Saga Pattern</h1>
+        <p class="artigo__subtitulo">
+          Manage transactions that span multiple services without a central
+          ACID coordinator — decomposing the operation into chained local
+          transactions and defining compensating transactions to undo what
+          was already done in case of failure.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>A Saga is a sequence of local transactions, each in a
+            different service, where the failure of any step triggers
+            compensating transactions on the previous steps to reverse the
+            effect.</strong> It's the practical answer to the consistency
+            problem in distributed systems where each service has its own
+            database.
+          </p>
+          <p>
+            In a monolith with a single database, an ACID transaction
+            guarantees that either all the operations happen, or none do. In
+            microservices, each service isolates its data in its own
+            database — there's no way to use a single <code>BEGIN</code> and
+            <code>COMMIT</code> spanning all of them. The Saga Pattern
+            accepts this reality and works with eventual consistency instead
+            of immediate consistency, trading distributed atomicity for a
+            managed sequence of local transactions with a business-level
+            rollback mechanism.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Consider an e-commerce flow: the customer places an order that
+            needs to (1) create the order, (2) reserve stock in the
+            inventory service, (3) process payment in the financial service,
+            and (4) trigger the notification. Each of these steps lives in a
+            service with its own database.
+          </p>
+          <ul>
+            <li>
+              <strong>Two-Phase Commit (2PC) doesn't scale:</strong> the
+              two-phase commit protocol requires every participant to lock
+              resources during the prepare phase. In systems with dozens of
+              services, this creates contention, increases latency, and
+              creates a dependency on a central coordinator. Most modern
+              microservices databases (DynamoDB, MongoDB, CockroachDB) don't
+              support cross-service 2PC in a practical way.
+            </li>
+            <li>
+              <strong>Ignoring the problem creates silent inconsistency:</strong>
+              if the payment fails after the stock reservation has already
+              been confirmed, the system ends up with stock reserved for an
+              order that will never exist — unless there's an explicit
+              compensation mechanism.
+            </li>
+            <li>
+              <strong>Partially committed state is unavoidable:</strong>
+              between the order confirmation and the payment confirmation,
+              the system goes through intermediate states that need to be
+              designed and communicated to the user coherently.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. HOW IT WORKS -->
+        <section class="artigo__secao">
+          <h2>How it works</h2>
+
+          <h3>The structure of a Saga</h3>
+          <p>
+            Each step of the saga executes a local transaction in a single
+            database and publishes an event or sends a message to the next
+            participant. If a step fails, the saga executes compensating
+            transactions on the previous steps, in reverse order.
+          </p>
+          <p>
+            <strong>Compensating transactions are not technical rollbacks</strong>
+            — they're business operations that semantically undo the effect.
+            "Cancel stock reservation" doesn't delete the database row: it
+            creates a new operation that releases the reserved units. This
+            is fundamental because, unlike a database rollback, the
+            compensation happens after the original transaction has already
+            been committed and potentially seen by other systems.
+          </p>
+
+          <h3>Choreography</h3>
+          <p>
+            Each service publishes events after completing its local
+            transaction and reacts to events published by other services.
+            There's no central coordinator — the flow emerges from the chain
+            of reactions between the participants.
+          </p>
+          <div class="code-bloco">
+<pre><code>  Order Service                 Inventory Service         Payment Service
+       │                              │                           │
+       │── OrderCreated ─────────────►│                           │
+       │                              │── StockReserved ─────────►│
+       │                              │                           │── PaymentProcessed
+       │                              │                           │
+       │                         [if it fails]              [if it fails]
+       │◄── ReservationFailed ────────│     │◄── PaymentFailed ───┘
+       │   (cancels order)            │    (cancels reservation)
+</code></pre>
+          </div>
+          <p>
+            <strong>Advantage:</strong> simple to implement for a few
+            services, no single point of failure. <strong>Disadvantage:</strong>
+            a saga's flow is spread across multiple services — understanding
+            the full behavior requires correlating logs and events from
+            several systems simultaneously.
+          </p>
+
+          <h3>Orchestration</h3>
+          <p>
+            A Saga Orchestrator — a dedicated process or service — explicitly
+            coordinates the participants: it calls each service in sequence,
+            waits for the response, and decides whether to proceed or
+            trigger compensations in case of failure. The entire flow lives
+            in a single place.
+          </p>
+
+          <figure class="artigo__figura">
+            <svg viewBox="0 0 760 320" width="100%" role="img" aria-label="Orchestrated Saga diagram: Orchestrator coordinates Order Service, Inventory Service, and Payment Service in sequence, with compensation arrows on the failure path">
+              <defs>
+                <marker id="saga-arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                  <polygon points="0 0, 10 3.5, 0 7" fill="#59616e" />
+                </marker>
+                <marker id="saga-arrow-primary" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                  <polygon points="0 0, 10 3.5, 0 7" fill="#4f46e5" />
+                </marker>
+                <marker id="saga-arrow-comp" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                  <polygon points="0 0, 10 3.5, 0 7" fill="#ef4444" />
+                </marker>
+                <marker id="saga-arrow-ok" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                  <polygon points="0 0, 10 3.5, 0 7" fill="#10b981" />
+                </marker>
+              </defs>
+
+              <!-- ORCHESTRATOR (left column) -->
+              <rect x="20" y="120" width="130" height="60" rx="6" fill="#f0f2f5" stroke="#4f46e5" stroke-width="2" />
+              <text x="85" y="144" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#4f46e5">SAGA</text>
+              <text x="85" y="160" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#4f46e5">ORCHESTRATOR</text>
+              <text x="85" y="175" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">(coordinates the flow)</text>
+
+              <!-- SERVICES (right column, stacked) -->
+              <!-- Service 1: Order -->
+              <rect x="250" y="30" width="140" height="52" rx="6" fill="#f0f2f5" stroke="#e3e6ea" stroke-width="1.5" />
+              <text x="320" y="52" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#1f2530">Order Svc</text>
+              <text x="320" y="70" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="10" fill="#59616e">1. create_order()</text>
+
+              <!-- Service 2: Inventory -->
+              <rect x="250" y="124" width="140" height="52" rx="6" fill="#f0f2f5" stroke="#e3e6ea" stroke-width="1.5" />
+              <text x="320" y="146" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#1f2530">Inventory Svc</text>
+              <text x="320" y="164" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="10" fill="#59616e">2. reserve()</text>
+
+              <!-- Service 3: Payment -->
+              <rect x="250" y="218" width="140" height="52" rx="6" fill="#f0f2f5" stroke="#e3e6ea" stroke-width="1.5" />
+              <text x="320" y="240" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#1f2530">Payment Svc</text>
+              <text x="320" y="258" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="10" fill="#59616e">3. charge()</text>
+
+              <!-- Arrows: Orchestrator → Services (commands) -->
+              <line x1="150" y1="138" x2="248" y2="56" stroke="#4f46e5" stroke-width="1.5" marker-end="url(#saga-arrow-primary)" />
+              <text x="188" y="90" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#4f46e5">cmd</text>
+
+              <line x1="150" y1="150" x2="248" y2="150" stroke="#4f46e5" stroke-width="1.5" marker-end="url(#saga-arrow-primary)" />
+              <text x="199" y="144" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#4f46e5">cmd</text>
+
+              <line x1="150" y1="162" x2="248" y2="232" stroke="#4f46e5" stroke-width="1.5" marker-end="url(#saga-arrow-primary)" />
+              <text x="188" y="208" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#4f46e5">cmd</text>
+
+              <!-- SUCCESS path (right side) -->
+              <rect x="440" y="124" width="100" height="52" rx="6" fill="#d1fae5" stroke="#10b981" stroke-width="1.5" />
+              <text x="490" y="146" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" fill="#10b981">&#10003; SUCCESS</text>
+              <text x="490" y="164" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">saga complete</text>
+
+              <line x1="390" y1="150" x2="438" y2="150" stroke="#10b981" stroke-width="1.5" marker-end="url(#saga-arrow-ok)" />
+
+              <!-- FAILURE scenario label -->
+              <line x1="390" y1="244" x2="560" y2="244" stroke="#e3e6ea" stroke-width="1" stroke-dasharray="4,3" />
+              <rect x="440" y="218" width="140" height="52" rx="6" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5" />
+              <text x="510" y="238" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#ef4444">&#10007; FAILURE</text>
+              <text x="510" y="254" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">e.g.: payment declined</text>
+              <text x="510" y="265" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">triggers compensations</text>
+
+              <!-- Compensation arrows (Orchestrator → Services, dashed red) -->
+              <line x1="150" y1="165" x2="248" y2="250" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#saga-arrow-comp)" />
+
+              <!-- Compensation labels -->
+              <text x="620" y="35" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="600" fill="#59616e">Compensations:</text>
+              <text x="620" y="52" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#ef4444">cancel_reservation()</text>
+              <text x="620" y="68" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#ef4444">cancel_order()</text>
+              <text x="620" y="84" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#59616e">(in reverse order)</text>
+
+              <!-- Compensation arrow callout line -->
+              <line x1="560" y1="55" x2="582" y2="55" stroke="#59616e" stroke-width="1" stroke-dasharray="3,2" />
+
+              <!-- Legend box -->
+              <rect x="20" y="260" width="200" height="50" rx="4" fill="#f0f2f5" stroke="#e3e6ea" stroke-width="1" />
+              <line x1="35" y1="277" x2="65" y2="277" stroke="#4f46e5" stroke-width="1.5" marker-end="url(#saga-arrow-primary)" />
+              <text x="75" y="281" font-family="system-ui, sans-serif" font-size="10" fill="#1f2530">Orchestrator command</text>
+              <line x1="35" y1="297" x2="65" y2="297" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#saga-arrow-comp)" />
+              <text x="75" y="301" font-family="system-ui, sans-serif" font-size="10" fill="#1f2530">Compensating transaction</text>
+            </svg>
+            <figcaption>Orchestrated Saga: the Orchestrator coordinates each service in sequence and triggers compensations in reverse order when a step fails.</figcaption>
+          </figure>
+
+          <h3>Comparison: Choreography vs Orchestration</h3>
+          <div class="code-bloco">
+<pre><code>                    CHOREOGRAPHY         ORCHESTRATION
+  ─────────────────────────────────────────────────────────
+  Coordinator          None                 Saga Orchestrator
+  Coupling             Low (via events)     Medium (to orchestrator)
+  Observability        Difficult            Centralized in orch.
+  Complexity           Low (few svcs)       Manageable (scales)
+  Single point failure No                   Orchestrator (mitigate)
+  Explicit flow        No                   Yes
+  ─────────────────────────────────────────────────────────
+  Suited for           2–3 services         4+ services
+                       simple flows         complex flows
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 4. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>Microservices with isolated databases:</strong> when
+              each service has its own database and it isn't possible — or
+              desirable — to share a transactional database connection. Saga
+              is the practical alternative to 2PC in this context.
+            </li>
+            <li>
+              <strong>Multi-service business transactions:</strong> flows
+              such as checkout (order + stock + payment + notification),
+              user onboarding (signup + email delivery + billing account
+              creation), or bookings (flight + hotel + car).
+            </li>
+            <li>
+              <strong>Eventual consistency is acceptable:</strong> when the
+              business tolerates temporary intermediate states — the order
+              exists but the payment is still being processed — and
+              compensation resolves the failure case acceptably.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>Strong consistency is mandatory:</strong> financial
+              operations that require true atomicity (debit and credit must
+              be atomic) are better solved within a single service with a
+              transactional database or with database-supported two-phase
+              commit.
+            </li>
+            <li>
+              <strong>Too many participants:</strong> sagas with 10+ steps
+              create complex compensation cascades that are hard to test. In
+              these cases, reevaluating service granularity can be more
+              effective.
+            </li>
+            <li>
+              <strong>Team without maturity in distributed systems:</strong>
+              sagas require attention to idempotency, traceability, and
+              failure handling in compensations. Without that maturity, the
+              result is usually worse than a transactional monolith.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 5. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Enables eventual consistency across microservices without locking resources (no global locks).</li>
+            <li>Each service maintains its autonomy and its own database — no infrastructure coupling.</li>
+            <li>Orchestration centralizes the flow, making observability, testing, and saga status tracking easier.</li>
+            <li>Scales better than 2PC in systems with many participants and high transaction volume.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Visible intermediate state: the system stays in partially committed states between steps, which needs to be communicated in the UX.</li>
+            <li>Compensation is harder than rollback: compensating transactions need to be designed, implemented, tested, and monitored separately.</li>
+            <li>Complex debugging: tracing the state of a saga distributed across multiple services requires a correlation ID, distributed tracing, and careful log attention.</li>
+            <li>Doesn't replace ACID where immediate consistency is required — it's a conscious trade-off, not a universal solution.</li>
+          </ul>
+        </section>
+
+        <!-- 6. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Non-idempotent compensation</h3>
+          <p>
+            If the compensation service fails after executing the operation
+            but before confirming success, the orchestrator will retry.
+            Without idempotency, the compensation is executed twice — the
+            payment is refunded twice, the stock is released in duplicate.
+            Every compensating transaction must be designed to produce the
+            same result when executed multiple times.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Practice:</strong> use an idempotency key (saga ID + step
+            ID) in compensating transactions. Before executing, check
+            whether the compensation for that key has already been applied.
+          </p>
+
+          <h3>2. Intermediate state exposed to the user</h3>
+          <p>
+            Between step 1 (order created) and step 3 (payment confirmed),
+            the order exists in the system but isn't complete. The user may
+            see an order "awaiting confirmation" that's later canceled due
+            to a payment failure. The UX needs to communicate these
+            intermediate states clearly — an order being processed isn't a
+            confirmed order.
+          </p>
+
+          <h3>3. Choreography without traceability</h3>
+          <p>
+            In choreography with many services, understanding a saga's
+            current state requires correlating events from every
+            participant. Without a correlation ID present in every event and
+            log, and without distributed tracing (OpenTelemetry, Jaeger),
+            support investigating a failed saga can take hours.
+          </p>
+
+          <h3>4. Compensation that fails</h3>
+          <p>
+            What if the compensating transaction itself fails? This is the
+            hardest case. The saga enters an inconsistent state that
+            requires intervention. The solution is to have automatic retry
+            with backoff for compensations and, after retries are exhausted,
+            alert the operations team with enough context for manual
+            intervention. Never silently ignore a compensation failure.
+          </p>
+        </section>
+
+        <!-- 7. RELATED -->
+        <section class="artigo__secao">
+          <h2>Related architectures and patterns</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../outbox/">Outbox Pattern</a></li>
+            <li><a href="../filas-de-mensagem/">Message Queues</a></li>
+            <li><a href="../idempotencia/">Idempotency</a></li>
+            <li><a href="../cqrs/">CQRS</a></li>
+            <li><a href="../monolito-vs-microsservicos/">Monolith vs Microservices</a></li>
+          </ul>
+          <p class="mt-1">
+            The <strong>Outbox Pattern</strong> is frequently combined with
+            Sagas: each saga step saves the result to the database and
+            inserts the next command/event into the outbox table within the
+            same local transaction, guaranteeing the event isn't lost even
+            if the process fails after the commit.
+          </p>
+          <p>
+            <strong>Idempotency</strong> is a prerequisite for Sagas: both
+            the normal steps and the compensations will be retried in case
+            of network failure, and need to produce the same result on every
+            attempt.
+          </p>
+          <p>
+            <strong>CQRS and Event Sourcing</strong> complement Sagas: the
+            domain event is both the communication mechanism between
+            participants (choreography) and the source of truth for the
+            saga's state (the state can be rebuilt from the event log).
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="6868686868"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

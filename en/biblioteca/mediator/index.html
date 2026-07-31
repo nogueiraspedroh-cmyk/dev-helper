@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mediator — Design Patterns | Dev Helper Library</title>
+  <meta name="description" content="Learn the Mediator pattern (GoF) in depth: intent, problem, solution, structure, examples in TypeScript and PHP, when to use it, when to avoid it, and common pitfalls." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/mediator/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Mediator</span>
+        </nav>
+        <span class="artigo__categoria">Behavioral Pattern (GoF)</span>
+        <h1 class="artigo__titulo">Mediator</h1>
+        <p class="artigo__subtitulo">
+          Centralizes communication between objects in a mediator, eliminating
+          direct references between them — reducing coupling from M:N (every
+          object knows every other) to M:1 (every object knows only the
+          mediator).
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Replace cross-references between objects with a central
+            hub</strong> — the Mediator — that knows all participants
+            (colleagues) and coordinates communication between them. Each
+            colleague sends its notifications to the Mediator and receives
+            instructions from it; colleagues don't know the others exist.
+          </p>
+          <p>
+            Cataloged by the GoF (1994) as a behavioral pattern, Mediator shows
+            up in complex UI forms (fields that enable each other), chat rooms,
+            air-traffic control systems, processing pipelines, and any context
+            where N objects would need to reference each other — creating a
+            dependency graph that's hard to maintain.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Imagine a signup form with four components: a "Company" checkbox, a
+            tax-ID field, a personal-ID field, and a Submit button. The
+            interaction rules are: checking "Company" enables the tax-ID field
+            and disables the personal-ID field; the Submit button only becomes
+            active when the relevant field is filled in. The direct approach
+            couples every component to all the others:
+          </p>
+          <div class="code-bloco">
+<pre><code>// Naive approach — DON'T do this:
+class CompanyCheckbox {
+  constructor(
+    private taxIdField: TaxIdField,     // direct reference
+    private personalIdField: PersonalIdField, // direct reference
+    private submitButton: SubmitButton  // direct reference
+  ) {}
+
+  toggle(checked: boolean): void {
+    if (checked) {
+      this.taxIdField.enable();
+      this.personalIdField.disable();
+    } else {
+      this.taxIdField.disable();
+      this.personalIdField.enable();
+    }
+    this.submitButton.update(checked);
+    // Every new component requires modifying this class.
+  }
+}</code></pre>
+          </div>
+          <p>
+            With N components, each needs to know the other N-1. Coupling grows
+            quadratically (M:N). Tests become hard because isolating one
+            component requires mocking all its peers. Adding a new component to
+            the form requires modifying every existing component that must
+            react to it.
+          </p>
+          <p>
+            Mediator solves this: each component only knows the Mediator and
+            sends notifications to it. The logic of "who reacts to what" is
+            centralized in a single place — the ConcreteMediator.
+          </p>
+        </section>
+
+        <!-- 3. SOLUTION -->
+        <section class="artigo__secao">
+          <h2>Solution</h2>
+          <p>Mediator organizes the code into three participants:</p>
+          <ol>
+            <li>
+              <strong>Mediator (interface):</strong> declares the communication
+              method colleagues use to notify the mediator. E.g.:
+              <code>notify(sender, event)</code>. Colleagues only know this
+              interface — not the specific ConcreteMediator.
+            </li>
+            <li>
+              <strong>ConcreteMediator:</strong> knows every concrete colleague
+              and implements the coordination logic. Upon receiving a
+              notification, it decides which colleagues should be triggered and
+              how. It's the only place where the interaction logic between
+              components exists.
+            </li>
+            <li>
+              <strong>Colleagues:</strong> the components that interact with each
+              other only through the Mediator. Each colleague keeps a reference
+              to the Mediator (injected via constructor or setter) and notifies
+              it when its state changes. It never calls other colleagues
+              directly.
+            </li>
+          </ol>
+
+          <h3>Resolving the circular reference</h3>
+          <p>
+            The Mediator needs to know the colleagues, and the colleagues need
+            to know the Mediator — creating a circular dependency at
+            construction time. The idiomatic solution is setter injection: build
+            the colleagues first, build the Mediator passing the colleagues in,
+            then inject the Mediator into the colleagues with
+            <code>setMediator()</code>. This way, no constructor needs to
+            receive an object that doesn't exist yet.
+          </p>
+        </section>
+
+        <!-- 4. STRUCTURE -->
+        <section class="artigo__secao">
+          <h2>Structure</h2>
+          <div class="code-bloco">
+<pre><code>         «interface»
+           Mediator
+  ┌──────────────────────────────────────┐
+  │ + notify(sender: Component,          │
+  │          event: string): void        │
+  └──────────────────────────────────────┘
+              ▲
+  FormMediator (ConcreteMediator)
+  ┌──────────────────────────────────────┐
+  │ - checkbox: TermsCheckbox            │
+  │ - field: CodeField                   │
+  │ - button: SubmitButton               │
+  │ + notify(sender, event): void        │
+  │   → applies coordination rules       │
+  └──────────────────────────────────────┘
+              │ coordinates
+     ┌────────┼────────────┐
+     ▼        ▼            ▼
+TermsCheckbox   CodeField   SubmitButton
+(Colleague)     (Colleague) (Colleague)
+     │              │
+     └──────┬────────┘
+            │ notifies via
+            ▼
+          Mediator
+
+
+Communication flow:
+
+  checkbox.accept()
+    → this.mediator.notify(this, "terms:accepted")
+      → FormMediator checks the state of all colleagues
+        → button.enable()   (if the field is also filled in)
+        → button.disable()  (otherwise)
+</code></pre>
+          </div>
+        </section>
+
+        <!-- 5. CODE EXAMPLES -->
+        <section class="artigo__secao">
+          <h2>Code examples</h2>
+
+          <h3>Example 1 — Chat room with decoupled participants</h3>
+          <p>
+            The classic example: multiple participants communicate through a
+            room (the Mediator). No participant references the others directly
+            — they send messages to the room and receive notifications from it.
+            The logic of "who receives what" lives entirely in the
+            <code>ChatRoom</code>, not in the participants.
+          </p>
+
+          <!-- TAB GROUP 1 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 1 — chat room">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Mediator interface ────────────────────────────────────────
+interface ChatMediator {
+  sendMessage(message: string, sender: Participant): void;
+}
+
+// ── Colleague ─────────────────────────────────────────────────
+// Participant doesn't know other participants — only the mediator.
+class Participant {
+  constructor(
+    readonly name: string,
+    private readonly mediator: ChatMediator
+  ) {}
+
+  send(message: string): void {
+    console.log(`${this.name} → room: "${message}"`);
+    this.mediator.sendMessage(message, this);
+  }
+
+  receive(message: string, sender: Participant): void {
+    console.log(`  [${this.name} ← ${sender.name}]: "${message}"`);
+  }
+}
+
+// ── ConcreteMediator ──────────────────────────────────────────
+class ChatRoom implements ChatMediator {
+  private readonly participants: Set&lt;Participant&gt; = new Set();
+
+  join(p: Participant): void  { this.participants.add(p); }
+  leave(p: Participant): void { this.participants.delete(p); }
+
+  sendMessage(message: string, sender: Participant): void {
+    // Delivers to everyone except the sender — logic centralized here.
+    for (const p of this.participants) {
+      if (p !== sender) {
+        p.receive(message, sender);
+      }
+    }
+  }
+}
+
+// ── Usage ────────────────────────────────────────────────────
+const room = new ChatRoom();
+
+const alice = new Participant('Alice', room);
+const bob   = new Participant('Bob',   room);
+const carol = new Participant('Carol', room);
+
+room.join(alice);
+room.join(bob);
+room.join(carol);
+
+alice.send('Good morning everyone!');
+// Alice → room: "Good morning everyone!"
+//   [Bob ← Alice]: "Good morning everyone!"
+//   [Carol ← Alice]: "Good morning everyone!"
+
+room.leave(carol);
+
+bob.send('Carol has left the room.');
+// Bob → room: "Carol has left the room."
+//   [Alice ← Bob]: "Carol has left the room."
+// (Carol doesn't receive it — already left)</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Mediator interface ────────────────────────────────────────
+interface ChatMediator
+{
+    public function sendMessage(string $message, Participant $sender): void;
+}
+
+// ── Colleague ─────────────────────────────────────────────────
+class Participant
+{
+    public function __construct(
+        public readonly string $name,
+        private readonly ChatMediator $mediator
+    ) {}
+
+    public function send(string $message): void
+    {
+        echo "{$this-&gt;name} → room: \"{$message}\"\n";
+        $this-&gt;mediator-&gt;sendMessage($message, $this);
+    }
+
+    public function receive(string $message, Participant $sender): void
+    {
+        echo "  [{$this-&gt;name} ← {$sender-&gt;name}]: \"{$message}\"\n";
+    }
+}
+
+// ── ConcreteMediator ──────────────────────────────────────────
+class ChatRoom implements ChatMediator
+{
+    /** @var Participant[] */
+    private array $participants = [];
+
+    public function join(Participant $p): void
+    {
+        $this-&gt;participants[] = $p;
+    }
+
+    public function leave(Participant $p): void
+    {
+        $this-&gt;participants = array_values(array_filter(
+            $this-&gt;participants,
+            fn($x) =&gt; $x !== $p
+        ));
+    }
+
+    public function sendMessage(string $message, Participant $sender): void
+    {
+        foreach ($this-&gt;participants as $p) {
+            if ($p !== $sender) {
+                $p-&gt;receive($message, $sender);
+            }
+        }
+    }
+}
+
+// ── Usage ────────────────────────────────────────────────────
+$room  = new ChatRoom();
+$alice = new Participant('Alice', $room);
+$bob   = new Participant('Bob',   $room);
+$carol = new Participant('Carol', $room);
+
+$room-&gt;join($alice);
+$room-&gt;join($bob);
+$room-&gt;join($carol);
+
+$alice-&gt;send('Good morning everyone!');
+// Alice → room: "Good morning everyone!"
+//   [Bob ← Alice]: "Good morning everyone!"
+//   [Carol ← Alice]: "Good morning everyone!"
+
+$room-&gt;leave($carol);
+
+$bob-&gt;send('Carol has left the room.');
+// Bob → room: "Carol has left the room."
+//   [Alice ← Bob]: "Carol has left the room."</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 1) -->
+
+          <h3>Example 2 — Form with interdependent components</h3>
+          <p>
+            UI components that need to react to each other are the most common
+            use case for Mediator in real applications. In this example, a
+            checkbox and a code field control the state of a Submit button — all
+            the coordination logic lives in <code>FormMediator</code>, and the
+            components simply notify it when their state changes.
+          </p>
+
+          <!-- TAB GROUP 2 -->
+          <div class="code-tabs" role="tablist" aria-label="Example 2 — form with mediator">
+            <div class="code-tabs__tabs">
+              <button class="code-tabs__tab code-tabs__tab--ativa"
+                      role="tab"
+                      aria-selected="true"
+                      data-lang="ts"
+                      type="button">TypeScript</button>
+              <button class="code-tabs__tab"
+                      role="tab"
+                      aria-selected="false"
+                      data-lang="php"
+                      type="button">PHP</button>
+            </div>
+
+            <!-- TypeScript panel -->
+            <div class="code-tabs__panel" data-lang="ts">
+<pre><code>// ── Mediator interface ────────────────────────────────────────
+interface Mediator {
+  notify(sender: Component, event: string): void;
+}
+
+// ── Base class for colleagues ─────────────────────────────────
+class Component {
+  private mediator: Mediator | null = null;
+
+  // Setter avoids a circular reference in the constructor.
+  setMediator(m: Mediator): void { this.mediator = m; }
+
+  protected notifyMediator(event: string): void {
+    this.mediator?.notify(this, event);
+  }
+}
+
+// ── Concrete colleagues ────────────────────────────────────────
+class TermsCheckbox extends Component {
+  private accepted = false;
+
+  accept(): void {
+    this.accepted = true;
+    console.log('Checkbox: terms accepted');
+    this.notifyMediator('terms:accepted');
+  }
+
+  isAccepted(): boolean { return this.accepted; }
+}
+
+class CodeField extends Component {
+  private value = '';
+
+  fill(code: string): void {
+    this.value = code;
+    console.log(`Code field: "${code}"`);
+    this.notifyMediator('code:filled');
+  }
+
+  getValue(): string { return this.value; }
+}
+
+class SubmitButton extends Component {
+  enable(): void  { console.log('Submit button: enabled'); }
+  disable(): void { console.log('Submit button: disabled'); }
+}
+
+// ── ConcreteMediator ──────────────────────────────────────────
+// All the coordination logic lives here — colleagues don't know each other.
+class FormMediator implements Mediator {
+  constructor(
+    private readonly checkbox: TermsCheckbox,
+    private readonly field: CodeField,
+    private readonly button: SubmitButton
+  ) {}
+
+  notify(_sender: Component, event: string): void {
+    const termsOk = this.checkbox.isAccepted();
+    const codeOk = this.field.getValue().length &gt;= 4;
+
+    console.log(
+      `  [Mediator] event="${event}" → terms=${termsOk} code=${codeOk}`
+    );
+
+    if (termsOk &amp;&amp; codeOk) {
+      this.button.enable();
+    } else {
+      this.button.disable();
+    }
+  }
+}
+
+// ── Usage ────────────────────────────────────────────────────
+const checkbox = new TermsCheckbox();
+const field    = new CodeField();
+const button   = new SubmitButton();
+
+// Mediator created after the colleagues; then injected into them via setter.
+const mediator = new FormMediator(checkbox, field, button);
+checkbox.setMediator(mediator);
+field.setMediator(mediator);
+button.setMediator(mediator);
+
+checkbox.accept();
+// Checkbox: terms accepted
+//   [Mediator] event="terms:accepted" → terms=true code=false
+//   Submit button: disabled
+
+field.fill('AB12');
+// Code field: "AB12"
+//   [Mediator] event="code:filled" → terms=true code=true
+//   Submit button: enabled</code></pre>
+            </div>
+
+            <!-- PHP panel -->
+            <div class="code-tabs__panel" data-lang="php" hidden>
+<pre><code>&lt;?php
+
+// ── Mediator interface ────────────────────────────────────────
+interface Mediator
+{
+    public function notify(Component $sender, string $event): void;
+}
+
+// ── Base class for colleagues ─────────────────────────────────
+abstract class Component
+{
+    private ?Mediator $mediator = null;
+
+    public function setMediator(Mediator $m): void
+    {
+        $this-&gt;mediator = $m;
+    }
+
+    protected function notifyMediator(string $event): void
+    {
+        $this-&gt;mediator?-&gt;notify($this, $event);
+    }
+}
+
+// ── Concrete colleagues ────────────────────────────────────────
+class TermsCheckbox extends Component
+{
+    private bool $accepted = false;
+
+    public function accept(): void
+    {
+        $this-&gt;accepted = true;
+        echo "Checkbox: terms accepted\n";
+        $this-&gt;notifyMediator('terms:accepted');
+    }
+
+    public function isAccepted(): bool { return $this-&gt;accepted; }
+}
+
+class CodeField extends Component
+{
+    private string $value = '';
+
+    public function fill(string $code): void
+    {
+        $this-&gt;value = $code;
+        echo "Code field: \"{$code}\"\n";
+        $this-&gt;notifyMediator('code:filled');
+    }
+
+    public function getValue(): string { return $this-&gt;value; }
+}
+
+class SubmitButton extends Component
+{
+    public function enable(): void  { echo "Submit button: enabled\n"; }
+    public function disable(): void { echo "Submit button: disabled\n"; }
+}
+
+// ── ConcreteMediator ──────────────────────────────────────────
+class FormMediator implements Mediator
+{
+    public function __construct(
+        private readonly TermsCheckbox $checkbox,
+        private readonly CodeField     $field,
+        private readonly SubmitButton  $button
+    ) {}
+
+    public function notify(Component $sender, string $event): void
+    {
+        $termsOk = $this-&gt;checkbox-&gt;isAccepted();
+        $codeOk = strlen($this-&gt;field-&gt;getValue()) &gt;= 4;
+
+        echo "  [Mediator] event=\"{$event}\"" .
+             " → terms=" . ($termsOk ? 'true' : 'false') .
+             " code=" . ($codeOk ? 'true' : 'false') . "\n";
+
+        if ($termsOk &amp;&amp; $codeOk) {
+            $this-&gt;button-&gt;enable();
+        } else {
+            $this-&gt;button-&gt;disable();
+        }
+    }
+}
+
+// ── Usage ────────────────────────────────────────────────────
+$checkbox = new TermsCheckbox();
+$field    = new CodeField();
+$button   = new SubmitButton();
+
+$mediator = new FormMediator($checkbox, $field, $button);
+$checkbox-&gt;setMediator($mediator);
+$field-&gt;setMediator($mediator);
+$button-&gt;setMediator($mediator);
+
+$checkbox-&gt;accept();
+// Checkbox: terms accepted
+//   [Mediator] event="terms:accepted" → terms=true code=false
+//   Submit button: disabled
+
+$field-&gt;fill('AB12');
+// Code field: "AB12"
+//   [Mediator] event="code:filled" → terms=true code=true
+//   Submit button: enabled</code></pre>
+            </div>
+          </div><!-- /.code-tabs (group 2) -->
+
+        </section><!-- /.artigo__secao (examples) -->
+
+        <!-- 6. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>When many objects reference each other</strong> and the
+              dependency graph makes maintenance, testing, and comprehension
+              harder — a clear sign that M:N needs to become M:1.
+            </li>
+            <li>
+              <strong>In complex UI forms and dialogs</strong> where fields
+              enable, disable, or populate each other depending on the state of
+              other fields — the Mediator is the natural place to centralize
+              these interaction rules.
+            </li>
+            <li>
+              <strong>In communication systems between agents</strong> (chat
+              rooms, conference rooms, dispatch systems) where participants
+              shouldn't know each other directly, to make joining, leaving, and
+              replacement easier.
+            </li>
+            <li>
+              <strong>To make testing easier:</strong> mocking the Mediator lets
+              you test each component in isolation without needing to assemble
+              the full set of colleagues.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>For simple communication between two or three objects:</strong>
+              if the coordination is trivial and stable, the Mediator abstraction
+              adds complexity with no noticeable benefit.
+            </li>
+            <li>
+              <strong>When the Mediator starts accumulating business logic:</strong>
+              if every domain rule migrates into the Mediator, it becomes a
+              disguised god object. When that happens, it's a sign that the
+              responsibility should be split or that the domain needs to be
+              modeled differently.
+            </li>
+            <li>
+              <strong>When flow traceability is critical:</strong> centralizing
+              all communication in a single point can make understanding
+              complex flows harder — "who notified whom and when" requires
+              inspecting the entire Mediator. In systems with many events,
+              consider tracing tools or specific logging in the Mediator.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 7. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Reduces coupling from M:N to M:1 — each component depends only on the Mediator, not on the others.</li>
+            <li>Centralizes coordination logic in a single place — easier to audit, modify, and debug the interaction rules.</li>
+            <li>Colleagues can be added or removed without impacting the other colleagues — only the Mediator needs to be updated.</li>
+            <li>Makes unit testing easier — a mock of the Mediator fully isolates the component being tested.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>The Mediator can grow uncontrollably and turn into a god object if every new coordination rule is centralized in it without criteria.</li>
+            <li>All communication flows through a single point — in systems with many events, the Mediator can become a performance or comprehension bottleneck.</li>
+            <li>The Mediator needs to know every concrete colleague, creating bidirectional coupling between it and each component.</li>
+          </ul>
+        </section>
+
+        <!-- 8. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Mediator turns into a god object</h3>
+          <p>
+            The most frequent pitfall: as the system grows, every new
+            coordination rule is added to the Mediator. It quickly accumulates
+            logic from multiple domains and becomes a huge class nobody wants to
+            touch. The warning sign is when the Mediator has more logic than the
+            colleagues combined.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Solution:</strong> when the Mediator grows too much,
+            decompose it into smaller Mediators by responsibility, or revisit
+            the design — maybe some colleagues should have more internal logic
+            and notify the Mediator less.
+          </p>
+
+          <h3>2. Confusing Mediator with Observer</h3>
+          <p>
+            Observer defines a <em>one-to-many</em> dependency: the Subject
+            publishes an event and N Observers react independently — the
+            Subject doesn't know the Observers' concrete types, only their
+            interface. Communication is <em>unidirectional</em> and decoupled:
+            the Subject doesn't know who reacted.
+          </p>
+          <p>
+            Mediator defines <em>bidirectional</em> coordination: the Mediator
+            explicitly knows each concrete colleague and decides, based on the
+            state of multiple colleagues, which actions to take. Communication
+            flows both ways — colleagues notify the Mediator, and the Mediator
+            triggers colleagues. Use Observer when the pattern is "unknown
+            broadcaster → multiple decoupled listeners"; use Mediator when the
+            pattern is "hub that coordinates flow between known participants".
+          </p>
+
+          <h3>3. Circular reference at construction time</h3>
+          <p>
+            The Mediator needs references to the colleagues, and the colleagues
+            need a reference to the Mediator — neither can be created first
+            without the other. The standard solution is setter injection:
+            create the colleagues first (with the Mediator as <code>null</code>
+            or a stub), build the Mediator passing the colleagues in, then
+            inject the Mediator into the colleagues with
+            <code>setMediator()</code>. Another approach is injecting the
+            Mediator via the colleagues' constructor and creating the Mediator
+            in a second step after initializing the colleagues.
+          </p>
+
+          <h3>4. Mediator vs Facade — a distinction of direction</h3>
+          <p>
+            <strong>Facade</strong> provides a simplified interface to a
+            subsystem from an <em>external</em> point of view: a client calls
+            the Facade, which coordinates the subsystem internally. Communication
+            is unidirectional (client → Facade → subsystem). The Facade doesn't
+            know the client; the subsystem doesn't know the Facade back.
+          </p>
+          <p>
+            <strong>Mediator</strong> coordinates <em>internal</em>
+            communication between components that already exist in the system:
+            colleagues notify the Mediator and receive notifications from it —
+            bidirectional. The Mediator knows the colleagues and they know the
+            Mediator. These are complementary patterns, not alternatives.
+          </p>
+        </section>
+
+        <!-- 9. RELATED PATTERNS -->
+        <section class="artigo__secao">
+          <h2>Related patterns</h2>
+          <p>
+            Mediator relates to communication and coordination patterns:
+          </p>
+          <!--
+            Link discipline: only link already-published articles.
+            Observer and Facade exist → real links.
+            Command: published in this batch → real link.
+          -->
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../observer/">Observer</a></li>
+            <li><a href="../facade/">Facade</a></li>
+            <li><a href="../command/">Command</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Observer</strong> and Mediator are the two
+            most-often-confused object-communication patterns. Observer =
+            decoupled 1→N broadcast per event (the Subject doesn't know the
+            Observers individually); Mediator = a hub that knows the colleagues
+            and coordinates bidirectional flow between them. They're
+            complementary: a Mediator can internally use Observer to notify
+            colleagues about changes. <strong>Facade</strong> simplifies
+            external access to a subsystem (unidirectional); Mediator
+            coordinates internal interactions between components that
+            communicate mutually (bidirectional) — a distinction of direction
+            and of who knows whom. <strong>Command</strong> can be routed
+            through a Mediator: instead of each component directly calling the
+            receiver of an action, it creates a Command and hands it to the
+            Mediator, which decides how and to whom to dispatch it.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="3939393939"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

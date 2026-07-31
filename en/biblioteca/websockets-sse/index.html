@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebSockets and SSE — Dev Helper Library</title>
+  <meta name="description" content="WebSockets and SSE: protocols for real-time communication between browser and server. Compare WebSocket (full-duplex), SSE (server push), and Long Polling with use cases and scalability pitfalls." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/websockets-sse/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: carregado uma vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>WebSockets and SSE</span>
+        </nav>
+        <span class="artigo__categoria">System Design</span>
+        <h1 class="artigo__titulo">WebSockets and SSE</h1>
+        <p class="artigo__subtitulo">
+          Protocols for real-time communication between browser and server,
+          without the client needing to request data constantly. WebSocket
+          for bidirectional flow; SSE for simple unidirectional push; Long
+          Polling as a universal fallback.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>Classic HTTP is request-response: the client asks, the
+            server answers, and the connection closes. For real time —
+            chat, games, notifications, live dashboards — this model
+            requires continuous polling, which wastes bandwidth and
+            increases latency.</strong> WebSocket, SSE, and Long Polling
+            eliminate that waste in different ways.
+          </p>
+          <p>
+            The choice between the three depends mainly on two dimensions:
+            the <strong>direction of data flow</strong> (bidirectional or
+            server→client only) and the <strong>infrastructure
+            requirements</strong> (corporate proxies, load balancers,
+            whether HTTP/2 is supported).
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            Classic HTTP was designed for the "web document" model: the
+            browser requests a resource, the server delivers it, and the
+            connection closes. That's efficient for static pages, but
+            creates three problems for real-time applications:
+          </p>
+          <ul>
+            <li>
+              <strong>Polling latency:</strong> if the browser checks for
+              new data every second, the effective latency is up to 1
+              second even when the server has data immediately. Reducing
+              the interval increases network cost.
+            </li>
+            <li>
+              <strong>Per-request overhead:</strong> every HTTP request
+              carries headers of tens to hundreds of bytes (cookies,
+              User-Agent, Accept, etc.). In a chat application with 100
+              messages per minute, this overhead far exceeds the useful
+              content.
+            </li>
+            <li>
+              <strong>The server can't initiate communication:</strong> in
+              the classic model, the server can only respond, never
+              notify. For "you received a message" or "your order was
+              executed," the client has to keep asking.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. HOW IT WORKS -->
+        <section class="artigo__secao">
+          <h2>How it works</h2>
+
+          <h3>WebSocket — persistent full-duplex connection</h3>
+          <p>
+            WebSocket starts with an HTTP handshake: the client sends a
+            request with <code>Upgrade: websocket</code> and the server
+            responds with <code>101 Switching Protocols</code>. From then
+            on, the TCP connection stays open and both sides can send
+            <strong>frames</strong> in either direction, at any time,
+            without per-message HTTP header overhead.
+          </p>
+          <div class="code-bloco">
+<pre><code>// HTTP handshake → ws://
+GET /chat HTTP/1.1
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
+
+HTTP/1.1 101 Switching Protocols
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
+
+// From here on: binary or text frames in both directions
+// with no HTTP overhead per message
+</code></pre>
+          </div>
+          <p>
+            The WebSocket frame has minimal overhead: 2–10 bytes of header
+            versus 200–800 bytes of HTTP headers. In high-frequency
+            applications (trading, games), that difference is significant.
+          </p>
+          <p>
+            <strong>Scalability:</strong> WebSocket connections are
+            stateful. The same client must always reach the same server
+            instance (sticky session), or the server must use an external
+            broker (Redis Pub/Sub, Kafka) to propagate messages between
+            instances — broadcasting only works within a single instance
+            without external coordination.
+          </p>
+
+          <h3>SSE — Server-Sent Events</h3>
+          <p>
+            SSE uses plain HTTP: the client makes a <code>GET</code> and
+            the server responds with <code>Content-Type: text/event-stream</code>,
+            keeping the connection open and sending events in the format
+            <code>data: ...\n\n</code> as they arise. It's
+            <strong>unidirectional</strong>: only the server sends data;
+            the client uses the browser's native <code>EventSource</code>
+            API.
+          </p>
+          <div class="code-bloco">
+<pre><code>// Server sends events in SSE format
+data: {"type":"price","value":142.5}\n\n
+data: {"type":"price","value":143.1}\n\n
+: keepalive comment (avoids proxy timeouts)\n\n
+data: {"type":"alert","msg":"target reached"}\n\n
+</code></pre>
+          </div>
+          <p>
+            Advantages of SSE over WebSocket for unidirectional cases:
+          </p>
+          <ul>
+            <li>
+              <strong>Automatic reconnection:</strong> if the connection
+              drops, the browser reopens it automatically and sends the
+              last received ID via <code>Last-Event-ID</code>, allowing the
+              server to resume from the correct point.
+            </li>
+            <li>
+              <strong>HTTP/2 multiplexed:</strong> over HTTP/2, multiple
+              SSE streams share a single TCP connection, eliminating
+              HTTP/1.1's 6-parallel-connection limit.
+            </li>
+            <li>
+              <strong>Simpler to implement and debug:</strong> it's plain
+              HTTP, visible in the browser's network tools, compatible with
+              any proxy, and with no special handshake.
+            </li>
+          </ul>
+
+          <h3>Long Polling — server push via repeated pull</h3>
+          <p>
+            Long Polling simulates server push without a specialized
+            protocol: the browser makes a normal HTTP request, but the
+            server doesn't respond immediately — it holds the connection
+            open until it has data to send (or until a configured timeout).
+            When it responds, the browser immediately opens a new request
+            to wait for the next update.
+          </p>
+          <p>
+            It's the approach with the highest overhead (full HTTP headers
+            every cycle) and highest latency (latency = server response
+            time + time to establish a new request), but it works through
+            any corporate proxy and any restricted network environment,
+            which makes it a reliable fallback.
+          </p>
+
+          <!-- SVG: Comparative diagram of the three protocols -->
+          <figure class="artigo__figura">
+            <svg viewBox="0 0 760 318" width="100%" role="img" aria-label="Comparative sequence diagram for WebSocket, SSE, and Long Polling. WebSocket: HTTP handshake followed by bidirectional frames in both directions. SSE: initial GET followed by unidirectional events from server to browser. Long Polling: GET that the server holds, responds with data, browser reopens immediately.">
+              <defs>
+                <marker id="ws-arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                  <polygon points="0 0, 8 3, 0 6" fill="#59616e" />
+                </marker>
+                <marker id="ws-arr-ok" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                  <polygon points="0 0, 8 3, 0 6" fill="#10b981" />
+                </marker>
+                <marker id="ws-arr-dark" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                  <polygon points="0 0, 8 3, 0 6" fill="#1f2530" />
+                </marker>
+                <marker id="ws-arr-pri" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                  <polygon points="0 0, 8 3, 0 6" fill="#4f46e5" />
+                </marker>
+              </defs>
+
+              <!-- ══ COLUMN 1: WEBSOCKET ═══════════════════════════════════════ -->
+              <rect x="8" y="8" width="230" height="28" rx="5" fill="#4f46e5" />
+              <text x="123" y="27" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#ffffff">WebSocket</text>
+
+              <!-- Browser & Server boxes -->
+              <rect x="12" y="44" width="58" height="22" rx="3" fill="#f0f2f5" stroke="#4f46e5" stroke-width="1.5" />
+              <text x="41" y="59" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="600" fill="#1f2530">Browser</text>
+              <rect x="174" y="44" width="60" height="22" rx="3" fill="#f0f2f5" stroke="#4f46e5" stroke-width="1.5" />
+              <text x="204" y="59" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="600" fill="#1f2530">Server</text>
+
+              <!-- Lifelines -->
+              <line x1="41" y1="66" x2="41" y2="262" stroke="#4f46e5" stroke-width="1" stroke-dasharray="4,3" />
+              <line x1="204" y1="66" x2="204" y2="262" stroke="#4f46e5" stroke-width="1" stroke-dasharray="4,3" />
+
+              <!-- Handshake -->
+              <line x1="41" y1="84" x2="200" y2="84" stroke="#59616e" stroke-width="1.5" marker-end="url(#ws-arr)" />
+              <text x="122" y="80" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">GET (Upgrade: websocket)</text>
+              <line x1="200" y1="100" x2="45" y2="100" stroke="#10b981" stroke-width="1.5" marker-end="url(#ws-arr-ok)" />
+              <text x="122" y="112" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#10b981">101 Switching Protocols</text>
+
+              <!-- ws:// active indicator -->
+              <rect x="62" y="118" width="116" height="14" rx="3" fill="#ddd6fe" />
+              <text x="120" y="129" text-anchor="middle" font-family="ui-monospace, monospace" font-size="8" fill="#4f46e5" font-weight="600">ws:// ACTIVE</text>
+
+              <!-- Bidirectional frames -->
+              <line x1="45" y1="145" x2="200" y2="145" stroke="#1f2530" stroke-width="1.5" marker-end="url(#ws-arr-dark)" />
+              <text x="122" y="141" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#1f2530">frame → {msg: "hi"}</text>
+
+              <line x1="200" y1="162" x2="45" y2="162" stroke="#1f2530" stroke-width="1.5" marker-end="url(#ws-arr-dark)" />
+              <text x="122" y="174" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#1f2530">frame ← {broadcast}</text>
+
+              <line x1="45" y1="186" x2="200" y2="186" stroke="#1f2530" stroke-width="1.5" marker-end="url(#ws-arr-dark)" />
+              <text x="122" y="182" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#1f2530">frame → {ping}</text>
+
+              <line x1="200" y1="202" x2="45" y2="202" stroke="#1f2530" stroke-width="1.5" marker-end="url(#ws-arr-dark)" />
+              <text x="122" y="214" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#1f2530">frame ← {pong}</text>
+
+              <!-- Note box -->
+              <rect x="14" y="224" width="220" height="30" rx="3" fill="#eef2ff" stroke="#4f46e5" stroke-width="1" />
+              <text x="124" y="237" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" font-weight="600" fill="#4f46e5">Full-duplex · Stateful</text>
+              <text x="124" y="249" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">sticky session or Redis Pub/Sub</text>
+
+              <!-- Tag -->
+              <rect x="8" y="264" width="230" height="22" rx="4" fill="#f0f2f5" stroke="#e3e6ea" stroke-width="1" />
+              <text x="123" y="279" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">Chat · Games · Collaboration · Trading</text>
+
+              <!-- ══ COLUMN 2: SSE ══════════════════════════════════════════════ -->
+              <rect x="252" y="8" width="228" height="28" rx="5" fill="#10b981" />
+              <text x="366" y="27" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#ffffff">SSE (Server-Sent Events)</text>
+
+              <!-- Browser & Server boxes -->
+              <rect x="256" y="44" width="58" height="22" rx="3" fill="#f0f2f5" stroke="#10b981" stroke-width="1.5" />
+              <text x="285" y="59" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="600" fill="#1f2530">Browser</text>
+              <rect x="418" y="44" width="58" height="22" rx="3" fill="#f0f2f5" stroke="#10b981" stroke-width="1.5" />
+              <text x="447" y="59" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="600" fill="#1f2530">Server</text>
+
+              <!-- Lifelines -->
+              <line x1="285" y1="66" x2="285" y2="262" stroke="#10b981" stroke-width="1" stroke-dasharray="4,3" />
+              <line x1="447" y1="66" x2="447" y2="262" stroke="#10b981" stroke-width="1" stroke-dasharray="4,3" />
+
+              <!-- GET request -->
+              <line x1="285" y1="84" x2="443" y2="84" stroke="#59616e" stroke-width="1.5" marker-end="url(#ws-arr)" />
+              <text x="366" y="80" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">GET /events</text>
+              <line x1="443" y1="100" x2="289" y2="100" stroke="#10b981" stroke-width="1.5" marker-end="url(#ws-arr-ok)" />
+              <text x="366" y="112" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#10b981">200 text/event-stream (stream open)</text>
+
+              <!-- Server-push events (only server → browser) -->
+              <line x1="443" y1="127" x2="289" y2="127" stroke="#10b981" stroke-width="1.5" marker-end="url(#ws-arr-ok)" />
+              <text x="366" y="123" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#1f2530">data: {"price":142.5}</text>
+
+              <line x1="443" y1="148" x2="289" y2="148" stroke="#10b981" stroke-width="1.5" marker-end="url(#ws-arr-ok)" />
+              <text x="366" y="144" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#1f2530">data: {"price":143.1}</text>
+
+              <!-- Keepalive comment -->
+              <line x1="443" y1="167" x2="289" y2="167" stroke="#e3e6ea" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#ws-arr)" />
+              <text x="366" y="163" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">: keepalive</text>
+
+              <line x1="443" y1="186" x2="289" y2="186" stroke="#10b981" stroke-width="1.5" marker-end="url(#ws-arr-ok)" />
+              <text x="366" y="182" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#1f2530">data: {"alert":"done"}</text>
+
+              <!-- Note box -->
+              <rect x="258" y="202" width="220" height="30" rx="3" fill="#d1fae5" stroke="#10b981" stroke-width="1" />
+              <text x="368" y="215" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" font-weight="600" fill="#059669">One-way: server → browser</text>
+              <text x="368" y="227" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">Automatic reconnection · EventSource API</text>
+
+              <!-- HTTP/2 badge -->
+              <rect x="258" y="238" width="220" height="18" rx="3" fill="#f0f2f5" stroke="#e3e6ea" stroke-width="1" />
+              <text x="368" y="251" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">HTTP/2: multiple streams on one connection</text>
+
+              <!-- Tag -->
+              <rect x="252" y="264" width="228" height="22" rx="4" fill="#f0f2f5" stroke="#e3e6ea" stroke-width="1" />
+              <text x="366" y="279" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">Notifications · Feeds · Progress · Dashboard</text>
+
+              <!-- ══ COLUMN 3: LONG POLLING ═════════════════════════════════════ -->
+              <rect x="494" y="8" width="258" height="28" rx="5" fill="#59616e" />
+              <text x="623" y="27" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#ffffff">Long Polling</text>
+
+              <!-- Browser & Server boxes -->
+              <rect x="498" y="44" width="58" height="22" rx="3" fill="#f0f2f5" stroke="#59616e" stroke-width="1.5" />
+              <text x="527" y="59" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="600" fill="#1f2530">Browser</text>
+              <rect x="690" y="44" width="58" height="22" rx="3" fill="#f0f2f5" stroke="#59616e" stroke-width="1.5" />
+              <text x="719" y="59" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="600" fill="#1f2530">Server</text>
+
+              <!-- Lifelines -->
+              <line x1="527" y1="66" x2="527" y2="262" stroke="#59616e" stroke-width="1" stroke-dasharray="4,3" />
+              <line x1="719" y1="66" x2="719" y2="262" stroke="#59616e" stroke-width="1" stroke-dasharray="4,3" />
+
+              <!-- Cycle 1 -->
+              <line x1="527" y1="84" x2="715" y2="84" stroke="#59616e" stroke-width="1.5" marker-end="url(#ws-arr)" />
+              <text x="623" y="80" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">GET /poll</text>
+
+              <!-- Server holds (waiting rect on server lifeline) -->
+              <rect x="714" y="88" width="10" height="46" rx="2" fill="#e5e7eb" stroke="#59616e" stroke-width="1" />
+              <text x="650" y="110" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">waiting...</text>
+
+              <!-- Server responds with data -->
+              <line x1="714" y1="138" x2="531" y2="138" stroke="#10b981" stroke-width="1.5" marker-end="url(#ws-arr-ok)" />
+              <text x="623" y="134" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#10b981">200 OK {event: data}</text>
+
+              <!-- Browser immediately retries -->
+              <line x1="527" y1="154" x2="715" y2="154" stroke="#59616e" stroke-width="1.5" marker-end="url(#ws-arr)" />
+              <text x="623" y="150" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">GET /poll (immediate retry)</text>
+
+              <!-- Server holds again (shorter) -->
+              <rect x="714" y="158" width="10" height="28" rx="2" fill="#e5e7eb" stroke="#59616e" stroke-width="1" />
+
+              <!-- Server responds with timeout/empty -->
+              <line x1="714" y1="190" x2="531" y2="190" stroke="#59616e" stroke-width="1.5" marker-end="url(#ws-arr)" />
+              <text x="623" y="186" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">204 No Content (timeout)</text>
+
+              <!-- Browser retries again -->
+              <line x1="527" y1="206" x2="715" y2="206" stroke="#59616e" stroke-width="1.5" marker-end="url(#ws-arr)" />
+              <text x="623" y="202" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">GET /poll...</text>
+
+              <!-- Note box -->
+              <rect x="500" y="218" width="248" height="38" rx="3" fill="#f0f2f5" stroke="#e3e6ea" stroke-width="1" />
+              <text x="624" y="231" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" font-weight="600" fill="#1f2530">HTTP overhead per cycle · Higher latency</text>
+              <text x="624" y="243" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">Works with any corporate proxy</text>
+              <text x="624" y="252" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">Fallback when SSE/WS isn't viable</text>
+
+              <!-- Tag -->
+              <rect x="494" y="264" width="258" height="22" rx="4" fill="#f0f2f5" stroke="#e3e6ea" stroke-width="1" />
+              <text x="623" y="279" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#59616e">Fallback · Restricted environments · Maximum compatibility</text>
+            </svg>
+            <figcaption>Sequence comparison between WebSocket (full-duplex, persistent connection), SSE (server to browser, plain HTTP with automatic reconnection), and Long Polling (repeated pull that simulates server push without a special protocol).</figcaption>
+          </figure>
+
+          <h3>Comparison table</h3>
+          <div class="code-bloco">
+<pre><code>                  WebSocket       SSE               Long Polling
+  ────────────────────────────────────────────────────────────────
+  Protocol        ws:// / wss://  HTTP              HTTP
+  Direction       Full-duplex     Server → client   Server → client
+  Overhead/msg    2–10 bytes      ~50 bytes         200–800 bytes
+  Auto reconnect  No (manual)     Yes (native)      No (manual)
+  HTTP/2          Not compatible  Compatible        Compatible
+  Corp. proxies   May block       Usually OK        Always works
+  Complexity      Medium          Low               Low
+  ────────────────────────────────────────────────────────────────
+  Ideal for       Chat, games,    Notifications,    Fallback,
+                  collaboration,  feeds, progress,  restricted
+                  trading, IoT    live dashboards   corporate envs
+</code></pre>
+          </div>
+
+          <h3>WebSocket scalability with multiple instances</h3>
+          <p>
+            WebSocket creates stateful connections: if user A is connected
+            to instance 1 and user B is on instance 2, a message from user
+            B to user A doesn't arrive by default — instance 1's server
+            doesn't know instance 2 has something to deliver.
+          </p>
+          <p>
+            The two standard solutions:
+          </p>
+          <ul>
+            <li>
+              <strong>Sticky session:</strong> the load balancer guarantees
+              the same client always reaches the same instance. Simple, but
+              reduces load balancing effectiveness and complicates
+              zero-downtime deploys.
+            </li>
+            <li>
+              <strong>External Pub/Sub:</strong> each instance publishes
+              messages to a broker (Redis Pub/Sub, Kafka, NATS) and
+              subscribes to the topics of its connected clients. Any
+              instance can receive a message and deliver it to the correct
+              client. More robust and scalable, but more complex to
+              operate.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 4. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use each protocol</h2>
+          <ul>
+            <li>
+              <strong>WebSocket:</strong> when there's genuinely
+              bidirectional real-time communication — chat, collaborative
+              editing, multiplayer games, trading dashboards where the
+              client also sends data frequently (cursor position, trading
+              commands). Minimal latency is essential.
+            </li>
+            <li>
+              <strong>SSE:</strong> when the server needs to send updates
+              to the client but the client doesn't continuously send data
+              back. Notifications, activity feeds, job progress bars,
+              monitoring dashboards. Prefer SSE over WebSocket in these
+              cases — it's simpler and takes advantage of HTTP/2.
+            </li>
+            <li>
+              <strong>Long Polling:</strong> use as a fallback when SSE
+              doesn't work (corporate proxies that buffer responses,
+              environments with old support). Many libraries (Socket.IO,
+              SignalR) implement Long Polling as an automatic fallback.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>WebSocket when SSE would suffice:</strong> WebSocket
+              has more operational overhead, requires sticky sessions or
+              pub/sub, and doesn't take advantage of HTTP/2. For
+              unidirectional flow, SSE is the simpler, more robust choice.
+            </li>
+            <li>
+              <strong>WebSocket for 1M+ simultaneous connections without a
+              dedicated architecture:</strong> each connection keeps state
+              on the server. At high scale, this requires dedicated gateway
+              servers (like Pushpin, Fanout, or specific event-driven
+              architectures), not conventional application servers.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 5. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>WebSocket — Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Real full-duplex: both sides send data without waiting for the other to finish.</li>
+            <li>Minimal overhead per message (2–10 bytes vs. 200+ for HTTP headers).</li>
+            <li>Lower latency than any HTTP-based solution.</li>
+            <li>Natively supported in all modern browsers and most frameworks.</li>
+          </ul>
+          <h3>WebSocket — Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Stateful: requires sticky sessions or external pub/sub for multiple instances.</li>
+            <li>Not compatible with HTTP/2 multiplexing.</li>
+            <li>Some corporate proxies block or inspect ws:// — always use wss://.</li>
+            <li>Reconnection needs to be implemented manually on the client.</li>
+          </ul>
+          <h3>SSE — Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Plain HTTP: transparent to proxies, load balancers, and network tools.</li>
+            <li>Native automatic reconnection via EventSource + Last-Event-ID.</li>
+            <li>Takes advantage of HTTP/2: multiple streams on a single TCP connection.</li>
+            <li>Simpler to implement and debug than WebSocket.</li>
+          </ul>
+          <h3>SSE — Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Unidirectional: the client can't send data over the SSE stream — needs separate HTTP requests.</li>
+            <li>Some old proxies buffer the response, breaking streaming (mitigable with keepalive comments).</li>
+          </ul>
+        </section>
+
+        <!-- 6. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. WebSocket without sticky session and without pub/sub</h3>
+          <p>
+            The most common mistake in horizontal deploys: user A connects
+            to instance 1, user B connects to instance 2, and when B sends
+            a message to A, instance 2 tries to deliver it — but A isn't
+            connected there. The message is silently lost. The symptom is
+            "sometimes messages don't arrive," and it gets worse exactly
+            when there's more traffic (and therefore more instances).
+          </p>
+          <p class="artigo__aviso">
+            <strong>Solution:</strong> before scaling horizontally,
+            implement Redis Pub/Sub or equivalent. Each instance publishes
+            messages to the recipient's channel, and every instance
+            subscribes to all the channels of its connected clients.
+          </p>
+
+          <h3>2. ws:// without TLS in production</h3>
+          <p>
+            <code>ws://</code> connections (without TLS) are transparent to
+            intermediary proxies, which can inject content, modify frames,
+            or simply block the connection. In production, always use
+            <code>wss://</code> (WebSocket over TLS), which is treated as
+            HTTPS by proxies.
+          </p>
+
+          <h3>3. SSE blocked by corporate proxies</h3>
+          <p>
+            Some corporate proxies buffer HTTP responses before passing
+            them to the client, which breaks SSE streaming (the client
+            never receives intermediate events, only the final one). The
+            mitigation is to send periodic comments
+            (<code>: keepalive\n\n</code>) every 15–30 seconds, which force
+            a flush in many proxies. If that doesn't solve it, Long Polling
+            is the fallback.
+          </p>
+
+          <h3>4. Underestimated connection scale</h3>
+          <p>
+            10,000 simultaneous WebSocket connections are perfectly
+            manageable on a well-configured node.js server. 1,000,000
+            connections is a completely different architecture: it requires
+            dedicated gateway servers, kernel tuning (<code>ulimit</code>,
+            <code>net.core.somaxconn</code>), and possibly managed services
+            (AWS API Gateway WebSocket, Ably, Pusher). Don't treat 10k and
+            1M as the same problem.
+          </p>
+        </section>
+
+        <!-- 7. RELATED -->
+        <section class="artigo__secao">
+          <h2>Related architectures and patterns</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../rest-vs-graphql-vs-grpc/">REST vs GraphQL vs gRPC</a></li>
+            <li><a href="../filas-de-mensagem/">Message Queues</a></li>
+            <li><a href="../escalabilidade-horizontal-vertical/">Horizontal and Vertical Scalability</a></li>
+            <li><a href="../load-balancing/">Load Balancing</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Message Queues</strong> complement WebSocket at the
+            backend layer: the websocket server receives messages from
+            clients, publishes them to a queue, and processes them
+            asynchronously, decoupling the connection layer from the
+            processing layer.
+          </p>
+          <p>
+            <strong>Load Balancing</strong> is directly affected by the
+            protocol choice: WebSocket requires sticky sessions or
+            balancing algorithms that respect session affinity (IP hash,
+            cookie-based), while SSE works with any balancing algorithm,
+            including pure round-robin.
+          </p>
+          <p>
+            <strong>REST vs GraphQL vs gRPC</strong> covers synchronous
+            request-response protocols. WebSocket and SSE are complementary
+            to them — many architectures use REST for CRUD operations and
+            WebSocket/SSE for real-time updates.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="7272727272"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "createdAt": "2026-07-25T15:16:46.641Z",
-  "updatedAt": "2026-07-26T04:56:08.131Z",
+  "updatedAt": "2026-07-30T00:47:10.821Z",
   "briefPath": ".omc/ultragoal/brief.md",
   "goalsPath": ".omc/ultragoal/goals.json",
   "ledgerPath": ".omc/ultragoal/ledger.jsonl",
@@ -107,67 +107,86 @@
       "id": "G009-fasec-lote2-estruturais",
       "title": "FaseC-Lote2-Estruturais",
       "objective": "Traduzir os 7 artigos de Padroes Estruturais (adapter, decorator, facade, proxy, composite, bridge, flyweight) para en/biblioteca/<slug>/, incluindo SVGs. Dev-typescript + gate code-reviewer, max 2 tentativas.",
-      "status": "in_progress",
+      "status": "complete",
       "attempt": 1,
       "createdAt": "2026-07-25T15:16:46.641Z",
-      "updatedAt": "2026-07-26T04:56:08.131Z",
-      "startedAt": "2026-07-26T04:56:08.131Z"
+      "updatedAt": "2026-07-26T12:47:53.736Z",
+      "startedAt": "2026-07-26T04:56:08.131Z",
+      "completedAt": "2026-07-26T12:47:53.736Z",
+      "evidence": "7 artigos traduzidos (en/biblioteca/{adapter,decorator,facade,proxy,composite,bridge,flyweight}/). TRANSLATED_PATHS com 57 entradas. hreflang reciproco nos 7 pares. Aplicadas as licoes do Lote 1: todos os 27 links de related patterns classificados corretamente contra os 12 slugs ja traduzidos (5+7), testados individualmente pelo dev e revalidados pelo reviewer - zero 404. Code review: 1 bloqueador (moldura ASCII irregular em facade, 8 linhas com 1 coluna a mais) + 1 warning (inconsistencia composite vs flyweight no link Visitor, com comentario factualmente errado dizendo que o artigo nao existia) - ambos corrigidos na 2a e ultima tentativa, revalidados com script de verificacao de alinhamento (12/12 linhas do diagrama fecham na mesma coluna) e curl. Bonus: a traducao corrigiu bugs de alinhamento ja existentes no pt-BR em adapter/decorator/proxy. Fidelidade tecnica confirmada em adapter e bridge (leitura completa)."
     },
     {
       "id": "G010-fasec-lote3-comportamentais",
       "title": "FaseC-Lote3-Comportamentais",
       "objective": "Traduzir os 11 artigos de Padroes Comportamentais (strategy, observer, state, template-method, command, mediator, iterator, chain-of-responsibility, memento, visitor, interpreter) para en/biblioteca/<slug>/, incluindo SVGs. Dev-typescript + gate code-reviewer, max 2 tentativas.",
-      "status": "pending",
-      "attempt": 0,
+      "status": "complete",
+      "attempt": 1,
       "createdAt": "2026-07-25T15:16:46.641Z",
-      "updatedAt": "2026-07-25T15:16:46.641Z"
+      "updatedAt": "2026-07-27T11:26:29.970Z",
+      "startedAt": "2026-07-26T12:48:09.457Z",
+      "completedAt": "2026-07-27T11:26:29.970Z",
+      "evidence": "11 artigos traduzidos (strategy, observer, state, template-method, command, mediator, iterator, chain-of-responsibility, memento, visitor, interpreter). Review encontrou 2 blockers de alinhamento de diagrama ASCII (memento arrows/stems, chain-of-responsibility vertical bars) - corrigidos e verificados programaticamente (script de coluna visual, considerando entidades HTML &lt;/&gt;/&amp; como 1 char). docker compose: ambas paginas retornam 200."
     },
     {
       "id": "G011-fasec-lote4-arquiteturas",
       "title": "FaseC-Lote4-Arquiteturas",
       "objective": "Traduzir os 10 artigos de Arquiteturas de Software (mvc, arquitetura-em-camadas, arquitetura-hexagonal, clean-architecture, onion-architecture, mvp, mvvm, cqrs, event-driven, monolito-vs-microsservicos) para en/biblioteca/<slug>/, incluindo SVGs. Dev-typescript + gate code-reviewer, max 2 tentativas.",
-      "status": "pending",
-      "attempt": 0,
+      "status": "complete",
+      "attempt": 1,
       "createdAt": "2026-07-25T15:16:46.641Z",
-      "updatedAt": "2026-07-25T15:16:46.641Z"
+      "updatedAt": "2026-07-27T12:11:35.911Z",
+      "startedAt": "2026-07-27T11:26:47.097Z",
+      "completedAt": "2026-07-27T12:11:35.911Z",
+      "evidence": "10 artigos traduzidos (mvc, arquitetura-em-camadas, arquitetura-hexagonal, clean-architecture, onion-architecture, mvp, mvvm, cqrs, event-driven, monolito-vs-microsservicos). TRANSLATED_PATHS 33 entradas, hreflang bidirecional, links relacionados classificados corretamente. Review: 0 blockers, 1 warning (arrow orfa no diagrama event-driven) corrigido e reverificado programaticamente (broker box permanece aberto nas 3 linhas de entrega). Sugestoes nao-bloqueantes (S1: retrofit de 6 diagramas pt-BR pre-existentes com bugs de alinhamento; S2: linter de diagrama no pipeline) anotadas para G015. docker: todas as 20 URLs (10 EN + 10 PT) retornam 200."
     },
     {
       "id": "G012-fasec-lote5-organizacao",
       "title": "FaseC-Lote5-Organizacao",
       "objective": "Traduzir os 3 artigos de Organizacao de Codigo e Repositorios (monolito-vs-monorepo, feature-vs-layer, estrutura-de-pastas) para en/biblioteca/<slug>/. Dev-typescript + gate code-reviewer, max 2 tentativas.",
-      "status": "pending",
-      "attempt": 0,
+      "status": "complete",
+      "attempt": 1,
       "createdAt": "2026-07-25T15:16:46.641Z",
-      "updatedAt": "2026-07-25T15:16:46.641Z"
+      "updatedAt": "2026-07-27T12:32:54.301Z",
+      "startedAt": "2026-07-27T12:11:46.858Z",
+      "completedAt": "2026-07-27T12:32:54.301Z",
+      "evidence": "3 artigos traduzidos (monolito-vs-monorepo, feature-vs-layer, estrutura-de-pastas). 9 diagramas (2 estilo tree, novos neste lote) verificados programaticamente, conectores identicos pt/EN. Link stale de monolito-vs-microsservicos->monolito-vs-monorepo corrigido de fallback pt-BR para link direto. TRANSLATED_PATHS: 36 slugs de artigo (38 entradas biblioteca no total, incluindo os 2 entries de catalogo pre-existentes). Review: 0 blockers, aprovado. Avisos cosmeticos pre-existentes (marcador de caret, comentarios HTML em pt-BR) documentados para pass futuro dedicado, nao bloqueiam."
     },
     {
       "id": "G013-fasec-lote6a-infraescala1",
       "title": "FaseC-Lote6a-InfraEscala1",
       "objective": "Traduzir 10 dos 19 artigos de Conceitos de Infraestrutura e Escala (escalabilidade-horizontal-vertical, load-balancing, caching, sql-vs-nosql, rest-vs-graphql-vs-grpc, filas-de-mensagem, circuit-breaker, sla-slo-sli, idempotencia, sharding) para en/biblioteca/<slug>/, incluindo SVGs. Dev-typescript + gate code-reviewer, max 2 tentativas.",
-      "status": "pending",
-      "attempt": 0,
+      "status": "complete",
+      "attempt": 1,
       "createdAt": "2026-07-25T15:16:46.641Z",
-      "updatedAt": "2026-07-25T15:16:46.641Z"
+      "updatedAt": "2026-07-28T23:49:33.310Z",
+      "startedAt": "2026-07-27T12:33:03.075Z",
+      "completedAt": "2026-07-28T23:49:33.310Z",
+      "evidence": "10 artigos criados em en/biblioteca/<slug>/ (escalabilidade-horizontal-vertical, load-balancing, caching, sql-vs-nosql, rest-vs-graphql-vs-grpc, filas-de-mensagem, circuit-breaker, sla-slo-sli, idempotencia, sharding). Nenhum tinha SVG no original pt-BR (só ASCII), replicado fielmente. hreflang recíproco nos 10 pares, TRANSLATED_PATHS atualizado (node --check OK), en/biblioteca/index.html com 10 cards linkados. code-reviewer encontrou 4 bloqueadores (B1: 10 links do índice EN com prefixo ../ incorreto causando 404; B2: tabela comparativa REST/GraphQL/gRPC com deriva de coluna; B3: indentação do JSON em sql-vs-nosql inconsistente; B4: conector solto em idempotencia) + 4 avisos (setas ASCII em vez de Unicode em 3 arquivos, <pre> com < não escapado, box OPEN sem tee, rótulo Server não centrado) — todos corrigidos diretamente (fix de 1ª tentativa, dentro do limite de 2). Validado: node --check js/main.js OK, curl 200 nos 10 artigos + índice."
     },
     {
       "id": "G014-fasec-lote6b-infraescala2",
       "title": "FaseC-Lote6b-InfraEscala2",
       "objective": "Traduzir os 9 artigos restantes de Conceitos de Infraestrutura e Escala (replicacao-de-banco, cdn, api-gateway, saga, outbox, rate-limiting, observabilidade, websockets-sse, consistencia) para en/biblioteca/<slug>/, incluindo SVGs. Dev-typescript + gate code-reviewer, max 2 tentativas.",
-      "status": "pending",
-      "attempt": 0,
+      "status": "complete",
+      "attempt": 1,
       "createdAt": "2026-07-25T15:16:46.641Z",
-      "updatedAt": "2026-07-25T15:16:46.641Z"
+      "updatedAt": "2026-07-30T00:21:26.351Z",
+      "startedAt": "2026-07-28T23:49:50.601Z",
+      "completedAt": "2026-07-30T00:21:26.351Z",
+      "evidence": "9 artigos traduzidos (replicacao-de-banco, cdn, api-gateway, saga, outbox, rate-limiting, observabilidade, websockets-sse, consistencia) incl. primeiro lote com SVG inline. code-reviewer: 0 blockers, 4 warnings (W1 comentarios obsoletos, W2 link relacionado divergente pt/en, W3 gloss redundante, W4 largura de regra ASCII) - todos corrigidos diretamente. node --check js/main.js OK, HTML parse OK nos arquivos tocados."
     },
     {
       "id": "G015-final-revisaocompleta",
       "title": "Final-RevisaoCompleta",
       "objective": "Revisao de ponta a ponta do site bilingue completo (37 ferramentas + 55 artigos da Biblioteca + home + institucionais em /en/), sem nenhum fallback pt-BR restante em TRANSLATED_PATHS/translatedToolSlugs/biblioteca. Gate final obrigatorio do ultragoal: ai-slop-cleaner + verificacao + code-review com evidencia limpa antes de marcar o objetivo agregado como concluido. Documentar flow final em .claude-work/flows/.",
-      "status": "pending",
-      "attempt": 0,
+      "status": "complete",
+      "attempt": 1,
       "createdAt": "2026-07-25T15:16:46.641Z",
-      "updatedAt": "2026-07-25T15:16:46.641Z"
+      "updatedAt": "2026-07-30T00:47:10.821Z",
+      "startedAt": "2026-07-30T00:45:55.855Z",
+      "evidence": "Revisao final de ponta a ponta concluida: 37 ferramentas + 55 artigos da Biblioteca + home + institucionais, pt-BR e EN. Cobertura 100% em TRANSLATED_PATHS, sem fallback pendente. ai-slop-cleaner + verificacao + code-review final todos aprovados (ver quality-gate-json).",
+      "completedAt": "2026-07-30T00:47:10.821Z"
     }
   ],
-  "claudeObjective": "Complete all ultragoal stories in .omc/ultragoal/goals.json: G001-faseb-lote1-docfinanceiro FaseB-Lote1-DocFinanceiro; G002-faseb-lote2-textodados FaseB-Lote2-TextoDados; G003-faseb-lote3-seguranca FaseB-Lote3-Seguranca; G004-faseb-lote4-webrede FaseB-Lote4-WebRede; G005-faseb-lote5-conversores FaseB-Lote5-Conversores; G006-faseb-integracao FaseB-Integracao; G007-fasec-infra FaseC-Infra; G008-fasec-lote1-criacao FaseC-Lote1-Criacao; G009-fasec-lote2-estruturais FaseC-Lote2-Estruturais; G010-fasec-lote3-comportamentais FaseC-Lote3-Comportamentais; G011-fasec-lote4-arquiteturas FaseC-Lote4-Arquiteturas; G012-fasec-lote5-organizacao FaseC-Lote5-Organizacao; G013-fasec-lote6a-infraescala1 FaseC-Lote6a-InfraEscala1; G014-fasec-lote6b-infraescala2 FaseC-Lote6b-InfraEscala2; G015-final-revisaocompleta Final-RevisaoCompleta",
-  "activeGoalId": "G009-fasec-lote2-estruturais"
+  "claudeObjective": "Complete all ultragoal stories in .omc/ultragoal/goals.json: G001-faseb-lote1-docfinanceiro FaseB-Lote1-DocFinanceiro; G002-faseb-lote2-textodados FaseB-Lote2-TextoDados; G003-faseb-lote3-seguranca FaseB-Lote3-Seguranca; G004-faseb-lote4-webrede FaseB-Lote4-WebRede; G005-faseb-lote5-conversores FaseB-Lote5-Conversores; G006-faseb-integracao FaseB-Integracao; G007-fasec-infra FaseC-Infra; G008-fasec-lote1-criacao FaseC-Lote1-Criacao; G009-fasec-lote2-estruturais FaseC-Lote2-Estruturais; G010-fasec-lote3-comportamentais FaseC-Lote3-Comportamentais; G011-fasec-lote4-arquiteturas FaseC-Lote4-Arquiteturas; G012-fasec-lote5-organizacao FaseC-Lote5-Organizacao; G013-fasec-lote6a-infraescala1 FaseC-Lote6a-InfraEscala1; G014-fasec-lote6b-infraescala2 FaseC-Lote6b-InfraEscala2; G015-final-revisaocompleta Final-RevisaoCompleta"
 }

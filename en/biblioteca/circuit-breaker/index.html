@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Circuit Breaker — Dev Helper Library</title>
+  <meta name="description" content="Understand the Circuit Breaker pattern: the CLOSED/OPEN/HALF-OPEN state machine, critical parameters, fallback, and the difference from Retry. Resilience in microservices." />
+  <link rel="stylesheet" href="../../../css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="../../../favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="alternate" hreflang="pt-BR" href="../../../biblioteca/circuit-breaker/" />
+  <link rel="alternate" hreflang="en" href="./" />
+
+  <!-- AdSense: biblioteca carregada UMA vez por página no <head>. -->
+  <script async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5784678562772792"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="nav__brand" href="../../index.html">Dev Helper</a>
+      <ul class="nav__links">
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../">Library</a></li>
+        <li><a href="../../pages/about.html">About</a></li>
+        <li><a href="../../pages/contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <article class="artigo">
+
+      <!-- ── Article header ──────────────────────────────────────────── -->
+      <header class="artigo__header">
+        <nav class="artigo__breadcrumb" aria-label="Breadcrumb navigation">
+          <a href="../../index.html">Home</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <a href="../">Library</a>
+          <span class="artigo__breadcrumb-sep" aria-hidden="true">/</span>
+          <span>Circuit Breaker</span>
+        </nav>
+        <span class="artigo__categoria">System Design</span>
+        <h1 class="artigo__titulo">Circuit Breaker</h1>
+        <p class="artigo__subtitulo">
+          A resilience pattern that stops calls to a failing service to
+          prevent an error cascade and give the service time to recover.
+          Inspired by electrical circuit breakers, it protects the calling
+          system from getting stuck waiting for a service that won't respond.
+        </p>
+      </header>
+
+      <!-- ── Article body ──────────────────────────────────────────────── -->
+      <div class="artigo__corpo">
+
+        <!-- 1. INTENT -->
+        <section class="artigo__secao">
+          <h2>Intent</h2>
+          <p class="artigo__destaque">
+            <strong>The Circuit Breaker detects repeated failures in an
+            external service and, once a threshold is reached, "trips" —
+            rejecting calls immediately without trying to reach the failing
+            service.</strong> This prevents the wait time for a degraded
+            service from propagating to the calling service, turning a
+            localized failure into a cascade of errors across the whole
+            system.
+          </p>
+          <p>
+            The analogy with an electrical circuit breaker is precise: when
+            current exceeds the safe limit, the breaker "trips" and interrupts
+            the circuit to protect the wiring. Likewise, the software Circuit
+            Breaker "trips" and stops calls to protect the calling system.
+            After a period, it allows testing whether the service has
+            recovered before returning to normal operation.
+          </p>
+        </section>
+
+        <!-- 2. PROBLEM -->
+        <section class="artigo__secao">
+          <h2>Problem</h2>
+          <p>
+            In distributed systems, calls to external services fail. Network
+            timeouts, restarts, load spikes, buggy deploys — all of these
+            events are predictable and inevitable. The problem isn't the
+            failure itself, but what happens to the calling system when the
+            failure persists:
+          </p>
+          <ul>
+            <li>
+              <strong>Threads stuck in timeout:</strong> every call that waits
+              for a response from a degraded service ties up a thread or
+              connection. If the service takes 30 seconds to time out and 100
+              requests per second arrive, the thread pool is exhausted within
+              moments and the calling system stops responding — even for
+              functionality that doesn't depend on the failing service.
+            </li>
+            <li>
+              <strong>Error cascade:</strong> Service A calls Service B, which
+              calls Service C. Service C is slow. Service B starts
+              accumulating timeouts. Service A starts accumulating timeouts
+              waiting for Service B. The failure of one leaf service brings
+              down the whole call chain.
+            </li>
+            <li>
+              <strong>Retry making the problem worse:</strong> systems with
+              automatic retry bombard the already overloaded service with more
+              attempts, preventing recovery and turning temporary instability
+              into prolonged unavailability.
+            </li>
+            <li>
+              <strong>Invisible degradation:</strong> without explicit
+              monitoring of dependency state, the application keeps trying
+              calls that fail with a full timeout, responding slowly to every
+              user instead of failing fast for the affected ones and
+              continuing to work for the rest.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 3. HOW IT WORKS -->
+        <section class="artigo__secao">
+          <h2>How it works</h2>
+
+          <h3>State machine: CLOSED, OPEN, and HALF-OPEN</h3>
+          <p>
+            The Circuit Breaker is essentially a three-state machine that
+            wraps calls to an external service. The current state determines
+            whether the call passes through, is rejected immediately, or is
+            used as a recovery probe.
+          </p>
+          <div class="code-bloco">
+<pre><code>  ┌────────────┐      failures > threshold      ┌────────────┐
+  │            │                                │            │
+  │   CLOSED   │───────────────────────────────►│    OPEN    │
+  │  (normal)  │◄───────────────────────────────│   (open)   │
+  │            │ enough successes in HALF-OPEN  │            │
+  └────────────┘                                └──────┬─────┘
+                                                       │
+                                                       │ timer expired
+                                                       ▼
+                                                ┌────────────┐
+                                                │ HALF-OPEN  │
+                                                │ (probing)  │
+                                                └────────────┘
+
+                                                on failure → back to OPEN
+
+  CLOSED   : calls pass through normally. Failures are counted.
+  OPEN     : calls are rejected immediately (fail-fast). Timer active.
+  HALF-OPEN: a limited number of test calls pass through. The result
+             determines the transition to CLOSED (recovered) or OPEN (still failing).
+</code></pre>
+          </div>
+
+          <h3>CLOSED state — normal operation</h3>
+          <p>
+            All calls pass through to the downstream service. The Circuit
+            Breaker monitors the results: errors (exceptions, timeouts, 5xx
+            responses) increment a failure counter. When the failure
+            percentage within a time window exceeds the configured
+            <strong>failure threshold</strong>, the circuit transitions to
+            OPEN.
+          </p>
+
+          <h3>OPEN state — breaker tripped</h3>
+          <p>
+            No calls reach the downstream service. The Circuit Breaker rejects
+            the request immediately — <strong>fail-fast</strong> — without
+            waiting for a timeout. A timer starts. The response to the caller
+            can be an explicit error or, preferably, a
+            <strong>fallback</strong> (cached data, default value, degraded
+            response). The timer defines how long the circuit stays open
+            before attempting recovery.
+          </p>
+
+          <h3>HALF-OPEN state — recovery probing</h3>
+          <p>
+            After the timer expires, the circuit enters HALF-OPEN. A limited
+            number of test calls are allowed through. If those calls succeed
+            and reach the <strong>success threshold</strong>, the circuit
+            closes (CLOSED) and normal operation resumes. If any test call
+            fails, the circuit reopens (OPEN) and the timer restarts.
+          </p>
+
+          <h3>Critical parameters</h3>
+          <ul>
+            <li>
+              <strong>Failure threshold:</strong> percentage or absolute number
+              of failures within a time window to trigger opening. E.g., 50%
+              errors in a sliding 60-second window with a minimum of 10 calls.
+            </li>
+            <li>
+              <strong>Timeout (sleep duration):</strong> how long the circuit
+              stays OPEN before going to HALF-OPEN. Should be enough for the
+              downstream service to recover — typically between 10 seconds and
+              a few minutes.
+            </li>
+            <li>
+              <strong>Success threshold in HALF-OPEN:</strong> how many
+              consecutive successful calls (or what percentage) are needed to
+              close the circuit. Avoids closing prematurely based on a single
+              success.
+            </li>
+          </ul>
+
+          <h3>Fallback: graceful degradation</h3>
+          <p>
+            Fail-fast without a fallback just replaces a slow error with a fast
+            one — the user experience improves in latency, but not in
+            functionality. The real value of the Circuit Breaker lies in
+            combining it with a fallback strategy:
+          </p>
+          <ul>
+            <li><strong>Stale cache:</strong> return the last cached value, even if outdated.</li>
+            <li><strong>Default value:</strong> return a generic result when personalization isn't critical.</li>
+            <li><strong>Degraded response:</strong> return a simplified version of the functionality.</li>
+            <li><strong>Explicit, fast error:</strong> when there's no acceptable fallback, at least fail in milliseconds instead of seconds.</li>
+          </ul>
+
+          <h3>Circuit Breaker vs Retry</h3>
+          <p>
+            Retry and Circuit Breaker are complementary, not substitutes. Retry
+            attempts the operation again immediately — useful for transient
+            network failures, but harmful when the service is overloaded (more
+            calls make things worse). Circuit Breaker stops trying for an
+            entire period, giving room for recovery.
+          </p>
+          <p>
+            The common combination is: <strong>Retry with exponential
+            backoff</strong> (tries a few times with increasing wait between
+            attempts) within the context of a <strong>Circuit Breaker</strong>
+            (if the retries keep failing beyond the threshold, the circuit
+            opens and stops trying entirely for a period).
+          </p>
+        </section>
+
+        <!-- 4. WHEN TO USE / WHEN TO AVOID -->
+        <section class="artigo__secao">
+          <h2>When to use</h2>
+          <ul>
+            <li>
+              <strong>Synchronous calls to external services:</strong> third-party
+              APIs, downstream microservices, payment services — any network
+              call that can fail or become slow. The Circuit Breaker protects
+              the caller from getting stuck waiting on a degraded service.
+            </li>
+            <li>
+              <strong>Microservices architectures:</strong> when there are
+              dependencies between services, a failure in one can cascade.
+              Circuit Breaker at every integration point is a standard
+              resilience practice.
+            </li>
+            <li>
+              <strong>Services with a stable failure pattern:</strong> when the
+              service has a history of periodic failures with predictable
+              recovery, the threshold can be calibrated to open at the right
+              moment and close when the service recovers.
+            </li>
+          </ul>
+
+          <h2>When to avoid</h2>
+          <ul>
+            <li>
+              <strong>Local or intra-process calls:</strong> a database on the
+              same private network with sub-1ms latency, calls between modules
+              of the same process. The Circuit Breaker's overhead isn't
+              justified when there's no real risk of prolonged timeout.
+            </li>
+            <li>
+              <strong>Services without a stable failure pattern:</strong> if
+              the downstream service rarely fails consistently enough to reach
+              the threshold, the Circuit Breaker never opens and adds no value
+              — but adds complexity.
+            </li>
+            <li>
+              <strong>Critical operations without an acceptable fallback:</strong>
+              if no degraded response is possible and the operation blocks the
+              user flow, the Circuit Breaker still helps with latency, but the
+              UX benefit is limited. In those cases, the priority should be
+              improving the service's reliability.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 5. PROS AND CONS -->
+        <section class="artigo__secao">
+          <h2>Pros and cons</h2>
+          <h3>Pros</h3>
+          <ul class="artigo__lista-pros">
+            <li>Prevents cascading failures: isolates the failure at the integration point, preventing it from spreading to the rest of the system.</li>
+            <li>Fail-fast: the caller gets an immediate response (error or fallback) instead of waiting for the full timeout, improving perceived latency.</li>
+            <li>Protects the downstream service: by stopping requests to an overloaded service, it gives room for recovery without being bombarded.</li>
+            <li>Graceful degradation: combined with a fallback, the system keeps working in a limited way instead of failing completely.</li>
+            <li>Visibility: circuit state (OPEN/CLOSED) is a valuable operational metric — it signals dependency problems in real time.</li>
+          </ul>
+          <h3>Cons</h3>
+          <ul class="artigo__lista-contras">
+            <li>Added complexity: implementing and calibrating the parameters (threshold, timeout, success threshold) requires knowledge of the dependencies' behavior.</li>
+            <li>False positives: a poorly calibrated threshold opens the circuit on normal latency spikes, causing unnecessary degradation.</li>
+            <li>Distributed state: in systems with multiple instances, each instance has its own Circuit Breaker. State isn't shared — one instance may have the circuit open while another is still trying.</li>
+            <li>Fallback requires maintenance: fallback logic needs to be implemented, tested, and maintained throughout the system's life.</li>
+          </ul>
+        </section>
+
+        <!-- 6. PITFALLS -->
+        <section class="artigo__secao">
+          <h2>Common pitfalls</h2>
+
+          <h3>1. Threshold too low</h3>
+          <p>
+            A failure threshold of 10% may seem conservative, but during normal
+            peak moments, the transient error rate can briefly exceed that
+            value. The circuit opens, rejects legitimate calls, and the
+            downstream service wasn't really in trouble — the problem was the
+            calibration. Start with a more permissive threshold (50%) and
+            adjust with real production data.
+          </p>
+
+          <h3>2. Timeout too short in the OPEN state</h3>
+          <p>
+            If the downstream service needs 2 minutes to recover after a
+            spike, a 10-second sleep duration makes the circuit go to
+            HALF-OPEN too soon. The probe call fails, the circuit reopens for
+            another 10 seconds, and the cycle repeats — the circuit
+            <strong>flaps</strong> — without giving enough time for recovery
+            to happen. The timeout should be estimated based on the service's
+            recovery history.
+          </p>
+
+          <h3>3. No fallback defined</h3>
+          <p>
+            A Circuit Breaker in the OPEN state without a fallback returns an
+            instant 5xx error instead of the original slow error. Latency
+            improved, but the user experience is the same — an error. The real
+            gain of the pattern only materializes when there's a fallback
+            response that lets the system keep working in a degraded but
+            useful way.
+          </p>
+
+          <h3>4. Circuit Breaker without observability</h3>
+          <p>
+            If the circuit opens silently in production and there's no alert,
+            the team finds out about the problem when users complain — and
+            maybe long after. Circuit state (OPEN/HALF-OPEN/CLOSED), failure
+            rate metrics, and the number of rejected calls should be exposed
+            as monitored metrics with configured alerts.
+          </p>
+          <p class="artigo__aviso">
+            <strong>Rule of thumb:</strong> if the Circuit Breaker isn't
+            generating metrics and alerts, it isn't complete. The pattern
+            serves both resilience and observability — an open circuit is a
+            signal that something needs immediate attention.
+          </p>
+        </section>
+
+        <!-- 7. RELATED -->
+        <section class="artigo__secao">
+          <h2>Related architectures and patterns</h2>
+          <ul class="artigo__padroes-relacionados">
+            <li><a href="../event-driven/">Event-Driven Architecture</a></li>
+            <li><a href="../escalabilidade-horizontal-vertical/">Horizontal vs Vertical Scalability</a></li>
+            <li><a href="../filas-de-mensagem/">Message Queues</a></li>
+            <li><a href="../rest-vs-graphql-vs-grpc/">REST vs GraphQL vs gRPC</a></li>
+          </ul>
+          <p class="mt-1">
+            <strong>Event-Driven Architecture</strong> and Circuit Breaker
+            solve the same problem in opposite ways: the Circuit Breaker
+            protects synchronous (request/response) calls, while
+            event-driven architecture eliminates synchronous coupling by
+            making communication asynchronous via messages. In systems that
+            mix both styles, the Circuit Breaker protects the points where a
+            synchronous call is still necessary.
+          </p>
+          <p>
+            <strong>Message Queues</strong> are a structural alternative:
+            instead of calling the service directly (and needing a Circuit
+            Breaker for protection), the message goes to the queue and the
+            service processes it when available. The Circuit Breaker treats
+            the symptom; the queue can eliminate the cause by decoupling
+            producer and consumer.
+          </p>
+        </section>
+
+      </div><!-- /.artigo__corpo -->
+    </article>
+
+    <!-- Bloco de anúncio -->
+    <section class="ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-5784678562772792"
+           data-ad-slot="6060606060"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Dev Helper</p>
+  </footer>
+
+  <script src="../../../js/main.js"></script>
+  <script src="../../../js/biblioteca.js"></script>
+</body>
+</html>
