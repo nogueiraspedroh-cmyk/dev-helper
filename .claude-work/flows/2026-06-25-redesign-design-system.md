@@ -25,7 +25,7 @@ para devs), fugindo dos 3 clichês de IA (creme+serifa+terracota / quase-preto+v
   sans humanista no corpo (`system-ui…`).
 - **Elemento-assinatura:** o "painel tipado" — `.code-tabs`/`.code-bloco`/diagramas ASCII
   unificados num painel escuro com barra de cabeçalho rotulada e aba ativa em esmeralda.
-- **Hero da home:** tese em prompt monoespaçado (`~/dev-helper —`), painel ink com grade
+- **Hero da home:** tese em prompt monoespaçado (`~/tools-dev —`), painel ink com grade
   blueprint sutil. `error.html` ficou on-brand.
 
 ## Estratégia (paralelismo sem git)

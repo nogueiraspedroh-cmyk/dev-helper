@@ -1,6 +1,6 @@
 <!-- Generated: 2026-07-31 -->
 
-# dev-helper (root)
+# tools-dev (root)
 
 ## Purpose
 Site estático em HTML/CSS/JavaScript puro — sem framework, sem build step, sem

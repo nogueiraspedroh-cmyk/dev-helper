@@ -1,0 +1,985 @@
+# Query: Dev Helper
+# Flags: RegExp
+
+587 results - 197 files
+
+error.html:
+  34:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+favicon.svg:
+  1: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Tools Dev">
+
+index.html:
+    6:   <title>Tools Dev</title>
+   29:       <a class="nav__brand" href="index.html">Tools Dev</a>
+  449:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+.omc/ultragoal/brief.md:
+  1: # Tradução completa do Tools Dev para inglês
+
+biblioteca/index.html:
+    6:   <title>Biblioteca — Tools Dev</title>
+   25:       <a class="nav__brand" href="../index.html">Tools Dev</a>
+   44:       <h1 class="biblioteca-search__titulo">Biblioteca Tools Dev</h1>
+  385:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/abstract-factory/index.html:
+    6:   <title>Abstract Factory — Design Patterns | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  744:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/adapter/index.html:
+    6:   <title>Adapter — Design Patterns | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  655:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/api-gateway/index.html:
+    6:   <title>API Gateway — Tools Dev Biblioteca</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  445:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/arquitetura-em-camadas/index.html:
+    6:   <title>Arquitetura em Camadas — Arquiteturas | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  395:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/arquitetura-hexagonal/index.html:
+    6:   <title>Arquitetura Hexagonal (Ports &amp; Adapters) — Arquiteturas | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  495:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/bridge/index.html:
+    6:   <title>Bridge — Design Patterns | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  826:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/builder/index.html:
+    6:   <title>Builder — Design Patterns | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  683:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/caching/index.html:
+    6:   <title>Caching — Tools Dev Biblioteca</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  443:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/cdn/index.html:
+    6:   <title>CDN — Tools Dev Biblioteca</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  448:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/chain-of-responsibility/index.html:
+    6:   <title>Chain of Responsibility — Design Patterns | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  870:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/circuit-breaker/index.html:
+    6:   <title>Circuit Breaker — Tools Dev Biblioteca</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  386:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/clean-architecture/index.html:
+    6:   <title>Clean Architecture — Arquiteturas | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  478:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/command/index.html:
+    6:   <title>Command — Design Patterns | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  960:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/composite/index.html:
+    6:   <title>Composite — Design Patterns | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  743:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/consistencia/index.html:
+    6:   <title>Consistência Eventual vs Forte — Tools Dev Biblioteca</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  520:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/cqrs/index.html:
+    6:   <title>CQRS — Arquiteturas | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  431:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/decorator/index.html:
+    6:   <title>Decorator — Design Patterns | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  697:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/escalabilidade-horizontal-vertical/index.html:
+    6:   <title>Escalabilidade Horizontal vs Vertical — Tools Dev Biblioteca</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  372:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/estrutura-de-pastas/index.html:
+    6:   <title>Boas Práticas de Estrutura de Pastas — Estruturas de Projeto | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  396:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/event-driven/index.html:
+    6:   <title>Event-Driven Architecture — Arquiteturas | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  438:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/facade/index.html:
+    6:   <title>Facade — Design Patterns | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  611:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/factory-method/index.html:
+    6:   <title>Factory Method — Design Patterns | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  632:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/feature-vs-layer/index.html:
+    6:   <title>Organização por Feature vs Camada — Estruturas de Projeto | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  384:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/filas-de-mensagem/index.html:
+    6:   <title>Filas de Mensagem — Tools Dev Biblioteca</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  456:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/flyweight/index.html:
+    6:   <title>Flyweight — Design Patterns | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  853:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/idempotencia/index.html:
+    6:   <title>Idempotência — Tools Dev Biblioteca</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  381:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/interpreter/index.html:
+    6:   <title>Interpreter — Design Patterns | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  811:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/iterator/index.html:
+    6:   <title>Iterator — Design Patterns | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  743:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/load-balancing/index.html:
+    6:   <title>Load Balancing — Tools Dev Biblioteca</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  405:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/mediator/index.html:
+    6:   <title>Mediator — Design Patterns | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  791:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/memento/index.html:
+    6:   <title>Memento — Design Patterns | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  964:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/monolito-vs-microsservicos/index.html:
+    6:   <title>Monolito vs Microsserviços — Arquiteturas | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  536:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/monolito-vs-monorepo/index.html:
+    6:   <title>Monorepo vs Multi-repo — Estruturas de Projeto | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  434:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/mvc/index.html:
+    6:   <title>MVC — Arquiteturas | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  395:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/mvp/index.html:
+    6:   <title>MVP (Model-View-Presenter) — Arquiteturas | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  580:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/mvvm/index.html:
+    6:   <title>MVVM (Model-View-ViewModel) — Arquiteturas | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  573:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/observabilidade/index.html:
+    6:   <title>Observabilidade — Tools Dev Biblioteca</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  521:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/observer/index.html:
+    6:   <title>Observer — Design Patterns | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  824:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/onion-architecture/index.html:
+    6:   <title>Onion Architecture — Arquiteturas | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  448:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/outbox/index.html:
+    6:   <title>Outbox Pattern — Tools Dev Biblioteca</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  405:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/prototype/index.html:
+    6:   <title>Prototype — Design Patterns | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  660:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/proxy/index.html:
+    6:   <title>Proxy — Design Patterns | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  754:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/rate-limiting/index.html:
+    6:   <title>Rate Limiting — Tools Dev Biblioteca</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  468:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/replicacao-de-banco/index.html:
+    6:   <title>Replicação de Banco de Dados — Tools Dev Biblioteca</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  411:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/rest-vs-graphql-vs-grpc/index.html:
+    6:   <title>REST vs GraphQL vs gRPC — Tools Dev Biblioteca</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  498:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/saga/index.html:
+    6:   <title>Saga Pattern — Tools Dev Biblioteca</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  425:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/sharding/index.html:
+    6:   <title>Sharding e Particionamento — Tools Dev Biblioteca</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  441:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/singleton/index.html:
+    6:   <title>Singleton — Design Patterns | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  611:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/sla-slo-sli/index.html:
+    6:   <title>SLA, SLO e SLI — Tools Dev Biblioteca</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  374:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/sql-vs-nosql/index.html:
+    6:   <title>SQL vs NoSQL — Tools Dev Biblioteca</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  440:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/state/index.html:
+    6:   <title>State — Design Patterns | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  774:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/strategy/index.html:
+    6:   <title>Strategy — Design Patterns | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  700:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/template-method/index.html:
+    6:   <title>Template Method — Design Patterns | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  766:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/visitor/index.html:
+    6:   <title>Visitor — Design Patterns | Biblioteca Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  938:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+biblioteca/websockets-sse/index.html:
+    6:   <title>WebSockets e SSE — Tools Dev Biblioteca</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  577:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+css/styles.css:
+  2:    DEV HELPER — Design System v2
+
+docs/ROADMAP.md:
+  1: # ROADMAP — Tools Dev (coleção de ferramentas para desenvolvedores)
+
+en/index.html:
+    6:   <title>Tools Dev</title>
+   30:       <a class="nav__brand" href="index.html">Tools Dev</a>
+  416:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/index.html:
+    6:   <title>Library — Tools Dev</title>
+   25:       <a class="nav__brand" href="../index.html">Tools Dev</a>
+   42:       <h1 class="biblioteca-search__titulo">Tools Dev Library</h1>
+  349:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/abstract-factory/index.html:
+    6:   <title>Abstract Factory — Design Patterns | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  760:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/adapter/index.html:
+    6:   <title>Adapter — Design Patterns | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  671:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/api-gateway/index.html:
+    6:   <title>API Gateway — Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  462:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/arquitetura-em-camadas/index.html:
+    6:   <title>Layered Architecture — Architectures | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  405:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/arquitetura-hexagonal/index.html:
+    6:   <title>Hexagonal Architecture (Ports &amp; Adapters) — Architectures | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  510:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/bridge/index.html:
+    6:   <title>Bridge — Design Patterns | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  838:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/builder/index.html:
+    6:   <title>Builder — Design Patterns | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  705:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/caching/index.html:
+    6:   <title>Caching — Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  462:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/cdn/index.html:
+    6:   <title>CDN — Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  460:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/chain-of-responsibility/index.html:
+    6:   <title>Chain of Responsibility — Design Patterns | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  880:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/circuit-breaker/index.html:
+    6:   <title>Circuit Breaker — Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  407:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/clean-architecture/index.html:
+    6:   <title>Clean Architecture — Architectures | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  495:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/command/index.html:
+    6:   <title>Command — Design Patterns | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  976:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/composite/index.html:
+    6:   <title>Composite — Design Patterns | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  757:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/consistencia/index.html:
+    6:   <title>Eventual vs Strong Consistency — Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  546:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/cqrs/index.html:
+    6:   <title>CQRS — Architectures | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  449:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/decorator/index.html:
+    6:   <title>Decorator — Design Patterns | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  712:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/escalabilidade-horizontal-vertical/index.html:
+    6:   <title>Horizontal vs Vertical Scalability — Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  392:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/estrutura-de-pastas/index.html:
+    6:   <title>Folder Structure Best Practices — Code Organization | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  407:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/event-driven/index.html:
+    6:   <title>Event-Driven Architecture — Architectures | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  451:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/facade/index.html:
+    6:   <title>Facade — Design Patterns | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  626:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/factory-method/index.html:
+    6:   <title>Factory Method — Design Patterns | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  645:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/feature-vs-layer/index.html:
+    6:   <title>Feature-based vs Layer-based Organization — Code Organization | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  401:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/filas-de-mensagem/index.html:
+    6:   <title>Message Queues — Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  469:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/flyweight/index.html:
+    6:   <title>Flyweight — Design Patterns | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  868:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/idempotencia/index.html:
+    6:   <title>Idempotency — Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  400:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/interpreter/index.html:
+    6:   <title>Interpreter — Design Patterns | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  831:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/iterator/index.html:
+    6:   <title>Iterator — Design Patterns | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  761:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/load-balancing/index.html:
+    6:   <title>Load Balancing — Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  433:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/mediator/index.html:
+    6:   <title>Mediator — Design Patterns | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  804:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/memento/index.html:
+    6:   <title>Memento — Design Patterns | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  979:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/monolito-vs-microsservicos/index.html:
+    6:   <title>Monolith vs Microservices — Architectures | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  535:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/monolito-vs-monorepo/index.html:
+    6:   <title>Monorepo vs Multi-repo — Code Organization | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  451:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/mvc/index.html:
+    6:   <title>MVC — Architectures | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  404:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/mvp/index.html:
+    6:   <title>MVP (Model-View-Presenter) — Architectures | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  585:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/mvvm/index.html:
+    6:   <title>MVVM (Model-View-ViewModel) — Architectures | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  581:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/observabilidade/index.html:
+    6:   <title>Observability — Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  545:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/observer/index.html:
+    6:   <title>Observer — Design Patterns | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  836:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/onion-architecture/index.html:
+    6:   <title>Onion Architecture — Architectures | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  467:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/outbox/index.html:
+    6:   <title>Outbox Pattern — Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  426:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/prototype/index.html:
+    6:   <title>Prototype — Design Patterns | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  673:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/proxy/index.html:
+    6:   <title>Proxy — Design Patterns | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  775:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/rate-limiting/index.html:
+    6:   <title>Rate Limiting — Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  492:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/replicacao-de-banco/index.html:
+    6:   <title>Database Replication — Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  430:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/rest-vs-graphql-vs-grpc/index.html:
+    6:   <title>REST vs GraphQL vs gRPC — Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  521:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/saga/index.html:
+    6:   <title>Saga Pattern — Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  445:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/sharding/index.html:
+    6:   <title>Sharding and Partitioning — Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  460:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/singleton/index.html:
+    6:   <title>Singleton — Design Patterns | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  623:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/sla-slo-sli/index.html:
+    6:   <title>SLA, SLO and SLI — Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  402:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/sql-vs-nosql/index.html:
+    6:   <title>SQL vs NoSQL — Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  463:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/state/index.html:
+    6:   <title>State — Design Patterns | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  784:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/strategy/index.html:
+    6:   <title>Strategy — Design Patterns | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  711:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/template-method/index.html:
+    6:   <title>Template Method — Design Patterns | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  778:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/visitor/index.html:
+    6:   <title>Visitor — Design Patterns | Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  957:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/biblioteca/websockets-sse/index.html:
+    6:   <title>WebSockets and SSE — Tools Dev Library</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  600:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/pages/about.html:
+   6:   <title>About — Tools Dev</title>
+  24:       <a class="nav__brand" href="../index.html">Tools Dev</a>
+  55:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/pages/contact.html:
+   6:   <title>Contact — Tools Dev</title>
+  19:       <a class="nav__brand" href="../index.html">Tools Dev</a>
+  37:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/base-numerica/index.html:
+    6:   <title>Number Base Converter — Binary, Octal, Decimal, Hexadecimal — Tools Dev</title>
+   24:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  125:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/base64/index.html:
+    6:   <title>Base64 and URL Encode/Decode — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  165:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/cartao/index.html:
+    6:   <title>Credit/Debit Card Generator and Validator — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  235:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/cep/index.html:
+    6:   <title>CEP (Brazilian ZIP Code) Generator and Validator — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  232:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/cidr/index.html:
+    6:   <title>Subnet / CIDR Calculator (IPv4) — Tools Dev</title>
+   24:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  122:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/conta-bancaria/index.html:
+    6:   <title>Bank Account (Brazil) Generator and Validator — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  291:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/contador-caracteres/index.html:
+    6:   <title>Character and Word Counter — Tools Dev</title>
+   24:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  107:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/conversor-case/index.html:
+    6:   <title>Case Converter (camelCase, snake_case…) — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  162:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/conversor-moeda/index.html:
+    6:   <title>Currency Converter — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  293:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/cor/index.html:
+    6:   <title>Color Converter + WCAG Contrast — HEX, RGB, HSL — Tools Dev</title>
+   24:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  177:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/cpf-cnpj/index.html:
+    6:   <title>CPF/CNPJ Generator and Validator — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  208:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/cron/index.html:
+    6:   <title>Cron Builder and Explainer — Cron Expressions in English — Tools Dev</title>
+   24:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  116:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/css-gradient/index.html:
+    6:   <title>CSS Gradient Generator — Tools Dev</title>
+   24:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  136:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/csv-json/index.html:
+    6:   <title>CSV ↔ JSON Converter — Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  143:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/diff/index.html:
+    6:   <title>Text Diff — Compare Two Texts — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  165:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/endereco/index.html:
+    6:   <title>Address Generator — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  271:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/escopo/index.html:
+    6:   <title>Software Project Scope Generator — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  396:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/fuso-horario/index.html:
+    6:   <title>Time Zone Converter — Hours Between IANA Time Zones — Tools Dev</title>
+   24:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  161:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/gitignore/index.html:
+    6:   <title>.gitignore Generator — Tools Dev</title>
+   24:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  125:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/hash/index.html:
+    6:   <title>Hash Generator — MD5, SHA-1, SHA-256, SHA-384, SHA-512 — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  177:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/horas-trabalhadas/index.html:
+    6:   <title>Worked Hours Calculator — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  162:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/json/index.html:
+    6:   <title>JSON Formatter and Validator — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+   50:           placeholder='Paste your JSON here, for example: {"name":"Tools Dev","version":1}'
+  165:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/json-para-typescript/index.html:
+    6:   <title>JSON to TypeScript Interface — Tools Dev</title>
+   24:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  127:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/jwt/index.html:
+    6:   <title>JWT Decoder — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  188:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/markdown/index.html:
+    6:   <title>Live Markdown Editor and Preview — Tools Dev</title>
+   24:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+   55: [Link to Tools Dev](https://github.com)
+  127:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/meta-tags/index.html:
+    6:   <title>Meta Tags Generator and Open Graph Preview — Tools Dev</title>
+   24:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  138:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/mock-data/index.html:
+    6:   <title>Mock Data / Fake JSON Generator — Tools Dev</title>
+   24:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  129:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/pix/index.html:
+    6:   <title>PIX (Brazilian Instant Payment) Copy-and-Paste and QR Code Generator — Tools Dev</title>
+   24:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  142:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/qrcode/index.html:
+    6:   <title>QR Code Generator — Text and URL to QR — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  157:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/regex/index.html:
+    6:   <title>Regex Tester — Test Regular Expressions — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  181:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/salario-pj-clt/index.html:
+    6:   <title>Salary Calculator: Contractor (PJ) vs Employee (CLT) — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  248:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/senha/index.html:
+    6:   <title>Password Generator — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  294:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/sql/index.html:
+    6:   <title>SQL Indenter and Formatter — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  188:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/timestamp/index.html:
+    6:   <title>Unix Timestamp Converter — Date ↔ Epoch — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  171:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/uuid/index.html:
+    6:   <title>UUID Generator — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  163:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/xml/index.html:
+    6:   <title>XML Formatter and Adjuster — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  177:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+en/tools/yaml-json/index.html:
+    6:   <title>YAML ↔ JSON Converter — Tools Dev</title>
+   24:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  141:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+pages/contato.html:
+   6:   <title>Contato — Tools Dev</title>
+  19:       <a class="nav__brand" href="../index.html">Tools Dev</a>
+  37:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+pages/sobre.html:
+   6:   <title>Sobre — Tools Dev</title>
+  24:       <a class="nav__brand" href="../index.html">Tools Dev</a>
+  55:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/base-numerica/index.html:
+    6:   <title>Conversor de Base Numérica — Binário, Octal, Decimal, Hexadecimal — Tools Dev</title>
+   24:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  125:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/base64/index.html:
+    6:   <title>Base64 e URL Encode/Decode — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  164:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/cartao/index.html:
+    6:   <title>Gerador e Validador de Cartão de Crédito/Débito — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  237:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/cep/index.html:
+    6:   <title>Gerador e Validador de CEP — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  232:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/cidr/index.html:
+    6:   <title>Calculadora de Subnet / CIDR (IPv4) — Tools Dev</title>
+   24:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  122:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/conta-bancaria/index.html:
+    6:   <title>Gerador e Validador de Conta Bancária — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  281:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/contador-caracteres/index.html:
+    6:   <title>Contador de Caracteres e Palavras — Tools Dev</title>
+   24:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  107:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/conversor-case/index.html:
+    6:   <title>Conversor de Case (camelCase, snake_case…) — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  162:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/conversor-moeda/index.html:
+    6:   <title>Conversor de Moeda — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  287:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/cor/index.html:
+    6:   <title>Conversor de Cor + Contraste WCAG — HEX, RGB, HSL — Tools Dev</title>
+   24:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  177:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/cpf-cnpj/index.html:
+    6:   <title>Gerador e Validador de CPF/CNPJ — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  210:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/cron/index.html:
+    6:   <title>Cron Builder e Explicador — Expressões Cron em Português — Tools Dev</title>
+   24:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  116:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/css-gradient/index.html:
+    6:   <title>CSS Gradient Generator — Tools Dev</title>
+   24:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  136:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/csv-json/index.html:
+    6:   <title>Conversor CSV ↔ JSON — Tools Dev</title>
+   25:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  143:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/diff/index.html:
+    6:   <title>Diff de Texto — Comparar Dois Textos — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  166:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/endereco/index.html:
+    6:   <title>Gerador de Endereço — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  270:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/escopo/index.html:
+    6:   <title>Gerador de Escopo de Projeto de Software — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  394:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/fuso-horario/index.html:
+    6:   <title>Conversor de Fuso Horário — Horas entre Fusos IANA — Tools Dev</title>
+   24:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  161:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/gitignore/index.html:
+    6:   <title>Gerador de .gitignore — Tools Dev</title>
+   24:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  125:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/hash/index.html:
+    6:   <title>Gerador de Hash — MD5, SHA-1, SHA-256, SHA-384, SHA-512 — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  175:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/horas-trabalhadas/index.html:
+    6:   <title>Calculadora de Horas Trabalhadas — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  162:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/json/index.html:
+    6:   <title>Formatador e Verificador de JSON — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+   50:           placeholder='Cole seu JSON aqui, por exemplo: {"nome":"Tools Dev","versao":1}'
+  165:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/json-para-typescript/index.html:
+    6:   <title>JSON para Interface TypeScript — Tools Dev</title>
+   24:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  126:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/jwt/index.html:
+    6:   <title>JWT Decoder — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  185:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/markdown/index.html:
+    6:   <title>Editor e Preview de Markdown ao vivo — Tools Dev</title>
+   24:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+   55: [Link para o Tools Dev](https://github.com)
+  127:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/meta-tags/index.html:
+    6:   <title>Gerador de Meta Tags e Preview Open Graph — Tools Dev</title>
+   24:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  137:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/mock-data/index.html:
+    6:   <title>Gerador de Dados Fake / Mock JSON — Tools Dev</title>
+   24:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  129:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/pix/index.html:
+    6:   <title>Gerador de PIX Copia e Cola e QR Code — Tools Dev</title>
+   24:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  139:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/qrcode/index.html:
+    6:   <title>Gerador de QR Code — Texto e URL para QR — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  155:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/regex/index.html:
+    6:   <title>Regex Tester — Testador de Expressões Regulares — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  181:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/salario-pj-clt/index.html:
+    6:   <title>Calculadora de Salário PJ vs CLT — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  248:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/senha/index.html:
+    6:   <title>Gerador de Senha — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  295:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/sql/index.html:
+    6:   <title>Identador e Formatador de SQL — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  188:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/timestamp/index.html:
+    6:   <title>Conversor de Timestamp Unix — Data ↔ Epoch — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  171:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/uuid/index.html:
+    6:   <title>Gerador de UUID — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  162:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/xml/index.html:
+    6:   <title>Formatador e Ajustador de XML — Tools Dev</title>
+   28:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  177:     <p>&copy; <span id="year"></span> Tools Dev</p>
+
+tools/yaml-json/index.html:
+    6:   <title>Conversor YAML ↔ JSON — Tools Dev</title>
+   24:       <a class="nav__brand" href="../../index.html">Tools Dev</a>
+  141:     <p>&copy; <span id="year"></span> Tools Dev</p>

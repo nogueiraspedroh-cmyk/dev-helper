@@ -1,4 +1,4 @@
-# ROADMAP — Dev Helper (coleção de ferramentas para desenvolvedores)
+# ROADMAP — Tools Dev (coleção de ferramentas para desenvolvedores)
 
 > Documento de planejamento de MVP, seguindo `docs/PLANEJAMENTO.md`.
 > Contexto: site **estático** HTML/CSS/JS vanilla, **sem build**, S3 + CloudFront,

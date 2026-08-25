@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1785498390471,
+  "lastScanned": 1787623411600,
   "projectRoot": "/home/casa/projetos/dev-helper",
   "techStack": {
     "languages": [],
@@ -35,27 +35,30 @@
     "biblioteca": {
       "path": "biblioteca",
       "purpose": null,
-      "fileCount": 1,
-      "lastAccessed": 1785498390454,
+      "fileCount": 2,
+      "lastAccessed": 1787623411585,
       "keyFiles": [
+        "AGENTS.md",
         "index.html"
       ]
     },
     "css": {
       "path": "css",
       "purpose": null,
-      "fileCount": 1,
-      "lastAccessed": 1785498390460,
+      "fileCount": 2,
+      "lastAccessed": 1787623411590,
       "keyFiles": [
+        "AGENTS.md",
         "styles.css"
       ]
     },
     "docs": {
       "path": "docs",
       "purpose": "Documentation",
-      "fileCount": 3,
-      "lastAccessed": 1785498390461,
+      "fileCount": 4,
+      "lastAccessed": 1787623411591,
       "keyFiles": [
+        "AGENTS.md",
         "MELHORIA-CONTINUA-AGENTES.md",
         "PLANEJAMENTO.md",
         "ROADMAP.md"
@@ -64,18 +67,20 @@
     "en": {
       "path": "en",
       "purpose": null,
-      "fileCount": 1,
-      "lastAccessed": 1785498390462,
+      "fileCount": 2,
+      "lastAccessed": 1787623411592,
       "keyFiles": [
+        "AGENTS.md",
         "index.html"
       ]
     },
     "js": {
       "path": "js",
       "purpose": null,
-      "fileCount": 2,
-      "lastAccessed": 1785498390462,
+      "fileCount": 3,
+      "lastAccessed": 1787623411592,
       "keyFiles": [
+        "AGENTS.md",
         "biblioteca.js",
         "main.js"
       ]
@@ -83,9 +88,10 @@
     "pages": {
       "path": "pages",
       "purpose": "Page components",
-      "fileCount": 2,
-      "lastAccessed": 1785498390463,
+      "fileCount": 3,
+      "lastAccessed": 1787623411593,
       "keyFiles": [
+        "AGENTS.md",
         "contato.html",
         "sobre.html"
       ]
@@ -93,16 +99,19 @@
     "tools": {
       "path": "tools",
       "purpose": null,
-      "fileCount": 0,
-      "lastAccessed": 1785498390463,
-      "keyFiles": []
+      "fileCount": 1,
+      "lastAccessed": 1787623411593,
+      "keyFiles": [
+        "AGENTS.md"
+      ]
     },
     "en/pages": {
       "path": "en/pages",
       "purpose": "Page components",
-      "fileCount": 2,
-      "lastAccessed": 1785498390465,
+      "fileCount": 3,
+      "lastAccessed": 1787623411597,
       "keyFiles": [
+        "AGENTS.md",
         "about.html",
         "contact.html"
       ]
@@ -111,7 +120,7 @@
       "path": "js/lib",
       "purpose": "Library code",
       "fileCount": 1,
-      "lastAccessed": 1785498390466,
+      "lastAccessed": 1787623411599,
       "keyFiles": [
         "qrcode-core.js"
       ]

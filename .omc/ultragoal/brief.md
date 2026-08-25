@@ -1,6 +1,6 @@
-# Tradução completa do Dev Helper para inglês
+# Tradução completa do Tools Dev para inglês
 
-Ponto final: todos os escopos do site (dev-helper, site estático HTML/CSS/JS
+Ponto final: todos os escopos do site (tools-dev, site estático HTML/CSS/JS
 vanilla, sem build, S3+CloudFront) têm uma versão em inglês publicável sob a
 árvore `/en/`, seguindo exatamente o padrão já validado na Fase A (piloto):
 
